@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --bg:       #0d0810;
+  --surface:  #150d18;
+  --surface2: #1d1220;
+  --border:   rgba(255,180,210,0.09);
+  --text:     #f5e8f0;
+  --muted:    rgba(245,232,240,0.45);
+  --faint:    rgba(245,232,240,0.1);
+
+  --gold:     #e8a0c0;
+  --purple:   #c478b0;
+  --emerald:  #e07890;
+  --rose:     #d4609a;
+  --blush:    #eda0b8;
+  --amber:    #e8907a;
+  --slate:    #b87ab0;
+  --lavender: #d480a0;
+
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', serif;
+  --font-body:    var(--font-inter), 'Inter', sans-serif;
+
+  /* Aurora — overridden per theme */
+  --aurora-1: rgba(200,60,130,0.10);
+  --aurora-2: rgba(160,40,120,0.08);
+  --aurora-3: rgba(230,100,160,0.05);
+  --aurora-pos-1: top right;
+  --aurora-pos-2: bottom left;
+  --aurora-pos-3: center top;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at var(--aurora-pos-1), var(--aurora-1) 0%, transparent 55%),
+    radial-gradient(ellipse at var(--aurora-pos-2), var(--aurora-2) 0%, transparent 55%),
+    radial-gradient(ellipse at var(--aurora-pos-3), var(--aurora-3) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .grid-auto { grid-template-columns: 1fr !important; }
+  .hide-mobile { display: none !important; }
+  .tabs-wrap { flex-wrap: wrap !important; }
+  main { padding: 0 1rem 3rem !important; }
+  header { padding: 1.5rem 1rem 0.5rem !important; }
+}
