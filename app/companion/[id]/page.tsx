@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import CompanionViewClient from './CompanionViewClient'
 
 interface Props {
@@ -28,9 +29,15 @@ export default async function CompanionViewPage({ params }: Props) {
   if (!isInviter && !isInvitee) redirect('/dashboard')
 
   // The "other person" is the one who shared with us
-  const ownerId    = isInvitee ? rel.inviter_id : rel.invitee_id
-  const ownerEmail = rel.invitee_email
+  const ownerId = isInvitee ? rel.inviter_id : rel.invitee_id
   const sections: string[] = rel.shared_sections ?? []
+
+  let ownerEmail = rel.invitee_email
+  if (isInvitee) {
+    const admin = createAdminClient()
+    const { data } = await admin.auth.admin.getUserById(ownerId)
+    ownerEmail = data?.user?.email ?? rel.invitee_email
+  }
 
   return (
     <CompanionViewClient

@@ -25,6 +25,7 @@ import SubsCard from '@/components/subscriptions/SubsCard'
 import WishlistCard from '@/components/watchlist/WishlistCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
 import CouncilSection from '@/components/council/CouncilSection'
+import SharedWithMeSection from '@/components/companion/SharedWithMeSection'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
@@ -63,6 +64,7 @@ const SECTION_GROUPS: Record<string, string> = {
   spending: 'money',
   calendar: 'review',
   council:  'review',
+  shared:   'companions',
 }
 
 export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout }: Props) {
@@ -128,7 +130,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       capture: t('Capture', lang), domains: t('Domains', lang),
       pulse: t("Today's Pulse", lang), wishlist: t('Wishlist', lang),
       spending: t('Recurring Spending', lang), calendar: t('Calendar', lang),
-      council: t('Your Council', lang),
+      council: t('Your Council', lang), shared: t('Shared With Me', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -162,6 +164,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       case 'wishlist': return <>{heading}<WishlistCard key="wishlist" /></>
       case 'calendar': return <>{heading}<CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} /></>
       case 'council':  return <>{heading}<CouncilSection key="council" mode={mode} /></>
+      case 'shared':   return <>{heading}<SharedWithMeSection key="shared" /></>
       default: return null
     }
   }

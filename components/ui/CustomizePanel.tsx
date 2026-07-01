@@ -27,6 +27,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Review
   { id: 'calendar', label: 'Calendar',           hidden: false },
   { id: 'council',  label: 'Your Council',       hidden: false },
+  // Companions
+  { id: 'shared',   label: 'Shared With Me',     hidden: false },
 ]
 
 interface CustomizePanelProps {
