@@ -25,11 +25,11 @@ export function useCaptures() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  async function add(text: string) {
+  async function add(text: string, domain?: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from('captures').insert({ text, user_id: user.id }).select().single()
-    if (data) setCaptures(prev => [data, ...prev])
+    const { data } = await supabase.from('captures').insert({ text, user_id: user.id, domain: domain || null }).select().single()
+    if (data && !data.domain) setCaptures(prev => [data, ...prev])
   }
 
   async function remove(id: string) {

@@ -209,7 +209,6 @@ export default function MasterDashboard() {
   const [priority, setPriority] = useState(2)
   const [domain, setDomain] = useState('')
   const [recurDays, setRecurDays] = useState('')
-  const [showMeta, setShowMeta] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
 
   const submit = useCallback(async () => {
@@ -220,7 +219,7 @@ export default function MasterDashboard() {
       recur_days: recurDays ? parseInt(recurDays) : null,
     })
     setTitle(''); setNotes(''); setDue(''); setPriority(2); setDomain('')
-    setRecurDays(''); setShowMeta(false); setShowAdd(false)
+    setRecurDays(''); setShowAdd(false)
   }, [title, notes, due, priority, domain, recurDays, add])
 
   const overdueCount = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
@@ -306,35 +305,25 @@ export default function MasterDashboard() {
             style={inputStyle}
           />
 
-          <button onClick={() => setShowMeta(m => !m)} style={{
-            alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '0.62rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
-            letterSpacing: '0.05em', padding: 0, opacity: 0.6,
-          }}>{showMeta ? '− less' : '+ due date, priority, repeat, notes'}</button>
-
-          {showMeta && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.4rem' }}>
-                <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} />
-                <select value={priority} onChange={e => setPriority(Number(e.target.value))} style={{ ...inputStyle, appearance: 'none' }}>
-                  <option value={1}>● Urgent</option>
-                  <option value={2}>● Normal</option>
-                  <option value={3}>○ Low</option>
-                </select>
-                <select value={domain} onChange={e => setDomain(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
-                  <option value="">No domain</option>
-                  {Object.keys(DOMAIN_LABELS).map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
-                </select>
-                <select value={recurDays} onChange={e => setRecurDays(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
-                  {RECUR_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.label, lang)}</option>)}
-                </select>
-              </div>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('Notes (optional)', lang)} rows={2} style={{ ...inputStyle, resize: 'none' }} />
-            </>
-          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.4rem' }}>
+            <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} title="Due date" />
+            <select value={priority} onChange={e => setPriority(Number(e.target.value))} style={{ ...inputStyle, appearance: 'none' }}>
+              <option value={1}>● Urgent</option>
+              <option value={2}>● Normal</option>
+              <option value={3}>○ Low</option>
+            </select>
+            <select value={domain} onChange={e => setDomain(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
+              <option value="">No domain</option>
+              {Object.keys(DOMAIN_LABELS).map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
+            </select>
+            <select value={recurDays} onChange={e => setRecurDays(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
+              {RECUR_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.label, lang)}</option>)}
+            </select>
+          </div>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('Notes (optional)', lang)} rows={2} style={{ ...inputStyle, resize: 'none' }} />
 
           <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button onClick={() => { setShowAdd(false); setTitle(''); setShowMeta(false) }} style={{
+            <button onClick={() => { setShowAdd(false); setTitle('') }} style={{
               padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid var(--border)',
               background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
             }}>{t('cancel', lang)}</button>

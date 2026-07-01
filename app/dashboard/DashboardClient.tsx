@@ -53,10 +53,10 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 }
 
 const SECTION_GROUPS: Record<string, string> = {
+  capture:  'capture',
   brief:    'at a glance',
   work:     'focus',
   habits:   'focus',
-  capture:  'inbox',
   domains:  'inbox',
   pulse:    'check-in',
   wishlist: 'money',

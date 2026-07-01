@@ -11,13 +11,15 @@ export default function CaptureSection() {
   const { captures, add, remove, assign } = useCaptures()
   const lang = useLang()
   const [text, setText] = useState('')
+  const [domain, setDomain] = useState('')
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState<string | null>(null)
 
   async function handleKey(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !text.trim()) return
-    await add(text.trim())
+    await add(text.trim(), domain || undefined)
     setText('')
+    setDomain('')
     setOpen(true)
   }
 
@@ -41,6 +43,20 @@ export default function CaptureSection() {
             color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 300,
           }}
         />
+        <select
+          value={domain}
+          onChange={e => setDomain(e.target.value)}
+          title="Optionally assign a domain now"
+          style={{
+            background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+            outline: 'none', fontSize: '0.65rem', color: domain ? 'var(--muted)' : 'var(--faint)',
+            fontFamily: 'var(--font-body)', cursor: 'pointer', padding: '0.1em 0.2em',
+            appearance: 'none', WebkitAppearance: 'none', flexShrink: 0,
+          }}
+        >
+          <option value="">{t('+ domain', lang)}</option>
+          {DOMAIN_IDS.map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
+        </select>
         <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, flexShrink: 0 }}>{t('↵ enter', lang)}</span>
       </div>
 

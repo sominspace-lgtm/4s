@@ -10,13 +10,13 @@ export interface SectionConfig {
 }
 
 export const DEFAULT_SECTIONS: SectionConfig[] = [
+  // Capture
+  { id: 'capture',  label: 'Capture',            hidden: false },
   // At a glance
   { id: 'brief',    label: 'Daily Brief',        hidden: false },
   // Focus
   { id: 'work',     label: 'Work Hub',           hidden: false },
   { id: 'habits',   label: 'Daily Habits',       hidden: false },
-  // Capture
-  { id: 'capture',  label: 'Capture',            hidden: false },
   // Domains
   { id: 'domains',  label: 'Domains',            hidden: false },
   // Check-in
