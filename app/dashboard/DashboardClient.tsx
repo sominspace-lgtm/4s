@@ -8,6 +8,11 @@ import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/componen
 import QuickCapture from '@/components/ui/QuickCapture'
 import TipsBanner from '@/components/ui/TipsBanner'
 import CompanionPanel from '@/components/companion/CompanionPanel'
+import SearchModal from '@/components/search/SearchModal'
+import FocusMode from '@/components/focus/FocusMode'
+import ArchivePanel from '@/components/archive/ArchivePanel'
+import WeekReview from '@/components/review/WeekReview'
+import OnboardingChecklist from '@/components/onboarding/OnboardingChecklist'
 import DailyBrief from '@/components/brief/DailyBrief'
 import CaptureSection from '@/components/capture/CaptureSection'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -62,6 +67,19 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [focusOpen, setFocusOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSearchOpen(s => !s) }
+      if (e.key === 'Escape') { setSearchOpen(false); setFocusOpen(false) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Notify about overdue items on load (if permission granted)
   useEffect(() => {
@@ -140,14 +158,22 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onThemeChange={setTheme} onModeChange={setMode}
         onCustomize={() => setCustomizeOpen(true)}
         onCompanions={() => setCompanionsOpen(true)}
+        onSearch={() => setSearchOpen(true)}
+        onFocus={() => setFocusOpen(true)}
+        onArchive={() => setArchiveOpen(true)}
       />
 
       <QuickCapture />
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
+      <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <CustomizePanel open={customizeOpen} sections={sections} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <TipsBanner />
+        <OnboardingChecklist userId={userId} />
+        <WeekReview />
         {visible.map((s, i) => (
           <div key={s.id}>{renderSection(s.id, i)}</div>
         ))}

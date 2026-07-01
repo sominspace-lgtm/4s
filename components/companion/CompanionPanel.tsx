@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useCompanions, SHAREABLE_SECTIONS, type Companion } from '@/lib/hooks/useCompanions'
 
 interface Props {
@@ -271,6 +272,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
                       </div>
                     </div>
                     <Pill text="active" color="var(--emerald)" />
+                    <Link href={`/companion/${c.id}`} onClick={onClose} title="View their shared space" style={{ color: 'var(--muted)', fontSize: '0.65rem', opacity: 0.4, textDecoration: 'none' }}>→</Link>
                     <button onClick={() => remove(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.75rem', opacity: 0.35 }}>✕</button>
                   </div>
                 ))}

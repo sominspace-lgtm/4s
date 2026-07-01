@@ -17,6 +17,9 @@ interface HeaderProps {
   onModeChange: (m: Mode) => void
   onCustomize: () => void
   onCompanions: () => void
+  onSearch: () => void
+  onFocus: () => void
+  onArchive: () => void
 }
 
 // Returns text before and after the name
@@ -43,7 +46,7 @@ function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: strin
   }
 }
 
-export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions }: HeaderProps) {
+export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive }: HeaderProps) {
   const router = useRouter()
   const fallback = email.split('@')[0]
 
@@ -141,15 +144,25 @@ export default function Header({ email, userId, initialName, initialTheme, initi
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <kbd
-          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-          title="Quick capture (⌘K / Ctrl+K)"
+          onClick={onSearch}
+          title="Search everything (⌘/)"
           style={{
             fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5,
             background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
             borderRadius: '6px', padding: '0.3em 0.55em', cursor: 'pointer',
             fontFamily: 'var(--font-body)', letterSpacing: '0.04em', userSelect: 'none',
           }}
-        >⌘K</kbd>
+        >⌘/</kbd>
+        <button onClick={onFocus} title="Focus mode" aria-label="Focus mode" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>◎</button>
+        <button onClick={onArchive} title="Archive" aria-label="Archive" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>◻</button>
         <button onClick={onCompanions} title="Companions" aria-label="Companions" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
