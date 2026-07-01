@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import ThemeModePicker from '@/components/ui/ThemeModePicker'
 import type { Mode } from '@/lib/constants/modes'
 import type { Lang } from '@/lib/i18n'
+import { fmtDate } from '@/lib/i18n'
 
 interface HeaderProps {
   email: string
@@ -34,9 +35,25 @@ function getTimeOfDay(hour: number) {
   return 'night'
 }
 
-function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: string } {
+function getGreeting(mode: Mode, hour: number, lang: Lang): { prefix: string; suffix?: string } {
   const time = getTimeOfDay(hour)
   const isNight = time === 'night'
+
+  if (lang === 'ko') {
+    switch (mode) {
+      case 'harsh':    return { prefix: isNight ? '아직 안 주무세요?' : time === 'morning' ? '일어나세요,' : time === 'afternoon' ? '아직도 하고 있네요,' : '마무리 잘 하세요,' }
+      case 'peaceful': return { prefix: isNight ? '편히 쉬세요,' : '다시 오셨군요,' }
+      case 'teacher':  return { prefix: `좋은 ${time === 'morning' ? '아침' : time === 'afternoon' ? '오후' : time === 'evening' ? '저녁' : '밤'}이에요,`, suffix: '— 돌아볼 준비 됐나요?' }
+      case 'friend':   return { prefix: time === 'morning' ? '안녕하세요,' : time === 'afternoon' ? '어떻게 지내세요,' : time === 'evening' ? '좋은 저녁이에요,' : '아직 안 주무세요,' }
+      case 'coach':    return { prefix: time === 'morning' ? '시작해봐요,' : time === 'afternoon' ? '계속 해봐요,' : time === 'evening' ? '마무리 잘 해요,' : '푹 쉬세요,' }
+      case 'ceo':      return { prefix: '' }
+      case 'monk':     return { prefix: isNight ? '지금은 쉬세요,' : '현재에 집중하세요,' }
+      case 'hype':     return { prefix: time === 'morning' ? '일어나세요!!,' : time === 'afternoon' ? '계속 가요!,' : time === 'evening' ? '마지막 스퍼트!,' : '아직도?!,' }
+      case 'gamer':    return { prefix: time === 'morning' ? '새로운 날, 새로운 퀘스트,' : time === 'afternoon' ? '세션 진행 중,' : time === 'evening' ? '마지막 보스 타임,' : '밤 그라인드,' }
+      default:         return { prefix: `좋은 ${time === 'morning' ? '아침' : time === 'afternoon' ? '오후' : time === 'evening' ? '저녁' : '밤'}이에요,` }
+    }
+  }
+
   switch (mode) {
     case 'harsh':    return { prefix: isNight ? 'Still up,' : time === 'morning' ? 'Wake up,' : time === 'afternoon' ? 'Still at it,' : 'End strong,' }
     case 'peaceful': return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
@@ -85,7 +102,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
   function handleThemeChange(t: string) { setTheme(t); onThemeChange(t) }
   function handleModeChange(m: Mode) { setMode(m); onModeChange(m) }
 
-  const { prefix, suffix } = getGreeting(mode, h)
+  const { prefix, suffix } = getGreeting(mode, h, lang)
   const isHype = mode === 'hype'
   const displayName = isHype ? name.toUpperCase() : name
 
@@ -140,9 +157,9 @@ export default function Header({ email, userId, initialName, initialTheme, initi
         </div>
 
         <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          {format(now, "EEEE, MMMM d · yyyy")}
+          {lang === 'ko' ? fmtDate(now, 'ko') : format(now, "EEEE, MMMM d · yyyy")}
           {mode !== 'balanced' && (
-            <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} mode</span>
+            <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} {lang === 'ko' ? '모드' : 'mode'}</span>
           )}
         </div>
       </div>

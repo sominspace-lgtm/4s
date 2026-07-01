@@ -10,21 +10,16 @@ import { t } from '@/lib/i18n'
 const MODE_ICONS: Partial<Record<Mode, string>> = { gamer: '🎮', hype: '🔥', monk: '☯', peaceful: '🌿' }
 
 const THEME_PREVIEW: Record<string, { bg: string; accent: string }> = {
-  sunset:    { bg: '#1a0f18', accent: '#d45090' },
-  midnight:  { bg: '#080c14', accent: '#90b8f0' },
-  sage:      { bg: '#09100d', accent: '#90d8a8' },
-  terracotta:{ bg: '#110c08', accent: '#e8a878' },
-  ocean:     { bg: '#050d14', accent: '#60d0e8' },
-  rose:      { bg: '#120810', accent: '#f090c0' },
-  ash:       { bg: '#f5f0e8', accent: '#a05c20' },
-  amber:     { bg: '#100e06', accent: '#e8c040' },
-  forest:    { bg: '#060e08', accent: '#60c878' },
-  lavender:  { bg: '#0c0812', accent: '#c0a0f0' },
-  noir:      { bg: '#050505', accent: '#e0e0e0' },
-  sand:      { bg: '#14120e', accent: '#d4b880' },
-  ember:     { bg: '#100600', accent: '#f06030' },
-  arctic:    { bg: '#040c10', accent: '#40e8b0' },
-  plum:      { bg: '#0e0610', accent: '#d060e8' },
+  sunset:   { bg: '#080a18', accent: '#8fa0f0' },
+  rose:     { bg: '#130810', accent: '#e888c8' },
+  forest:   { bg: '#050e08', accent: '#58c880' },
+  ocean:    { bg: '#040c14', accent: '#50c8e8' },
+  ember:    { bg: '#0e0b08', accent: '#e09040' },
+  ash:      { bg: '#f7f3ed', accent: '#9a5020' },
+  sand:     { bg: '#13110d', accent: '#c4a05a' },
+  plum:     { bg: '#0c0514', accent: '#c060e8' },
+  noir:     { bg: '#040404', accent: '#e8e8ec' },
+  lavender: { bg: '#0d0b14', accent: '#b0a0e0' },
 }
 
 interface ThemeModePickerProps {

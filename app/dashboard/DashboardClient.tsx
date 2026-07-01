@@ -33,6 +33,7 @@ import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useXP } from '@/lib/hooks/useXP'
 import type { Mode } from '@/lib/constants/modes'
 import { t, type Lang } from '@/lib/i18n'
+import { LangContext } from '@/lib/LangContext'
 
 interface Props {
   email: string
@@ -169,6 +170,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   }
 
   return (
+    <LangContext.Provider value={lang}>
     <ThemeProvider theme={theme}>
       <Header
         email={email} userId={userId} initialName={initialName}
@@ -219,5 +221,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onFocus={() => setFocusOpen(true)}
       />
     </ThemeProvider>
+    </LangContext.Provider>
   )
 }

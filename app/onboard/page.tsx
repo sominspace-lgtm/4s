@@ -18,21 +18,16 @@ const DOMAIN_OPTIONS = [
 ]
 
 const THEMES = [
-  { id: 'sunset',     label: 'Sunset',     bg: '#0d0810', accent: '#d45090', note: 'romantic · editorial' },
-  { id: 'midnight',   label: 'Midnight',   bg: '#080c14', accent: '#90b8f0', note: 'focused · technical' },
-  { id: 'rose',       label: 'Rose',       bg: '#120810', accent: '#f090c0', note: 'soft · feminine' },
-  { id: 'lavender',   label: 'Lavender',   bg: '#0c0812', accent: '#c0a0f0', note: 'dreamy · calm' },
-  { id: 'sage',       label: 'Sage',       bg: '#09100d', accent: '#90d8a8', note: 'natural · grounded' },
-  { id: 'ocean',      label: 'Ocean',      bg: '#050d14', accent: '#60d0e8', note: 'clean · flowing' },
-  { id: 'amber',      label: 'Amber',      bg: '#100e06', accent: '#e8c040', note: 'warm · energetic' },
-  { id: 'terracotta', label: 'Terracotta', bg: '#110c08', accent: '#e8a878', note: 'earthy · editorial' },
-  { id: 'plum',       label: 'Plum',       bg: '#0e0610', accent: '#d060e8', note: 'rich · romantic' },
-  { id: 'forest',     label: 'Forest',     bg: '#060e08', accent: '#60c878', note: 'deep · rooted' },
-  { id: 'noir',       label: 'Noir',       bg: '#050505', accent: '#e0e0e0', note: 'stark · minimal' },
-  { id: 'sand',       label: 'Sand',       bg: '#14120e', accent: '#d4b880', note: 'warm · classic' },
-  { id: 'ember',      label: 'Ember',      bg: '#100600', accent: '#f06030', note: 'bold · fierce' },
-  { id: 'arctic',     label: 'Arctic',     bg: '#040c10', accent: '#40e8b0', note: 'aurora · vivid' },
-  { id: 'ash',        label: 'Linen',      bg: '#f5f0e8', accent: '#a05c20', note: 'light · editorial' },
+  { id: 'sunset',   label: 'Moonlight', bg: '#080a18', accent: '#8fa0f0', note: 'deep indigo · premium' },
+  { id: 'rose',     label: 'Rose',      bg: '#130810', accent: '#e888c8', note: 'soft plum · elegant' },
+  { id: 'forest',   label: 'Forest',    bg: '#050e08', accent: '#58c880', note: 'evergreen · calm' },
+  { id: 'ocean',    label: 'Ocean',     bg: '#040c14', accent: '#50c8e8', note: 'slate blue · clean' },
+  { id: 'ember',    label: 'Ember',     bg: '#0e0b08', accent: '#e09040', note: 'charcoal · warm' },
+  { id: 'ash',      label: 'Linen',     bg: '#f7f3ed', accent: '#9a5020', note: 'warm paper · light' },
+  { id: 'sand',     label: 'Sand',      bg: '#13110d', accent: '#c4a05a', note: 'coffee · cozy' },
+  { id: 'plum',     label: 'Plum',      bg: '#0c0514', accent: '#c060e8', note: 'dark violet · creative' },
+  { id: 'noir',     label: 'Obsidian',  bg: '#040404', accent: '#e8e8ec', note: 'near-mono · stark' },
+  { id: 'lavender', label: 'Lavender',  bg: '#0d0b14', accent: '#b0a0e0', note: 'purple-gray · relaxed' },
 ]
 
 const MODES = [

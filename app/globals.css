@@ -1,33 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --bg:       #0d0810;
-  --surface:  #150d18;
-  --surface2: #1d1220;
-  --border:   rgba(255,180,210,0.09);
-  --text:     #f5e8f0;
-  --muted:    rgba(245,232,240,0.45);
-  --faint:    rgba(245,232,240,0.1);
+  --bg:       #080a18;
+  --surface:  #0e1028;
+  --surface2: #141638;
+  --border:   rgba(120,130,240,0.11);
+  --text:     #eaebfc;
+  --muted:    rgba(234,235,252,0.48);
+  --faint:    rgba(234,235,252,0.07);
 
-  --gold:     #e8a0c0;
-  --purple:   #c478b0;
-  --emerald:  #e07890;
-  --rose:     #d4609a;
-  --blush:    #eda0b8;
-  --amber:    #e8907a;
-  --slate:    #b87ab0;
-  --lavender: #d480a0;
+  --gold:     #8fa0f0;
+  --purple:   #a090e8;
+  --emerald:  #7ad4c0;
+  --rose:     #f08080;
+  --blush:    #b0b8f8;
+  --amber:    #eac070;
+  --slate:    #7080c8;
+  --lavender: #c0a8ff;
+
+  /* Extended theme tokens */
+  --accent-2:  #c8a8ff;
+  --shadow:    rgba(8,10,32,0.65);
+  --glow:      rgba(143,160,240,0.22);
+  --selection: rgba(143,160,240,0.20);
+  --hover-bg:  rgba(120,130,240,0.06);
 
   --font-display: var(--font-cormorant), 'Cormorant Garamond', serif;
   --font-body:    var(--font-inter), 'Inter', sans-serif;
+  --font-mono:    var(--font-jetbrains), 'JetBrains Mono', monospace;
 
   /* Aurora — overridden per theme */
-  --aurora-1: rgba(200,60,130,0.10);
-  --aurora-2: rgba(160,40,120,0.08);
-  --aurora-3: rgba(230,100,160,0.05);
+  --aurora-1: rgba(80,90,240,0.12);
+  --aurora-2: rgba(100,60,220,0.08);
+  --aurora-3: rgba(140,100,255,0.05);
   --aurora-pos-1: top right;
   --aurora-pos-2: bottom left;
-  --aurora-pos-3: center top;
+  --aurora-pos-3: 60% 20%;
+
+  /* Motion */
+  --t-fast: 150ms ease;
+  --t-base: 200ms ease;
+  --t-slow: 250ms ease;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,6 +58,25 @@ html, body {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Mono elements */
+code, pre, kbd, samp { font-family: var(--font-mono); }
+
+/* Selection */
+::selection { background: var(--selection); }
+
+/* Focus ring */
+:focus-visible {
+  outline: 1.5px solid var(--glow);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--muted) 40%, transparent); }
 
 /* Skeleton shimmer */
 @keyframes shimmer {
@@ -69,19 +101,11 @@ html, body {
   .tabs-wrap { flex-wrap: wrap !important; gap: 0.3rem !important; }
   main { padding: 0 1rem 3rem !important; }
 
-  /* Header: stack vertically on mobile */
   header { padding: 1.25rem 1rem 0.5rem !important; flex-direction: column !important; gap: 0.75rem !important; }
   header > div:last-child { justify-content: flex-start !important; flex-wrap: wrap !important; }
 
-  /* Cards full width */
   .card { border-radius: 10px !important; padding: 1rem !important; }
-
-  /* Habit row: allow horizontal scroll on the day grid */
   .habit-days { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Domain grid single column */
   .domain-grid { grid-template-columns: 1fr !important; }
-
-  /* Typography scale down */
   h1, .display { font-size: clamp(1.6rem, 8vw, 2.5rem) !important; }
 }
