@@ -24,6 +24,7 @@ import PulseSection from '@/components/pulse/PulseSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import DomainGrid from '@/components/domains/DomainGrid'
 import SubsCard from '@/components/subscriptions/SubsCard'
+import GiftsCard from '@/components/subscriptions/GiftsCard'
 import WishlistCard from '@/components/watchlist/WishlistCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
 import CouncilSection from '@/components/council/CouncilSection'
@@ -175,7 +176,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         case 'domains':  return <DomainGrid key="domains" />
         case 'spending': return (
           <div key="spending" className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-            <SubsCard /><BuylistCard />
+            <SubsCard /><BuylistCard /><GiftsCard />
           </div>
         )
         case 'wishlist': return <WishlistCard key="wishlist" />
