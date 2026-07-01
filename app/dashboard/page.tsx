@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from './DashboardClient'
-import type { SectionConfig } from '@/components/ui/CustomizePanel'
+import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -18,6 +18,7 @@ export default async function DashboardPage() {
   if (prefs === null) redirect('/onboard')
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
+  const focusConfig = prefs?.layout?.focus as FocusConfig | null
 
   return (
     <DashboardClient
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
       initialMode={prefs?.mode ?? 'balanced'}
       initialCalendarUrl={prefs?.calendar_url ?? null}
       initialLayout={layout ?? null}
+      initialFocusConfig={focusConfig ?? null}
     />
   )
 }

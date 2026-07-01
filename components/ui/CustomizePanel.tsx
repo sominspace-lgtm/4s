@@ -7,6 +7,17 @@ export interface SectionConfig {
   id: string
   label: string
   hidden: boolean
+  collapsed?: boolean
+}
+
+export interface FocusConfig {
+  sections: string[]
+  showTimer: boolean
+}
+
+export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
+  sections: ['brief', 'work', 'habits', 'capture', 'calendar'],
+  showTimer: false,
 }
 
 export const DEFAULT_SECTIONS: SectionConfig[] = [
@@ -34,12 +45,13 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
 interface CustomizePanelProps {
   open: boolean
   sections: SectionConfig[]
+  focusConfig: FocusConfig
   userId: string
   onChange: (sections: SectionConfig[]) => void
   onClose: () => void
 }
 
-export default function CustomizePanel({ open, sections, userId, onChange, onClose }: CustomizePanelProps) {
+export default function CustomizePanel({ open, sections, focusConfig, userId, onChange, onClose }: CustomizePanelProps) {
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -53,7 +65,7 @@ export default function CustomizePanel({ open, sections, userId, onChange, onClo
 
   async function update(next: SectionConfig[]) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig } })
   }
 
   function toggle(id: string) {

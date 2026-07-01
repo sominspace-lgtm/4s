@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import SectionLabel from '@/components/ui/SectionLabel'
-import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
+import CustomizePanel, { DEFAULT_SECTIONS, DEFAULT_FOCUS_CONFIG, type SectionConfig, type FocusConfig } from '@/components/ui/CustomizePanel'
+import FocusViewPanel from '@/components/ui/FocusViewPanel'
+import TimerWidget from '@/components/focus/TimerWidget'
 import QuickCapture from '@/components/ui/QuickCapture'
 import TipsBanner from '@/components/ui/TipsBanner'
 import CompanionPanel from '@/components/companion/CompanionPanel'
@@ -44,6 +46,7 @@ interface Props {
   initialMode: string
   initialCalendarUrl: string | null
   initialLayout: SectionConfig[] | null
+  initialFocusConfig: FocusConfig | null
 }
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -67,10 +70,11 @@ const SECTION_GROUPS: Record<string, string> = {
   shared:   'companions',
 }
 
-export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout }: Props) {
+export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
+  const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
   const isGamer = mode === 'gamer'
   const { xp, level, progress, gain } = useXP(isGamer)
 
@@ -89,8 +93,14 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [zenView, setZenView] = useState(false)
+  const [focusPanelOpen, setFocusPanelOpen] = useState(false)
 
-  const ZEN_SECTIONS = new Set(['brief', 'work', 'habits', 'capture', 'calendar'])
+  async function toggleCollapsed(id: string) {
+    const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
+    setSections(next)
+    const supabase = createClient()
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig } })
+  }
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -122,7 +132,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       })
   }, [])
 
-  const visible = sections.filter(s => !s.hidden && (!zenView || ZEN_SECTIONS.has(s.id)))
+  const visible = sections.filter(s => !s.hidden && (!zenView || focusConfig.sections.includes(s.id)))
 
   function sectionLabel(id: string, idx: number): { label: string; group?: string } {
     const group = SECTION_GROUPS[id]
@@ -139,37 +149,44 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
   }
 
-  function renderSection(id: string, idx: number) {
+  function renderSection(id: string, idx: number, collapsed: boolean) {
     const { label, group } = sectionLabel(id, idx)
     const isFirst = idx === 0
 
     const heading = (
-      <SectionLabel key={`lbl-${id}`} style={isFirst ? { marginTop: 0 } : undefined} group={group}>
+      <SectionLabel
+        key={`lbl-${id}`}
+        style={isFirst ? { marginTop: 0 } : undefined}
+        group={group}
+        collapsed={collapsed}
+        onToggleCollapse={() => toggleCollapsed(id)}
+      >
         {label}
       </SectionLabel>
     )
 
-    switch (id) {
-      case 'brief':    return <>{heading}<DailyBrief key="brief" /></>
-      case 'capture':  return <>{heading}<CaptureSection key="capture" /></>
-      case 'work':     return <>{heading}<MasterDashboard key="work" /></>
-      case 'pulse':    return <>{heading}<PulseSection key="pulse" /></>
-      case 'habits':   return <>{heading}<HabitTracker key="habits" /></>
-      case 'domains':  return <>{heading}<DomainGrid key="domains" /></>
-      case 'spending': return (
-        <>
-          {heading}
+    const body = (() => {
+      switch (id) {
+        case 'brief':    return <DailyBrief key="brief" />
+        case 'capture':  return <CaptureSection key="capture" />
+        case 'work':     return <MasterDashboard key="work" />
+        case 'pulse':    return <PulseSection key="pulse" />
+        case 'habits':   return <HabitTracker key="habits" />
+        case 'domains':  return <DomainGrid key="domains" />
+        case 'spending': return (
           <div key="spending" className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
             <SubsCard /><BuylistCard />
           </div>
-        </>
-      )
-      case 'wishlist': return <>{heading}<WishlistCard key="wishlist" /></>
-      case 'calendar': return <>{heading}<CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} /></>
-      case 'council':  return <>{heading}<CouncilSection key="council" mode={mode} /></>
-      case 'shared':   return <>{heading}<SharedWithMeSection key="shared" /></>
-      default: return null
-    }
+        )
+        case 'wishlist': return <WishlistCard key="wishlist" />
+        case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
+        case 'council':  return <CouncilSection key="council" mode={mode} />
+        case 'shared':   return <SharedWithMeSection key="shared" />
+        default: return null
+      }
+    })()
+
+    return <>{heading}<div style={{ display: collapsed ? 'none' : undefined }}>{body}</div></>
   }
 
   return (
@@ -196,7 +213,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
           </span>
         </div>
       )}
-      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
         <button
           onClick={() => setZenView(z => !z)}
           title="Focus View — hide secondary sections, show only what matters today"
@@ -205,20 +222,30 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         >
           <span style={{ opacity: 0.7 }}>◐</span> {zenView ? 'Exit focus view' : 'Focus view'}
         </button>
+        <button
+          onClick={() => setFocusPanelOpen(true)}
+          title="Configure what Focus View shows"
+          className="btn btn-ghost"
+          style={{ fontSize: '0.65rem' }}
+        >⊹</button>
       </div>
       <SectionNav sections={visible} />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
-      <CustomizePanel open={customizeOpen} sections={sections} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <TipsBanner />
         <WeekReview />
+        {zenView && focusConfig.showTimer && (
+          <div style={{ marginBottom: '1.2rem' }}><TimerWidget /></div>
+        )}
         {visible.map((s, i) => (
-          <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i)}</div>
+          <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed)}</div>
         ))}
         <FeedbackBox />
       </main>
