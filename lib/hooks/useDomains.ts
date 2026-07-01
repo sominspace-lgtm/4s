@@ -60,12 +60,17 @@ export function useDomains() {
     save(DEFAULT_DOMAINS)
   }
 
+  function toggleShared(id: string) {
+    save(domains.map(d => d.id === id ? { ...d, shared: !d.shared } : d))
+  }
+
   return {
     domains,
     visible: domains.filter(d => !d.hidden),
     loading,
     move,
     toggle,
+    toggleShared,
     addDomain,
     removeDomain,
     resetToDefault,

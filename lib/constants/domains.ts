@@ -4,6 +4,8 @@ export interface Domain {
   sublabel: string
   icon: string
   color: string
+  hidden?: boolean
+  shared?: boolean
 }
 
 export const DOMAINS: Domain[] = [

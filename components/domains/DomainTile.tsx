@@ -6,12 +6,13 @@ import type { Domain } from '@/lib/constants/domains'
 import { useDomainCaptures } from '@/lib/hooks/useDomainCaptures'
 
 interface DomainTileProps {
-  domain: Domain
+  domain: Domain & { shared?: boolean }
   lastTouched: string | null
   onOpen: () => void
+  onToggleShare?: () => void
 }
 
-export default function DomainTile({ domain, lastTouched, onOpen }: DomainTileProps) {
+export default function DomainTile({ domain, lastTouched, onOpen, onToggleShare }: DomainTileProps) {
   const [open, setOpen] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [draft, setDraft] = useState('')
@@ -69,7 +70,20 @@ export default function DomainTile({ domain, lastTouched, onOpen }: DomainTilePr
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 400, letterSpacing: '0.01em', color: 'var(--text)', lineHeight: 1.2 }}>{domain.label}</div>
             <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginTop: '0.1rem' }}>{domain.sublabel}</div>
           </div>
-          <span style={{ color: 'var(--muted)', fontSize: '0.7rem', marginTop: '0.15rem', transition: 'transform 0.3s', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}>▾</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+            {onToggleShare && (
+              <button
+                onClick={e => { e.stopPropagation(); onToggleShare() }}
+                title={domain.shared ? 'Shared with companions' : 'Share with companions'}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  fontSize: '0.65rem', color: domain.shared ? 'var(--gold)' : 'var(--muted)',
+                  opacity: domain.shared ? 0.85 : hovered ? 0.35 : 0, transition: 'opacity 0.15s',
+                }}
+              >⇆</button>
+            )}
+            <span style={{ color: 'var(--muted)', fontSize: '0.7rem', marginTop: '0.15rem', transition: 'transform 0.3s', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+          </div>
         </div>
         <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.35rem', letterSpacing: '0.03em' }}>
           {touchedLabel} · {items.length} note{items.length !== 1 ? 's' : ''}

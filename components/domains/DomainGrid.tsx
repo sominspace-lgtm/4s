@@ -7,7 +7,7 @@ import DomainTile from './DomainTile'
 import DomainCustomizePanel from './DomainCustomizePanel'
 
 export default function DomainGrid() {
-  const { domains, visible, move, toggle, addDomain, removeDomain, resetToDefault } = useDomains()
+  const { domains, visible, move, toggle, toggleShared, addDomain, removeDomain, resetToDefault } = useDomains()
   const { touched, touch } = useDomainTouched()
   const [panelOpen, setPanelOpen] = useState(false)
 
@@ -47,6 +47,7 @@ export default function DomainGrid() {
               domain={d}
               lastTouched={touched[d.id] ?? null}
               onOpen={() => touch(d.id)}
+              onToggleShare={() => toggleShared(d.id)}
             />
           ))}
         </div>
