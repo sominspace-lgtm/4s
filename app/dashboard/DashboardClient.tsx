@@ -32,7 +32,7 @@ import { createClient } from '@/lib/supabase/client'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useXP } from '@/lib/hooks/useXP'
 import type { Mode } from '@/lib/constants/modes'
-import { t, type Lang } from '@/lib/i18n'
+import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
 
 interface Props {
@@ -79,10 +79,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return () => window.removeEventListener('4s:xp', onXP)
   }, [gain])
 
-  const [lang, setLang] = useState<Lang>(() => {
-    if (typeof window !== 'undefined') return (localStorage.getItem('4s-lang') as Lang) ?? 'en'
-    return 'en'
-  })
+  const lang = 'en' as const
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -182,12 +179,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onFocus={() => setFocusOpen(true)}
         onArchive={() => setArchiveOpen(true)}
         onHelp={() => setHelpOpen(true)}
-        lang={lang}
-        onLangToggle={() => {
-          const next = lang === 'en' ? 'ko' : 'en'
-          setLang(next)
-          localStorage.setItem('4s-lang', next)
-        }}
       />
 
       <QuickCapture />
