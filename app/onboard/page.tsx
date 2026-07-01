@@ -45,6 +45,7 @@ const MODES = [
   { id: 'hype',     label: 'Hype',      note: 'Energy, fire, momentum' },
   { id: 'teacher',  label: 'Teacher',   note: 'Reflective, growth-oriented' },
   { id: 'ceo',      label: 'CEO',       note: 'Decisive, direct, no fluff' },
+  { id: 'gamer',    label: '🎮 Gamer',  note: 'Earn XP · level up your life' },
 ]
 
 export default function OnboardPage() {

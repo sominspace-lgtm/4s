@@ -1,9 +1,8 @@
-export type Mode = 'balanced' | 'harsh' | 'peaceful' | 'teacher' | 'friend' | 'coach' | 'ceo' | 'monk' | 'hype'
+export type Mode = 'balanced' | 'harsh' | 'peaceful' | 'teacher' | 'friend' | 'coach' | 'ceo' | 'monk' | 'hype' | 'gamer'
 
 export interface ModeConfig {
   label: string
   description: string
-  // Transforms advice text for this mode
   transform: (advice: string, verdict: string, domain: string) => string
 }
 
@@ -48,7 +47,7 @@ export const MODES: Record<Mode, ModeConfig> = {
     transform: (a, verdict, domain) => {
       if (verdict === 'watch') return `hey, ${domain.toLowerCase()} looks a little rough — ${a.charAt(0).toLowerCase() + a.slice(1)}`
       if (verdict === 'fine') return `${domain} is good! ${a}`
-      return `${domain} is all good, nothing to worry about here 😌`
+      return `${domain} is all good, nothing to worry about here`
     },
   },
   coach: {
@@ -81,9 +80,18 @@ export const MODES: Record<Mode, ModeConfig> = {
     label: 'Hype',
     description: 'Enthusiastic, celebratory. Everything is a win or a challenge.',
     transform: (a, verdict, domain) => {
-      if (verdict === 'watch') return `Okay ${domain} needs some LOVE right now!! ${a} You can turn this around TODAY! 🔥`
-      if (verdict === 'fine') return `${domain} IS CRUSHING IT!! ${a} KEEP GOING!! 🚀`
-      return `${domain} is holding steady — stay locked in!! 💪`
+      if (verdict === 'watch') return `Okay ${domain} needs some LOVE right now!! ${a} You can turn this around TODAY!`
+      if (verdict === 'fine') return `${domain} IS CRUSHING IT!! ${a} KEEP GOING!!`
+      return `${domain} is holding steady — stay locked in!!`
+    },
+  },
+  gamer: {
+    label: 'Gamer',
+    description: 'RPG mode. Earn XP. Level up your life.',
+    transform: (a, verdict, domain) => {
+      if (verdict === 'watch') return `[QUEST ALERT] ${domain} needs attention, adventurer. ${a} Complete tasks to earn XP.`
+      if (verdict === 'fine') return `[DOMAIN SECURED] ${domain} is holding strong. ${a} Keep grinding.`
+      return `[IDLE ZONE] ${domain} is quiet. Assign a quest to activate this domain.`
     },
   },
 }

@@ -14,6 +14,8 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import OnboardingChecklist from '@/components/onboarding/OnboardingChecklist'
 import MobileNav from '@/components/ui/MobileNav'
+import XPBar from '@/components/gamer/XPBar'
+import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import CaptureSection from '@/components/capture/CaptureSection'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -29,6 +31,7 @@ import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
+import { useXP } from '@/lib/hooks/useXP'
 import type { Mode } from '@/lib/constants/modes'
 
 interface Props {
@@ -66,6 +69,16 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
+  const isGamer = mode === 'gamer'
+  const { xp, level, progress, gain } = useXP(isGamer)
+
+  // Listen for XP gain events (fired by work/habit hooks)
+  useEffect(() => {
+    function onXP(e: Event) { gain((e as CustomEvent<number>).detail) }
+    window.addEventListener('4s:xp', onXP)
+    return () => window.removeEventListener('4s:xp', onXP)
+  }, [gain])
+
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -165,6 +178,15 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       />
 
       <QuickCapture />
+      {isGamer && (
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <XPBar />
+          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>
+            LVL {level} · {xp} total XP · +25 per task, +10 per habit
+          </span>
+        </div>
+      )}
+      <SectionNav sections={visible} />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
@@ -176,7 +198,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         <OnboardingChecklist userId={userId} />
         <WeekReview />
         {visible.map((s, i) => (
-          <div key={s.id}>{renderSection(s.id, i)}</div>
+          <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i)}</div>
         ))}
         <FeedbackBox />
       </main>

@@ -42,6 +42,7 @@ function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: strin
     case 'ceo':      return { prefix: '' }
     case 'monk':     return { prefix: isNight ? 'Rest now,' : 'Be present,' }
     case 'hype':     return { prefix: time === 'morning' ? 'RISE UP,' : time === 'afternoon' ? "LET'S GO," : time === 'evening' ? 'LAST PUSH,' : 'STILL GOING??' }
+    case 'gamer':    return { prefix: time === 'morning' ? 'New day, new quests,' : time === 'afternoon' ? 'Mid-session,' : time === 'evening' ? 'Final boss hour,' : 'Night grind,' }
     default:         return { prefix: `Good ${time},` }
   }
 }

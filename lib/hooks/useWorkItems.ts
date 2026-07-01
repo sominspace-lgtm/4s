@@ -69,8 +69,11 @@ export function useWorkItems() {
 
   async function setStatus(id: string, status: WorkItem['status']) {
     const item = items.find(i => i.id === id)
-    const { error } = await supabase.from('work_items').update({ status }).eq('id', id)
+    const { error } = await supabase.from('work_items').update({ status, ...(status === 'done' ? { completed_at: new Date().toISOString() } : {}) }).eq('id', id)
     if (error) return
+
+    // Emit XP event when completing
+    if (status === 'done') window.dispatchEvent(new CustomEvent('4s:xp', { detail: 25 }))
 
     if (status === 'done') {
       // If recurring, create next occurrence

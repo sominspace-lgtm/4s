@@ -51,6 +51,7 @@ export function useHabits() {
       if (!user) return
       await supabase.from('habit_completions').insert({ habit_id: habitId, completed_date: dateStr, user_id: user.id })
       setCompletions(prev => ({ ...prev, [habitId]: [...(prev[habitId] || []), dateStr] }))
+      window.dispatchEvent(new CustomEvent('4s:xp', { detail: 10 }))
     }
   }
 

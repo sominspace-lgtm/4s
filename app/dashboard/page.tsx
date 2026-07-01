@@ -14,7 +14,8 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .single()
 
-  if (!prefs?.onboarded) redirect('/onboard')
+  // Only redirect brand-new users who have no prefs row yet
+  if (prefs === null) redirect('/onboard')
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
 

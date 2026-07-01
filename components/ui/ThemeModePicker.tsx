@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { THEMES, THEME_LABELS } from './ThemeProvider'
 import { MODES, type Mode } from '@/lib/constants/modes'
 
+const MODE_ICONS: Partial<Record<Mode, string>> = { gamer: '🎮', hype: '🔥', monk: '☯', peaceful: '🌿' }
+
 const THEME_PREVIEW: Record<string, { bg: string; accent: string }> = {
   sunset:    { bg: '#1a0f18', accent: '#d45090' },
   midnight:  { bg: '#080c14', accent: '#90b8f0' },
@@ -135,7 +137,9 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
                       transition: 'background 0.15s',
                     }}
                   >
-                    <div style={{ fontSize: '0.75rem', color: active ? 'var(--text)' : 'var(--muted)', fontWeight: active ? 500 : 300 }}>{cfg.label}</div>
+                    <div style={{ fontSize: '0.75rem', color: active ? 'var(--text)' : 'var(--muted)', fontWeight: active ? 500 : 300 }}>
+                      {MODE_ICONS[key] ? `${MODE_ICONS[key]} ` : ''}{cfg.label}
+                    </div>
                     <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.1rem', lineHeight: 1.4 }}>{cfg.description}</div>
                   </button>
                 )
