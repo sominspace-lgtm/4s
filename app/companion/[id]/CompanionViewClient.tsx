@@ -36,37 +36,42 @@ export default function CompanionViewClient({ ownerId, ownerEmail, sections, vie
 
       if (sections.includes('work')) {
         loads.push(
-          supabase.from('work_items').select('id, title, project, status, due_date')
-            .eq('user_id', ownerId).eq('shared', true).neq('status', 'done')
-            .then(({ data }) => setWork(data ?? []))
+          Promise.resolve(
+            supabase.from('work_items').select('id, title, project, status, due_date')
+              .eq('user_id', ownerId).eq('shared', true).neq('status', 'done')
+          ).then(({ data }) => setWork(data ?? []))
         )
       }
       if (sections.includes('habits')) {
         loads.push(
-          supabase.from('habits').select('id, name, category')
-            .eq('user_id', ownerId).eq('shared', true)
-            .then(({ data }) => setHabits(data ?? []))
+          Promise.resolve(
+            supabase.from('habits').select('id, name, category')
+              .eq('user_id', ownerId).eq('shared', true)
+          ).then(({ data }) => setHabits(data ?? []))
         )
       }
       if (sections.includes('wishlist')) {
         loads.push(
-          supabase.from('wishlist_items').select('id, name, price, category')
-            .eq('user_id', ownerId)
-            .then(({ data }) => setWishlist(data ?? []))
+          Promise.resolve(
+            supabase.from('wishlist_items').select('id, name, price, category')
+              .eq('user_id', ownerId)
+          ).then(({ data }) => setWishlist(data ?? []))
         )
       }
       if (sections.includes('domains') || sections.includes('capture')) {
         loads.push(
-          supabase.from('captures').select('id, text, domain, created_at')
-            .eq('user_id', ownerId).order('created_at', { ascending: false }).limit(50)
-            .then(({ data }) => setCaptures(data ?? []))
+          Promise.resolve(
+            supabase.from('captures').select('id, text, domain, created_at')
+              .eq('user_id', ownerId).order('created_at', { ascending: false }).limit(50)
+          ).then(({ data }) => setCaptures(data ?? []))
         )
       }
       if (sections.includes('spending')) {
         loads.push(
-          supabase.from('subscriptions').select('id, name, amount, billing_cycle')
-            .eq('user_id', ownerId)
-            .then(({ data }) => setSubs(data ?? []))
+          Promise.resolve(
+            supabase.from('subscriptions').select('id, name, amount, billing_cycle')
+              .eq('user_id', ownerId)
+          ).then(({ data }) => setSubs(data ?? []))
         )
       }
 
