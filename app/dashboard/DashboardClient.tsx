@@ -20,6 +20,7 @@ import CouncilSection from '@/components/council/CouncilSection'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import DigestCard from '@/components/digest/DigestCard'
 import MasterDashboard from '@/components/work/MasterDashboard'
+import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import type { Mode } from '@/lib/constants/modes'
@@ -150,6 +151,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         {visible.map((s, i) => (
           <div key={s.id}>{renderSection(s.id, i)}</div>
         ))}
+        <FeedbackBox />
       </main>
     </ThemeProvider>
   )

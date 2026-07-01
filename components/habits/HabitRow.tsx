@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { parseISO, isToday, isFuture } from 'date-fns'
 import { calcStreak, getDayLabel, DOMAIN_COLORS } from '@/lib/utils/habits'
+import { createClient } from '@/lib/supabase/client'
 
 interface HabitRowProps {
-  habit: { id: string; name: string; category: string | null }
+  habit: { id: string; name: string; category: string | null; shared?: boolean }
   completions: string[]
   days: string[]
   onToggle: (habitId: string, date: string) => void
@@ -14,9 +15,16 @@ interface HabitRowProps {
 
 export default function HabitRow({ habit, completions, days, onToggle, onDelete }: HabitRowProps) {
   const [hovered, setHovered] = useState(false)
+  const [shared, setShared] = useState(habit.shared ?? false)
   const done = new Set(completions)
   const streak = calcStreak(completions)
   const color = DOMAIN_COLORS[habit.category ?? ''] ?? 'var(--muted)'
+
+  async function toggleShare() {
+    const next = !shared
+    setShared(next)
+    await createClient().from('habits').update({ shared: next }).eq('id', habit.id)
+  }
 
   return (
     <div
@@ -29,13 +37,13 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete 
         <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>{habit.name}</span>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.3rem', flex: 1 }}>
+      <div style={{ display: 'flex', gap: '0.3rem', flex: 1, overflowX: 'auto' }}>
         {days.map(d => {
           const isT = isToday(parseISO(d))
           const future = isFuture(parseISO(d + 'T23:59:59'))
           const isDone = done.has(d)
           return (
-            <div key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' }}>
+            <div key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', flexShrink: 0 }}>
               <div style={{ fontSize: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', lineHeight: 1 }}>
                 {getDayLabel(d)}
               </div>
@@ -45,9 +53,7 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete 
                   width: 22, height: 22, borderRadius: '5px', cursor: future ? 'default' : 'pointer',
                   border: isT ? `1.5px solid ${color}` : '1px solid var(--faint)',
                   background: isDone ? `color-mix(in srgb, ${color} 40%, transparent)` : 'transparent',
-                  opacity: future ? 0.25 : 1,
-                  transition: 'all 0.15s',
-                  flexShrink: 0,
+                  opacity: future ? 0.25 : 1, transition: 'all 0.15s', flexShrink: 0,
                 }}
               />
             </div>
@@ -58,6 +64,17 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete 
       <div style={{ fontSize: '0.68rem', color: 'var(--muted)', whiteSpace: 'nowrap', minWidth: '40px', textAlign: 'right', flexShrink: 0 }}>
         {streak > 0 ? <><span style={{ color, fontSize: '0.78rem' }}>{streak}</span>d</> : '—'}
       </div>
+
+      {/* Share toggle */}
+      <button
+        onClick={toggleShare}
+        title={shared ? 'Shared with companions' : 'Share with companions'}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+          fontSize: '0.62rem', color: shared ? 'var(--gold)' : 'var(--muted)',
+          opacity: shared ? 0.8 : hovered ? 0.3 : 0, transition: 'opacity 0.15s',
+        }}
+      >⇆</button>
 
       <button
         onClick={() => onDelete(habit.id)}

@@ -62,7 +62,22 @@ html, body {
 @media (max-width: 600px) {
   .grid-auto { grid-template-columns: 1fr !important; }
   .hide-mobile { display: none !important; }
-  .tabs-wrap { flex-wrap: wrap !important; }
+  .tabs-wrap { flex-wrap: wrap !important; gap: 0.3rem !important; }
   main { padding: 0 1rem 3rem !important; }
-  header { padding: 1.5rem 1rem 0.5rem !important; }
+
+  /* Header: stack vertically on mobile */
+  header { padding: 1.25rem 1rem 0.5rem !important; flex-direction: column !important; gap: 0.75rem !important; }
+  header > div:last-child { justify-content: flex-start !important; flex-wrap: wrap !important; }
+
+  /* Cards full width */
+  .card { border-radius: 10px !important; padding: 1rem !important; }
+
+  /* Habit row: allow horizontal scroll on the day grid */
+  .habit-days { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Domain grid single column */
+  .domain-grid { grid-template-columns: 1fr !important; }
+
+  /* Typography scale down */
+  h1, .display { font-size: clamp(1.6rem, 8vw, 2.5rem) !important; }
 }
