@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format, parseISO } from 'date-fns'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 interface ArchivedItem {
   id: string
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export default function ArchivePanel({ open, onClose }: Props) {
+  const lang = useLang()
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
   const [items, setItems] = useState<ArchivedItem[]>([])
@@ -72,8 +75,8 @@ export default function ArchivePanel({ open, onClose }: Props) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Archive</div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.15rem' }}>Completed & cancelled work</div>
+            <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>{t('Archive', lang)}</div>
+            <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.15rem' }}>{t('Completed & cancelled work', lang)}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
@@ -87,15 +90,15 @@ export default function ArchivePanel({ open, onClose }: Props) {
               border: `1px solid ${filter === f ? 'var(--gold)' : 'var(--border)'}`,
               background: filter === f ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
               color: filter === f ? 'var(--gold)' : 'var(--muted)',
-            }}>{f}</button>
+          }}>{t(f, lang)}</button>
           ))}
         </div>
 
         {loading ? (
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>Loading…</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>{t('Loading…', lang)}</div>
         ) : Object.keys(grouped).length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.4 }}>
-            Nothing archived yet.<br />Complete tasks to see them here.
+            {t('Nothing archived yet.', lang)}<br />{t('Complete tasks to see them here.', lang)}
           </div>
         ) : (
           Object.entries(grouped).map(([month, monthItems]) => (

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useSubscriptions, urgency } from '@/lib/hooks/useSubscriptions'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 const URGENCY_COLOR = { soon: 'var(--rose)', near: 'var(--amber)', fine: 'rgba(232,160,192,0.3)' }
 
@@ -13,6 +15,7 @@ const inputStyle: React.CSSProperties = {
 }
 
 export default function SubsCard() {
+  const lang = useLang()
   const { subs, add, remove, total } = useSubscriptions()
   const [name, setName] = useState('')
   const [cost, setCost] = useState('')
@@ -27,13 +30,13 @@ export default function SubsCard() {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.4rem 1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, letterSpacing: '0.02em' }}>Renewals</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, letterSpacing: '0.02em' }}>{t('Renewals', lang)}</div>
         <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-          <strong style={{ color: 'var(--gold)', fontWeight: 400 }}>${total.toFixed(2)}</strong> / mo
+          <strong style={{ color: 'var(--gold)', fontWeight: 400 }}>${total.toFixed(2)}</strong> {t('/ mo', lang)}
         </div>
       </div>
 
-      {subs.length === 0 && <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', marginBottom: '0.5rem' }}>No subscriptions added yet.</p>}
+      {subs.length === 0 && <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', marginBottom: '0.5rem' }}>{t('No subscriptions added yet.', lang)}</p>}
 
       {subs.map(s => {
         const u = urgency(s.renewal_date)

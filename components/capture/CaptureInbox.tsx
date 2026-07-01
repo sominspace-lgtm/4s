@@ -2,20 +2,14 @@
 
 import { useState } from 'react'
 import { useCaptures } from '@/lib/hooks/useCaptures'
+import { useLang } from '@/lib/LangContext'
+import { t, domainLabel } from '@/lib/i18n'
 
-const DOMAINS = [
-  { id: 'biz-active', label: 'Business (Active)' },
-  { id: 'biz-future', label: 'Business (Future)' },
-  { id: 'money', label: 'Money' },
-  { id: 'health', label: 'Health' },
-  { id: 'relationship', label: 'Relationship' },
-  { id: 'creative', label: 'Creative' },
-  { id: 'home', label: 'Home' },
-  { id: 'self', label: 'Self' },
-]
+const DOMAIN_IDS = ['biz-active', 'biz-future', 'money', 'health', 'relationship', 'creative', 'home', 'self']
 
 export default function CaptureInbox() {
   const { captures, remove, assign } = useCaptures()
+  const lang = useLang()
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState<string | null>(null)
 
@@ -33,7 +27,7 @@ export default function CaptureInbox() {
           fontFamily: 'var(--font-body)',
         }}
       >
-        <span>⬤ Unsorted</span>
+        <span>{t('⬤ Unsorted', lang)}</span>
         {captures.length > 0 && (
           <span style={{
             background: 'color-mix(in srgb, var(--rose) 15%, transparent)',
@@ -51,7 +45,7 @@ export default function CaptureInbox() {
         }}>
           {captures.length === 0 ? (
             <div style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center', padding: '0.5rem 0' }}>
-              Nothing captured yet
+              {t('Nothing captured yet', lang)}
             </div>
           ) : captures.map(c => (
             <div key={c.id} style={{
@@ -72,8 +66,8 @@ export default function CaptureInbox() {
                     fontSize: '0.72rem', padding: '0.2em 0.4em', outline: 'none',
                   }}
                 >
-                  <option value="">Assign to…</option>
-                  {DOMAINS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                  <option value="">{t('Assign to…', lang)}</option>
+                  {DOMAIN_IDS.map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
                 </select>
               ) : (
                 <button onClick={() => setAssigning(c.id)} style={{
@@ -81,7 +75,7 @@ export default function CaptureInbox() {
                   background: 'none', border: '1px solid var(--border)', borderRadius: '6px',
                   padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>
-                  assign
+                  {t('assign', lang)}
                 </button>
               )}
               <button onClick={() => remove(c.id)} aria-label="Delete capture" style={{

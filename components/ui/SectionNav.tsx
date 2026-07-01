@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 interface Section { id: string; label?: string }
 
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export default function SectionNav({ sections }: Props) {
+  const lang = useLang()
   const [active, setActive] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
@@ -60,7 +63,7 @@ export default function SectionNav({ sections }: Props) {
         }}
       >
         {sections.map(s => {
-          const label = NAV_LABELS[s.id] ?? s.id
+          const label = t(NAV_LABELS[s.id] ?? s.id, lang)
           const isActive = active === s.id
           return (
             <button

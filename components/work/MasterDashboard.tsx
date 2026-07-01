@@ -4,6 +4,8 @@ import { useState, useRef, useCallback } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItems'
 import { SkeletonRow } from '@/components/ui/Skeleton'
+import { useLang } from '@/lib/LangContext'
+import { t, domainLabel } from '@/lib/i18n'
 
 const P_COLOR: Record<number, string> = { 1: 'var(--rose)', 2: 'var(--gold)', 3: 'var(--muted)' }
 const P_DOT:   Record<number, string> = { 1: '●', 2: '●', 3: '○' }
@@ -41,6 +43,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
   onToggleShared: (id: string) => void
   onUpdate: (id: string, patch: Partial<WorkItem>) => void
 }) {
+  const lang = useLang()
   const [hovered, setHovered] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
@@ -123,9 +126,9 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
             appearance: 'none', WebkitAppearance: 'none',
           }}
         >
-          <option value="">+ domain</option>
-          {Object.entries(DOMAIN_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
+          <option value="">{t('+ domain', lang)}</option>
+          {Object.keys(DOMAIN_LABELS).map(k => (
+            <option key={k} value={k}>{domainLabel(k, lang)}</option>
           ))}
         </select>
 
@@ -170,7 +173,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
               onBlur={saveNotes}
               onKeyDown={e => { if (e.key === 'Escape') { setEditingNotes(false); setNotesDraft(item.notes ?? '') } }}
               rows={2}
-              placeholder="Add notes, links, context…"
+              placeholder={t('Add notes, links, context…', lang)}
               style={{
                 width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
                 borderRadius: '6px', color: 'var(--text)', fontFamily: 'var(--font-body)',
@@ -186,7 +189,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
                 fontSize: '0.6rem', color: 'var(--muted)', opacity: hovered ? 0.45 : 0.2, fontFamily: 'var(--font-body)',
                 transition: 'opacity 0.15s',
               }}
-            >+ add notes</button>
+            >{t('+ add notes', lang)}</button>
           )}
         </div>
       )}
@@ -195,6 +198,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
 }
 
 export default function MasterDashboard() {
+  const lang = useLang()
   const { items, loading, add, setStatus, update, remove, toggleShared } = useWorkItems()
   const [filter, setFilter] = useState<Filter>('all')
   const [showAdd, setShowAdd] = useState(false)
@@ -254,7 +258,7 @@ export default function MasterDashboard() {
 
         <div style={{ display: 'flex', gap: '0.2rem' }} className="tabs-wrap">
           {(['all', 'today', 'overdue', 'done'] as Filter[]).map(f => (
-            <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{f}</button>
+            <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{t(f, lang)}</button>
           ))}
         </div>
       </div>
@@ -290,7 +294,7 @@ export default function MasterDashboard() {
           border: '1px dashed var(--border)', background: 'transparent',
           color: 'var(--muted)', fontFamily: 'var(--font-body)', fontSize: '0.72rem',
           cursor: 'pointer', opacity: 0.6,
-        }}>+ add item</button>
+        }}>{t('+ add task', lang)}</button>
       ) : (
         <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <input
@@ -298,7 +302,7 @@ export default function MasterDashboard() {
             value={title}
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setShowAdd(false); setTitle('') } }}
-            placeholder="What needs to get done? (Enter to save)"
+            placeholder={t('New task title', lang)}
             style={inputStyle}
           />
 
@@ -319,13 +323,13 @@ export default function MasterDashboard() {
                 </select>
                 <select value={domain} onChange={e => setDomain(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
                   <option value="">No domain</option>
-                  {Object.entries(DOMAIN_LABELS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                  {Object.keys(DOMAIN_LABELS).map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
                 </select>
                 <select value={recurDays} onChange={e => setRecurDays(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
-                  {RECUR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {RECUR_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.label, lang)}</option>)}
                 </select>
               </div>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes, links, context…" rows={2} style={{ ...inputStyle, resize: 'none' }} />
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('Notes (optional)', lang)} rows={2} style={{ ...inputStyle, resize: 'none' }} />
             </>
           )}
 
@@ -333,11 +337,11 @@ export default function MasterDashboard() {
             <button onClick={() => { setShowAdd(false); setTitle(''); setShowMeta(false) }} style={{
               padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid var(--border)',
               background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
-            }}>cancel</button>
+            }}>{t('cancel', lang)}</button>
             <button onClick={submit} style={{
               padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.12)',
               background: 'rgba(255,255,255,0.05)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
-            }}>add</button>
+            }}>{t('Add task', lang)}</button>
           </div>
         </div>
       )}

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { THEMES, THEME_LABELS } from './ThemeProvider'
 import { MODES, type Mode } from '@/lib/constants/modes'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 const MODE_ICONS: Partial<Record<Mode, string>> = { gamer: '🎮', hype: '🔥', monk: '☯', peaceful: '🌿' }
 
@@ -34,6 +36,7 @@ interface ThemeModePickerProps {
 }
 
 export default function ThemeModePicker({ userId, currentTheme, currentMode, onThemeChange, onModeChange }: ThemeModePickerProps) {
+  const lang = useLang()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'theme' | 'mode'>('theme')
   const ref = useRef<HTMLDivElement>(null)
@@ -87,8 +90,8 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
         }}>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.9rem' }}>
-            <button style={tabStyle(tab === 'theme')} onClick={() => setTab('theme')}>Theme</button>
-            <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>Mode</button>
+            <button style={tabStyle(tab === 'theme')} onClick={() => setTab('theme')}>{t('Theme', lang)}</button>
+            <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>{t('Mode', lang)}</button>
           </div>
 
           {tab === 'theme' && (
@@ -148,7 +151,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
           )}
 
           <div style={{ marginTop: '0.8rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, letterSpacing: '0.04em' }}>
-            theme + mode stack — mix freely
+            {t('theme + mode stack — mix freely', lang)}
           </div>
         </div>
       )}

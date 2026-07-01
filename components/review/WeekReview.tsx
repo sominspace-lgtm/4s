@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { startOfWeek, endOfWeek, format, parseISO, isWithinInterval, subWeeks } from 'date-fns'
+import { useLang } from '@/lib/LangContext'
+import { t, fmtWeekOf } from '@/lib/i18n'
 
 interface WeekData {
   doneItems:       number
@@ -15,6 +17,7 @@ interface WeekData {
 }
 
 export default function WeekReview() {
+  const lang = useLang()
   const supabase = createClient()
   const [data, setData] = useState<WeekData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -84,7 +87,9 @@ export default function WeekReview() {
   if (loading || !data) return null
   if (data.doneItems === 0 && data.habitsCompleted === 0 && data.captures === 0) return null
 
-  const weekLabel = `Week of ${format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM d')}`
+  const weekLabel = lang === 'ko'
+    ? fmtWeekOf(startOfWeek(new Date(), { weekStartsOn: 1 }))
+    : `Week of ${format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM d')}`
 
   return (
     <div style={{
@@ -94,25 +99,25 @@ export default function WeekReview() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--text)', fontWeight: 400 }}>Week in Review</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--text)', fontWeight: 400 }}>{t('Week in Review', lang)}</div>
           <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.1rem' }}>{weekLabel}</div>
         </div>
         {data.streak > 1 && (
           <div style={{ fontSize: '0.72rem', color: 'var(--gold)', background: 'color-mix(in srgb, var(--gold) 10%, transparent)', padding: '0.3rem 0.75rem', borderRadius: '99px', border: '1px solid color-mix(in srgb, var(--gold) 20%, transparent)' }}>
-            {data.streak}d streak
+            {data.streak}{t('d streak', lang)}
           </div>
         )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-        <Stat value={data.doneItems} label="tasks done" color="var(--emerald)" />
-        <Stat value={data.habitsCompleted} label={`of ${data.totalHabits} habits`} color="var(--purple)" />
-        <Stat value={data.captures} label="ideas captured" color="var(--amber)" />
+        <Stat value={data.doneItems} label={t('tasks done', lang)} color="var(--emerald)" />
+        <Stat value={data.habitsCompleted} label={lang === 'ko' ? `${data.totalHabits}개 습관 중` : `of ${data.totalHabits} habits`} color="var(--purple)" />
+        <Stat value={data.captures} label={t('ideas captured', lang)} color="var(--amber)" />
       </div>
 
       {data.topProject && (
         <div style={{ marginTop: '0.85rem', fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6 }}>
-          Most active: <span style={{ color: 'var(--gold)' }}>{data.topProject}</span>
+          {t('Most active:', lang)} <span style={{ color: 'var(--gold)' }}>{data.topProject}</span>
         </div>
       )}
     </div>

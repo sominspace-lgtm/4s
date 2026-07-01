@@ -2,20 +2,14 @@
 
 import { useState } from 'react'
 import { useCaptures } from '@/lib/hooks/useCaptures'
+import { useLang } from '@/lib/LangContext'
+import { t, domainLabel } from '@/lib/i18n'
 
-const DOMAINS = [
-  { id: 'biz-active', label: 'Business (Active)' },
-  { id: 'biz-future', label: 'Business (Future)' },
-  { id: 'money', label: 'Money' },
-  { id: 'health', label: 'Health' },
-  { id: 'relationship', label: 'Relationship' },
-  { id: 'creative', label: 'Creative' },
-  { id: 'home', label: 'Home' },
-  { id: 'self', label: 'Self' },
-]
+const DOMAIN_IDS = ['biz-active', 'biz-future', 'money', 'health', 'relationship', 'creative', 'home', 'self']
 
 export default function CaptureSection() {
   const { captures, add, remove, assign } = useCaptures()
+  const lang = useLang()
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState<string | null>(null)
@@ -40,14 +34,14 @@ export default function CaptureSection() {
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Dump a thought — assign it later"
+          placeholder={t('Dump a thought — assign it later', lang)}
           aria-label="Quick capture"
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
             color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 300,
           }}
         />
-        <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, flexShrink: 0 }}>↵ enter</span>
+        <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, flexShrink: 0 }}>{t('↵ enter', lang)}</span>
       </div>
 
       {/* Inbox */}
@@ -62,7 +56,7 @@ export default function CaptureSection() {
             fontFamily: 'var(--font-body)',
           }}
         >
-          <span>Unsorted</span>
+          <span>{t('Unsorted', lang)}</span>
           {captures.length > 0 && (
             <span style={{
               background: 'rgba(232,160,192,0.15)', color: 'var(--gold)',
@@ -80,7 +74,7 @@ export default function CaptureSection() {
           }}>
             {captures.length === 0 ? (
               <div style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center', padding: '0.5rem 0' }}>
-                Nothing captured yet
+                {t('Nothing captured yet', lang)}
               </div>
             ) : captures.map(c => (
               <div key={c.id} style={{
@@ -101,8 +95,8 @@ export default function CaptureSection() {
                       fontSize: '0.72rem', padding: '0.2em 0.4em', outline: 'none',
                     }}
                   >
-                    <option value="">Assign to…</option>
-                    {DOMAINS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                    <option value="">{t('Assign to…', lang)}</option>
+                    {DOMAIN_IDS.map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
                   </select>
                 ) : (
                   <button onClick={() => setAssigning(c.id)} style={{
@@ -110,7 +104,7 @@ export default function CaptureSection() {
                     border: '1px solid var(--border)', borderRadius: '6px',
                     padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
                   }}>
-                    assign
+                    {t('assign', lang)}
                   </button>
                 )}
                 <button onClick={() => remove(c.id)} aria-label="Delete" style={{

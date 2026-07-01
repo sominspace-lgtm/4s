@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import EnergyToggle, { type Energy } from './EnergyToggle'
 import PulseItem from './PulseItem'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 export default function PulseSection() {
+  const lang = useLang()
   const { items, snooze } = useFocusItems()
   const [energy, setEnergy] = useState<Energy>('any')
 
@@ -22,20 +25,20 @@ export default function PulseSection() {
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '160px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span style={colLabel}>On your mind</span>
+            <span style={colLabel}>{t('On your mind', lang)}</span>
             <EnergyToggle value={energy} onChange={setEnergy} />
           </div>
           {focus.length === 0
-            ? <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic' }}>Nothing flagged</p>
+            ? <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic' }}>{t('Nothing flagged', lang)}</p>
             : focus.map(i => <PulseItem key={i.id} item={i} onSnooze={snooze} />)
           }
         </div>
         <div style={{ flex: 1, minWidth: '160px' }}>
           <div style={{ marginBottom: '0.6rem' }}>
-            <span style={colLabel}>Quietly becoming a problem</span>
+            <span style={colLabel}>{t('Quietly becoming a problem', lang)}</span>
           </div>
           {problems.length === 0
-            ? <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic' }}>All clear</p>
+            ? <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic' }}>{t('All clear', lang)}</p>
             : problems.map(i => <PulseItem key={i.id} item={i} onSnooze={snooze} />)
           }
         </div>

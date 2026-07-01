@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 const TYPE_ICON: Record<string, string> = {
   capture:  '○',
@@ -24,6 +26,7 @@ interface Props {
 }
 
 export default function SearchModal({ open, onClose }: Props) {
+  const lang = useLang()
   const [query, setQuery] = useState('')
   const [idx, setIdx] = useState(0)
   const { results, loading, search, clear } = useSearch()
@@ -73,7 +76,7 @@ export default function SearchModal({ open, onClose }: Props) {
             value={query}
             onChange={e => handleChange(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Search everything…"
+            placeholder={t('Search everything…', lang)}
             style={{
               flex: 1, background: 'none', border: 'none', outline: 'none',
               color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.92rem', fontWeight: 300,
@@ -87,27 +90,27 @@ export default function SearchModal({ open, onClose }: Props) {
         {results.length > 0 && (
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
             {results.map((r, i) => (
-              <ResultRow key={r.id} result={r} active={i === idx} onHover={() => setIdx(i)} onClick={onClose} />
+              <ResultRow key={r.id} result={r} active={i === idx} onHover={() => setIdx(i)} onClick={onClose} lang={lang} />
             ))}
           </div>
         )}
 
         {query && !loading && results.length === 0 && (
           <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>
-            No results for "{query}"
+            {lang === 'ko' ? `"${query}"에 대한 결과가 없습니다` : `No results for "${query}"`}
           </div>
         )}
 
         {!query && (
           <div style={{ padding: '1rem 1.25rem', fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.4 }}>
-            Search captures, work items, wishlist, habits…
+            {t('Search captures, work items, wishlist, habits…', lang)}
           </div>
         )}
 
         <div style={{ padding: '0.5rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>
           {[['↑↓', 'navigate'], ['↵', 'jump to'], ['esc', 'close']].map(([key, label]) => (
             <span key={key} style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4 }}>
-              <kbd style={{ background: 'var(--surface2)', padding: '0.15em 0.4em', borderRadius: '3px', marginRight: '0.3em' }}>{key}</kbd>{label}
+              <kbd style={{ background: 'var(--surface2)', padding: '0.15em 0.4em', borderRadius: '3px', marginRight: '0.3em' }}>{key}</kbd>{t(label, lang)}
             </span>
           ))}
         </div>
@@ -116,7 +119,7 @@ export default function SearchModal({ open, onClose }: Props) {
   )
 }
 
-function ResultRow({ result, active, onHover, onClick }: { result: SearchResult; active: boolean; onHover: () => void; onClick: () => void }) {
+function ResultRow({ result, active, onHover, onClick, lang }: { result: SearchResult; active: boolean; onHover: () => void; onClick: () => void; lang: import('@/lib/i18n').Lang }) {
   const color = TYPE_COLOR[result.type]
   return (
     <div
@@ -134,7 +137,7 @@ function ResultRow({ result, active, onHover, onClick }: { result: SearchResult;
         <div style={{ fontSize: '0.82rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{result.title}</div>
         {result.subtitle && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, marginTop: '0.1rem' }}>{result.subtitle}</div>}
       </div>
-      <span style={{ fontSize: '0.6rem', color, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>{result.type}</span>
+      <span style={{ fontSize: '0.6rem', color, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>{t(result.type, lang)}</span>
     </div>
   )
 }

@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 export default function FeedbackBox() {
+  const lang = useLang()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [sent, setSent] = useState(false)
@@ -26,7 +29,7 @@ export default function FeedbackBox() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem',
     }}>
       <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.4 }}>
-        suggestions &amp; feedback
+        {t('suggestions & feedback', lang)}
       </div>
 
       {!open && !sent && (
@@ -35,13 +38,13 @@ export default function FeedbackBox() {
           padding: '0.55rem 1.2rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
           fontSize: '0.75rem', cursor: 'pointer', opacity: 0.6,
         }}>
-          Share an idea or report something →
+          {t('Share an idea or report something →', lang)}
         </button>
       )}
 
       {sent && (
         <div style={{ fontSize: '0.78rem', color: 'var(--emerald)', fontFamily: 'var(--font-body)' }}>
-          Got it — thank you ✓
+          {t('Got it — thank you ✓', lang)}
         </div>
       )}
 
@@ -54,7 +57,7 @@ export default function FeedbackBox() {
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="What would make 4S better? Bug, feature idea, anything…"
+            placeholder={t('What would make 4S better? Bug, feature idea, anything…', lang)}
             rows={3}
             autoFocus
             style={{
@@ -69,19 +72,19 @@ export default function FeedbackBox() {
               background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
               padding: '0.4rem 0.9rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
               fontSize: '0.72rem', cursor: 'pointer',
-            }}>cancel</button>
+            }}>{t('cancel (btn)', lang)}</button>
             <button onClick={submit} disabled={!text.trim() || sending} style={{
               background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: '8px',
               padding: '0.4rem 0.9rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
               fontSize: '0.72rem', cursor: text.trim() ? 'pointer' : 'default',
               opacity: text.trim() ? 1 : 0.4,
-            }}>{sending ? 'sending…' : 'send'}</button>
+            }}>{sending ? t('sending…', lang) : t('send', lang)}</button>
           </div>
         </div>
       )}
 
       <p style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.3, fontFamily: 'var(--font-body)' }}>
-        I read every message.
+        {t('I read every message.', lang)}
       </p>
     </div>
   )

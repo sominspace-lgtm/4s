@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLang } from '@/lib/LangContext'
+import { t } from '@/lib/i18n'
 
 interface WorkItem { id: string; title: string; project: string | null }
 interface Habit    { id: string; name: string; category: string | null }
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export default function FocusMode({ open, onClose }: Props) {
+  const lang = useLang()
   const supabase = createClient()
 
   const [workItems, setWorkItems] = useState<WorkItem[]>([])
@@ -164,43 +167,43 @@ export default function FocusMode({ open, onClose }: Props) {
             padding: '0.55rem 1.5rem', borderRadius: '10px', cursor: 'pointer',
             background: 'var(--gold)', border: 'none', color: 'var(--bg)',
             fontFamily: 'var(--font-body)', fontSize: '0.8rem',
-          }}>start</button>
+          }}>{t('start', lang)}</button>
         )}
         {running && (
           <button onClick={stop} style={{
             padding: '0.55rem 1.5rem', borderRadius: '10px', cursor: 'pointer',
             background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
             fontFamily: 'var(--font-body)', fontSize: '0.8rem',
-          }}>pause</button>
+          }}>{t('pause', lang)}</button>
         )}
         {(seconds < preset * 60) && (
           <button onClick={resetTimer} style={{
             padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer',
             background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
             fontFamily: 'var(--font-body)', fontSize: '0.8rem',
-          }}>reset</button>
+          }}>{t('reset', lang)}</button>
         )}
       </div>
 
       {finished && (
         <div style={{ fontSize: '0.85rem', color: 'var(--emerald)', textAlign: 'center' }}>
-          Session complete — great work.
-          <br /><button onClick={startTimer} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>go again</button>
+          {t('Session complete — great work.', lang)}
+          <br /><button onClick={startTimer} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>{t('go again', lang)}</button>
         </div>
       )}
 
       {/* Selection */}
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: 440 }}>
         <Select
-          label="Working on"
-          placeholder="Pick a task…"
+          label={t('Working on', lang)}
+          placeholder={t('Pick a task…', lang)}
           options={workItems.map(w => ({ id: w.id, label: w.title, sub: w.project ?? undefined }))}
           value={selectedWork}
           onChange={setSelectedWork}
         />
         <Select
-          label="Building"
-          placeholder="Pick a habit…"
+          label={t('Building', lang)}
+          placeholder={t('Pick a habit…', lang)}
           options={habits.map(h => ({ id: h.id, label: h.name, sub: h.category ?? undefined }))}
           value={selectedHabit}
           onChange={setSelectedHabit}

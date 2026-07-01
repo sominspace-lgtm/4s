@@ -5,6 +5,8 @@ import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { getLast7Days } from '@/lib/utils/habits'
+import { useLang } from '@/lib/LangContext'
+import { t, fmtDate, getInsightKO } from '@/lib/i18n'
 
 function Stat({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
@@ -20,6 +22,7 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
 }
 
 export default function DailyBrief() {
+  const lang = useLang()
   const { items } = useWorkItems()
   const { habits, completions } = useHabits()
   const { captures } = useCaptures()
@@ -42,6 +45,7 @@ export default function DailyBrief() {
   )
 
   function getInsight(): string {
+    if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inboxCount, inProgress })
     if (overdue > 0) return `${overdue} item${overdue > 1 ? 's are' : ' is'} overdue — tackle those first.`
     if (dueToday > 0 && habitsDoneToday === 0 && habitsTotal > 0) return `${dueToday} thing${dueToday > 1 ? 's' : ''} due today and no habits checked yet.`
     if (habitsTotal > 0 && habitsDoneToday === habitsTotal) return 'All habits done. Strong day.'
@@ -73,23 +77,23 @@ export default function DailyBrief() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           {!hasStats && (
-            <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.6 }}>Nothing urgent. A good day to build.</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.6 }}>{t('Nothing urgent. A good day to build.', lang)}</span>
           )}
-          {showOverdue   && <Stat label="overdue"     value={overdue}    color="var(--rose)" />}
-          {showToday     && <Stat label="due today"   value={dueToday}   color="var(--amber)" />}
-          {showProgress  && <Stat label="in progress" value={inProgress} color="var(--gold)" />}
+          {showOverdue   && <Stat label={t('overdue (stat)', lang)}  value={overdue}    color="var(--rose)" />}
+          {showToday     && <Stat label={t('due today', lang)}       value={dueToday}   color="var(--amber)" />}
+          {showProgress  && <Stat label={t('in progress', lang)}     value={inProgress} color="var(--gold)" />}
           {showHabits    && (
             <Stat
-              label={weekRate !== null ? `habits · ${weekRate}% this week` : 'habits today'}
+              label={weekRate !== null ? (lang === 'ko' ? `습관 · ${weekRate}% 이번 주` : `habits · ${weekRate}% this week`) : t('habits today', lang)}
               value={`${habitsDoneToday}/${habitsTotal}`}
               color={habitsDoneToday === habitsTotal ? 'var(--emerald)' : undefined}
             />
           )}
-          {showInbox     && <Stat label="in inbox"    value={inboxCount} color="var(--muted)" />}
+          {showInbox     && <Stat label={t('in inbox', lang)}        value={inboxCount} color="var(--muted)" />}
         </div>
 
         <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
-          {format(new Date(), 'EEEE, MMM d')}
+          {lang === 'ko' ? fmtDate(new Date(), 'ko') : format(new Date(), 'EEEE, MMM d')}
         </div>
       </div>
 
