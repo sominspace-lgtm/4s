@@ -55,10 +55,10 @@ export default function CompanionViewClient({ ownerId, ownerEmail, sections, vie
             .then(({ data }) => setWishlist(data ?? []))
         )
       }
-      if (sections.includes('domains')) {
+      if (sections.includes('domains') || sections.includes('capture')) {
         loads.push(
           supabase.from('captures').select('id, text, domain, created_at')
-            .eq('user_id', ownerId).eq('shared', true).order('created_at', { ascending: false }).limit(30)
+            .eq('user_id', ownerId).order('created_at', { ascending: false }).limit(50)
             .then(({ data }) => setCaptures(data ?? []))
         )
       }
@@ -130,10 +130,21 @@ export default function CompanionViewClient({ ownerId, ownerEmail, sections, vie
               </Section>
             )}
 
+            {/* Inbox captures */}
+            {sections.includes('capture') && captures.filter(c => !c.domain).length > 0 && (
+              <Section title="Captures / Inbox" icon="○">
+                {captures.filter(c => !c.domain).slice(0, 15).map(c => (
+                  <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--faint)', fontSize: '0.78rem', color: 'var(--text)' }}>
+                    {c.text}
+                  </div>
+                ))}
+              </Section>
+            )}
+
             {/* Domain notes */}
-            {sections.includes('domains') && captures.length > 0 && (
+            {sections.includes('domains') && captures.filter(c => c.domain).length > 0 && (
               <Section title="Domain notes" icon="○">
-                {captures.slice(0, 10).map(c => (
+                {captures.filter(c => c.domain).slice(0, 15).map(c => (
                   <div key={c.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--faint)', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', gap: '0.6rem' }}>
                     {c.domain && <span style={{ fontSize: '0.6rem', color: 'var(--gold)', opacity: 0.7, flexShrink: 0, marginTop: '0.1rem' }}>{c.domain}</span>}
                     <span>{c.text}</span>

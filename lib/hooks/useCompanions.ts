@@ -16,10 +16,10 @@ export interface Companion {
 export const SHAREABLE_SECTIONS = [
   { id: 'work',      label: 'Work Hub',           note: 'Items you mark ⇆' },
   { id: 'habits',    label: 'Habits',              note: 'Habits you mark ⇆' },
+  { id: 'capture',   label: 'Captures / Inbox',   note: 'Your idea inbox' },
   { id: 'domains',   label: 'All Domains',         note: 'Notes in all domains' },
   { id: 'wishlist',  label: 'Wishlist',            note: 'Your full wishlist' },
   { id: 'spending',  label: 'Subscriptions',       note: 'Monthly spending' },
-  { id: 'pulse',     label: "Today's Pulse",       note: 'Your focus & energy' },
 ]
 
 export function useCompanions(userId: string) {
