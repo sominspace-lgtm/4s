@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { getLast7Days, DOMAIN_COLORS } from '@/lib/utils/habits'
 import HabitRow from './HabitRow'
@@ -23,6 +23,12 @@ export default function HabitTracker() {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const days = getLast7Days()
+
+  useEffect(() => {
+    function onOpenRequest() { setShowForm(true) }
+    window.addEventListener('app:open-add-habit', onOpenRequest)
+    return () => window.removeEventListener('app:open-add-habit', onOpenRequest)
+  }, [])
 
   async function handleAdd() {
     if (!name.trim()) return
@@ -60,7 +66,7 @@ export default function HabitTracker() {
       {!loading && habits.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '1.2rem 0', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <div style={{ fontSize: '1.2rem', opacity: 0.3 }}>○</div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>No habits yet. Add one to start building streaks.</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>No streaks yet. Start with one small promise.</p>
         </div>
       )}
 

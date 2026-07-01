@@ -20,6 +20,18 @@ const TYPE_COLOR: Record<string, string> = {
   note:     'var(--purple)',
 }
 
+interface Command {
+  id: string
+  label: string
+  hint?: string
+  icon: string
+  run: () => void
+}
+
+function goTo(sectionId: string) {
+  document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -32,6 +44,28 @@ export default function SearchModal({ open, onClose }: Props) {
   const { results, loading, search, clear } = useSearch()
   const inputRef = useRef<HTMLInputElement>(null)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const commands: Command[] = [
+    { id: 'go-brief',    label: 'Go to Today',       icon: '◒', run: () => goTo('brief') },
+    { id: 'go-work',     label: 'Go to Work Hub',    icon: '◈', run: () => goTo('work') },
+    { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', run: () => goTo('habits') },
+    { id: 'go-capture',  label: 'Go to Capture',     icon: '○', run: () => goTo('capture') },
+    { id: 'go-domains',  label: 'Go to Domains',     icon: '◇', run: () => goTo('domains') },
+    { id: 'go-money',    label: 'Go to Money',       icon: '✦', run: () => goTo('spending') },
+    { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', run: () => goTo('calendar') },
+    { id: 'go-council',  label: 'Go to Council',     icon: '⌂', run: () => goTo('council') },
+    { id: 'add-task',    label: 'Add Task',          hint: 'Work Hub', icon: '+', run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
+    { id: 'add-habit',   label: 'Add Habit',         hint: 'Habits',   icon: '+', run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
+    { id: 'capture-thought', label: 'Capture a Thought', hint: 'Capture', icon: '+', run: () => { goTo('capture'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
+    { id: 'switch-theme', label: 'Switch Theme',     icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
+    { id: 'switch-mode',  label: 'Switch Mode',      icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
+  ]
+
+  const matchedCommands = query.trim()
+    ? commands.filter(c => c.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : commands.slice(0, 6)
+
+  const totalCount = matchedCommands.length + results.length
 
   useEffect(() => {
     if (open) {
@@ -46,11 +80,16 @@ export default function SearchModal({ open, onClose }: Props) {
     debounce.current = setTimeout(() => search(v), 200)
   }
 
+  function runAt(i: number) {
+    if (i < matchedCommands.length) { matchedCommands[i].run(); onClose(); return }
+    if (results[i - matchedCommands.length]) onClose()
+  }
+
   function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'ArrowDown')  { e.preventDefault(); setIdx(i => Math.min(i + 1, results.length - 1)) }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); setIdx(i => Math.min(i + 1, totalCount - 1)) }
     if (e.key === 'ArrowUp')    { e.preventDefault(); setIdx(i => Math.max(i - 1, 0)) }
     if (e.key === 'Escape')     onClose()
-    if (e.key === 'Enter' && results[idx]) onClose()
+    if (e.key === 'Enter')      runAt(idx)
   }
 
   if (!open) return null
@@ -86,24 +125,31 @@ export default function SearchModal({ open, onClose }: Props) {
           <kbd style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, background: 'var(--surface2)', padding: '0.2em 0.5em', borderRadius: '4px' }}>esc</kbd>
         </div>
 
-        {/* Results */}
-        {results.length > 0 && (
+        {/* Commands + results */}
+        {(matchedCommands.length > 0 || results.length > 0) && (
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+            {matchedCommands.length > 0 && (
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.4, padding: '0.6rem 1.25rem 0.3rem' }}>
+                Quick actions
+              </div>
+            )}
+            {matchedCommands.map((c, i) => (
+              <CommandRow key={c.id} command={c} active={i === idx} onHover={() => setIdx(i)} onClick={() => { c.run(); onClose() }} />
+            ))}
+            {results.length > 0 && (
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.4, padding: '0.6rem 1.25rem 0.3rem' }}>
+                Results
+              </div>
+            )}
             {results.map((r, i) => (
-              <ResultRow key={r.id} result={r} active={i === idx} onHover={() => setIdx(i)} onClick={onClose} lang={lang} />
+              <ResultRow key={r.id} result={r} active={matchedCommands.length + i === idx} onHover={() => setIdx(matchedCommands.length + i)} onClick={onClose} lang={lang} />
             ))}
           </div>
         )}
 
-        {query && !loading && results.length === 0 && (
+        {query && !loading && results.length === 0 && matchedCommands.length === 0 && (
           <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>
             {lang === 'ko' ? `"${query}"에 대한 결과가 없습니다` : `No results for "${query}"`}
-          </div>
-        )}
-
-        {!query && (
-          <div style={{ padding: '1rem 1.25rem', fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.4 }}>
-            {t('Search captures, work items, wishlist, habits…', lang)}
           </div>
         )}
 
@@ -116,6 +162,25 @@ export default function SearchModal({ open, onClose }: Props) {
         </div>
       </div>
     </>
+  )
+}
+
+function CommandRow({ command, active, onHover, onClick }: { command: Command; active: boolean; onHover: () => void; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={onHover}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
+        padding: '0.7rem 1.25rem', cursor: 'pointer',
+        background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+        transition: 'background 0.1s',
+      }}
+    >
+      <span style={{ fontSize: '0.8rem', color: 'var(--gold)', opacity: 0.7, flexShrink: 0, width: '1em', textAlign: 'center' }}>{command.icon}</span>
+      <div style={{ flex: 1, minWidth: 0, fontSize: '0.82rem', color: 'var(--text)' }}>{command.label}</div>
+      {command.hint && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>{command.hint}</span>}
+    </div>
   )
 }
 

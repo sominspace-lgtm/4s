@@ -96,10 +96,10 @@ export default function Header({ email, userId, initialName, initialTheme, initi
   }
 
   return (
-    <header style={{ padding: '2.5rem 2rem 1rem', maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <header style={{ padding: '2.5rem 2rem 1rem', maxWidth: 'min(1080px, 94vw)', margin: '0 auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
       <div>
         <div style={{
-          fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3rem)',
+          fontFamily: 'var(--font-display)', fontSize: 'var(--text-display)',
           fontWeight: 300, letterSpacing: '0.02em', lineHeight: 1.1,
           display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.2em',
         }}>

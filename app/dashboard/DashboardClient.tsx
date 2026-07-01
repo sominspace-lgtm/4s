@@ -88,11 +88,14 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [focusOpen, setFocusOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [zenView, setZenView] = useState(false)
+
+  const ZEN_SECTIONS = new Set(['brief', 'work', 'habits', 'capture', 'calendar'])
 
   // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSearchOpen(s => !s) }
+      if ((e.metaKey || e.ctrlKey) && (e.key === '/' || e.key.toLowerCase() === 'k')) { e.preventDefault(); setSearchOpen(s => !s) }
       if (e.key === 'Escape') { setSearchOpen(false); setFocusOpen(false) }
     }
     window.addEventListener('keydown', onKey)
@@ -119,7 +122,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       })
   }, [])
 
-  const visible = sections.filter(s => !s.hidden)
+  const visible = sections.filter(s => !s.hidden && (!zenView || ZEN_SECTIONS.has(s.id)))
 
   function sectionLabel(id: string, idx: number): { label: string; group?: string } {
     const group = SECTION_GROUPS[id]
@@ -186,13 +189,23 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
       <QuickCapture />
       {isGamer && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <XPBar />
           <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>
             LVL {level} · {xp} total XP · +25 per task, +10 per habit
           </span>
         </div>
       )}
+      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setZenView(z => !z)}
+          title="Focus View — hide secondary sections, show only what matters today"
+          className="btn btn-ghost"
+          style={{ fontSize: '0.65rem', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+        >
+          <span style={{ opacity: 0.7 }}>◐</span> {zenView ? 'Exit focus view' : 'Focus view'}
+        </button>
+      </div>
       <SectionNav sections={visible} />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
@@ -201,7 +214,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       <CustomizePanel open={customizeOpen} sections={sections} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
-      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
+      <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <TipsBanner />
         <WeekReview />
         {visible.map((s, i) => (

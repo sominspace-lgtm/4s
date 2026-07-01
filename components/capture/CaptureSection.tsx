@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
@@ -14,6 +14,13 @@ export default function CaptureSection() {
   const [domain, setDomain] = useState('')
   const [open, setOpen] = useState(false)
   const [assigning, setAssigning] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    function onFocusRequest() { inputRef.current?.focus() }
+    window.addEventListener('app:focus-capture', onFocusRequest)
+    return () => window.removeEventListener('app:focus-capture', onFocusRequest)
+  }, [])
 
   async function handleKey(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !text.trim()) return
@@ -33,10 +40,11 @@ export default function CaptureSection() {
       }}>
         <span style={{ fontSize: '0.85rem', color: 'var(--muted)', flexShrink: 0, userSelect: 'none' }}>◌</span>
         <input
+          ref={inputRef}
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
-          placeholder={t('Dump a thought — assign it later', lang)}
+          placeholder={t('Brain full? Drop it here — we’ll organize it later.', lang)}
           aria-label="Quick capture"
           style={{
             flex: 1, background: 'transparent', border: 'none', outline: 'none',
@@ -90,7 +98,7 @@ export default function CaptureSection() {
           }}>
             {captures.length === 0 ? (
               <div style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center', padding: '0.5rem 0' }}>
-                {t('Nothing captured yet', lang)}
+                {t('Nothing waiting here. Good sign.', lang)}
               </div>
             ) : captures.map(c => (
               <div key={c.id} style={{

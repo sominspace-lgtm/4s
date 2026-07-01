@@ -6,20 +6,20 @@ interface SectionLabelProps {
 
 export default function SectionLabel({ children, style, group }: SectionLabelProps) {
   return (
-    <div style={{ margin: '2.2rem 0 0.85rem', ...style }}>
+    <div style={{ margin: 'var(--space-large) 0 1rem', ...style }}>
       {group && (
         <div style={{
           fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase',
-          color: 'var(--muted)', opacity: 0.35, marginBottom: '0.35rem',
+          color: 'var(--muted)', opacity: 0.35, marginBottom: '0.4rem',
           fontFamily: 'var(--font-body)',
         }}>{group}</div>
       )}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '0.6rem',
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
       }}>
         <span style={{
-          fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'var(--muted)', fontFamily: 'var(--font-body)', opacity: 0.8,
+          fontSize: 'var(--text-section)', letterSpacing: '0.01em',
+          color: 'var(--text)', fontFamily: 'var(--font-display)', fontWeight: 400, opacity: 0.9,
         }}>{children}</span>
         <div style={{ flex: 1, height: '1px', background: 'var(--faint)' }} />
       </div>

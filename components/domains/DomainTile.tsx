@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { formatDistanceToNow, parseISO } from 'date-fns'
+import { formatDistanceToNow, parseISO, differenceInDays } from 'date-fns'
 import type { Domain } from '@/lib/constants/domains'
 import { useDomainCaptures } from '@/lib/hooks/useDomainCaptures'
 
@@ -38,6 +38,11 @@ export default function DomainTile({ domain, lastTouched, onOpen, onToggleShare 
     ? `reviewed ${formatDistanceToNow(parseISO(lastTouched))} ago`
     : 'never reviewed'
 
+  const daysSince = lastTouched ? differenceInDays(new Date(), parseISO(lastTouched)) : Infinity
+  const needsAttention = daysSince > 7
+  const statusLabel = needsAttention ? 'needs attention' : 'steady'
+  const statusColor = needsAttention ? 'var(--rose)' : 'var(--emerald)'
+
   const glowStyle = (open || hovered) ? {
     borderColor: `color-mix(in srgb, ${domain.color} 40%, transparent)`,
     boxShadow: `0 0 24px color-mix(in srgb, ${domain.color} 14%, transparent), inset 0 0 0 1px color-mix(in srgb, ${domain.color} 10%, transparent)`,
@@ -51,7 +56,8 @@ export default function DomainTile({ domain, lastTouched, onOpen, onToggleShare 
       style={{
         background: 'var(--surface)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '14px',
         padding: '1.4rem 1.5rem 1.2rem', position: 'relative',
-        transition: 'border-color 0.25s, box-shadow 0.25s, background 0.2s', userSelect: 'none',
+        transition: 'border-color 0.25s, box-shadow 0.25s, background 0.2s, transform 0.2s', userSelect: 'none',
+        transform: (open || hovered) ? 'translateY(-2px)' : 'none',
         ...glowStyle,
       }}
     >
@@ -85,8 +91,16 @@ export default function DomainTile({ domain, lastTouched, onOpen, onToggleShare 
             <span style={{ color: 'var(--muted)', fontSize: '0.7rem', marginTop: '0.15rem', transition: 'transform 0.3s', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
           </div>
         </div>
-        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.35rem', letterSpacing: '0.03em' }}>
-          {touchedLabel} · {items.length} note{items.length !== 1 ? 's' : ''}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.03em' }}>
+            {touchedLabel} · {items.length} note{items.length !== 1 ? 's' : ''}
+          </span>
+          <span style={{
+            fontSize: '0.56rem', letterSpacing: '0.05em', textTransform: 'uppercase',
+            color: statusColor, opacity: 0.85, padding: '0.1em 0.5em', borderRadius: '99px',
+            background: `color-mix(in srgb, ${statusColor} 12%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)`,
+          }}>{statusLabel}</span>
         </div>
       </div>
 

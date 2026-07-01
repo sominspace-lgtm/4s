@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItems'
 import { SkeletonRow } from '@/components/ui/Skeleton'
@@ -211,6 +211,12 @@ export default function MasterDashboard() {
   const [recurDays, setRecurDays] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    function onOpenRequest() { setShowAdd(true); setTimeout(() => titleRef.current?.focus(), 40) }
+    window.addEventListener('app:open-add-task', onOpenRequest)
+    return () => window.removeEventListener('app:open-add-task', onOpenRequest)
+  }, [])
+
   const submit = useCallback(async () => {
     if (!title.trim()) return
     await add({
@@ -246,11 +252,14 @@ export default function MasterDashboard() {
   })
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.2rem 1.4rem' }}>
+    <div style={{
+      background: 'var(--surface2)', border: '1px solid var(--border)', borderTop: '2px solid color-mix(in srgb, var(--gold) 45%, var(--border))',
+      borderRadius: '16px', padding: '1.3rem 1.5rem', boxShadow: '0 12px 32px var(--shadow)',
+    }}>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem', gap: '0.5rem', flexWrap: 'wrap' }} className="tabs-wrap">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem', gap: '0.5rem', flexWrap: 'wrap' }} className="tabs-wrap">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <span style={{ fontSize: '0.88rem', color: 'var(--text)', fontWeight: 400 }}>Work Hub</span>
+          <span style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>Work Hub</span>
           {overdueCount > 0 && <span style={{ fontSize: '0.6rem', color: 'var(--rose)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{overdueCount} overdue</span>}
           {todayCount > 0   && <span style={{ fontSize: '0.6rem', color: 'var(--amber)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{todayCount} due today</span>}
         </div>
@@ -274,7 +283,7 @@ export default function MasterDashboard() {
         <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{filter === 'overdue' ? '🎉' : filter === 'done' ? '📋' : '✓'}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>
-            {filter === 'all'     && 'Queue clear. Add something to get started.'}
+            {filter === 'all'     && 'Queue clear. Add one thing worth finishing.'}
             {filter === 'today'   && 'Nothing due today.'}
             {filter === 'overdue' && 'Nothing overdue. Nice.'}
             {filter === 'done'    && 'No completed items yet.'}

@@ -45,6 +45,16 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  useEffect(() => {
+    function onOpenRequest(e: Event) {
+      const tabRequested = (e as CustomEvent<{ tab: 'theme' | 'mode' }>).detail?.tab
+      if (tabRequested) setTab(tabRequested)
+      setOpen(true)
+    }
+    window.addEventListener('app:open-theme-picker', onOpenRequest)
+    return () => window.removeEventListener('app:open-theme-picker', onOpenRequest)
+  }, [])
+
   async function setTheme(t: string) {
     onThemeChange(t)
     await supabase.from('user_prefs').upsert({ user_id: userId, theme: t })

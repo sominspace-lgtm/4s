@@ -18,7 +18,7 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
   }
 
   return (
-    <div style={{ background: 'var(--surface)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
+    <div className="card-interactive" style={{ background: 'var(--surface)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
       {showInput ? (
         <div style={{ padding: '2rem 1.8rem', textAlign: 'center' }}>
           <div style={{ fontSize: '1.6rem', color: 'var(--gold)', marginBottom: '0.8rem' }}>◎</div>
@@ -49,6 +49,17 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
         </div>
       ) : (
         <>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem',
+            padding: '0.9rem 1.25rem', borderBottom: '1px solid var(--border)',
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--gold) 5%, transparent), transparent)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ color: 'var(--gold)', fontSize: '0.9rem' }}>◎</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--text)' }}>Calendar</span>
+            </div>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.04em' }}>synced from Google Calendar</span>
+          </div>
           <iframe src={url} style={{ width: '100%', height: '420px', display: 'block', border: 'none' }} title="Google Calendar" />
           <button onClick={() => setShowInput(true)} style={{
             display: 'block', width: '100%', padding: '0.5rem', background: 'transparent',

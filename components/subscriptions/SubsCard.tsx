@@ -28,15 +28,15 @@ export default function SubsCard() {
   }
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.4rem 1.6rem' }}>
+    <div className="card-interactive" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.4rem 1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, letterSpacing: '0.02em' }}>{t('Renewals', lang)}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 400, letterSpacing: '0.02em', color: 'var(--muted)' }}>{t('Renewals', lang)}</div>
         <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
           <strong style={{ color: 'var(--gold)', fontWeight: 400 }}>${total.toFixed(2)}</strong> {t('/ mo', lang)}
         </div>
       </div>
 
-      {subs.length === 0 && <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', marginBottom: '0.5rem' }}>{t('No subscriptions added yet.', lang)}</p>}
+      {subs.length === 0 && <p style={{ fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic', marginBottom: '0.5rem' }}>{t('Nothing tracked yet. Add a subscription to see your monthly total.', lang)}</p>}
 
       {subs.map(s => {
         const u = urgency(s.renewal_date)
