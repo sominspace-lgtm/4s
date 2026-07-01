@@ -19,6 +19,7 @@ export const SHAREABLE_SECTIONS = [
   { id: 'capture',   label: 'Captures / Inbox',   note: 'Your idea inbox' },
   { id: 'domains',   label: 'All Domains',         note: 'Notes in all domains' },
   { id: 'wishlist',  label: 'Wishlist',            note: 'Your full wishlist' },
+  { id: 'buylist',   label: 'Buy List',            note: 'Items to buy' },
   { id: 'spending',  label: 'Subscriptions',       note: 'Monthly spending' },
 ]
 

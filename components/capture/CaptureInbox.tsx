@@ -25,17 +25,19 @@ export default function CaptureInbox() {
         onClick={() => setOpen(o => !o)}
         aria-label={`Toggle inbox (${captures.length} items)`}
         style={{
-          fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-          color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer',
-          padding: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem',
+          fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: captures.length > 0 ? 'var(--rose)' : 'var(--muted)',
+          fontWeight: captures.length > 0 ? 600 : 400,
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.45rem',
           fontFamily: 'var(--font-body)',
         }}
       >
-        <span>Unsorted</span>
+        <span>⬤ Unsorted</span>
         {captures.length > 0 && (
           <span style={{
-            background: 'rgba(232,160,192,0.15)', color: 'var(--gold)',
-            borderRadius: '10px', padding: '0.1em 0.5em', fontSize: '0.6rem',
+            background: 'color-mix(in srgb, var(--rose) 15%, transparent)',
+            color: 'var(--rose)', borderRadius: '10px', padding: '0.1em 0.55em', fontSize: '0.62rem', fontWeight: 500,
           }}>
             {captures.length}
           </span>

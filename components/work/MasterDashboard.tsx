@@ -32,15 +32,23 @@ const RECUR_OPTIONS = [
 
 type Filter = 'all' | 'today' | 'overdue' | 'done'
 
-function WorkRow({ item, onStatus, onRemove, onToggleShared }: {
+function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
   onStatus: (id: string, s: WorkItem['status']) => void
   onRemove: (id: string) => void
   onToggleShared: (id: string) => void
+  onUpdate: (id: string, patch: Partial<WorkItem>) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
   const urgency = dueUrgency(item.due_date)
+
+  async function saveNotes() {
+    setEditingNotes(false)
+    if (notesDraft !== (item.notes ?? '')) onUpdate(item.id, { notes: notesDraft || null })
+  }
 
   return (
     <div
@@ -70,16 +78,34 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared }: {
           </span>
         )}
 
-        {item.due_date && (
-          <span style={{
-            fontSize: '0.62rem', color: DUE_COLOR[urgency], whiteSpace: 'nowrap', flexShrink: 0,
-            fontWeight: urgency === 'overdue' ? 500 : 300,
-          }}>
-            {urgency === 'overdue' && '⚠ '}{format(parseISO(item.due_date), 'MMM d')}
-          </span>
-        )}
+        {/* Due date — always show if set, quick edit on click */}
+        {item.due_date ? (
+          <input
+            type="date"
+            defaultValue={item.due_date}
+            onChange={e => onUpdate(item.id, { due_date: e.target.value || null })}
+            style={{
+              background: 'transparent', border: 'none', outline: 'none',
+              fontSize: '0.62rem', color: DUE_COLOR[urgency], cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontWeight: urgency === 'overdue' ? 600 : 300,
+              width: '6.5rem', flexShrink: 0,
+            }}
+            title="Click to change due date"
+          />
+        ) : hovered ? (
+          <input
+            type="date"
+            onChange={e => { if (e.target.value) onUpdate(item.id, { due_date: e.target.value }) }}
+            style={{
+              background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)',
+              outline: 'none', fontSize: '0.62rem', color: 'var(--muted)', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', width: '6.5rem', flexShrink: 0, opacity: 0.5,
+            }}
+            title="Add due date"
+          />
+        ) : null}
 
-        {/* Share toggle — only visible on hover */}
+        {/* Share toggle */}
         <button
           onClick={() => onToggleShared(item.id)}
           title={item.shared ? 'Shared with companions' : 'Share with companions'}
@@ -98,16 +124,45 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared }: {
         }}>✕</button>
       </div>
 
-      {expanded && (item.notes || item.recur_days) && (
-        <div style={{ marginLeft: '1.6rem', paddingBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {item.notes && (
-            <p style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.65, fontWeight: 300, whiteSpace: 'pre-wrap' }}>
+      {/* Notes — always visible if present, click to edit */}
+      {item.status !== 'done' && (
+        <div style={{ marginLeft: '1.6rem', paddingBottom: expanded || item.notes ? '0.5rem' : 0 }}>
+          {item.notes && !editingNotes && (
+            <p
+              onClick={() => { setNotesDraft(item.notes ?? ''); setEditingNotes(true) }}
+              style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, whiteSpace: 'pre-wrap', cursor: 'text', opacity: 0.75 }}
+            >
               {item.notes}
             </p>
           )}
+          {editingNotes && (
+            <textarea
+              autoFocus
+              value={notesDraft}
+              onChange={e => setNotesDraft(e.target.value)}
+              onBlur={saveNotes}
+              onKeyDown={e => { if (e.key === 'Escape') { setEditingNotes(false); setNotesDraft(item.notes ?? '') } }}
+              rows={2}
+              placeholder="Add notes, links, context…"
+              style={{
+                width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
+                borderRadius: '6px', color: 'var(--text)', fontFamily: 'var(--font-body)',
+                fontSize: '0.72rem', padding: '0.4rem 0.6rem', outline: 'none', resize: 'none',
+              }}
+            />
+          )}
+          {!item.notes && !editingNotes && hovered && (
+            <button
+              onClick={() => setEditingNotes(true)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.35, fontFamily: 'var(--font-body)',
+              }}
+            >+ add notes</button>
+          )}
           {item.recur_days && (
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5 }}>
-              Repeats every {item.recur_days === 1 ? 'day' : item.recur_days === 7 ? 'week' : item.recur_days === 30 ? 'month' : `${item.recur_days} days`}
+            <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, display: 'block', marginTop: '0.15rem' }}>
+              ↻ every {item.recur_days === 1 ? 'day' : item.recur_days === 7 ? 'week' : item.recur_days === 30 ? 'month' : `${item.recur_days} days`}
             </span>
           )}
         </div>
@@ -117,7 +172,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared }: {
 }
 
 export default function MasterDashboard() {
-  const { items, loading, add, setStatus, remove, toggleShared } = useWorkItems()
+  const { items, loading, add, setStatus, update, remove, toggleShared } = useWorkItems()
   const [filter, setFilter] = useState<Filter>('all')
   const [showAdd, setShowAdd] = useState(false)
 
@@ -202,7 +257,7 @@ export default function MasterDashboard() {
       )}
 
       {!loading && filtered.map(i => (
-        <WorkRow key={i.id} item={i} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} />
+        <WorkRow key={i.id} item={i} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
       ))}
 
       {/* Add area */}

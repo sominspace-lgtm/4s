@@ -120,12 +120,12 @@ export default function CustomizePanel({ open, sections, userId, onChange, onClo
             <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text)', fontWeight: 300 }}>{s.label}</span>
 
             {/* Eye toggle */}
-            <button onClick={() => toggle(s.id)} title={s.hidden ? 'Show' : 'Hide'} style={{
+            <button onClick={() => toggle(s.id)} title={s.hidden ? 'Show section' : 'Hide section'} style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '0.75rem', color: 'var(--muted)', opacity: s.hidden ? 0.4 : 0.8,
-              fontFamily: 'var(--font-body)', padding: '2px',
+              fontSize: '0.82rem', color: 'var(--muted)', opacity: s.hidden ? 0.3 : 0.7,
+              padding: '2px', lineHeight: 1,
             }}>
-              {s.hidden ? '○' : '●'}
+              {s.hidden ? '🙈' : '👁'}
             </button>
           </div>
         ))}

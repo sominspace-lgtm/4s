@@ -90,7 +90,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
           </div>
 
           {tab === 'theme' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.45rem' }}>
               {Object.keys(THEMES).map(t => {
                 const p = THEME_PREVIEW[t]
                 const active = currentTheme === t
@@ -100,14 +100,20 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
                     onClick={() => setTheme(t)}
                     title={THEME_LABELS[t]}
                     style={{
-                      borderRadius: '8px', cursor: 'pointer', padding: '0',
-                      border: active ? `2px solid ${p.accent}` : '2px solid transparent',
-                      background: p.bg, height: '36px', position: 'relative', overflow: 'hidden',
-                      transition: 'border-color 0.15s',
+                      borderRadius: '10px', cursor: 'pointer', padding: '0',
+                      border: active ? `2px solid ${p.accent}` : '2px solid rgba(255,255,255,0.04)',
+                      background: p.bg, height: '48px', position: 'relative', overflow: 'hidden',
+                      transition: 'all 0.15s', boxShadow: active ? `0 0 12px ${p.accent}40` : 'none',
                     }}
                   >
-                    <div style={{ position: 'absolute', bottom: 3, right: 3, width: 7, height: 7, borderRadius: '50%', background: p.accent }} />
-                    {active && <div style={{ position: 'absolute', inset: 0, border: `1px solid ${p.accent}`, borderRadius: '6px', opacity: 0.3 }} />}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: `radial-gradient(ellipse at top right, ${p.accent}35, transparent 70%)`,
+                    }} />
+                    <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: '0.42rem', color: p.accent, letterSpacing: '0.05em', textTransform: 'uppercase', opacity: active ? 1 : 0.7 }}>
+                      {THEME_LABELS[t]}
+                    </div>
+                    <div style={{ position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
                   </button>
                 )
               })}

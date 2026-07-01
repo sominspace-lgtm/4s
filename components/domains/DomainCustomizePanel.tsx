@@ -116,10 +116,10 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
             </div>
 
             {/* Eye toggle */}
-            <button onClick={() => onToggle(d.id)} title={d.hidden ? 'Show' : 'Hide'} style={{
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem',
-              color: 'var(--muted)', opacity: d.hidden ? 0.4 : 0.8, padding: '2px',
-            }}>{d.hidden ? '○' : '●'}</button>
+            <button onClick={() => onToggle(d.id)} title={d.hidden ? 'Show domain' : 'Hide domain'} style={{
+              background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.82rem',
+              color: 'var(--muted)', opacity: d.hidden ? 0.3 : 0.7, padding: '2px', lineHeight: 1,
+            }}>{d.hidden ? '🙈' : '👁'}</button>
 
             {/* Remove (custom only) */}
             {!DEFAULT_IDS.has(d.id) && (

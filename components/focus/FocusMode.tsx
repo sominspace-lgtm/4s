@@ -23,6 +23,7 @@ export default function FocusMode({ open, onClose }: Props) {
 
   // Timer
   const [preset,   setPreset]   = useState(25)  // minutes
+  const [custom,   setCustom]   = useState('')
   const [seconds,  setSeconds]  = useState(25 * 60)
   const [running,  setRunning]  = useState(false)
   const [finished, setFinished] = useState(false)
@@ -126,16 +127,34 @@ export default function FocusMode({ open, onClose }: Props) {
       </div>
 
       {/* Preset buttons */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        {[15, 25, 45, 60].map(m => (
-          <button key={m} onClick={() => changePreset(m)} style={{
-            padding: '0.3rem 0.75rem', borderRadius: '8px', cursor: 'pointer',
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {[15, 25, 45, 60, 90].map(m => (
+          <button key={m} onClick={() => { setCustom(''); changePreset(m) }} style={{
+            padding: '0.3rem 0.7rem', borderRadius: '8px', cursor: 'pointer',
             fontFamily: 'var(--font-body)', fontSize: '0.7rem',
-            border: `1px solid ${preset === m ? 'var(--gold)' : 'var(--border)'}`,
-            background: preset === m ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
-            color: preset === m ? 'var(--gold)' : 'var(--muted)',
+            border: `1px solid ${preset === m && !custom ? 'var(--gold)' : 'var(--border)'}`,
+            background: preset === m && !custom ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+            color: preset === m && !custom ? 'var(--gold)' : 'var(--muted)',
           }}>{m}m</button>
         ))}
+        <input
+          type="number"
+          value={custom}
+          onChange={e => {
+            setCustom(e.target.value)
+            const v = parseInt(e.target.value)
+            if (v > 0 && v <= 480) changePreset(v)
+          }}
+          placeholder="custom"
+          min={1} max={480}
+          style={{
+            width: '68px', padding: '0.3rem 0.6rem', borderRadius: '8px',
+            background: custom ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+            border: `1px solid ${custom ? 'var(--gold)' : 'var(--border)'}`,
+            color: custom ? 'var(--gold)' : 'var(--muted)',
+            fontFamily: 'var(--font-body)', fontSize: '0.7rem', outline: 'none',
+          }}
+        />
       </div>
 
       {/* Controls */}

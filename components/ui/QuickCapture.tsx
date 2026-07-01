@@ -3,11 +3,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+const DOMAINS = [
+  { id: '',            label: 'No domain — inbox' },
+  { id: 'biz-active',  label: '◈ Business (Active)' },
+  { id: 'biz-future',  label: '◇ Business (Future)' },
+  { id: 'money',       label: '◉ Money' },
+  { id: 'health',      label: '○ Health' },
+  { id: 'relationship',label: '♡ Relationship' },
+  { id: 'creative',    label: '✦ Creative' },
+  { id: 'home',        label: '⌂ Home' },
+  { id: 'self',        label: '◎ Self' },
+]
+
 export default function QuickCapture() {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
+  const [domain, setDomain] = useState('')
   const [saved, setSaved] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -17,6 +30,7 @@ export default function QuickCapture() {
         setOpen(o => !o)
         setSaved(false)
         setText('')
+        setDomain('')
       }
       if (e.key === 'Escape') setOpen(false)
     }
@@ -33,9 +47,14 @@ export default function QuickCapture() {
     if (!trimmed) return
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from('captures').insert({ text: trimmed, user_id: user.id })
+    await supabase.from('captures').insert({
+      text: trimmed,
+      user_id: user.id,
+      domain: domain || null,
+    })
     setSaved(true)
     setText('')
+    setDomain('')
     setTimeout(() => setOpen(false), 900)
   }
 
@@ -46,7 +65,7 @@ export default function QuickCapture() {
       onClick={() => setOpen(false)}
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
-        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '1rem',
       }}
@@ -54,43 +73,73 @@ export default function QuickCapture() {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: '520px',
+          width: '100%', maxWidth: '540px',
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '16px', padding: '1.4rem',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+          borderRadius: '20px', overflow: 'hidden',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
         }}
       >
         {saved ? (
-          <div style={{ textAlign: 'center', padding: '0.5rem 0', fontSize: '0.82rem', color: 'var(--gold)', letterSpacing: '0.05em' }}>
+          <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--gold)', letterSpacing: '0.08em' }}>
             captured ✓
           </div>
         ) : (
           <>
-            <div style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem', opacity: 0.6 }}>
-              quick capture — ⌘K
-            </div>
-            <input
-              ref={inputRef}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') submit()
-                if (e.key === 'Escape') setOpen(false)
-              }}
-              placeholder="What's on your mind? Press Enter to save."
-              style={{
-                width: '100%', background: 'transparent', border: 'none',
-                color: 'var(--text)', fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.1rem,3vw,1.4rem)', fontWeight: 300,
-                outline: 'none', letterSpacing: '0.01em',
-              }}
-            />
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4 }}>goes to your inbox · sort later</span>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <kbd style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.5, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '4px', padding: '0.15em 0.45em', fontFamily: 'var(--font-body)' }}>esc</kbd>
-                <kbd style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.5, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: '4px', padding: '0.15em 0.45em', fontFamily: 'var(--font-body)' }}>↵ save</kbd>
+            <div style={{ padding: '1.4rem 1.4rem 0' }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.85rem', opacity: 0.6 }}>
+                quick capture — ⌘K
               </div>
+              <textarea
+                ref={inputRef}
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
+                  if (e.key === 'Escape') setOpen(false)
+                }}
+                placeholder="What's on your mind?"
+                rows={3}
+                style={{
+                  width: '100%', background: 'transparent', border: 'none',
+                  color: 'var(--text)', fontFamily: 'var(--font-display)',
+                  fontSize: 'clamp(1.05rem,3vw,1.35rem)', fontWeight: 300,
+                  outline: 'none', letterSpacing: '0.01em', resize: 'none',
+                  lineHeight: 1.5,
+                }}
+              />
+            </div>
+
+            {/* Domain selector */}
+            <div style={{ padding: '0.75rem 1.4rem', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <select
+                value={domain}
+                onChange={e => setDomain(e.target.value)}
+                style={{
+                  flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: '8px', color: domain ? 'var(--text)' : 'var(--muted)',
+                  fontFamily: 'var(--font-body)', fontSize: '0.75rem',
+                  padding: '0.4rem 0.65rem', outline: 'none', cursor: 'pointer',
+                  appearance: 'none',
+                }}
+              >
+                {DOMAINS.map(d => (
+                  <option key={d.id} value={d.id}>{d.label}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={submit}
+                disabled={!text.trim()}
+                style={{
+                  padding: '0.55rem 1.4rem', borderRadius: '10px', cursor: text.trim() ? 'pointer' : 'not-allowed',
+                  background: text.trim() ? 'var(--gold)' : 'rgba(255,255,255,0.06)',
+                  border: 'none', color: text.trim() ? 'var(--bg)' : 'var(--muted)',
+                  fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 500,
+                  transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}
+              >
+                Save ↵
+              </button>
             </div>
           </>
         )}

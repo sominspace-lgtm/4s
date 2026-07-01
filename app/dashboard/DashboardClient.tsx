@@ -13,6 +13,7 @@ import FocusMode from '@/components/focus/FocusMode'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import OnboardingChecklist from '@/components/onboarding/OnboardingChecklist'
+import MobileNav from '@/components/ui/MobileNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import CaptureSection from '@/components/capture/CaptureSection'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -179,6 +180,11 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         ))}
         <FeedbackBox />
       </main>
+      <MobileNav
+        onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+        onSearch={() => setSearchOpen(true)}
+        onFocus={() => setFocusOpen(true)}
+      />
     </ThemeProvider>
   )
 }

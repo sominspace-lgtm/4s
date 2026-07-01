@@ -10,9 +10,11 @@ export default async function DashboardPage() {
 
   const { data: prefs } = await supabase
     .from('user_prefs')
-    .select('display_name, theme, calendar_url, mode, layout')
+    .select('display_name, theme, calendar_url, mode, layout, onboarded')
     .eq('user_id', user.id)
     .single()
+
+  if (!prefs?.onboarded) redirect('/onboard')
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
 

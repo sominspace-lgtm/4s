@@ -58,6 +58,10 @@ html, body {
   border-radius: 6px;
 }
 
+/* Mobile FAB — hidden on desktop */
+.mobile-nav { display: none; }
+@media (max-width: 768px) { .mobile-nav { display: block !important; } }
+
 /* Mobile responsive */
 @media (max-width: 600px) {
   .grid-auto { grid-template-columns: 1fr !important; }
