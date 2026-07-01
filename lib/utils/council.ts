@@ -62,7 +62,7 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
   const creativeRate = habitRate(habits, completions, 'creative')
   const bizActiveRate = habitRate(habits, completions, 'biz-active')
 
-  const advice: CouncilAdvice[] = [
+  const advice: Pick<CouncilAdvice, 'verdict' | 'advice'>[] = [
     // Business Active
     (() => {
       const days = daysSinceTouched(domainTouched['biz-active'])
