@@ -103,6 +103,7 @@ export const THEMES: Record<string, Record<string, string>> = {
 
   // ☀️ Linen — warm paper, minimal light mode
   ash: {
+    '--scheme': 'light',
     '--bg': '#f7f3ed', '--surface': '#f0ebe3', '--surface2': '#e8e2d8',
     '--border': 'rgba(80,55,30,0.10)', '--text': '#2a1e12',
     '--muted': 'rgba(42,30,18,0.50)', '--faint': 'rgba(42,30,18,0.07)',
@@ -204,6 +205,7 @@ export const THEME_LABELS: Record<string, string> = {
 }
 
 const ALL_VARS = [
+  '--scheme',
   '--bg','--surface','--surface2','--border','--text','--muted','--faint',
   '--gold','--purple','--emerald','--rose','--blush','--amber','--slate','--lavender',
   '--accent-2','--shadow','--glow','--selection','--hover-bg',

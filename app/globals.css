@@ -65,6 +65,14 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
 /* Selection */
 ::selection { background: var(--selection); }
 
+/* Native select dropdown popups default to a white OS background —
+   force theme colors so option text stays legible on dark themes. */
+select { color-scheme: var(--scheme, dark); }
+select, option {
+  background-color: var(--surface2);
+  color: var(--text);
+}
+
 /* Focus ring */
 :focus-visible {
   outline: 1.5px solid var(--glow);
