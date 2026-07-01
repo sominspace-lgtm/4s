@@ -12,19 +12,20 @@ export interface SectionConfig {
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // At a glance
   { id: 'brief',    label: 'Daily Brief',        hidden: false },
-  // Act
-  { id: 'capture',  label: 'Capture',            hidden: false },
+  // Focus
   { id: 'work',     label: 'Work Hub',           hidden: false },
-  { id: 'pulse',    label: "Today's Pulse",      hidden: false },
-  // Build
   { id: 'habits',   label: 'Daily Habits',       hidden: false },
+  // Capture
+  { id: 'capture',  label: 'Capture',            hidden: false },
+  // Domains
   { id: 'domains',  label: 'Domains',            hidden: false },
+  // Check-in
+  { id: 'pulse',    label: "Today's Pulse",      hidden: false },
   // Money
-  { id: 'spending', label: 'Recurring Spending', hidden: false },
   { id: 'wishlist', label: 'Wishlist',           hidden: false },
+  { id: 'spending', label: 'Recurring Spending', hidden: false },
   // Review
   { id: 'calendar', label: 'Calendar',           hidden: false },
-  { id: 'digest',   label: 'AI Digest',          hidden: false },
   { id: 'council',  label: 'Your Council',       hidden: false },
 ]
 

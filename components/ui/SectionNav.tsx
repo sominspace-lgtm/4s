@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react'
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
-  brief: 'Brief', capture: 'Capture', work: 'Work',
-  pulse: 'Pulse', habits: 'Habits', domains: 'Domains',
-  spending: 'Money', wishlist: 'Wishlist',
-  calendar: 'Calendar', digest: 'Digest', council: 'Council',
+  brief: 'Brief', work: 'Work', habits: 'Habits',
+  capture: 'Capture', domains: 'Domains',
+  pulse: 'Pulse', wishlist: 'Wishlist', spending: 'Money',
+  calendar: 'Calendar', council: 'Council',
 }
 
 interface Props {

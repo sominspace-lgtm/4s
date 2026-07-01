@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import ThemeModePicker from '@/components/ui/ThemeModePicker'
 import type { Mode } from '@/lib/constants/modes'
+import type { Lang } from '@/lib/i18n'
 
 interface HeaderProps {
   email: string
@@ -20,6 +21,9 @@ interface HeaderProps {
   onSearch: () => void
   onFocus: () => void
   onArchive: () => void
+  onHelp: () => void
+  lang: Lang
+  onLangToggle: () => void
 }
 
 // Returns text before and after the name
@@ -47,7 +51,7 @@ function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: strin
   }
 }
 
-export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive }: HeaderProps) {
+export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive, onHelp, lang, onLangToggle }: HeaderProps) {
   const router = useRouter()
   const fallback = email.split('@')[0]
 
@@ -144,6 +148,22 @@ export default function Header({ email, userId, initialName, initialTheme, initi
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        {/* Help button */}
+        <button onClick={onHelp} title="Help & tutorial" aria-label="Help" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>?</button>
+
+        {/* Language toggle */}
+        <button onClick={onLangToggle} title="Switch language / 언어 전환" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.55rem', cursor: 'pointer',
+          fontSize: '0.58rem', letterSpacing: '0.04em', fontFamily: 'var(--font-body)',
+          color: lang === 'ko' ? 'var(--gold)' : 'var(--muted)',
+          fontWeight: lang === 'ko' ? 500 : 300,
+        }}>{lang === 'ko' ? 'KO' : 'EN'}</button>
+
         <kbd
           onClick={onSearch}
           title="Search everything (⌘/)"

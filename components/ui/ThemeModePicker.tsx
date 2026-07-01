@@ -14,14 +14,14 @@ const THEME_PREVIEW: Record<string, { bg: string; accent: string }> = {
   terracotta:{ bg: '#110c08', accent: '#e8a878' },
   ocean:     { bg: '#050d14', accent: '#60d0e8' },
   rose:      { bg: '#120810', accent: '#f090c0' },
-  ash:       { bg: '#0c0c0e', accent: '#c0c0d0' },
+  ash:       { bg: '#f5f0e8', accent: '#a05c20' },
   amber:     { bg: '#100e06', accent: '#e8c040' },
   forest:    { bg: '#060e08', accent: '#60c878' },
   lavender:  { bg: '#0c0812', accent: '#c0a0f0' },
   noir:      { bg: '#050505', accent: '#e0e0e0' },
   sand:      { bg: '#14120e', accent: '#d4b880' },
   ember:     { bg: '#100600', accent: '#f06030' },
-  arctic:    { bg: '#080e14', accent: '#a0d8f0' },
+  arctic:    { bg: '#040c10', accent: '#40e8b0' },
   plum:      { bg: '#0e0610', accent: '#d060e8' },
 }
 

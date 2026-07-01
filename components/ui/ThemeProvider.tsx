@@ -83,18 +83,19 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-3': 'rgba(255,100,180,0.05)', '--aurora-pos-3': '50% 20%',
   },
   ash: {
-    '--bg': '#0c0c0e', '--surface': '#141416', '--surface2': '#1c1c20',
-    '--border': 'rgba(200,200,220,0.08)', '--text': '#e8e8ee',
-    '--muted': 'rgba(232,232,238,0.4)', '--faint': 'rgba(232,232,238,0.07)',
-    '--gold': '#c0c0d0', '--purple': '#a0a0c0', '--emerald': '#90a0b8',
-    '--rose': '#b0a8c8', '--blush': '#c8c0d8', '--amber': '#b8b0c8',
-    '--slate': '#9898b8', '--lavender': '#b0a8d0',
-    // Stark minimal monospace
-    '--font-display': "var(--font-space-mono),'Space Mono',monospace",
-    '--font-body':    "var(--font-space-mono),'Space Mono',monospace",
-    '--aurora-1': 'rgba(180,180,220,0.05)', '--aurora-pos-1': 'top left',
-    '--aurora-2': 'rgba(140,140,180,0.03)', '--aurora-pos-2': 'bottom right',
-    '--aurora-3': 'rgba(160,160,200,0.02)', '--aurora-pos-3': 'center',
+    // Light linen theme — cream background, warm editorial
+    '--bg': '#f5f0e8', '--surface': '#ede8e0', '--surface2': '#e5e0d8',
+    '--border': 'rgba(80,55,35,0.10)', '--text': '#2c2218',
+    '--muted': 'rgba(44,34,24,0.5)', '--faint': 'rgba(44,34,24,0.07)',
+    '--gold': '#a05c20', '--purple': '#705090', '--emerald': '#356040',
+    '--rose': '#a04040', '--blush': '#b87060', '--amber': '#b07020',
+    '--slate': '#506070', '--lavender': '#756090',
+    // Warm serif editorial
+    '--font-display': "var(--font-playfair),'Playfair Display',serif",
+    '--font-body':    "var(--font-inter),'Inter',sans-serif",
+    '--aurora-1': 'rgba(160,90,30,0.07)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(120,60,20,0.05)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(180,110,40,0.04)', '--aurora-pos-3': 'center top',
   },
   amber: {
     '--bg': '#100e06', '--surface': '#1c1808', '--surface2': '#251f0a',
@@ -173,26 +174,26 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--gold': '#f06030', '--purple': '#d84020', '--emerald': '#e05018',
     '--rose': '#f04010', '--blush': '#f88050', '--amber': '#e87030',
     '--slate': '#c84010', '--lavender': '#e06040',
-    // Bold geometric — energy
+    // Bold — dual fire aurora: deep red + bright orange
     '--font-display': "var(--font-raleway),'Raleway',sans-serif",
     '--font-body':    "var(--font-inter),'Inter',sans-serif",
-    '--aurora-1': 'rgba(240,60,10,0.14)', '--aurora-pos-1': 'bottom right',
-    '--aurora-2': 'rgba(200,40,5,0.10)',  '--aurora-pos-2': 'top left',
-    '--aurora-3': 'rgba(255,80,20,0.06)', '--aurora-pos-3': 'bottom center',
+    '--aurora-1': 'rgba(240,50,5,0.18)',  '--aurora-pos-1': 'bottom right',
+    '--aurora-2': 'rgba(255,130,0,0.12)', '--aurora-pos-2': 'top left',
+    '--aurora-3': 'rgba(200,20,0,0.10)',  '--aurora-pos-3': 'center bottom',
   },
   arctic: {
-    '--bg': '#080e14', '--surface': '#0e1820', '--surface2': '#142030',
-    '--border': 'rgba(160,220,240,0.1)', '--text': '#e8f4f8',
-    '--muted': 'rgba(232,244,248,0.45)', '--faint': 'rgba(232,244,248,0.08)',
-    '--gold': '#a0d8f0', '--purple': '#80c0e8', '--emerald': '#70d8e8',
-    '--rose': '#90c8e8', '--blush': '#b8e0f8', '--amber': '#a0cce8',
-    '--slate': '#78b8e0', '--lavender': '#a8cce8',
-    // Crisp, clean
+    '--bg': '#040c10', '--surface': '#081420', '--surface2': '#0c1e2e',
+    '--border': 'rgba(80,240,180,0.1)', '--text': '#e0f8f0',
+    '--muted': 'rgba(224,248,240,0.45)', '--faint': 'rgba(224,248,240,0.07)',
+    '--gold': '#40e8b0', '--purple': '#30c0c8', '--emerald': '#20d8a8',
+    '--rose': '#60d8e8', '--blush': '#80f0d0', '--amber': '#50d0b0',
+    '--slate': '#30a8c0', '--lavender': '#50d0d0',
+    // Aurora borealis — green + cyan dual aurora
     '--font-display': "var(--font-dm-serif),'DM Serif Display',serif",
     '--font-body':    "var(--font-inter),'Inter',sans-serif",
-    '--aurora-1': 'rgba(140,220,255,0.10)', '--aurora-pos-1': 'top center',
-    '--aurora-2': 'rgba(100,190,240,0.07)', '--aurora-pos-2': 'top right',
-    '--aurora-3': 'rgba(160,230,255,0.04)', '--aurora-pos-3': '30% top',
+    '--aurora-1': 'rgba(20,220,140,0.14)', '--aurora-pos-1': 'top center',
+    '--aurora-2': 'rgba(20,160,220,0.10)', '--aurora-pos-2': 'top right',
+    '--aurora-3': 'rgba(40,240,180,0.06)', '--aurora-pos-3': '60% top',
   },
   plum: {
     '--bg': '#0e0610', '--surface': '#180a1e', '--surface2': '#220e2a',
@@ -201,18 +202,18 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--gold': '#d060e8', '--purple': '#b040c8', '--emerald': '#c050d8',
     '--rose': '#e060d0', '--blush': '#e890e8', '--amber': '#c058c8',
     '--slate': '#a840b8', '--lavender': '#d070e0',
-    // Rich dark romantic
+    // Rich — dual aurora: violet + cyan contrast
     '--font-display': "var(--font-cormorant),'Cormorant Garamond',serif",
     '--font-body':    "var(--font-inter),'Inter',sans-serif",
-    '--aurora-1': 'rgba(180,40,220,0.12)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(140,20,180,0.09)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(200,60,240,0.05)', '--aurora-pos-3': '70% 30%',
+    '--aurora-1': 'rgba(180,40,240,0.16)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(20,180,220,0.10)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(220,80,255,0.07)', '--aurora-pos-3': '70% 30%',
   },
 }
 
 export const THEME_LABELS: Record<string, string> = {
   sunset: 'Sunset', midnight: 'Midnight', sage: 'Sage', terracotta: 'Terracotta',
-  ocean: 'Ocean', rose: 'Rose', ash: 'Ash', amber: 'Amber', forest: 'Forest',
+  ocean: 'Ocean', rose: 'Rose', ash: 'Linen', amber: 'Amber', forest: 'Forest',
   lavender: 'Lavender', noir: 'Noir', sand: 'Sand', ember: 'Ember',
   arctic: 'Arctic', plum: 'Plum',
 }

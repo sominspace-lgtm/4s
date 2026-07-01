@@ -32,6 +32,8 @@ const RECUR_OPTIONS = [
 
 type Filter = 'all' | 'today' | 'overdue' | 'done'
 
+const P_LABEL: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'P3' }
+
 function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
   onStatus: (id: string, s: WorkItem['status']) => void
@@ -39,7 +41,6 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
   onToggleShared: (id: string) => void
   onUpdate: (id: string, patch: Partial<WorkItem>) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
   const [hovered, setHovered] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
@@ -50,60 +51,45 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
     if (notesDraft !== (item.notes ?? '')) onUpdate(item.id, { notes: notesDraft || null })
   }
 
+  function cyclePriority() {
+    onUpdate(item.id, { priority: item.priority >= 3 ? 1 : item.priority + 1 })
+  }
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ borderBottom: '1px solid var(--faint)' }}
+      style={{ borderBottom: '1px solid var(--faint)', padding: '0.55rem 0' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.5rem 0' }}>
+      {/* Main row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem' }}>
         <button onClick={() => onStatus(item.id, S_NEXT[item.status])} style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
           fontSize: '0.75rem', color: S_COLOR[item.status], lineHeight: 1, transition: 'color 0.15s',
+          marginTop: '0.05rem',
         }}>{S_ICON[item.status]}</button>
 
-        <span style={{ fontSize: '0.45rem', color: P_COLOR[item.priority], flexShrink: 0, opacity: 0.9 }}>{P_DOT[item.priority]}</span>
+        {/* Priority badge — click to cycle */}
+        <button
+          onClick={cyclePriority}
+          title="Click to change priority"
+          style={{
+            background: 'none', border: `1px solid ${P_COLOR[item.priority]}`,
+            borderRadius: '4px', cursor: 'pointer', padding: '0.05em 0.35em',
+            fontSize: '0.52rem', color: P_COLOR[item.priority], fontFamily: 'var(--font-body)',
+            fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.6, flexShrink: 0,
+            transition: 'all 0.15s', opacity: item.priority === 3 ? 0.5 : 1,
+          }}
+        >{P_LABEL[item.priority]}</button>
 
-        <span onClick={() => setExpanded(e => !e)} style={{
-          flex: 1, fontSize: '0.8rem', color: 'var(--text)', cursor: 'pointer', lineHeight: 1.4,
+        <span style={{
+          flex: 1, fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.4,
           textDecoration: item.status === 'done' ? 'line-through' : 'none',
           opacity: item.status === 'done' ? 0.45 : 1,
+          userSelect: 'text',
         }}>{item.title}
           {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.5 }}>↻</span>}
         </span>
-
-        {item.domain && (
-          <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
-            {DOMAIN_LABELS[item.domain] ?? item.domain}
-          </span>
-        )}
-
-        {/* Due date — always show if set, quick edit on click */}
-        {item.due_date ? (
-          <input
-            type="date"
-            defaultValue={item.due_date}
-            onChange={e => onUpdate(item.id, { due_date: e.target.value || null })}
-            style={{
-              background: 'transparent', border: 'none', outline: 'none',
-              fontSize: '0.62rem', color: DUE_COLOR[urgency], cursor: 'pointer',
-              fontFamily: 'var(--font-body)', fontWeight: urgency === 'overdue' ? 600 : 300,
-              width: '6.5rem', flexShrink: 0,
-            }}
-            title="Click to change due date"
-          />
-        ) : hovered ? (
-          <input
-            type="date"
-            onChange={e => { if (e.target.value) onUpdate(item.id, { due_date: e.target.value }) }}
-            style={{
-              background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)',
-              outline: 'none', fontSize: '0.62rem', color: 'var(--muted)', cursor: 'pointer',
-              fontFamily: 'var(--font-body)', width: '6.5rem', flexShrink: 0, opacity: 0.5,
-            }}
-            title="Add due date"
-          />
-        ) : null}
 
         {/* Share toggle */}
         <button
@@ -124,13 +110,54 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
         }}>✕</button>
       </div>
 
-      {/* Notes — always visible if present, click to edit */}
+      {/* Details row — domain, due date, recur — always visible */}
+      <div style={{ marginLeft: '2.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+        {/* Domain select */}
+        <select
+          value={item.domain ?? ''}
+          onChange={e => onUpdate(item.id, { domain: e.target.value || null })}
+          style={{
+            background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+            outline: 'none', fontSize: '0.6rem', color: item.domain ? 'var(--muted)' : 'var(--faint)',
+            fontFamily: 'var(--font-body)', cursor: 'pointer', padding: '0.1em 0.2em',
+            appearance: 'none', WebkitAppearance: 'none',
+          }}
+        >
+          <option value="">+ domain</option>
+          {Object.entries(DOMAIN_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+
+        {/* Due date — always visible */}
+        <input
+          type="date"
+          value={item.due_date ?? ''}
+          onChange={e => onUpdate(item.id, { due_date: e.target.value || null })}
+          style={{
+            background: 'transparent', border: 'none', borderBottom: `1px solid ${item.due_date ? DUE_COLOR[urgency] + '60' : 'var(--faint)'}`,
+            outline: 'none', fontSize: '0.6rem',
+            color: item.due_date ? DUE_COLOR[urgency] : 'var(--faint)',
+            fontFamily: 'var(--font-body)', cursor: 'pointer',
+            fontWeight: urgency === 'overdue' ? 600 : 300,
+          }}
+          title="Due date"
+        />
+
+        {item.recur_days && (
+          <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.4 }}>
+            ↻ {item.recur_days === 1 ? 'daily' : item.recur_days === 7 ? 'weekly' : item.recur_days === 30 ? 'monthly' : `every ${item.recur_days}d`}
+          </span>
+        )}
+      </div>
+
+      {/* Notes — always visible */}
       {item.status !== 'done' && (
-        <div style={{ marginLeft: '1.6rem', paddingBottom: expanded || item.notes ? '0.5rem' : 0 }}>
+        <div style={{ marginLeft: '2.9rem', marginTop: '0.3rem' }}>
           {item.notes && !editingNotes && (
             <p
               onClick={() => { setNotesDraft(item.notes ?? ''); setEditingNotes(true) }}
-              style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, whiteSpace: 'pre-wrap', cursor: 'text', opacity: 0.75 }}
+              style={{ fontSize: '0.7rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, whiteSpace: 'pre-wrap', cursor: 'text', opacity: 0.75, margin: 0 }}
             >
               {item.notes}
             </p>
@@ -147,23 +174,19 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
               style={{
                 width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
                 borderRadius: '6px', color: 'var(--text)', fontFamily: 'var(--font-body)',
-                fontSize: '0.72rem', padding: '0.4rem 0.6rem', outline: 'none', resize: 'none',
+                fontSize: '0.7rem', padding: '0.4rem 0.6rem', outline: 'none', resize: 'none',
               }}
             />
           )}
-          {!item.notes && !editingNotes && hovered && (
+          {!item.notes && !editingNotes && (
             <button
               onClick={() => setEditingNotes(true)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.35, fontFamily: 'var(--font-body)',
+                fontSize: '0.6rem', color: 'var(--muted)', opacity: hovered ? 0.45 : 0.2, fontFamily: 'var(--font-body)',
+                transition: 'opacity 0.15s',
               }}
             >+ add notes</button>
-          )}
-          {item.recur_days && (
-            <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, display: 'block', marginTop: '0.15rem' }}>
-              ↻ every {item.recur_days === 1 ? 'day' : item.recur_days === 7 ? 'week' : item.recur_days === 30 ? 'month' : `${item.recur_days} days`}
-            </span>
           )}
         </div>
       )}

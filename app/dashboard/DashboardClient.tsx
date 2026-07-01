@@ -12,7 +12,7 @@ import SearchModal from '@/components/search/SearchModal'
 import FocusMode from '@/components/focus/FocusMode'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
-import OnboardingChecklist from '@/components/onboarding/OnboardingChecklist'
+import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
 import XPBar from '@/components/gamer/XPBar'
 import SectionNav from '@/components/ui/SectionNav'
@@ -26,13 +26,13 @@ import WishlistCard from '@/components/watchlist/WishlistCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
 import CouncilSection from '@/components/council/CouncilSection'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
-import DigestCard from '@/components/digest/DigestCard'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useXP } from '@/lib/hooks/useXP'
 import type { Mode } from '@/lib/constants/modes'
+import { t, type Lang } from '@/lib/i18n'
 
 interface Props {
   email: string
@@ -53,15 +53,14 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 
 const SECTION_GROUPS: Record<string, string> = {
   brief:    'at a glance',
-  capture:  'act',
-  work:     'act',
-  pulse:    'act',
-  habits:   'build',
-  domains:  'build',
-  spending: 'money',
+  work:     'focus',
+  habits:   'focus',
+  capture:  'inbox',
+  domains:  'inbox',
+  pulse:    'check-in',
   wishlist: 'money',
+  spending: 'money',
   calendar: 'review',
-  digest:   'review',
   council:  'review',
 }
 
@@ -79,10 +78,15 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return () => window.removeEventListener('4s:xp', onXP)
   }, [gain])
 
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window !== 'undefined') return (localStorage.getItem('4s-lang') as Lang) ?? 'en'
+    return 'en'
+  })
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [focusOpen, setFocusOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
 
   // Global keyboard shortcuts
@@ -122,10 +126,11 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      brief: 'Today', capture: 'Capture', work: 'Work Hub',
-      pulse: "Today's Pulse", habits: 'Daily Habits', domains: 'Your Domains',
-      spending: 'Recurring Spending', wishlist: 'Wishlist',
-      calendar: 'Calendar', digest: 'AI Digest', council: 'Your Council',
+      brief: t('Today', lang), work: t('Work Hub', lang), habits: t('Daily Habits', lang),
+      capture: t('Capture', lang), domains: t('Domains', lang),
+      pulse: t("Today's Pulse", lang), wishlist: t('Wishlist', lang),
+      spending: t('Recurring Spending', lang), calendar: t('Calendar', lang),
+      council: t('Your Council', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -158,7 +163,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       )
       case 'wishlist': return <>{heading}<WishlistCard key="wishlist" /></>
       case 'calendar': return <>{heading}<CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} /></>
-      case 'digest':   return <>{heading}<DigestCard key="digest" /></>
       case 'council':  return <>{heading}<CouncilSection key="council" mode={mode} /></>
       default: return null
     }
@@ -175,6 +179,13 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onSearch={() => setSearchOpen(true)}
         onFocus={() => setFocusOpen(true)}
         onArchive={() => setArchiveOpen(true)}
+        onHelp={() => setHelpOpen(true)}
+        lang={lang}
+        onLangToggle={() => {
+          const next = lang === 'en' ? 'ko' : 'en'
+          setLang(next)
+          localStorage.setItem('4s-lang', next)
+        }}
       />
 
       <QuickCapture />
@@ -190,12 +201,12 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <TipsBanner />
-        <OnboardingChecklist userId={userId} />
         <WeekReview />
         {visible.map((s, i) => (
           <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i)}</div>

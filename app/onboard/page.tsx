@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const STEPS = ['Welcome', 'Your style', 'First habit', 'First thought']
+const STEPS = ['Your name', 'Domains', 'Your style', 'First habit', 'First thought']
 
 const DOMAIN_OPTIONS = [
   { id: 'biz-active', label: 'Active Business', icon: '◈' },
@@ -31,8 +31,8 @@ const THEMES = [
   { id: 'noir',       label: 'Noir',       bg: '#050505', accent: '#e0e0e0', note: 'stark · minimal' },
   { id: 'sand',       label: 'Sand',       bg: '#14120e', accent: '#d4b880', note: 'warm · classic' },
   { id: 'ember',      label: 'Ember',      bg: '#100600', accent: '#f06030', note: 'bold · fierce' },
-  { id: 'arctic',     label: 'Arctic',     bg: '#080e14', accent: '#a0d8f0', note: 'crisp · clear' },
-  { id: 'ash',        label: 'Ash',        bg: '#0c0c0e', accent: '#c0c0d0', note: 'muted · refined' },
+  { id: 'arctic',     label: 'Arctic',     bg: '#040c10', accent: '#40e8b0', note: 'aurora · vivid' },
+  { id: 'ash',        label: 'Linen',      bg: '#f5f0e8', accent: '#a05c20', note: 'light · editorial' },
 ]
 
 const MODES = [
@@ -53,6 +53,7 @@ export default function OnboardPage() {
   const supabase = createClient()
 
   const [step, setStep] = useState(0)
+  const [displayName, setDisplayName] = useState('')
   const [focusDomains, setFocusDomains] = useState<string[]>([])
   const [selectedTheme, setSelectedTheme] = useState('sunset')
   const [selectedMode, setSelectedMode] = useState('balanced')
@@ -81,6 +82,7 @@ export default function OnboardPage() {
       onboarded: true,
       theme: selectedTheme,
       mode: selectedMode,
+      ...(displayName.trim() ? { display_name: displayName.trim() } : {}),
     })
 
     router.push('/dashboard')
@@ -134,17 +136,38 @@ export default function OnboardPage() {
           ))}
         </div>
 
-        {/* Step 0 — Welcome + domains */}
+        {/* Step 0 — Name */}
         {step === 0 && (
           <div>
             <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2.2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem', lineHeight: 1.2 }}>
               Welcome to <em style={{ fontStyle: 'italic', color: accent }}>4S</em>.
             </div>
             <div style={{ fontSize: '0.82rem', color: 'rgba(240,234,232,0.5)', marginBottom: '2rem', lineHeight: 1.7 }}>
-              Your personal operating system. Eight domains, one place. Let&apos;s set you up in a few minutes.
+              Your personal operating system. Let&apos;s set you up in a few steps.
             </div>
             <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,234,232,0.35)', marginBottom: '0.8rem' }}>
-              Which domains matter most right now?
+              What should we call you?
+            </div>
+            <input
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && displayName.trim()) setStep(1) }}
+              placeholder="Your name or nickname"
+              autoFocus
+              style={{ ...inputStyle, marginBottom: '2rem', fontSize: '1rem' }}
+            />
+            {nextBtn(displayName.trim() ? 'Continue →' : 'Skip →', () => setStep(1))}
+          </div>
+        )}
+
+        {/* Step 1 — Domains */}
+        {step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem', lineHeight: 1.2 }}>
+              Your <em style={{ fontStyle: 'italic', color: accent }}>domains</em>.
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'rgba(240,234,232,0.5)', marginBottom: '2rem', lineHeight: 1.7 }}>
+              Eight life areas, one operating system. Which matter most right now? (Pick any.)
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '2rem' }}>
               {DOMAIN_OPTIONS.map(d => {
@@ -165,12 +188,15 @@ export default function OnboardPage() {
                 )
               })}
             </div>
-            {nextBtn('Continue →', () => setStep(1))}
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              {backBtn(() => setStep(0))}
+              {nextBtn('Continue →', () => setStep(2))}
+            </div>
           </div>
         )}
 
-        {/* Step 1 — Theme + Mode */}
-        {step === 1 && (
+        {/* Step 2 — Theme + Mode */}
+        {step === 2 && (
           <div>
             <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem' }}>
               Make it <em style={{ fontStyle: 'italic', color: accent }}>yours</em>.
@@ -228,14 +254,14 @@ export default function OnboardPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.6rem' }}>
-              {backBtn(() => setStep(0))}
-              {nextBtn('Continue →', () => setStep(2))}
+              {backBtn(() => setStep(1))}
+              {nextBtn('Continue →', () => setStep(3))}
             </div>
           </div>
         )}
 
-        {/* Step 2 — First habit */}
-        {step === 2 && (
+        {/* Step 3 — First habit */}
+        {step === 3 && (
           <div>
             <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem' }}>
               Build a <em style={{ fontStyle: 'italic', color: accent }}>habit</em>.
@@ -256,14 +282,14 @@ export default function OnboardPage() {
               </select>
             </div>
             <div style={{ display: 'flex', gap: '0.6rem' }}>
-              {backBtn(() => setStep(1))}
-              {nextBtn(habitName.trim() ? 'Continue →' : 'Skip →', () => setStep(3))}
+              {backBtn(() => setStep(2))}
+              {nextBtn(habitName.trim() ? 'Continue →' : 'Skip →', () => setStep(4))}
             </div>
           </div>
         )}
 
-        {/* Step 3 — First capture */}
-        {step === 3 && (
+        {/* Step 4 — First capture */}
+        {step === 4 && (
           <div>
             <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem' }}>
               Clear your <em style={{ fontStyle: 'italic', color: accent }}>head</em>.
@@ -277,7 +303,7 @@ export default function OnboardPage() {
               style={{ ...inputStyle, resize: 'none', marginBottom: '2rem' }}
             />
             <div style={{ display: 'flex', gap: '0.6rem' }}>
-              {backBtn(() => setStep(2))}
+              {backBtn(() => setStep(3))}
               <button onClick={finish} disabled={saving} style={{
                 flex: 1, padding: '0.75rem', borderRadius: '10px', cursor: saving ? 'default' : 'pointer',
                 border: `1px solid ${accent}66`, background: `${accent}1a`,
