@@ -10,7 +10,7 @@ interface SharedItem {
   sharedSections: string[]
 }
 
-export default function SharedWithMeSection() {
+export default function SharedWithMeSection({ onOpenCompanions }: { onOpenCompanions: () => void }) {
   const [items, setItems] = useState<SharedItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -36,8 +36,8 @@ export default function SharedWithMeSection() {
       )}
 
       {!loading && items.length === 0 && (
-        <div style={{ padding: '1rem 0', textAlign: 'center', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-          No one has shared anything yet.<br />Shared notes, tasks, lists, and reminders will appear here.
+        <div style={{ padding: '1rem 0', textAlign: 'center', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.8rem' }}>
+          No one has shared anything yet.<br />Shared notes, tasks, lists, reminders, gift ideas, and plans will appear here.
         </div>
       )}
 
@@ -74,6 +74,14 @@ export default function SharedWithMeSection() {
               <span style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.58 }}>→</span>
             </Link>
           ))}
+        </div>
+      )}
+
+      {!loading && (
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: items.length === 0 ? 'center' : 'flex-start', marginTop: items.length > 0 ? '0.8rem' : 0 }}>
+          <button onClick={onOpenCompanions} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>Create shared list</button>
+          <button onClick={onOpenCompanions} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>Invite someone</button>
+          <button onClick={onOpenCompanions} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>Share something</button>
         </div>
       )}
     </div>

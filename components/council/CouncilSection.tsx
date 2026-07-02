@@ -5,6 +5,9 @@ import { useHabits } from '@/lib/hooks/useHabits'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useBuyItems } from '@/lib/hooks/useBuyItems'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
+import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
+import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
+import { useCompanions } from '@/lib/hooks/useCompanions'
 import { generateCouncilAdvice, type CouncilAdvice } from '@/lib/utils/council'
 import type { Mode } from '@/lib/constants/modes'
 
@@ -38,17 +41,28 @@ function AdviceCard({ member }: { member: CouncilAdvice }) {
   )
 }
 
-export default function CouncilSection({ mode = 'balanced' }: { mode?: Mode }) {
+export default function CouncilSection({ mode = 'balanced', userId }: { mode?: Mode; userId: string }) {
   const { habits, completions } = useHabits()
   const { subs: subscriptions } = useSubscriptions()
   const { items: buyItems } = useBuyItems()
   const { touched } = useDomainTouched()
+  const { items: workItems } = useWorkItems()
+  const { items: giftItems } = useGiftEvents()
+  const { received } = useCompanions(userId)
   const [convened, setConvened] = useState(false)
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
   const [focusDomain, setFocusDomain] = useState<string | null>(null)
 
   function convene(domain: string | null = null) {
-    const result = generateCouncilAdvice({ habits, completions, subscriptions, buyItems, domainTouched: touched, mode })
+    const overdueTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'overdue').length
+    const dueTodayTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'today').length
+    const upcomingGifts = giftItems.map(g => ({ name: g.name, days: daysUntil(g) }))
+    const pendingShares = received.filter(c => c.status === 'pending').length
+
+    const result = generateCouncilAdvice({
+      habits, completions, subscriptions, buyItems, domainTouched: touched, mode,
+      overdueTasks, dueTodayTasks, upcomingGifts, pendingShares,
+    })
     setAdvice(result)
     setFocusDomain(domain)
     setConvened(true)
@@ -62,6 +76,8 @@ export default function CouncilSection({ mode = 'balanced' }: { mode?: Mode }) {
     { domain: 'health',   label: 'Ask Health' },
     { domain: 'home',     label: 'Ask Home' },
     { domain: 'creative', label: 'Ask Creative' },
+    { domain: 'family',   label: 'Ask Family' },
+    { domain: 'planning', label: 'Ask Planning' },
   ]
 
   return (
@@ -79,7 +95,7 @@ export default function CouncilSection({ mode = 'balanced' }: { mode?: Mode }) {
       </div>
 
       <div style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, marginBottom: '0.9rem' }}>
-        Your Council reviews your dashboard from different perspectives. Finance checks spending. Health checks habits. Home notices ignored tasks.
+        Your Council reviews your dashboard from different perspectives. Finance checks spending. Health checks habits. Home notices ignored tasks. Family watches shared items and gift dates. Planning checks what's due.
       </div>
 
       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: convened ? '1rem' : 0 }}>

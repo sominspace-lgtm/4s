@@ -168,9 +168,9 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'capture':  return <CaptureSection key="capture" />
-        case 'work':     return <MasterDashboard key="work" />
+        case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'pulse':    return <PulseSection key="pulse" />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
@@ -181,8 +181,8 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         )
         case 'wishlist': return <WishlistCard key="wishlist" />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
-        case 'council':  return <CouncilSection key="council" mode={mode} />
-        case 'shared':   return <SharedWithMeSection key="shared" />
+        case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} />
+        case 'shared':   return <SharedWithMeSection key="shared" onOpenCompanions={() => setCompanionsOpen(true)} />
         default: return null
       }
     })()

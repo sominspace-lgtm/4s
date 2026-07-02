@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useCompanions, SHAREABLE_SECTIONS, type Companion } from '@/lib/hooks/useCompanions'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 interface Props {
   open: boolean
@@ -11,7 +12,7 @@ interface Props {
   onClose: () => void
 }
 
-type Tab = 'companions' | 'sharing'
+type Tab = 'companions' | 'sharing' | 'spaces'
 
 function Avatar({ email, color = 'var(--gold)' }: { email: string; color?: string }) {
   return (
@@ -147,6 +148,91 @@ function SharingTab({ companions, userId, updateSharedSections }: {
   )
 }
 
+function SpacesTab({ userId }: { userId: string }) {
+  const { spaces, ready, loading, createSpace, removeSpace, inviteMember, membersOf } = useSharedSpaces(userId)
+  const [name, setName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [emailDrafts, setEmailDrafts] = useState<Record<string, string>>({})
+
+  if (!ready) {
+    return (
+      <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.7, padding: '1rem 0' }}>
+        Shared spaces need one extra setup step — run <code>supabase/migrations/shared_spaces_and_item_sharing.sql</code> in your Supabase SQL editor, then reopen this panel.
+      </div>
+    )
+  }
+
+  async function handleCreate() {
+    if (!name.trim()) return
+    setCreating(true)
+    await createSpace(name.trim())
+    setCreating(false)
+    setName('')
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <p style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.78, lineHeight: 1.6 }}>
+        Spaces are named groups — Family, Couple, Trip, Household — you can share items with all at once.
+      </p>
+
+      <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <input
+          value={name} onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCreate()}
+          placeholder="New space name (e.g. Family)"
+          style={{
+            flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)',
+            borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text)',
+            fontFamily: 'var(--font-body)', fontSize: '0.78rem', outline: 'none',
+          }}
+        />
+        <button onClick={handleCreate} disabled={creating || !name.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem' }}>
+          create
+        </button>
+      </div>
+
+      {!loading && spaces.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>
+          No spaces yet. Create one above.
+        </div>
+      )}
+
+      {spaces.map(s => (
+        <div key={s.id} style={{ padding: '0.7rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{s.name}</span>
+            <button onClick={() => removeSpace(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.7rem', opacity: 0.5 }}>✕</button>
+          </div>
+          {membersOf(s.id).map(m => (
+            <div key={m.id} style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.78 }}>
+              {m.member_email} · {m.status}
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: '0.3rem' }}>
+            <input
+              value={emailDrafts[s.id] ?? ''}
+              onChange={e => setEmailDrafts(d => ({ ...d, [s.id]: e.target.value }))}
+              onKeyDown={async e => {
+                if (e.key === 'Enter' && emailDrafts[s.id]?.trim()) {
+                  await inviteMember(s.id, emailDrafts[s.id])
+                  setEmailDrafts(d => ({ ...d, [s.id]: '' }))
+                }
+              }}
+              placeholder="Invite by email"
+              style={{
+                flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)',
+                borderRadius: '6px', padding: '0.3rem 0.55rem', color: 'var(--text)',
+                fontFamily: 'var(--font-body)', fontSize: '0.7rem', outline: 'none',
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function CompanionPanel({ open, userId, userEmail, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const { companions, sent, received, active, loading, invite, accept, decline, remove, updateSharedSections } = useCompanions(userId)
@@ -208,6 +294,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
           <button style={tabStyle('sharing')} onClick={() => setTab('sharing')}>
             What I Share {active.length > 0 && <span style={{ opacity: 0.5 }}>({active.length})</span>}
           </button>
+          <button style={tabStyle('spaces')} onClick={() => setTab('spaces')}>Spaces</button>
         </div>
 
         {loading ? (
@@ -300,8 +387,10 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
               </div>
             )}
           </>
-        ) : (
+        ) : tab === 'sharing' ? (
           <SharingTab companions={companions} userId={userId} updateSharedSections={updateSharedSections} />
+        ) : (
+          <SpacesTab userId={userId} />
         )}
       </div>
     </>

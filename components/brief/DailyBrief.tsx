@@ -7,6 +7,7 @@ import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
 import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
+import { useCompanions } from '@/lib/hooks/useCompanions'
 import { DOMAINS } from '@/lib/constants/domains'
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
@@ -25,7 +26,7 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
   )
 }
 
-export default function DailyBrief() {
+export default function DailyBrief({ userId, onOpenCompanions }: { userId: string; onOpenCompanions: () => void }) {
   const lang = useLang()
   const { items } = useWorkItems()
   const { habits, completions } = useHabits()
@@ -33,6 +34,8 @@ export default function DailyBrief() {
   const { touched } = useDomainTouched()
   const { subs } = useSubscriptions()
   const { items: giftItems } = useGiftEvents()
+  const { received } = useCompanions(userId)
+  const pendingShares = received.filter(c => c.status === 'pending').length
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
@@ -60,12 +63,13 @@ export default function DailyBrief() {
   const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
 
   const summaryParts: string[] = []
+  if (inboxCount > 0) summaryParts.push(`${inboxCount} inbox item${inboxCount > 1 ? 's' : ''}`)
+  if (pendingShares > 0) summaryParts.push(`${pendingShares} shared invite${pendingShares > 1 ? 's' : ''}`)
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
   if (domainsNeedingReview.length > 0) summaryParts.push(`${domainsNeedingReview[0].label} review due`)
   if (moneyDueSoon > 0) summaryParts.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
   if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
-  if (inboxCount > 0) summaryParts.push(`${inboxCount} in inbox`)
 
   function getInsight(): string {
     if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inboxCount, inProgress })
@@ -99,7 +103,7 @@ export default function DailyBrief() {
 
       {summaryParts.length > 0 && (
         <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>
-          {summaryParts.slice(0, 3).join(' · ')}
+          {summaryParts.slice(0, 4).join(' · ')}
         </div>
       )}
 
@@ -129,6 +133,13 @@ export default function DailyBrief() {
       <div style={{ marginTop: '0.9rem', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontStyle: 'italic', paddingTop: '0.7rem', borderTop: '1px solid var(--faint)' }}>
         {lang !== 'ko' && <strong style={{ color: 'var(--text)', fontStyle: 'normal' }}>Suggested next action: </strong>}
         {getInsight()}
+      </div>
+
+      <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-add-task'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('app:focus-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Capture thought</button>
+        <button onClick={() => document.getElementById('section-capture')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
+        <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
       </div>
     </div>
   )

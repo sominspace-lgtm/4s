@@ -6,6 +6,7 @@ import { useWorkItems, dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItem
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
+import ShareMenu from '@/components/ui/ShareMenu'
 
 const P_COLOR: Record<number, string> = { 1: 'var(--rose)', 2: 'var(--gold)', 3: 'var(--muted)' }
 const P_DOT:   Record<number, string> = { 1: '●', 2: '●', 3: '○' }
@@ -36,8 +37,9 @@ type Filter = 'all' | 'today' | 'overdue' | 'done'
 
 const P_LABEL: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'P3' }
 
-function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
+function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
+  userId: string
   onStatus: (id: string, s: WorkItem['status']) => void
   onRemove: (id: string) => void
   onToggleShared: (id: string) => void
@@ -94,10 +96,10 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
           {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68 }}>↻</span>}
         </span>
 
-        {/* Share toggle */}
+        {/* Category-wide share toggle — visible to any companion sharing "Work Hub" */}
         <button
           onClick={() => onToggleShared(item.id)}
-          title={item.shared ? 'Shared with companions' : 'Share with companions'}
+          title={item.shared ? 'Visible to all Work Hub companions' : 'Make visible to Work Hub companions'}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
             fontSize: '0.62rem', lineHeight: 1,
@@ -106,6 +108,11 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
             transition: 'opacity 0.15s',
           }}
         >⇆</button>
+
+        {/* Share with a specific person or group */}
+        <div style={{ opacity: hovered ? 1 : 0.6, flexShrink: 0 }}>
+          <ShareMenu itemType="work_item" itemId={item.id} userId={userId} />
+        </div>
 
         <button onClick={() => onRemove(item.id)} style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
@@ -197,7 +204,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
   )
 }
 
-export default function MasterDashboard() {
+export default function MasterDashboard({ userId }: { userId: string }) {
   const lang = useLang()
   const { items, loading, add, setStatus, update, remove, toggleShared } = useWorkItems()
   const [filter, setFilter] = useState<Filter>('all')
@@ -292,7 +299,7 @@ export default function MasterDashboard() {
       )}
 
       {!loading && filtered.map(i => (
-        <WorkRow key={i.id} item={i} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+        <WorkRow key={i.id} item={i} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
       ))}
 
       {/* Add area */}

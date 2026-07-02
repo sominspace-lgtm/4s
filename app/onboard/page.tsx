@@ -23,6 +23,8 @@ const TEMPLATES = [
   { id: 'couple',   label: 'Couple',   icon: '♡', domains: ['relationship', 'self', 'home'],     habit: { name: 'Plan a date',             category: 'relationship' } },
   { id: 'student',  label: 'Student',  icon: '✦', domains: ['self', 'biz-future', 'money'],      habit: { name: 'Study session',          category: 'self' } },
   { id: 'creator',  label: 'Creator',  icon: '◈', domains: ['creative', 'biz-active', 'money'],  habit: { name: 'Create something',       category: 'creative' } },
+  { id: 'household', label: 'Household', icon: '⌂', domains: ['home', 'money', 'relationship'],  habit: { name: 'Household check-in',     category: 'home' } },
+  { id: 'trip',      label: 'Trip',      icon: '◎', domains: ['home', 'money', 'self'],          habit: { name: 'Pack / plan for trip',   category: 'home' } },
 ]
 
 const THEMES = [

@@ -21,6 +21,10 @@ interface CouncilInput {
   buyItems: BuyItem[]
   domainTouched: Record<string, string>
   mode?: Mode
+  overdueTasks?: number
+  dueTodayTasks?: number
+  upcomingGifts?: { name: string; days: number }[]
+  pendingShares?: number
 }
 
 function habitRate(habits: Habit[], completions: Record<string, string[]>, category: string): { rate: number; count: number; done: number } {
@@ -41,7 +45,10 @@ function daysSinceTouched(touched: string | undefined): number {
 }
 
 export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
-  const { habits, completions, subscriptions, buyItems, domainTouched, mode = 'balanced' } = input
+  const {
+    habits, completions, subscriptions, buyItems, domainTouched, mode = 'balanced',
+    overdueTasks = 0, dueTodayTasks = 0, upcomingGifts = [], pendingShares = 0,
+  } = input
   const modeConfig = MODES[mode]
   const week = getLast7Days()
 
@@ -125,6 +132,21 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
       if (selfRate.rate >= 0.7) return { verdict: 'fine' as const, advice: `Self habits strong at ${Math.round(selfRate.rate * 100)}% this week. This is what groundedness looks like.` }
       return { verdict: 'quiet' as const, advice: `Self habits at ${Math.round(selfRate.rate * 100)}% — steady. Keep checking in with yourself.` }
     })(),
+
+    // Family
+    (() => {
+      const soonGift = [...upcomingGifts].sort((a, b) => a.days - b.days)[0]
+      if (pendingShares > 0) return { verdict: 'watch' as const, advice: `${pendingShares} shared item${pendingShares > 1 ? 's are' : ' is'} waiting on your response.` }
+      if (soonGift && soonGift.days <= 14) return { verdict: 'watch' as const, advice: `${soonGift.name} is coming up in ${soonGift.days}d — worth thinking about a gift.` }
+      return { verdict: 'quiet' as const, advice: 'Nothing urgent from family or companions right now.' }
+    })(),
+
+    // Planning
+    (() => {
+      if (overdueTasks > 0) return { verdict: 'watch' as const, advice: `${overdueTasks} task${overdueTasks > 1 ? 's are' : ' is'} overdue. Reschedule or knock them out.` }
+      if (dueTodayTasks > 0) return { verdict: 'watch' as const, advice: `${dueTodayTasks} task${dueTodayTasks > 1 ? 's' : ''} due today — plan when you'll tackle ${dueTodayTasks > 1 ? 'them' : 'it'}.` }
+      return { verdict: 'fine' as const, advice: 'Calendar and tasks are clear. Good day to plan ahead.' }
+    })(),
   ]
 
   const DOMAINS = [
@@ -136,6 +158,8 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
     { id: 'creative',   label: 'Creative', icon: '✦', color: 'var(--amber)' },
     { id: 'home',       label: 'Home',     icon: '⌂', color: 'var(--slate)' },
     { id: 'self',       label: 'Self',     icon: '◎', color: 'var(--lavender)' },
+    { id: 'family',     label: 'Family',   icon: '♥', color: 'var(--blush)' },
+    { id: 'planning',   label: 'Planning', icon: '◒', color: 'var(--gold)' },
   ]
 
   return DOMAINS.map((d, i) => {
