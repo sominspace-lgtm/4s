@@ -25,6 +25,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'capture',  label: 'Capture',            hidden: false },
   // At a glance
   { id: 'brief',    label: 'Daily Brief',        hidden: false },
+  // Companions — surfaced early so shared items aren't an afterthought
+  { id: 'shared',   label: 'Shared With Me',     hidden: false },
   // Focus
   { id: 'work',     label: 'Work Hub',           hidden: false },
   { id: 'habits',   label: 'Daily Habits',       hidden: false },
@@ -38,8 +40,6 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Review
   { id: 'calendar', label: 'Calendar',           hidden: false },
   { id: 'council',  label: 'Your Council',       hidden: false },
-  // Companions
-  { id: 'shared',   label: 'Shared With Me',     hidden: false },
 ]
 
 interface CustomizePanelProps {

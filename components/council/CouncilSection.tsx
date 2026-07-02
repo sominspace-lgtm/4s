@@ -45,14 +45,24 @@ export default function CouncilSection({ mode = 'balanced' }: { mode?: Mode }) {
   const { touched } = useDomainTouched()
   const [convened, setConvened] = useState(false)
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
+  const [focusDomain, setFocusDomain] = useState<string | null>(null)
 
-  function convene() {
+  function convene(domain: string | null = null) {
     const result = generateCouncilAdvice({ habits, completions, subscriptions, buyItems, domainTouched: touched, mode })
     setAdvice(result)
+    setFocusDomain(domain)
     setConvened(true)
   }
 
   const watchCount = advice.filter(a => a.verdict === 'watch').length
+  const shown = focusDomain ? advice.filter(a => a.domain === focusDomain) : advice
+
+  const ASK_BUTTONS = [
+    { domain: 'money',    label: 'Ask Finance' },
+    { domain: 'health',   label: 'Ask Health' },
+    { domain: 'home',     label: 'Ask Home' },
+    { domain: 'creative', label: 'Ask Creative' },
+  ]
 
   return (
     <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
@@ -63,29 +73,38 @@ export default function CouncilSection({ mode = 'balanced' }: { mode?: Mode }) {
             <div style={{ fontSize: '0.68rem', color: 'var(--rose)', marginTop: '0.2rem' }}>{watchCount} area{watchCount !== 1 ? 's' : ''} need attention</div>
           )}
         </div>
-        <button onClick={convene} style={{
-          padding: '0.45em 1.2em', borderRadius: '8px', cursor: 'pointer',
-          border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)',
-          color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.73rem',
-          letterSpacing: '0.04em',
-        }}>
-          {convened ? 'Reconvene' : 'Convene council'}
+        <button onClick={() => convene(null)} className="btn btn-primary" style={{ letterSpacing: '0.04em' }}>
+          {convened ? 'Reconvene all' : 'Convene council'}
         </button>
       </div>
 
-      {!convened && (
-        <div style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300 }}>
-          Each advisor reviews your data and speaks. Finance checks your spending. Health checks your habits. Home notices what you&apos;ve been ignoring.
-        </div>
-      )}
+      <div style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, marginBottom: '0.9rem' }}>
+        Your Council reviews your dashboard from different perspectives. Finance checks spending. Health checks habits. Home notices ignored tasks.
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: convened ? '1rem' : 0 }}>
+        {ASK_BUTTONS.map(b => (
+          <button key={b.domain} onClick={() => convene(b.domain)} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>
+            {b.label}
+          </button>
+        ))}
+      </div>
 
       {convened && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-          {advice.map(m => <AdviceCard key={m.domain} member={m} />)}
-        </div>
+        <>
+          {focusDomain && (
+            <button onClick={() => setFocusDomain(null)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
+              fontSize: '0.68rem', padding: 0, marginBottom: '0.6rem', textDecoration: 'underline',
+            }}>← view all</button>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            {shown.map(m => <AdviceCard key={m.domain} member={m} />)}
+          </div>
+        </>
       )}
 
-      <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.04em' }}>
+      <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.04em' }}>
         rule-based analysis · ai-powered advice coming soon
       </div>
     </div>

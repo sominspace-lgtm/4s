@@ -1,12 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { format, parseISO } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
+import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
+import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
+import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
 
 export default function CalendarEmbed({ userId, initialUrl }: { userId: string; initialUrl: string | null }) {
   const [url, setUrl] = useState(initialUrl ?? '')
   const [input, setInput] = useState('')
   const [showInput, setShowInput] = useState(!initialUrl)
+
+  const { items: workItems } = useWorkItems()
+  const { subs } = useSubscriptions()
+  const { items: giftItems } = useGiftEvents()
+
+  const dueSoonTasks = workItems.filter(i => i.status !== 'done' && ['overdue', 'today'].includes(dueUrgency(i.due_date))).length
+  const nextSub = [...subs].filter(s => s.renewal_date).sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? ''))[0]
+  const nextGift = [...giftItems].sort((a, b) => daysUntil(a) - daysUntil(b))[0]
+
+  const upcoming: string[] = []
+  if (dueSoonTasks > 0) upcoming.push(`${dueSoonTasks} task${dueSoonTasks > 1 ? 's' : ''} due`)
+  if (nextSub) upcoming.push(`${nextSub.name} renews ${format(parseISO(nextSub.renewal_date!), 'MMM d')}`)
+  if (nextGift) upcoming.push(`${nextGift.name} in ${daysUntil(nextGift)}d`)
 
   async function apply() {
     if (!input.trim()) return
@@ -58,8 +75,13 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
               <span style={{ color: 'var(--gold)', fontSize: '0.9rem' }}>◎</span>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--text)' }}>Calendar</span>
             </div>
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.04em' }}>synced from Google Calendar</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.04em' }}>synced from Google Calendar</span>
           </div>
+          {upcoming.length > 0 && (
+            <div style={{ padding: '0.6rem 1.25rem', fontSize: '0.73rem', color: 'var(--text)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
+              {upcoming.join(' · ')}
+            </div>
+          )}
           <iframe src={url} style={{ width: '100%', height: '420px', display: 'block', border: 'none' }} title="Google Calendar" />
           <button onClick={() => setShowInput(true)} style={{
             display: 'block', width: '100%', padding: '0.5rem', background: 'transparent',

@@ -10,7 +10,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   sunset: {
     '--bg': '#080a18', '--surface': '#0e1028', '--surface2': '#141638',
     '--border': 'rgba(120,130,240,0.11)', '--text': '#eaebfc',
-    '--muted': 'rgba(234,235,252,0.48)', '--faint': 'rgba(234,235,252,0.07)',
+    '--muted': 'rgba(234,235,252,0.62)', '--faint': 'rgba(234,235,252,0.07)',
     '--gold': '#8fa0f0', '--purple': '#a090e8', '--emerald': '#7ad4c0',
     '--rose': '#f08080', '--blush': '#b0b8f8', '--amber': '#eac070',
     '--slate': '#7080c8', '--lavender': '#c0a8ff',
@@ -29,7 +29,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   rose: {
     '--bg': '#130810', '--surface': '#1e0e1c', '--surface2': '#291428',
     '--border': 'rgba(220,100,160,0.12)', '--text': '#f8e8f4',
-    '--muted': 'rgba(248,232,244,0.48)', '--faint': 'rgba(248,232,244,0.07)',
+    '--muted': 'rgba(248,232,244,0.62)', '--faint': 'rgba(248,232,244,0.07)',
     '--gold': '#e888c8', '--purple': '#d060c0', '--emerald': '#a0d8a0',
     '--rose': '#f06090', '--blush': '#f0b0d8', '--amber': '#e8a080',
     '--slate': '#b080b8', '--lavender': '#e090d0',
@@ -48,7 +48,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   forest: {
     '--bg': '#050e08', '--surface': '#091510', '--surface2': '#0e1d16',
     '--border': 'rgba(60,180,100,0.10)', '--text': '#e0f2e8',
-    '--muted': 'rgba(224,242,232,0.48)', '--faint': 'rgba(224,242,232,0.07)',
+    '--muted': 'rgba(224,242,232,0.62)', '--faint': 'rgba(224,242,232,0.07)',
     '--gold': '#58c880', '--purple': '#70b890', '--emerald': '#40c878',
     '--rose': '#d08870', '--blush': '#80d0a0', '--amber': '#c8b060',
     '--slate': '#50a870', '--lavender': '#90c8a0',
@@ -67,7 +67,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   ocean: {
     '--bg': '#040c14', '--surface': '#081420', '--surface2': '#0c1e30',
     '--border': 'rgba(60,160,220,0.12)', '--text': '#e0f0f8',
-    '--muted': 'rgba(224,240,248,0.48)', '--faint': 'rgba(224,240,248,0.07)',
+    '--muted': 'rgba(224,240,248,0.62)', '--faint': 'rgba(224,240,248,0.07)',
     '--gold': '#50c8e8', '--purple': '#70a0d8', '--emerald': '#40d0b0',
     '--rose': '#e08890', '--blush': '#80d8f0', '--amber': '#d0c060',
     '--slate': '#5080b8', '--lavender': '#90b0e0',
@@ -86,7 +86,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   ember: {
     '--bg': '#0e0b08', '--surface': '#181410', '--surface2': '#221e18',
     '--border': 'rgba(220,130,50,0.12)', '--text': '#f5ede4',
-    '--muted': 'rgba(245,237,228,0.48)', '--faint': 'rgba(245,237,228,0.07)',
+    '--muted': 'rgba(245,237,228,0.62)', '--faint': 'rgba(245,237,228,0.07)',
     '--gold': '#e09040', '--purple': '#c090d0', '--emerald': '#80c080',
     '--rose': '#e08070', '--blush': '#f0b080', '--amber': '#e0b040',
     '--slate': '#a0a0b0', '--lavender': '#c0a0c0',
@@ -106,7 +106,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--scheme': 'light',
     '--bg': '#f7f3ed', '--surface': '#f0ebe3', '--surface2': '#e8e2d8',
     '--border': 'rgba(80,55,30,0.10)', '--text': '#2a1e12',
-    '--muted': 'rgba(42,30,18,0.50)', '--faint': 'rgba(42,30,18,0.07)',
+    '--muted': 'rgba(42,30,18,0.64)', '--faint': 'rgba(42,30,18,0.07)',
     '--gold': '#9a5020', '--purple': '#6a4090', '--emerald': '#3a7040',
     '--rose': '#a04040', '--blush': '#c08060', '--amber': '#b07020',
     '--slate': '#506070', '--lavender': '#756090',
@@ -125,7 +125,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   sand: {
     '--bg': '#13110d', '--surface': '#1d1a15', '--surface2': '#27241e',
     '--border': 'rgba(210,185,140,0.10)', '--text': '#f2ede4',
-    '--muted': 'rgba(242,237,228,0.48)', '--faint': 'rgba(242,237,228,0.07)',
+    '--muted': 'rgba(242,237,228,0.62)', '--faint': 'rgba(242,237,228,0.07)',
     '--gold': '#c4a05a', '--purple': '#a888b0', '--emerald': '#80a870',
     '--rose': '#c08070', '--blush': '#d8b880', '--amber': '#c0a040',
     '--slate': '#9898a8', '--lavender': '#c0a8b8',
@@ -144,7 +144,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   plum: {
     '--bg': '#0c0514', '--surface': '#140a1e', '--surface2': '#1c1028',
     '--border': 'rgba(160,80,220,0.12)', '--text': '#f0e8f8',
-    '--muted': 'rgba(240,232,248,0.48)', '--faint': 'rgba(240,232,248,0.07)',
+    '--muted': 'rgba(240,232,248,0.62)', '--faint': 'rgba(240,232,248,0.07)',
     '--gold': '#c060e8', '--purple': '#a060c0', '--emerald': '#70d0a0',
     '--rose': '#e060a0', '--blush': '#e090e0', '--amber': '#c0a0e0',
     '--slate': '#8060a0', '--lavender': '#c090e0',
@@ -163,7 +163,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   noir: {
     '--bg': '#040404', '--surface': '#0a0a0c', '--surface2': '#111114',
     '--border': 'rgba(255,255,255,0.08)', '--text': '#f4f4f6',
-    '--muted': 'rgba(244,244,246,0.45)', '--faint': 'rgba(244,244,246,0.06)',
+    '--muted': 'rgba(244,244,246,0.62)', '--faint': 'rgba(244,244,246,0.06)',
     '--gold': '#e8e8ec', '--purple': '#9090b0', '--emerald': '#70d070',
     '--rose': '#e07070', '--blush': '#f0f0f4', '--amber': '#d0b060',
     '--slate': '#7878a0', '--lavender': '#c0c0d8',
@@ -182,7 +182,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   lavender: {
     '--bg': '#0d0b14', '--surface': '#15121e', '--surface2': '#1e1828',
     '--border': 'rgba(160,140,220,0.10)', '--text': '#ece8f8',
-    '--muted': 'rgba(236,232,248,0.48)', '--faint': 'rgba(236,232,248,0.07)',
+    '--muted': 'rgba(236,232,248,0.62)', '--faint': 'rgba(236,232,248,0.07)',
     '--gold': '#b0a0e0', '--purple': '#a090d0', '--emerald': '#88c8a0',
     '--rose': '#e090b0', '--blush': '#d0b8e8', '--amber': '#d0b880',
     '--slate': '#8880b8', '--lavender': '#c0b0e0',

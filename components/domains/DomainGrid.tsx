@@ -36,7 +36,7 @@ export default function DomainGrid() {
       </div>
 
       {visible.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>
+        <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68 }}>
           All domains hidden. Click <strong>⊹ edit domains</strong> to show some.
         </div>
       ) : (

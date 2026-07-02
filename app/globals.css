@@ -6,7 +6,7 @@
   --surface2: #141638;
   --border:   rgba(120,130,240,0.11);
   --text:     #eaebfc;
-  --muted:    rgba(234,235,252,0.48);
+  --muted:    rgba(234,235,252,0.62);
   --faint:    rgba(234,235,252,0.07);
 
   --gold:     #8fa0f0;
@@ -69,8 +69,12 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   font-weight: 300;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Placeholders — keep readable against dark surfaces instead of relying on browser default */
+::placeholder { color: var(--muted); opacity: 0.85; }
 
 /* Card hover polish — lift, brighten border, theme-accent glow. 150–250ms, no bounce. */
 .card-interactive {
@@ -164,4 +168,13 @@ select, option {
   .habit-days { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .domain-grid { grid-template-columns: 1fr !important; }
   h1, .display { font-size: clamp(1.6rem, 8vw, 2.5rem) !important; }
+
+  /* Bigger tap targets and readable text for forms/buttons on small screens */
+  input, select, textarea {
+    font-size: max(0.85rem, 1em) !important;
+    min-height: 42px;
+  }
+  textarea { min-height: 72px; }
+  .btn { min-height: 40px; font-size: max(0.75rem, 1em) !important; }
+  .card-interactive { padding: 1rem !important; }
 }

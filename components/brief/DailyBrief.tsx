@@ -1,9 +1,13 @@
 'use client'
 
-import { format } from 'date-fns'
+import { format, differenceInDays, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
+import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
+import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
+import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
+import { DOMAINS } from '@/lib/constants/domains'
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
@@ -26,6 +30,9 @@ export default function DailyBrief() {
   const { items } = useWorkItems()
   const { habits, completions } = useHabits()
   const { captures } = useCaptures()
+  const { touched } = useDomainTouched()
+  const { subs } = useSubscriptions()
+  const { items: giftItems } = useGiftEvents()
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
@@ -43,6 +50,22 @@ export default function DailyBrief() {
       return sum + week.filter(d => done.has(d)).length
     }, 0) / (habitsTotal * week.length) * 100
   )
+
+  const domainsNeedingReview = DOMAINS.filter(d => {
+    const last = touched[d.id]
+    return !last || differenceInDays(new Date(), parseISO(last)) > 7
+  })
+  const moneyDueSoon = subs.filter(s => subUrgency(s.renewal_date) === 'soon').length
+    + giftItems.filter(g => giftDaysUntil(g) <= 7).length
+  const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
+
+  const summaryParts: string[] = []
+  if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
+  else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
+  if (domainsNeedingReview.length > 0) summaryParts.push(`${domainsNeedingReview[0].label} review due`)
+  if (moneyDueSoon > 0) summaryParts.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
+  if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
+  if (inboxCount > 0) summaryParts.push(`${inboxCount} in inbox`)
 
   function getInsight(): string {
     if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inboxCount, inProgress })
@@ -74,6 +97,12 @@ export default function DailyBrief() {
         background: 'radial-gradient(ellipse at top right, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%)',
       }} />
 
+      {summaryParts.length > 0 && (
+        <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>
+          {summaryParts.slice(0, 3).join(' · ')}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           {!hasStats && (
@@ -92,12 +121,13 @@ export default function DailyBrief() {
           {showInbox     && <Stat label={t('in inbox', lang)}        value={inboxCount} color="var(--muted)" />}
         </div>
 
-        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
           {lang === 'ko' ? fmtDate(new Date(), 'ko') : format(new Date(), 'EEEE, MMM d')}
         </div>
       </div>
 
       <div style={{ marginTop: '0.9rem', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontStyle: 'italic', paddingTop: '0.7rem', borderTop: '1px solid var(--faint)' }}>
+        {lang !== 'ko' && <strong style={{ color: 'var(--text)', fontStyle: 'normal' }}>Suggested next action: </strong>}
         {getInsight()}
       </div>
     </div>

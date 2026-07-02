@@ -17,6 +17,14 @@ const DOMAIN_OPTIONS = [
   { id: 'self', label: 'Self', icon: '◎' },
 ]
 
+const TEMPLATES = [
+  { id: 'personal', label: 'Personal', icon: '◎', domains: ['self', 'health', 'home'],          habit: { name: 'Journal',                category: 'self' } },
+  { id: 'family',   label: 'Family',   icon: '⌂', domains: ['relationship', 'home', 'money'],    habit: { name: 'Family check-in',        category: 'relationship' } },
+  { id: 'couple',   label: 'Couple',   icon: '♡', domains: ['relationship', 'self', 'home'],     habit: { name: 'Plan a date',             category: 'relationship' } },
+  { id: 'student',  label: 'Student',  icon: '✦', domains: ['self', 'biz-future', 'money'],      habit: { name: 'Study session',          category: 'self' } },
+  { id: 'creator',  label: 'Creator',  icon: '◈', domains: ['creative', 'biz-active', 'money'],  habit: { name: 'Create something',       category: 'creative' } },
+]
+
 const THEMES = [
   { id: 'sunset',   label: 'Moonlight', bg: '#080a18', accent: '#8fa0f0', note: 'deep indigo · premium' },
   { id: 'rose',     label: 'Rose',      bg: '#130810', accent: '#e888c8', note: 'soft plum · elegant' },
@@ -56,9 +64,17 @@ export default function OnboardPage() {
   const [habitCategory, setHabitCategory] = useState('health')
   const [captureText, setCaptureText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [template, setTemplate] = useState<string | null>(null)
 
   function toggleDomain(id: string) {
     setFocusDomains(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id])
+  }
+
+  function applyTemplate(tpl: typeof TEMPLATES[number]) {
+    setTemplate(tpl.id)
+    setFocusDomains(tpl.domains)
+    setHabitName(tpl.habit.name)
+    setHabitCategory(tpl.habit.category)
   }
 
   async function finish() {
@@ -161,9 +177,31 @@ export default function OnboardPage() {
             <div style={{ fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '2rem', fontWeight: 300, color: '#f0eae8', marginBottom: '0.5rem', lineHeight: 1.2 }}>
               Your <em style={{ fontStyle: 'italic', color: accent }}>domains</em>.
             </div>
-            <div style={{ fontSize: '0.82rem', color: 'rgba(240,234,232,0.5)', marginBottom: '2rem', lineHeight: 1.7 }}>
+            <div style={{ fontSize: '0.82rem', color: 'rgba(240,234,232,0.5)', marginBottom: '1.2rem', lineHeight: 1.7 }}>
               Eight life areas, one operating system. Which matter most right now? (Pick any.)
             </div>
+
+            <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(240,234,232,0.35)', marginBottom: '0.6rem' }}>
+              Or start from a template
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+              {TEMPLATES.map(tpl => {
+                const active = template === tpl.id
+                return (
+                  <button key={tpl.id} onClick={() => applyTemplate(tpl)} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.4rem 0.8rem', borderRadius: '99px', cursor: 'pointer',
+                    border: active ? `1px solid ${accent}80` : '1px solid rgba(255,255,255,0.08)',
+                    background: active ? `${accent}1a` : 'rgba(255,255,255,0.03)',
+                    color: active ? '#f0eae8' : 'rgba(240,234,232,0.5)',
+                    fontFamily: 'Inter, sans-serif', fontSize: '0.75rem',
+                  }}>
+                    <span>{tpl.icon}</span><span>{tpl.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '2rem' }}>
               {DOMAIN_OPTIONS.map(d => {
                 const active = focusDomains.includes(d.id)

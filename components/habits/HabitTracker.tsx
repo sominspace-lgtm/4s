@@ -66,7 +66,7 @@ export default function HabitTracker() {
       {!loading && habits.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '1.2rem 0', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <div style={{ fontSize: '1.2rem', opacity: 0.3 }}>○</div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>No streaks yet. Start with one small promise.</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>No streaks yet. Start with one small promise.</p>
         </div>
       )}
 

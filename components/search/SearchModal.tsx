@@ -121,15 +121,15 @@ export default function SearchModal({ open, onClose }: Props) {
               color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.92rem', fontWeight: 300,
             }}
           />
-          {loading && <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.5 }}>…</span>}
-          <kbd style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, background: 'var(--surface2)', padding: '0.2em 0.5em', borderRadius: '4px' }}>esc</kbd>
+          {loading && <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.68 }}>…</span>}
+          <kbd style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.58, background: 'var(--surface2)', padding: '0.2em 0.5em', borderRadius: '4px' }}>esc</kbd>
         </div>
 
         {/* Commands + results */}
         {(matchedCommands.length > 0 || results.length > 0) && (
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
             {matchedCommands.length > 0 && (
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.4, padding: '0.6rem 1.25rem 0.3rem' }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.58, padding: '0.6rem 1.25rem 0.3rem' }}>
                 Quick actions
               </div>
             )}
@@ -137,7 +137,7 @@ export default function SearchModal({ open, onClose }: Props) {
               <CommandRow key={c.id} command={c} active={i === idx} onHover={() => setIdx(i)} onClick={() => { c.run(); onClose() }} />
             ))}
             {results.length > 0 && (
-              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.4, padding: '0.6rem 1.25rem 0.3rem' }}>
+              <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.58, padding: '0.6rem 1.25rem 0.3rem' }}>
                 Results
               </div>
             )}
@@ -148,14 +148,14 @@ export default function SearchModal({ open, onClose }: Props) {
         )}
 
         {query && !loading && results.length === 0 && matchedCommands.length === 0 && (
-          <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>
+          <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68 }}>
             {lang === 'ko' ? `"${query}"에 대한 결과가 없습니다` : `No results for "${query}"`}
           </div>
         )}
 
         <div style={{ padding: '0.5rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>
           {[['↑↓', 'navigate'], ['↵', 'jump to'], ['esc', 'close']].map(([key, label]) => (
-            <span key={key} style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4 }}>
+            <span key={key} style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.58 }}>
               <kbd style={{ background: 'var(--surface2)', padding: '0.15em 0.4em', borderRadius: '3px', marginRight: '0.3em' }}>{key}</kbd>{t(label, lang)}
             </span>
           ))}
@@ -179,7 +179,7 @@ function CommandRow({ command, active, onHover, onClick }: { command: Command; a
     >
       <span style={{ fontSize: '0.8rem', color: 'var(--gold)', opacity: 0.7, flexShrink: 0, width: '1em', textAlign: 'center' }}>{command.icon}</span>
       <div style={{ flex: 1, minWidth: 0, fontSize: '0.82rem', color: 'var(--text)' }}>{command.label}</div>
-      {command.hint && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>{command.hint}</span>}
+      {command.hint && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.68 }}>{command.hint}</span>}
     </div>
   )
 }
@@ -200,7 +200,7 @@ function ResultRow({ result, active, onHover, onClick, lang }: { result: SearchR
       <span style={{ fontSize: '0.8rem', color, opacity: 0.7, flexShrink: 0 }}>{TYPE_ICON[result.type]}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.82rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{result.title}</div>
-        {result.subtitle && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, marginTop: '0.1rem' }}>{result.subtitle}</div>}
+        {result.subtitle && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.78, marginTop: '0.1rem' }}>{result.subtitle}</div>}
       </div>
       <span style={{ fontSize: '0.6rem', color, opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>{t(result.type, lang)}</span>
     </div>

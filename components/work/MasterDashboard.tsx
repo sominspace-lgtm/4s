@@ -91,7 +91,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
           opacity: item.status === 'done' ? 0.45 : 1,
           userSelect: 'text',
         }}>{item.title}
-          {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.5 }}>↻</span>}
+          {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68 }}>↻</span>}
         </span>
 
         {/* Share toggle */}
@@ -148,7 +148,7 @@ function WorkRow({ item, onStatus, onRemove, onToggleShared, onUpdate }: {
         />
 
         {item.recur_days && (
-          <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.4 }}>
+          <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.58 }}>
             ↻ {item.recur_days === 1 ? 'daily' : item.recur_days === 7 ? 'weekly' : item.recur_days === 30 ? 'monthly' : `every ${item.recur_days}d`}
           </span>
         )}
@@ -282,7 +282,7 @@ export default function MasterDashboard() {
       {!loading && filtered.length === 0 && (
         <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{filter === 'overdue' ? '🎉' : filter === 'done' ? '📋' : '✓'}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.6 }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>
             {filter === 'all'     && 'Queue clear. Add one thing worth finishing.'}
             {filter === 'today'   && 'Nothing due today.'}
             {filter === 'overdue' && 'Nothing overdue. Nice.'}
@@ -344,7 +344,7 @@ export default function MasterDashboard() {
         </div>
       )}
 
-      <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, letterSpacing: '0.04em' }}>
+      <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.58, letterSpacing: '0.04em' }}>
         ai prioritization + smart deadlines coming soon · ↻ = recurring · ⇆ = shared with companions
       </div>
     </div>
