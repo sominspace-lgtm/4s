@@ -74,7 +74,7 @@ export default function FeedbackBox() {
               fontSize: '0.72rem', cursor: 'pointer',
             }}>{t('cancel (btn)', lang)}</button>
             <button onClick={submit} disabled={!text.trim() || sending} style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: '8px',
+              background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: '8px',
               padding: '0.4rem 0.9rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
               fontSize: '0.72rem', cursor: text.trim() ? 'pointer' : 'default',
               opacity: text.trim() ? 1 : 0.4,

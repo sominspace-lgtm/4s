@@ -12,9 +12,9 @@ import { generateCouncilAdvice, type CouncilAdvice } from '@/lib/utils/council'
 import type { Mode } from '@/lib/constants/modes'
 
 const VERDICT_STYLE: Record<string, React.CSSProperties> = {
-  fine:  { color: 'var(--gold)',  background: 'rgba(232,160,192,0.08)', borderColor: 'rgba(232,160,192,0.2)' },
-  watch: { color: 'var(--rose)',  background: 'rgba(212,96,154,0.08)',  borderColor: 'rgba(212,96,154,0.2)' },
-  quiet: { color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)' },
+  fine:  { color: 'var(--gold)',  background: 'color-mix(in srgb, var(--gold) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--gold) 20%, transparent)' },
+  watch: { color: 'var(--rose)',  background: 'color-mix(in srgb, var(--rose) 8%, transparent)',  borderColor: 'color-mix(in srgb, var(--rose) 20%, transparent)' },
+  quiet: { color: 'var(--muted)', background: 'var(--hover-bg)', borderColor: 'var(--border)' },
 }
 
 const ADVISORS = [
@@ -30,7 +30,7 @@ function AdvisorCard({ advisor, onAsk }: { advisor: typeof ADVISORS[number]; onA
   return (
     <div className="card-interactive" style={{
       borderRadius: '12px', padding: '0.9rem 1rem', border: '1px solid var(--border)',
-      background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '0.4rem',
+      background: 'var(--hover-bg)', display: 'flex', flexDirection: 'column', gap: '0.4rem',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.9rem', color: advisor.color }}>{advisor.icon}</span>

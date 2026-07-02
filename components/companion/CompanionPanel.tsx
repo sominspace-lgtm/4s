@@ -211,7 +211,7 @@ function SpacesTab({ userId }: { userId: string }) {
       )}
 
       {spaces.map(s => (
-        <div key={s.id} style={{ padding: '0.7rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div key={s.id} style={{ padding: '0.7rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{s.name}</span>
             <button onClick={() => removeSpace(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.7rem', opacity: 0.5 }}>✕</button>
@@ -301,7 +301,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '0.3rem', background: 'rgba(255,255,255,0.03)', borderRadius: '9px', padding: '0.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
           <button style={tabStyle('companions')} onClick={() => setTab('companions')}>Companions</button>
           <button style={tabStyle('sharing')} onClick={() => setTab('sharing')}>
             What I Share {active.length > 0 && <span style={{ opacity: 0.5 }}>({active.length})</span>}
@@ -343,7 +343,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.8 }}>Invited you</div>
                 {received.filter(c => c.status === 'pending').map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)' }}>
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
                     <Avatar email={c.invitee_email} color="var(--amber)" />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
@@ -362,7 +362,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Active</div>
                 {active.map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)' }}>
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
                     <Avatar email={c.invitee_email} color="var(--emerald)" />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
@@ -383,7 +383,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Awaiting</div>
                 {sent.filter(c => c.status === 'pending').map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)' }}>
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
                     <Avatar email={c.invitee_email} />
                     <div style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
                     <Pill text="waiting" color="var(--muted)" />

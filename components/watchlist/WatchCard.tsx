@@ -6,7 +6,7 @@ import { useWatchItems, type WatchItem } from '@/lib/hooks/useWatchItems'
 
 const TYPE_STYLE: Record<string, { color: string; bg: string; border: string }> = {
   price:       { color: 'var(--amber)',   bg: 'rgba(232,144,122,0.15)', border: 'rgba(232,144,122,0.25)' },
-  restock:     { color: 'var(--gold)',    bg: 'rgba(232,160,192,0.12)', border: 'rgba(232,160,192,0.22)' },
+  restock:     { color: 'var(--gold)',    bg: 'color-mix(in srgb, var(--gold) 12%, transparent)', border: 'color-mix(in srgb, var(--gold) 22%, transparent)' },
   appointment: { color: 'var(--purple)',  bg: 'rgba(196,120,176,0.12)', border: 'rgba(196,120,176,0.22)' },
   supplement:  { color: 'var(--slate)',   bg: 'rgba(184,122,176,0.12)', border: 'rgba(184,122,176,0.22)' },
 }
@@ -45,7 +45,7 @@ export default function WatchCard() {
         const ts = TYPE_STYLE[item.type]
         return (
           <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', padding: '0.65rem 0', borderBottom: '1px solid var(--faint)' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.status === 'triggered' ? 'var(--rose)' : 'rgba(232,160,192,0.5)', flexShrink: 0, marginTop: '0.4rem' }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.status === 'triggered' ? 'var(--rose)' : 'color-mix(in srgb, var(--gold) 50%, transparent)', flexShrink: 0, marginTop: '0.4rem' }} />
             <span style={{ fontSize: '0.58rem', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0.2em 0.55em', borderRadius: '4px', flexShrink: 0, marginTop: '0.1rem', color: ts.color, background: ts.bg, border: `1px solid ${ts.border}` }}>
               {item.type}
             </span>
@@ -73,7 +73,7 @@ export default function WatchCard() {
         </select>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="What to watch" aria-label="Item name" style={{ ...inputStyle, flex: 2, minWidth: '130px' }} />
         <input value={note} onChange={e => setNote(e.target.value)} placeholder="Condition or note" aria-label="Note" style={{ ...inputStyle, flex: 2, minWidth: '130px' }} />
-        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)', background: 'rgba(232,160,192,0.08)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
+        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)', background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   )

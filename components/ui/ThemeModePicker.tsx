@@ -9,17 +9,12 @@ import { t } from '@/lib/i18n'
 
 const MODE_ICONS: Partial<Record<Mode, string>> = { gamer: '🎮', hype: '🔥', monk: '☯', peaceful: '🌿' }
 
-const THEME_PREVIEW: Record<string, { bg: string; accent: string }> = {
-  sunset:   { bg: '#080a18', accent: '#8fa0f0' },
-  rose:     { bg: '#130810', accent: '#e888c8' },
-  forest:   { bg: '#050e08', accent: '#58c880' },
-  ocean:    { bg: '#040c14', accent: '#50c8e8' },
-  ember:    { bg: '#0e0b08', accent: '#e09040' },
-  ash:      { bg: '#f7f3ed', accent: '#9a5020' },
-  sand:     { bg: '#13110d', accent: '#c4a05a' },
-  plum:     { bg: '#0c0514', accent: '#c060e8' },
-  noir:     { bg: '#040404', accent: '#e8e8ec' },
-  lavender: { bg: '#0d0b14', accent: '#b0a0e0' },
+// Read straight from the real theme tokens instead of maintaining a second
+// hand-copied palette — the swatch always matches what the theme actually
+// looks like, and new themes need zero extra wiring here.
+function themeSwatch(id: string) {
+  const v = THEMES[id]
+  return { bg: v['--bg'], surface: v['--surface2'], text: v['--text'], accent: v['--gold'], accent2: v['--accent-2'] }
 }
 
 interface ThemeModePickerProps {
@@ -90,7 +85,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
         <div style={{
           position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '14px', padding: '1rem', width: '260px',
+          borderRadius: '14px', padding: '1rem', width: '300px', maxHeight: '80vh', overflowY: 'auto',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
           {/* Tabs */}
@@ -100,30 +95,38 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
           </div>
 
           {tab === 'theme' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.45rem' }}>
-              {Object.keys(THEMES).map(t => {
-                const p = THEME_PREVIEW[t]
-                const active = currentTheme === t
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+              {Object.keys(THEMES).map(id => {
+                const p = themeSwatch(id)
+                const active = currentTheme === id
                 return (
                   <button
-                    key={t}
-                    onClick={() => setTheme(t)}
-                    title={THEME_LABELS[t]}
+                    key={id}
+                    onClick={() => setTheme(id)}
+                    title={THEME_LABELS[id]}
                     style={{
-                      borderRadius: '10px', cursor: 'pointer', padding: '0',
+                      borderRadius: '10px', cursor: 'pointer', padding: '0.4rem',
                       border: active ? `2px solid ${p.accent}` : '2px solid rgba(255,255,255,0.04)',
-                      background: p.bg, height: '48px', position: 'relative', overflow: 'hidden',
+                      background: p.bg, position: 'relative', overflow: 'hidden',
                       transition: 'all 0.15s', boxShadow: active ? `0 0 12px ${p.accent}40` : 'none',
+                      display: 'flex', flexDirection: 'column', gap: '0.3rem',
                     }}
                   >
+                    {/* Mini surface card */}
                     <div style={{
-                      position: 'absolute', inset: 0,
-                      background: `radial-gradient(ellipse at top right, ${p.accent}35, transparent 70%)`,
-                    }} />
-                    <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: '0.42rem', color: p.accent, letterSpacing: '0.05em', textTransform: 'uppercase', opacity: active ? 1 : 0.7 }}>
-                      {THEME_LABELS[t]}
+                      background: p.surface, borderRadius: '6px', padding: '0.3rem 0.4rem',
+                      display: 'flex', flexDirection: 'column', gap: '0.25rem',
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent2 }} />
+                      </div>
+                      <div style={{ width: '70%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.85 }} />
+                      <div style={{ width: '45%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.4 }} />
                     </div>
-                    <div style={{ position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
+                    <div style={{ textAlign: 'center', fontSize: '0.55rem', color: p.text, letterSpacing: '0.03em', opacity: active ? 1 : 0.75 }}>
+                      {THEME_LABELS[id]}
+                    </div>
                   </button>
                 )
               })}

@@ -25,7 +25,7 @@ export default function BuylistCard() {
   function urgencyColor(days: number) {
     if (days < 0) return 'var(--rose)'
     if (days <= 5) return 'var(--amber)'
-    return 'rgba(232,160,192,0.4)'
+    return 'color-mix(in srgb, var(--gold) 40%, transparent)'
   }
 
   function dueLabel(days: number) {
@@ -61,7 +61,7 @@ export default function BuylistCard() {
             <span style={{ fontSize: '0.68rem', color, whiteSpace: 'nowrap' }}>{dueLabel(days)}</span>
             <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
               {item.buy_url && (
-                <a href={item.buy_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.62rem', color: 'var(--gold)', border: '1px solid rgba(232,160,192,0.3)', borderRadius: '6px', padding: '0.2em 0.5em', textDecoration: 'none', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
+                <a href={item.buy_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.62rem', color: 'var(--gold)', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)', borderRadius: '6px', padding: '0.2em 0.5em', textDecoration: 'none', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>
                   buy →
                 </a>
               )}
@@ -76,7 +76,7 @@ export default function BuylistCard() {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Item (e.g. Shampoo)" aria-label="Item name" style={{ ...inputStyle, flex: 2, minWidth: '120px' }} />
         <input value={cadence} onChange={e => setCadence(e.target.value)} type="number" placeholder="Every X days" aria-label="Cadence in days" style={{ ...inputStyle, width: '100px' }} />
         <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Amazon link (optional)" aria-label="Buy URL" style={{ ...inputStyle, flex: 3, minWidth: '160px' }} />
-        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)', background: 'rgba(232,160,192,0.08)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
+        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)', background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   )

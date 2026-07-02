@@ -158,7 +158,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           title="Search everything (⌘/)"
           style={{
             fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5,
-            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+            background: 'var(--hover-bg)', border: '1px solid var(--border)',
             borderRadius: '6px', padding: '0.3em 0.55em', cursor: 'pointer',
             fontFamily: 'var(--font-body)', letterSpacing: '0.04em', userSelect: 'none',
           }}

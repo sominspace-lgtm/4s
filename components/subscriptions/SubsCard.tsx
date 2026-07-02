@@ -6,7 +6,7 @@ import { useSubscriptions, urgency } from '@/lib/hooks/useSubscriptions'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
-const URGENCY_COLOR = { soon: 'var(--rose)', near: 'var(--amber)', fine: 'rgba(232,160,192,0.3)' }
+const URGENCY_COLOR = { soon: 'var(--rose)', near: 'var(--amber)', fine: 'color-mix(in srgb, var(--gold) 30%, transparent)' }
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -60,7 +60,7 @@ export default function SubsCard() {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Service name" aria-label="Service name" style={{ ...inputStyle, flex: 2, minWidth: '110px' }} />
         <input value={cost} onChange={e => setCost(e.target.value)} type="number" step="0.01" placeholder="$/mo" aria-label="Monthly cost" style={{ ...inputStyle, flex: 1, minWidth: '70px' }} />
         <input value={date} onChange={e => setDate(e.target.value)} type="date" aria-label="Renewal date" style={{ ...inputStyle, flex: 1, minWidth: '110px', colorScheme: 'dark' }} />
-        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)', background: 'rgba(232,160,192,0.08)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
+        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)', background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   )

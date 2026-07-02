@@ -103,7 +103,7 @@ export default function CaptureSection() {
           <span>{t('Inbox', lang)}</span>
           {captures.length > 0 && (
             <span style={{
-              background: 'rgba(232,160,192,0.15)', color: 'var(--gold)',
+              background: 'color-mix(in srgb, var(--gold) 15%, transparent)', color: 'var(--gold)',
               borderRadius: '10px', padding: '0.1em 0.5em', fontSize: '0.6rem',
             }}>
               {captures.length}

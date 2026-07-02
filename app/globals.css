@@ -53,6 +53,29 @@
   --text-card:    1.05rem;                      /* card titles */
   --text-label:   0.66rem;                      /* uppercase / letter-spaced labels */
   --text-meta:    0.68rem;                      /* metadata, muted */
+
+  /* Semantic role aliases — reuse each theme's already-tuned per-theme hues
+     so status colors, inputs, and badges stay theme-reactive without every
+     theme needing 10 more hand-picked hex values. */
+  --accent:       var(--gold);
+  --success:      var(--emerald);
+  --warning:      var(--amber);
+  --danger:       var(--rose);
+  --info:         var(--slate);
+  --elevated:     var(--surface2);
+  --input-bg:     var(--surface2);
+  --input-border: var(--border);
+  --badge-bg:     color-mix(in srgb, var(--gold) 14%, transparent);
+  --badge-text:   var(--gold);
+  --private-badge-bg:   color-mix(in srgb, var(--muted) 12%, transparent);
+  --private-badge-text: var(--muted);
+  --shared-badge-bg:    color-mix(in srgb, var(--gold) 15%, transparent);
+  --shared-badge-text:  var(--gold);
+
+  /* Per-theme visual character — overridden per theme, sane defaults here */
+  --radius:      14px;
+  --radius-sm:   8px;
+  --shadow-soft: 0 8px 24px color-mix(in srgb, var(--shadow) 60%, transparent);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,7 +112,7 @@ html, body {
 /* Button hierarchy */
 .btn {
   font-family: var(--font-body); font-size: 0.75rem; cursor: pointer;
-  padding: 0.5em 1em; border-radius: 8px; border: 1px solid transparent;
+  padding: 0.5em 1em; border-radius: var(--radius-sm, 8px); border: 1px solid transparent;
   transition: background var(--t-fast), border-color var(--t-fast), opacity var(--t-fast), transform var(--t-fast);
 }
 .btn:active { transform: translateY(1px); }

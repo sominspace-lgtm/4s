@@ -13,7 +13,7 @@ const inputStyle: React.CSSProperties = {
 function urgencyColor(days: number) {
   if (days <= 3) return 'var(--rose)'
   if (days <= 14) return 'var(--amber)'
-  return 'rgba(232,160,192,0.4)'
+  return 'color-mix(in srgb, var(--gold) 40%, transparent)'
 }
 
 function dueLabel(days: number) {

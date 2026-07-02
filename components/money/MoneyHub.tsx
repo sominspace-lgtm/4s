@@ -51,7 +51,7 @@ export default function MoneyHub() {
     }}>
       <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400, marginBottom: '0.8rem' }}>Money</div>
 
-      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '9px', padding: '0.25rem' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '1rem', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
         {TABS.map(tb => (
           <button key={tb.id} onClick={() => setTab(tb.id)} className="btn" style={{
             fontSize: '0.7rem', padding: '0.35em 0.8em',

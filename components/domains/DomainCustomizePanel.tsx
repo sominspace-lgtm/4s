@@ -175,7 +175,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
 
             {/* Preview */}
             {label && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '7px', marginTop: '0.1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.6rem', background: 'var(--hover-bg)', borderRadius: '7px', marginTop: '0.1rem' }}>
                 <span style={{ color, fontSize: '0.9rem' }}>{icon}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{label}</span>
               </div>
@@ -188,7 +188,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
               }}>cancel</button>
               <button onClick={handleAdd} disabled={!label.trim()} style={{
                 flex: 2, padding: '0.38em', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.12)',
-                background: 'rgba(255,255,255,0.05)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem',
+                background: 'var(--hover-bg)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem',
                 cursor: label.trim() ? 'pointer' : 'default', opacity: label.trim() ? 1 : 0.4,
               }}>add domain</button>
             </div>

@@ -63,11 +63,11 @@ export default function TipsBanner() {
         {TIPS.map(tip => (
           <div key={tip.key} style={{
             display: 'flex', alignItems: 'center', gap: '0.4rem',
-            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
+            background: 'var(--hover-bg)', border: '1px solid var(--border)',
             borderRadius: '8px', padding: '0.35rem 0.65rem',
           }}>
             <kbd style={{
-              fontSize: '0.62rem', color: 'var(--gold)', background: 'rgba(255,255,255,0.04)',
+              fontSize: '0.62rem', color: 'var(--gold)', background: 'var(--hover-bg)',
               border: '1px solid var(--border)', borderRadius: '4px',
               padding: '0.1em 0.4em', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
             }}>{tip.key}</kbd>

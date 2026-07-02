@@ -58,8 +58,8 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
               }}
             />
             <button onClick={apply} style={{
-              padding: '0.55em 1.2em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)',
-              background: 'rgba(232,160,192,0.08)', color: 'var(--gold)', fontFamily: 'var(--font-body)',
+              padding: '0.55em 1.2em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+              background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)', fontFamily: 'var(--font-body)',
               fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap',
             }}>Apply</button>
           </div>

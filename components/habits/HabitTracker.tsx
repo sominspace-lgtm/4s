@@ -96,8 +96,8 @@ export default function HabitTracker() {
             ))}
           </select>
           <button onClick={handleAdd} style={{
-            padding: '0.45em 1em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)',
-            background: 'rgba(232,160,192,0.08)', color: 'var(--gold)',
+            padding: '0.45em 1em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+            background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)',
             fontFamily: 'var(--font-body)', fontSize: '0.73rem', cursor: 'pointer',
           }}>
             Add

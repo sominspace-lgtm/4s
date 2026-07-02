@@ -35,7 +35,7 @@ export default function WishlistCard() {
 
       {items.map(item => (
         <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', padding: '0.65rem 0', borderBottom: '1px solid var(--faint)' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(232,160,192,0.5)', flexShrink: 0, marginTop: '0.45rem' }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'color-mix(in srgb, var(--gold) 50%, transparent)', flexShrink: 0, marginTop: '0.45rem' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginBottom: '0.15rem' }}>{item.name}</div>
             {item.note && <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.4 }}>{item.note}</div>}
@@ -53,7 +53,7 @@ export default function WishlistCard() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--faint)' }}>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Item name" aria-label="Item name" style={{ ...inputStyle, flex: 2, minWidth: '140px' }} />
         <input value={note} onChange={e => setNote(e.target.value)} placeholder="Target price or condition" aria-label="Note" style={{ ...inputStyle, flex: 2, minWidth: '140px' }} />
-        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid rgba(232,160,192,0.3)', background: 'rgba(232,160,192,0.08)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
+        <button onClick={handleAdd} style={{ padding: '0.4em 0.9em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)', background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   )

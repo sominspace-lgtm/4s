@@ -23,6 +23,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(80,90,240,0.12)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(100,60,220,0.08)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(140,100,255,0.05)', '--aurora-pos-3': '60% 20%',
+    '--radius': '14px', '--radius-sm': '8px',
   },
 
   // 🌸 Rose — soft plum and pink, elegant
@@ -42,6 +43,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(220,80,160,0.12)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(160,50,130,0.08)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(240,100,180,0.05)', '--aurora-pos-3': '50% 20%',
+    '--radius': '16px', '--radius-sm': '9px',
   },
 
   // 🌿 Forest — evergreen, calm and grounded
@@ -61,6 +63,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(30,160,70,0.10)', '--aurora-pos-1': 'bottom left',
     '--aurora-2': 'rgba(60,120,40,0.07)', '--aurora-pos-2': 'top right',
     '--aurora-3': 'rgba(100,200,80,0.04)', '--aurora-pos-3': '20% 80%',
+    '--radius': '13px', '--radius-sm': '7px',
   },
 
   // 🌊 Ocean — slate blue, clean and flowing
@@ -80,6 +83,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(30,140,220,0.14)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(20,100,200,0.09)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(50,180,240,0.05)', '--aurora-pos-3': '80% top',
+    '--radius': '12px', '--radius-sm': '7px',
   },
 
   // 🔥 Ember — charcoal with warm amber-orange
@@ -99,6 +103,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(220,100,20,0.14)', '--aurora-pos-1': 'bottom right',
     '--aurora-2': 'rgba(180,140,40,0.09)', '--aurora-pos-2': 'top left',
     '--aurora-3': 'rgba(200,70,10,0.06)', '--aurora-pos-3': 'center bottom',
+    '--radius': '12px', '--radius-sm': '7px',
   },
 
   // ☀️ Linen — warm paper, minimal light mode
@@ -119,6 +124,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(160,90,30,0.06)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(120,60,20,0.04)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(180,110,40,0.03)', '--aurora-pos-3': 'center top',
+    '--radius': '18px', '--radius-sm': '10px',
   },
 
   // 🟤 Sand — muted beige, coffee shop warmth
@@ -138,6 +144,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(200,165,90,0.08)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(160,125,60,0.06)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(220,190,120,0.04)', '--aurora-pos-3': 'center top',
+    '--radius': '17px', '--radius-sm': '9px',
   },
 
   // 🍇 Plum — dark violet, creative and expressive
@@ -157,6 +164,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(160,40,220,0.16)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(220,60,160,0.10)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(200,60,240,0.06)', '--aurora-pos-3': '70% 30%',
+    '--radius': '15px', '--radius-sm': '8px',
   },
 
   // ⚫ Obsidian — near-monochrome, stark and focused
@@ -176,6 +184,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(255,255,255,0.025)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(200,200,220,0.015)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(150,150,180,0.010)', '--aurora-pos-3': 'center',
+    '--radius': '10px', '--radius-sm': '6px',
   },
 
   // 🪻 Lavender — soft purple-gray, relaxed and dreamy
@@ -195,6 +204,69 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-1': 'rgba(140,100,240,0.10)', '--aurora-pos-1': 'top right',
     '--aurora-2': 'rgba(200,120,200,0.07)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(160,120,255,0.05)', '--aurora-pos-3': '60% 10%',
+    '--radius': '15px', '--radius-sm': '8px',
+  },
+
+  // 🌌 Aurora — deep teal/navy with green, cyan and violet northern-lights accents
+  aurora: {
+    '--bg': '#050e12', '--surface': '#081820', '--surface2': '#0c222c',
+    '--border': 'rgba(80,220,180,0.12)', '--text': '#e6faf4',
+    '--muted': 'rgba(230,250,244,0.62)', '--faint': 'rgba(230,250,244,0.07)',
+    '--gold': '#5ce8b0', '--purple': '#9878e8', '--emerald': '#50e0a0',
+    '--rose': '#e08890', '--blush': '#80e0d0', '--amber': '#e0c060',
+    '--slate': '#50a8c0', '--lavender': '#a090e8',
+    '--accent-2': '#48c8e0', '--shadow': 'rgba(5,14,18,0.65)',
+    '--glow': 'rgba(92,232,176,0.22)', '--selection': 'rgba(92,232,176,0.18)',
+    '--hover-bg': 'rgba(80,220,180,0.06)',
+    '--font-display': "var(--font-newsreader),'Newsreader',serif",
+    '--font-body':    "var(--font-inter),'Inter',sans-serif",
+    '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
+    '--aurora-1': 'rgba(60,220,150,0.14)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(60,160,220,0.10)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(140,90,230,0.08)', '--aurora-pos-3': '50% 30%',
+    '--radius': '14px', '--radius-sm': '8px',
+  },
+
+  // 🌸 Sakura — soft pink light theme, warm and gentle
+  sakura: {
+    '--scheme': 'light',
+    '--bg': '#fdf2f4', '--surface': '#fdf7f8', '--surface2': '#f9ebee',
+    '--border': 'rgba(200,90,130,0.12)', '--text': '#3a2028',
+    '--muted': 'rgba(58,32,40,0.62)', '--faint': 'rgba(58,32,40,0.07)',
+    '--gold': '#d85a90', '--purple': '#8a5a90', '--emerald': '#5a9070',
+    '--rose': '#c8406c', '--blush': '#e888ac', '--amber': '#c88050',
+    '--slate': '#8070a0', '--lavender': '#a080b0',
+    '--accent-2': '#8a5a90', '--shadow': 'rgba(180,100,130,0.16)',
+    '--glow': 'rgba(216,90,144,0.18)', '--selection': 'rgba(216,90,144,0.14)',
+    '--hover-bg': 'rgba(200,90,130,0.05)',
+    '--font-display': "var(--font-newsreader),'Newsreader',serif",
+    '--font-body':    "var(--font-nunito),'Nunito Sans',sans-serif",
+    '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
+    '--aurora-1': 'rgba(220,120,160,0.08)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(200,100,140,0.05)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(240,160,190,0.04)', '--aurora-pos-3': 'center top',
+    '--radius': '18px', '--radius-sm': '10px',
+  },
+
+  // ☀️ Solar — bright premium light theme, sunlit cream/gold/sky
+  solar: {
+    '--scheme': 'light',
+    '--bg': '#fdf9ee', '--surface': '#ffffff', '--surface2': '#f5efd8',
+    '--border': 'rgba(180,140,20,0.14)', '--text': '#1c2338',
+    '--muted': 'rgba(28,35,56,0.62)', '--faint': 'rgba(28,35,56,0.07)',
+    '--gold': '#c89020', '--purple': '#5a6ab0', '--emerald': '#3a8060',
+    '--rose': '#c04850', '--blush': '#5090c8', '--amber': '#d0a020',
+    '--slate': '#4878b0', '--lavender': '#7080c0',
+    '--accent-2': '#4090c8', '--shadow': 'rgba(180,150,60,0.20)',
+    '--glow': 'rgba(200,144,32,0.18)', '--selection': 'rgba(200,144,32,0.14)',
+    '--hover-bg': 'rgba(180,140,20,0.05)',
+    '--font-display': "var(--font-libre-baskerville),'Libre Baskerville',serif",
+    '--font-body':    "var(--font-manrope),'Manrope',sans-serif",
+    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
+    '--aurora-1': 'rgba(220,180,40,0.10)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(80,140,200,0.06)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(240,210,120,0.05)', '--aurora-pos-3': 'center top',
+    '--radius': '13px', '--radius-sm': '7px',
   },
 }
 
@@ -202,6 +274,7 @@ export const THEME_LABELS: Record<string, string> = {
   sunset: 'Moonlight', rose: 'Rose', forest: 'Forest', ocean: 'Ocean',
   ember: 'Ember', ash: 'Linen', sand: 'Sand', plum: 'Plum',
   noir: 'Obsidian', lavender: 'Lavender',
+  aurora: 'Aurora', sakura: 'Sakura', solar: 'Solar',
 }
 
 const ALL_VARS = [
@@ -211,6 +284,7 @@ const ALL_VARS = [
   '--accent-2','--shadow','--glow','--selection','--hover-bg',
   '--font-display','--font-body','--font-mono',
   '--aurora-1','--aurora-2','--aurora-3','--aurora-pos-1','--aurora-pos-2','--aurora-pos-3',
+  '--radius','--radius-sm',
 ]
 
 export default function ThemeProvider({ theme = 'sunset', children }: { theme?: string; children: React.ReactNode }) {

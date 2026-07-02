@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { THEMES as THEME_TOKENS, THEME_LABELS } from '@/components/ui/ThemeProvider'
 
 const STEPS = ['Your name', 'Domains', 'Your style', 'First habit', 'First thought']
 
@@ -27,18 +28,19 @@ const TEMPLATES = [
   { id: 'trip',      label: 'Trip',      icon: '◎', domains: ['home', 'money', 'self'],          habit: { name: 'Pack / plan for trip',   category: 'home' } },
 ]
 
-const THEMES = [
-  { id: 'sunset',   label: 'Moonlight', bg: '#080a18', accent: '#8fa0f0', note: 'deep indigo · premium' },
-  { id: 'rose',     label: 'Rose',      bg: '#130810', accent: '#e888c8', note: 'soft plum · elegant' },
-  { id: 'forest',   label: 'Forest',    bg: '#050e08', accent: '#58c880', note: 'evergreen · calm' },
-  { id: 'ocean',    label: 'Ocean',     bg: '#040c14', accent: '#50c8e8', note: 'slate blue · clean' },
-  { id: 'ember',    label: 'Ember',     bg: '#0e0b08', accent: '#e09040', note: 'charcoal · warm' },
-  { id: 'ash',      label: 'Linen',     bg: '#f7f3ed', accent: '#9a5020', note: 'warm paper · light' },
-  { id: 'sand',     label: 'Sand',      bg: '#13110d', accent: '#c4a05a', note: 'coffee · cozy' },
-  { id: 'plum',     label: 'Plum',      bg: '#0c0514', accent: '#c060e8', note: 'dark violet · creative' },
-  { id: 'noir',     label: 'Obsidian',  bg: '#040404', accent: '#e8e8ec', note: 'near-mono · stark' },
-  { id: 'lavender', label: 'Lavender',  bg: '#0d0b14', accent: '#b0a0e0', note: 'purple-gray · relaxed' },
-]
+// Notes are the only thing hand-written here — bg/accent come straight from
+// the real theme tokens so this can never drift out of sync with them again.
+const THEME_NOTES: Record<string, string> = {
+  sunset: 'deep indigo · premium', rose: 'soft plum · elegant', forest: 'evergreen · calm',
+  ocean: 'slate blue · clean', ember: 'charcoal · warm', ash: 'warm paper · light',
+  sand: 'coffee · cozy', plum: 'dark violet · creative', noir: 'near-mono · stark',
+  lavender: 'purple-gray · relaxed', aurora: 'northern lights · multi-accent',
+  sakura: 'soft pink · gentle', solar: 'sunlit cream · bright',
+}
+const THEMES = Object.keys(THEME_TOKENS).map(id => ({
+  id, label: THEME_LABELS[id], bg: THEME_TOKENS[id]['--bg'], accent: THEME_TOKENS[id]['--gold'],
+  note: THEME_NOTES[id] ?? '',
+}))
 
 const MODES = [
   { id: 'balanced', label: 'Balanced',  note: 'Calm, clear, present' },

@@ -345,7 +345,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
             }}>{t('cancel', lang)}</button>
             <button onClick={submit} style={{
               padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.12)',
-              background: 'rgba(255,255,255,0.05)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
+              background: 'var(--hover-bg)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
             }}>{t('Add task', lang)}</button>
           </div>
         </div>

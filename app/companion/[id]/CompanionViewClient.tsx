@@ -113,7 +113,7 @@ export default function CompanionViewClient({ ownerId, ownerEmail, sections, vie
             {sections.includes('work') && work.length > 0 && (
               <Section title="Work" icon="◈">
                 {work.map(w => (
-                  <div key={w.id} style={{ padding: '0.6rem 0.75rem', borderRadius: '9px', background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div key={w.id} style={{ padding: '0.6rem 0.75rem', borderRadius: '9px', background: 'var(--hover-bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLOR[w.status] ?? 'var(--muted)', flexShrink: 0 }} />
                     <div style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text)' }}>{w.title}</div>
                     {w.project && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>{w.project}</span>}
@@ -127,7 +127,7 @@ export default function CompanionViewClient({ ownerId, ownerEmail, sections, vie
               <Section title="Habits" icon="◉">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                   {habits.map(h => (
-                    <span key={h.id} style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', borderRadius: '99px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                    <span key={h.id} style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', borderRadius: '99px', background: 'var(--hover-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                       {h.name}
                     </span>
                   ))}

@@ -11,9 +11,9 @@ export default function EnergyToggle({ value, onChange }: { value: Energy; onCha
           fontSize: '0.6rem', letterSpacing: '0.06em', textTransform: 'uppercase',
           padding: '0.2em 0.55em', borderRadius: '10px', fontFamily: 'var(--font-body)',
           borderWidth: '1px', borderStyle: 'solid', cursor: 'pointer', transition: 'all 0.18s',
-          background: value === o ? 'rgba(232,160,192,0.14)' : 'transparent',
+          background: value === o ? 'color-mix(in srgb, var(--gold) 14%, transparent)' : 'transparent',
           color: value === o ? 'var(--gold)' : 'var(--muted)',
-          borderColor: value === o ? 'rgba(232,160,192,0.3)' : 'var(--border)',
+          borderColor: value === o ? 'color-mix(in srgb, var(--gold) 30%, transparent)' : 'var(--border)',
         }}>
           {o === 'medium' ? 'med' : o}
         </button>

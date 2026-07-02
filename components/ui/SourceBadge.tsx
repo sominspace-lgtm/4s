@@ -7,7 +7,7 @@ export default function SourceBadge({ source }: { source: 'manual' | 'synced' | 
       textTransform: 'uppercase',
       color: synced ? 'var(--gold)' : 'var(--muted)',
       opacity: synced ? 0.7 : 0.55,
-      border: `1px solid ${synced ? 'rgba(232,160,192,0.2)' : 'rgba(245,232,240,0.1)'}`,
+      border: `1px solid ${synced ? 'color-mix(in srgb, var(--gold) 20%, transparent)' : 'var(--border)'}`,
       borderRadius: '4px',
       padding: '0.1em 0.4em',
       flexShrink: 0,
