@@ -9,6 +9,7 @@ import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
 import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
+import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { DOMAINS } from '@/lib/constants/domains'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -53,6 +54,7 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
   const { subs, total: monthlyTotal } = useSubscriptions()
   const { items: giftItems } = useGiftEvents()
   const { items: wishItems } = useWatchItems()
+  const { items: buyItems } = useBuyItems()
   const { received } = useCompanions(userId)
   const pendingShares = received.filter(c => c.status === 'pending').length
 
@@ -82,8 +84,10 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
     const last = touched[d.id]
     return !last || differenceInDays(new Date(), parseISO(last)) > 7
   })
+  const refillsDue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
   const moneyDueSoon = subs.filter(s => subUrgency(s.renewal_date) === 'soon').length
     + giftItems.filter(g => giftDaysUntil(g) <= 7).length
+    + refillsDue
   const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
 
   const summaryParts: string[] = []
@@ -142,7 +146,9 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
     },
     {
       label: 'Money', action: 'Open Money', onAction: () => jumpTo('money'),
-      line: `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
+      line: refillsDue > 0
+        ? `${refillsDue} to buy again · $${monthlyTotal.toFixed(0)}/mo`
+        : `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
     },
     {
       label: 'Shared', action: 'Open Shared', onAction: () => jumpTo('shared'),

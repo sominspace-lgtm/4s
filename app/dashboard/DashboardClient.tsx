@@ -186,7 +186,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
-        case 'money':    return <MoneyHub key="money" />
+        case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
         case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} />
         case 'shared':   return <SharedWithMeSection key="shared" onOpenCompanions={() => setCompanionsOpen(true)} />

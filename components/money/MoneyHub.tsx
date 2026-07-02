@@ -33,7 +33,7 @@ function OverviewStat({ label, value, color, onClick }: { label: string; value: 
   )
 }
 
-export default function MoneyHub() {
+export default function MoneyHub({ userId }: { userId: string }) {
   const [tab, setTab] = useState<MoneyTab>('overview')
   const { subs, total } = useSubscriptions()
   const { items: giftItems } = useGiftEvents()
@@ -89,7 +89,7 @@ export default function MoneyHub() {
       {tab === 'wishlist' && <WishlistCard />}
       {tab === 'gifts'    && <GiftsCard />}
       {tab === 'renewals' && <SubsCard />}
-      {tab === 'buyagain' && <BuylistCard />}
+      {tab === 'buyagain' && <BuylistCard userId={userId} />}
     </div>
   )
 }
