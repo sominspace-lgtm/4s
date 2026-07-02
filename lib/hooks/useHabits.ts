@@ -36,6 +36,15 @@ export function useHabits() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  // See useWorkItems.ts for why this exists — this hook is called
+  // independently in several places (Habits section, Brief summary card),
+  // so a mutation in one instance needs to tell the others to reload.
+  useEffect(() => {
+    function onChanged() { fetch() }
+    window.addEventListener('4s:habits-changed', onChanged)
+    return () => window.removeEventListener('4s:habits-changed', onChanged)
+  }, [fetch])
+
   async function toggleDay(habitId: string, dateStr: string) {
     const dates = completions[habitId] || []
     const done = dates.includes(dateStr)
@@ -53,6 +62,7 @@ export function useHabits() {
       setCompletions(prev => ({ ...prev, [habitId]: [...(prev[habitId] || []), dateStr] }))
       window.dispatchEvent(new CustomEvent('4s:xp', { detail: 10 }))
     }
+    window.dispatchEvent(new CustomEvent('4s:habits-changed'))
   }
 
   async function addHabit(name: string, category: string) {
@@ -60,12 +70,14 @@ export function useHabits() {
     if (!user) return
     const { data } = await supabase.from('habits').insert({ name, category: category || null, user_id: user.id }).select().single()
     if (data) setHabits(prev => [...prev, data])
+    window.dispatchEvent(new CustomEvent('4s:habits-changed'))
   }
 
   async function deleteHabit(id: string) {
     await supabase.from('habits').delete().eq('id', id)
     setHabits(prev => prev.filter(h => h.id !== id))
     setCompletions(prev => { const n = { ...prev }; delete n[id]; return n })
+    window.dispatchEvent(new CustomEvent('4s:habits-changed'))
   }
 
   return { habits, completions, loading, toggleDay, addHabit, deleteHabit }

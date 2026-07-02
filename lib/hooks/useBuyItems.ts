@@ -108,6 +108,18 @@ export function useBuyItems() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  // useBuyItems() is called independently in several places (Buy Again,
+  // Brief's summary card, Council) — each call owns its own `items` state.
+  // Without this, adding/marking-bought in one place leaves every other
+  // instance stale until it happens to remount.
+  useEffect(() => {
+    function onChanged() { fetch() }
+    window.addEventListener('4s:buy-items-changed', onChanged)
+    return () => window.removeEventListener('4s:buy-items-changed', onChanged)
+  }, [fetch])
+
+  function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:buy-items-changed')) }
+
   interface AddInput {
     name: string
     category?: RefillCategory
@@ -158,6 +170,7 @@ export function useBuyItems() {
     if (error) return error.message
     if (!data) return 'Item was not saved — no error returned, but nothing came back either.'
     setItems(prev => [...prev, data])
+    notifyChanged()
     return null
   }
 
@@ -173,6 +186,7 @@ export function useBuyItems() {
     }
     await supabase.from('buy_items').update(patch).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
+    notifyChanged()
   }
 
   // Starts the run-out countdown from today — separate from "bought" because
@@ -181,12 +195,14 @@ export function useBuyItems() {
     const today = format(new Date(), 'yyyy-MM-dd')
     await supabase.from('buy_items').update({ opened_date: today, status: 'stocked' }).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, opened_date: today, status: 'stocked' } : i))
+    notifyChanged()
   }
 
   async function snooze(id: string, days: number) {
     const until = format(addDays(new Date(), days), 'yyyy-MM-dd')
     await supabase.from('buy_items').update({ snoozed_until: until, status: 'snoozed' }).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, snoozed_until: until, status: 'snoozed' } : i))
+    notifyChanged()
   }
 
   async function togglePaused(id: string) {
@@ -194,11 +210,13 @@ export function useBuyItems() {
     const nextStatus: RefillStatus = item?.status === 'paused' ? 'stocked' : 'paused'
     await supabase.from('buy_items').update({ status: nextStatus }).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, status: nextStatus } : i))
+    notifyChanged()
   }
 
   async function update(id: string, patch: Partial<BuyItem>) {
     await supabase.from('buy_items').update(patch).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
+    notifyChanged()
   }
 
   // "Too early / Just right / Too late" feedback nudges the interval so
@@ -212,11 +230,13 @@ export function useBuyItems() {
     const patch = { cadence_days: cadence, last_feedback: feedback }
     await supabase.from('buy_items').update(patch).eq('id', id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
+    notifyChanged()
   }
 
   async function remove(id: string) {
     await supabase.from('buy_items').delete().eq('id', id)
     setItems(prev => prev.filter(i => i.id !== id))
+    notifyChanged()
   }
 
   return { items, loading, add, markBought, markOpened, snooze, togglePaused, update, submitFeedback, remove }

@@ -53,6 +53,15 @@ export function useGiftEvents() {
 
   useEffect(() => { load() }, [load])
 
+  // See useWorkItems.ts for why this exists — this hook is called
+  // independently in several places (Gifts card, Brief summary card),
+  // so a mutation in one instance needs to tell the others to reload.
+  useEffect(() => {
+    function onChanged() { load() }
+    window.addEventListener('4s:gift-events-changed', onChanged)
+    return () => window.removeEventListener('4s:gift-events-changed', onChanged)
+  }, [load])
+
   async function save(next: GiftEvent[]) {
     setItems(next)
     const { data: { user } } = await supabase.auth.getUser()
@@ -60,6 +69,7 @@ export function useGiftEvents() {
     const { data: row } = await supabase.from('user_prefs').select('layout').eq('user_id', user.id).single()
     const nextLayout = { ...(row?.layout ?? {}), giftEvents: next }
     await supabase.from('user_prefs').upsert({ user_id: user.id, layout: nextLayout })
+    window.dispatchEvent(new CustomEvent('4s:gift-events-changed'))
   }
 
   function add(event: Omit<GiftEvent, 'id'>) {

@@ -57,6 +57,19 @@ export function useWorkItems() {
 
   useEffect(() => { load() }, [load])
 
+  // useWorkItems() is called independently in several places (Work Hub,
+  // Brief's summary card, Council) — each call owns its own `items` state.
+  // Without this, adding/completing a task in one place leaves every other
+  // instance showing stale data until it happens to remount. Any instance
+  // that mutates fires this event; every instance (including itself) reloads.
+  useEffect(() => {
+    function onChanged() { load() }
+    window.addEventListener('4s:work-items-changed', onChanged)
+    return () => window.removeEventListener('4s:work-items-changed', onChanged)
+  }, [load])
+
+  function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:work-items-changed')) }
+
   async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'priority' | 'domain' | 'recur_days'>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
@@ -64,8 +77,13 @@ export function useWorkItems() {
       .insert({ ...fields, user_id: user.id, status: 'todo', shared: false })
       .select().single()
     if (error) return error.message
-    if (!data) return 'Task was not saved — no error returned, but nothing came back either.'
-    setItems(prev => sortWorkItems([...prev, data as WorkItem]))
+    // Re-fetch from the DB instead of trusting the insert's .select() return —
+    // if that row-return is ever blocked (e.g. by an RLS SELECT policy gap),
+    // splicing local state with `data` would silently omit the new task even
+    // though the insert itself succeeded. A full reload is the source of truth.
+    if (data) setItems(prev => sortWorkItems([...prev, data as WorkItem]))
+    else await load()
+    notifyChanged()
     return null
   }
 
@@ -73,6 +91,7 @@ export function useWorkItems() {
     const item = items.find(i => i.id === id)
     const { error } = await supabase.from('work_items').update({ status, ...(status === 'done' ? { completed_at: new Date().toISOString() } : {}) }).eq('id', id)
     if (error) return
+    notifyChanged()
 
     // Emit XP event when completing
     if (status === 'done') window.dispatchEvent(new CustomEvent('4s:xp', { detail: 25 }))
@@ -106,12 +125,14 @@ export function useWorkItems() {
     const { error } = await supabase.from('work_items').update(fields).eq('id', id)
     if (error) return
     setItems(prev => sortWorkItems(prev.map(i => i.id === id ? { ...i, ...fields } : i)))
+    notifyChanged()
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from('work_items').delete().eq('id', id)
     if (error) return
     setItems(prev => prev.filter(i => i.id !== id))
+    notifyChanged()
   }
 
   async function toggleShared(id: string) {
