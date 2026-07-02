@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItems'
+import { parseTaskInput, type ParsedTask } from '@/lib/utils/parseTask'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
@@ -217,7 +218,34 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const [domain, setDomain] = useState('')
   const [recurDays, setRecurDays] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
+  // Smart entry: "hw due today" → suggest title "hw" + due date. Nothing is
+  // saved from a suggestion until the user explicitly confirms it.
+  const [dismissedFor, setDismissedFor] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
+
+  const suggestion: ParsedTask | null = title.trim() && title !== dismissedFor ? parseTaskInput(title) : null
+
+  function applySuggestion(s: ParsedTask) {
+    setTitle(s.title)
+    if (s.dueDate) setDue(s.dueDate)
+    if (s.priority) setPriority(s.priority)
+    setDismissedFor(s.title) // don't re-suggest on the cleaned title
+    titleRef.current?.focus()
+  }
+
+  async function confirmAndAdd(s: ParsedTask) {
+    setAddError(null)
+    const error = await add({
+      title: s.title, notes: notes.trim() || null,
+      due_date: s.dueDate ?? (due || null),
+      priority: s.priority ?? priority,
+      domain: domain || null,
+      recur_days: recurDays ? parseInt(recurDays) : null,
+    })
+    if (error) { setAddError(error); return }
+    setTitle(''); setNotes(''); setDue(''); setPriority(2); setDomain('')
+    setRecurDays(''); setShowAdd(false); setDismissedFor('')
+  }
 
   useEffect(() => {
     function onOpenRequest() { setShowAdd(true); setTimeout(() => titleRef.current?.focus(), 40) }
@@ -319,10 +347,40 @@ export default function MasterDashboard({ userId }: { userId: string }) {
             ref={titleRef}
             value={title}
             onChange={e => setTitle(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') { setShowAdd(false); setTitle('') } }}
-            placeholder={t('New task title', lang)}
+            onKeyDown={e => {
+              // With a pending suggestion, Enter confirms & adds it — the
+              // visible chip is the confirmation prompt.
+              if (e.key === 'Enter') { suggestion ? confirmAndAdd(suggestion) : submit() }
+              if (e.key === 'Escape') { setShowAdd(false); setTitle(''); setDismissedFor('') }
+            }}
+            placeholder={t('New task title — try "hw due today"', lang)}
             style={inputStyle}
           />
+
+          {suggestion && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+              border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+              background: 'color-mix(in srgb, var(--gold) 6%, transparent)',
+              borderRadius: '8px', padding: '0.45rem 0.65rem',
+            }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text)', flex: 1, minWidth: '140px' }}>
+                <span style={{ color: 'var(--gold)' }}>✦</span>{' '}
+                &ldquo;{suggestion.title}&rdquo; · {suggestion.summary.join(' · ')}
+              </span>
+              <div style={{ display: 'flex', gap: '0.3rem' }}>
+                <button onClick={() => confirmAndAdd(suggestion)} className="btn btn-primary" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
+                  Confirm &amp; add
+                </button>
+                <button onClick={() => applySuggestion(suggestion)} title="Fill the fields below so you can adjust before adding" className="btn btn-secondary" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
+                  Fill fields
+                </button>
+                <button onClick={() => setDismissedFor(title)} title="Keep my text as-is" className="btn btn-ghost" style={{ fontSize: '0.66rem', padding: '0.3em 0.5em' }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.4rem' }}>
             <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} title="Due date" />

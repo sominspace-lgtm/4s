@@ -1,30 +1,13 @@
 'use client'
 
-import { format, parseISO, differenceInCalendarDays } from 'date-fns'
-import { useWorkItems } from '@/lib/hooks/useWorkItems'
-import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, nextOccurrence } from '@/lib/hooks/useGiftEvents'
-import { useBuyItems, runoutDate, computeStatus } from '@/lib/hooks/useBuyItems'
-
-interface Entry {
-  key: string
-  date: Date
-  label: string
-  type: 'task' | 'renewal' | 'refill' | 'gift'
-}
-
-const TYPE_META: Record<Entry['type'], { label: string; color: string }> = {
-  task:    { label: 'task',    color: 'var(--gold)' },
-  renewal: { label: 'renewal', color: 'var(--emerald)' },
-  refill:  { label: 'refill',  color: 'var(--amber)' },
-  gift:    { label: 'gift',    color: 'var(--blush)' },
-}
+import { format, differenceInCalendarDays } from 'date-fns'
+import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 
 const WINDOW_DAYS = 14
 const MAX_UPCOMING = 8
 
-function Row({ entry, overdue }: { entry: Entry; overdue: boolean }) {
-  const meta = TYPE_META[entry.type]
+function Row({ entry, overdue }: { entry: AgendaEntry; overdue: boolean }) {
+  const meta = AGENDA_TYPE_META[entry.type]
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.35rem 0', borderBottom: '1px solid var(--faint)' }}>
       <span style={{
@@ -46,32 +29,8 @@ function Row({ entry, overdue }: { entry: Entry; overdue: boolean }) {
 // renewals, refill run-outs, gift dates. Google Calendar stays a separate
 // embed below; this works with or without it.
 export default function CalendarSummary() {
-  const { items: workItems } = useWorkItems()
-  const { subs } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
-  const { items: buyItems } = useBuyItems()
-
+  const entries = useAgendaEntries()
   const now = new Date()
-  const entries: Entry[] = []
-
-  for (const t of workItems) {
-    if (t.status === 'done' || !t.due_date) continue
-    entries.push({ key: `task-${t.id}`, date: parseISO(t.due_date), label: t.title, type: 'task' })
-  }
-  for (const s of subs) {
-    if (!s.renewal_date) continue
-    entries.push({ key: `sub-${s.id}`, date: parseISO(s.renewal_date), label: `${s.name} renews`, type: 'renewal' })
-  }
-  for (const b of buyItems) {
-    const status = computeStatus(b)
-    if (status === 'paused' || status === 'snoozed' || status === 'backup-stock') continue
-    const due = runoutDate(b)
-    if (!due) continue
-    entries.push({ key: `buy-${b.id}`, date: due, label: `${b.name} runs out`, type: 'refill' })
-  }
-  for (const g of giftItems) {
-    entries.push({ key: `gift-${g.id}`, date: nextOccurrence(g), label: g.name, type: 'gift' })
-  }
 
   const dayDiff = (d: Date) => differenceInCalendarDays(d, now)
   // Overdue items surface under Today — they matter *now*.
@@ -84,12 +43,7 @@ export default function CalendarSummary() {
   const empty = today.length === 0 && upcoming.length === 0
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem 1.3rem', marginBottom: '0.8rem' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--text)' }}>Today &amp; Upcoming</span>
-        <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.8, letterSpacing: '0.04em' }}>from your tasks, renewals, refills &amp; gifts</span>
-      </div>
-
+    <div>
       {empty && (
         <div style={{ fontSize: '0.76rem', color: 'var(--muted)', fontStyle: 'italic', padding: '0.4rem 0' }}>
           Nothing scheduled in the next two weeks. Quiet ahead.

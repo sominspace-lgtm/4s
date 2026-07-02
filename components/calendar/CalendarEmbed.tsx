@@ -3,6 +3,38 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import CalendarSummary from './CalendarSummary'
+import CalendarMonth from './CalendarMonth'
+
+// Native views (agenda + month grid) built from 4S data, with the Google
+// Calendar embed below them.
+function NativeCalendarCard() {
+  const [view, setView] = useState<'agenda' | 'month'>('agenda')
+
+  const toggleBtn = (active: boolean): React.CSSProperties => ({
+    fontSize: '0.66rem', padding: '0.3em 0.75em', borderRadius: '7px', cursor: 'pointer',
+    border: 'none', fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
+    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+    color: active ? 'var(--text)' : 'var(--muted)',
+  })
+
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.1rem 1.3rem', marginBottom: '0.8rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--text)' }}>
+            {view === 'agenda' ? 'Today & Upcoming' : 'This Month'}
+          </span>
+          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.8, letterSpacing: '0.04em' }}>from your tasks, renewals, refills &amp; gifts</span>
+        </div>
+        <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem' }}>
+          <button onClick={() => setView('agenda')} style={toggleBtn(view === 'agenda')}>Agenda</button>
+          <button onClick={() => setView('month')} style={toggleBtn(view === 'month')}>Month</button>
+        </div>
+      </div>
+      {view === 'agenda' ? <CalendarSummary /> : <CalendarMonth />}
+    </div>
+  )
+}
 
 export default function CalendarEmbed({ userId, initialUrl }: { userId: string; initialUrl: string | null }) {
   const [url, setUrl] = useState(initialUrl ?? '')
@@ -20,7 +52,7 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
 
   return (
     <>
-    <CalendarSummary />
+    <NativeCalendarCard />
     <div className="card-interactive" style={{ background: 'var(--surface)', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)', borderRadius: '14px', overflow: 'hidden' }}>
       {showInput ? (
         <div style={{ padding: '2rem 1.8rem', textAlign: 'center' }}>
