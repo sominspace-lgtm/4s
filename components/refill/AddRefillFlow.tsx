@@ -10,7 +10,10 @@ const inputStyle: React.CSSProperties = {
   fontWeight: 300, padding: '0.4rem 0.65rem', outline: 'none',
 }
 
-type Method = 'menu' | 'scan' | 'link' | 'manual'
+type Method = 'menu' | 'quick' | 'scan' | 'link' | 'manual'
+
+type CadenceUnit = 'days' | 'weeks' | 'months'
+const UNIT_DAYS: Record<CadenceUnit, number> = { days: 1, weeks: 7, months: 30 }
 
 interface Draft {
   name: string
@@ -151,12 +154,28 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
     return (
       <div style={wrap}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => { setDraft(EMPTY_DRAFT); setMethod('quick') }} className="btn btn-primary">⚡ Quick reminder</button>
           <button onClick={() => setMethod('scan')} className="btn btn-secondary">📷 Scan / upload label</button>
           <button onClick={() => setMethod('link')} className="btn btn-secondary">🔗 Paste product link</button>
-          <button onClick={startManual} className="btn btn-secondary">✎ Manual entry</button>
+          <button onClick={startManual} className="btn btn-secondary">✎ Manual / advanced</button>
           <button onClick={onCancel} className="btn btn-ghost">cancel</button>
         </div>
+        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem' }}>
+          Quick reminder takes about 10 seconds. Everything you add is private unless you share it.
+        </div>
       </div>
+    )
+  }
+
+  // --- Quick reminder: name + category + cadence, done. ---
+  if (method === 'quick') {
+    return (
+      <QuickReminderForm
+        draft={draft}
+        setDraft={setDraft}
+        onBack={() => setMethod('menu')}
+        onSave={confirmAndSave}
+      />
     )
   }
 
@@ -218,6 +237,90 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
       <div style={{ display: 'flex', gap: '0.4rem' }}>
         <button onClick={confirmAndSave} className="btn btn-primary" disabled={!draft.name.trim()}>Add</button>
         <button onClick={onCancel} className="btn btn-ghost">cancel</button>
+      </div>
+    </div>
+  )
+}
+
+// The fast path: name + category are all that's required; cadence and
+// notify-before start from the category's smart defaults.
+function QuickReminderForm({ draft, setDraft, onBack, onSave }: {
+  draft: Draft
+  setDraft: React.Dispatch<React.SetStateAction<Draft>>
+  onBack: () => void
+  onSave: () => void
+}) {
+  const [cadenceValue, setCadenceValue] = useState('30')
+  const [cadenceUnit, setCadenceUnit] = useState<CadenceUnit>('days')
+
+  function applyCadence(value: string, unit: CadenceUnit) {
+    setCadenceValue(value)
+    setCadenceUnit(unit)
+    const n = parseInt(value)
+    if (n > 0) setDraft(d => ({ ...d, cadenceDays: String(n * UNIT_DAYS[unit]) }))
+  }
+
+  function applyCategory(category: RefillCategory) {
+    const defaults = CATEGORY_DEFAULTS[category]
+    setCadenceValue(String(defaults.cadenceDays))
+    setCadenceUnit('days')
+    setDraft(d => ({ ...d, category, cadenceDays: String(defaults.cadenceDays), notifyDaysBefore: String(defaults.notifyDaysBefore) }))
+  }
+
+  const canSave = !!draft.name.trim()
+
+  return (
+    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--faint)' }}>
+      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+        Quick reminder
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <input
+          autoFocus
+          value={draft.name}
+          onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+          onKeyDown={e => e.key === 'Enter' && canSave && onSave()}
+          placeholder="Item name (e.g. Vitamin D)"
+          style={{ ...inputStyle, flex: 2, minWidth: '150px' }}
+        />
+        <select value={draft.category} onChange={e => applyCategory(e.target.value as RefillCategory)} style={{ ...inputStyle, flex: 1, minWidth: '130px', cursor: 'pointer' }}>
+          {REFILL_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Remind every</span>
+        <input
+          value={cadenceValue}
+          onChange={e => applyCadence(e.target.value, cadenceUnit)}
+          type="number" min={1}
+          style={{ ...inputStyle, width: '70px' }}
+        />
+        <select value={cadenceUnit} onChange={e => applyCadence(cadenceValue, e.target.value as CadenceUnit)} style={{ ...inputStyle, cursor: 'pointer' }}>
+          <option value="days">days</option>
+          <option value="weeks">weeks</option>
+          <option value="months">months</option>
+        </select>
+        <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>· notify</span>
+        <input
+          value={draft.notifyDaysBefore}
+          onChange={e => setDraft(d => ({ ...d, notifyDaysBefore: e.target.value }))}
+          type="number" min={0}
+          style={{ ...inputStyle, width: '60px' }}
+        />
+        <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days before</span>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
+        <input value={draft.store} onChange={e => setDraft(d => ({ ...d, store: e.target.value }))} placeholder="Preferred store (optional)" style={{ ...inputStyle, flex: 1, minWidth: '140px' }} />
+        <input value={draft.buyUrl} onChange={e => setDraft(d => ({ ...d, buyUrl: e.target.value }))} placeholder="Amazon / product link (optional)" style={{ ...inputStyle, flex: 1, minWidth: '160px' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <button onClick={onSave} className="btn btn-primary" disabled={!canSave}>Add reminder</button>
+        <button onClick={onBack} className="btn btn-ghost">← back</button>
+        <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>Private until you share it.</span>
       </div>
     </div>
   )

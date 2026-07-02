@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
@@ -14,34 +13,12 @@ const NAV_LABELS: Record<string, string> = {
 
 interface Props {
   sections: Section[]
+  activeId: string
+  onSelect: (id: string) => void
 }
 
-export default function SectionNav({ sections }: Props) {
+export default function SectionNav({ sections, activeId, onSelect }: Props) {
   const lang = useLang()
-  const [active, setActive] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const ids = sections.map(s => s.id)
-    const els = ids.map(id => document.getElementById(`section-${id}`)).filter(Boolean) as HTMLElement[]
-
-    function onScroll() {
-      const scrollY = window.scrollY + 100
-      let current = ids[0] ?? ''
-      for (const el of els) {
-        if (el.offsetTop <= scrollY) current = el.id.replace('section-', '')
-      }
-      setActive(current)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [sections])
-
-  function scrollTo(id: string) {
-    const el = document.getElementById(`section-${id}`)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   if (sections.length < 2) return null
 
@@ -54,7 +31,6 @@ export default function SectionNav({ sections }: Props) {
       WebkitBackdropFilter: 'blur(12px)',
     }}>
       <div
-        ref={ref}
         style={{
           maxWidth: '900px', margin: '0 auto', padding: '0 2rem',
           display: 'flex', gap: '0', overflowX: 'auto',
@@ -63,15 +39,15 @@ export default function SectionNav({ sections }: Props) {
       >
         {sections.map(s => {
           const label = t(NAV_LABELS[s.id] ?? s.id, lang)
-          const isActive = active === s.id
+          const isActive = activeId === s.id
           return (
             <button
               key={s.id}
-              onClick={() => scrollTo(s.id)}
+              onClick={() => onSelect(s.id)}
               style={{
-                padding: '0.55rem 0.9rem', flexShrink: 0,
+                padding: '0.65rem 0.95rem', flexShrink: 0, minHeight: '42px',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-body)', fontSize: '0.65rem',
+                fontFamily: 'var(--font-body)', fontSize: '0.68rem',
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 color: isActive ? 'var(--text)' : 'var(--muted)',
                 borderBottom: isActive ? '1.5px solid var(--gold)' : '1.5px solid transparent',

@@ -1,15 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useFocusItems } from '@/lib/hooks/useFocusItems'
+import { type FocusItem } from '@/lib/hooks/useFocusItems'
 import EnergyToggle, { type Energy } from './EnergyToggle'
 import PulseItem from './PulseItem'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
-export default function PulseSection() {
+// Items and snooze are owned by the parent (DailyBrief) so the "Needs
+// Attention" heading and this list always agree on what's flagged.
+export default function PulseSection({ items, snooze }: { items: FocusItem[]; snooze: (id: string, days: number) => void }) {
   const lang = useLang()
-  const { items, snooze } = useFocusItems()
   const [energy, setEnergy] = useState<Energy>('any')
 
   const filtered = energy === 'any' ? items : items.filter(i => i.energy === energy)

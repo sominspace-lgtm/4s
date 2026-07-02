@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
+import { goToSection } from '@/lib/utils/navigate'
 
 const TYPE_ICON: Record<string, string> = {
   capture:  '○',
@@ -29,7 +30,7 @@ interface Command {
 }
 
 function goTo(sectionId: string) {
-  document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  goToSection(sectionId)
 }
 
 interface Props {

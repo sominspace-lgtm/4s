@@ -11,7 +11,9 @@ import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEv
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
+import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { DOMAINS } from '@/lib/constants/domains'
+import { goToSection } from '@/lib/utils/navigate'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import CaptureSection from '@/components/capture/CaptureSection'
@@ -45,9 +47,10 @@ function SummaryCard({ label, line, action, onAction }: { label: string; line: s
   )
 }
 
-export default function DailyBrief({ userId, onOpenCompanions }: { userId: string; onOpenCompanions: () => void }) {
+export default function DailyBrief({ userId, calendarConnected = false, onOpenCompanions }: { userId: string; calendarConnected?: boolean; onOpenCompanions: () => void }) {
   const lang = useLang()
   const { items } = useWorkItems()
+  const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
   const { habits, completions } = useHabits()
   const { captures } = useCaptures()
   const { touched } = useDomainTouched()
@@ -98,7 +101,9 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
   if (pendingShares > 0) summaryParts.push(`${pendingShares} shared invite${pendingShares > 1 ? 's' : ''}`)
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
-  if (domainsNeedingReview.length > 0) summaryParts.push(`${domainsNeedingReview[0].label} review due`)
+  // Only nag about domain reviews once the user has actually started reviewing —
+  // a fresh account with zero history shouldn't open on a warning.
+  if (domainsNeedingReview.length > 0 && DOMAINS.some(d => touched[d.id])) summaryParts.push(`${domainsNeedingReview[0].label} review due`)
   if (moneyDueSoon > 0) summaryParts.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
   if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
 
@@ -122,39 +127,44 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
 
   const hasStats = showOverdue || showToday || showHabits || showProgress || showInbox
 
-  function jumpTo(id: string) {
-    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  // First-time states read as quiet setup notes, never as alarms —
+  // "not reviewed yet" / "nothing tracked yet" instead of "needs review".
+  const lifeReviewedOnce = DOMAINS.some(d => touched[d.id])
+  const moneyTracksAnything = subs.length > 0 || wishItems.length > 0 || buyItems.length > 0 || giftItems.length > 0
 
   const summaryCards = [
     {
-      label: 'Tasks', action: 'Open Tasks', onAction: () => jumpTo('work'),
+      label: 'Tasks', action: 'Open Tasks', onAction: () => goToSection('work'),
       line: overdue + dueToday > 0 ? `${overdue} overdue · ${dueToday} due today` : 'Queue clear',
     },
     {
-      label: 'Habits', action: 'Open Habits', onAction: () => jumpTo('habits'),
-      line: habitsTotal > 0 ? `${habitsDoneToday}/${habitsTotal} done today` : 'No habits yet',
+      label: 'Habits', action: 'Open Habits', onAction: () => goToSection('habits'),
+      line: habitsTotal > 0 ? `${habitsDoneToday}/${habitsTotal} done today` : habits.length > 0 ? 'No habits due today' : 'No habits yet',
     },
     {
-      label: 'Life', action: 'Open Life', onAction: () => jumpTo('domains'),
-      line: domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} need review` : `${DOMAINS.length} domains · all steady`,
+      label: 'Life', action: 'Open Life', onAction: () => goToSection('domains'),
+      line: !lifeReviewedOnce
+        ? `${DOMAINS.length} domains · not reviewed yet`
+        : domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} · review due` : `${DOMAINS.length} domains · all steady`,
     },
     {
-      label: 'Calendar', action: 'Open Calendar', onAction: () => jumpTo('calendar'),
-      line: 'View your schedule',
+      label: 'Calendar', action: 'Open Calendar', onAction: () => goToSection('calendar'),
+      line: calendarConnected ? 'View your schedule' : 'Not connected yet',
     },
     {
-      label: 'Council', action: 'Ask Council', onAction: () => jumpTo('council'),
+      label: 'Council', action: 'Ask Council', onAction: () => goToSection('council'),
       line: '6 advisors ready',
     },
     {
-      label: 'Money', action: 'Open Money', onAction: () => jumpTo('money'),
-      line: refillsDue > 0
-        ? `${refillsDue} to buy again · $${monthlyTotal.toFixed(0)}/mo`
-        : `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
+      label: 'Money', action: 'Open Money', onAction: () => goToSection('money'),
+      line: !moneyTracksAnything
+        ? 'Nothing tracked yet'
+        : refillsDue > 0
+          ? `${refillsDue} to buy again · $${monthlyTotal.toFixed(0)}/mo`
+          : `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
     },
     {
-      label: 'Shared', action: 'Open Shared', onAction: () => jumpTo('shared'),
+      label: 'Shared', action: 'Open Shared', onAction: () => goToSection('shared'),
       line: sharedWithMeCount > 0 ? `${sharedWithMeCount} shared with you` : 'Nothing shared yet',
     },
   ]
@@ -224,9 +234,18 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
 
     <div>
       <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-        Needs Attention
+        {focusItems.length > 0 ? 'Needs Attention' : 'Quiet for now'}
       </div>
-      <PulseSection />
+      {focusItems.length > 0 ? (
+        <PulseSection items={focusItems} snooze={snoozeFocusItem} />
+      ) : (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px',
+          padding: '0.9rem 1.2rem', fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic',
+        }}>
+          Nothing needs your attention right now.
+        </div>
+      )}
     </div>
 
     <FamilyTodayCard userId={userId} />

@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useCompanions, SHAREABLE_SECTIONS, type Companion } from '@/lib/hooks/useCompanions'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import PeopleList, { Avatar } from './PeopleList'
 
 interface Props {
   open: boolean
@@ -13,30 +13,6 @@ interface Props {
 }
 
 type Tab = 'companions' | 'sharing' | 'spaces'
-
-function Avatar({ email, color = 'var(--gold)' }: { email: string; color?: string }) {
-  return (
-    <div style={{
-      width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-      background: `color-mix(in srgb, ${color} 20%, var(--surface2))`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '0.85rem', color,
-    }}>
-      {email[0]?.toUpperCase() ?? '?'}
-    </div>
-  )
-}
-
-function Pill({ text, color }: { text: string; color: string }) {
-  return (
-    <span style={{
-      fontSize: '0.58rem', padding: '0.15em 0.55em', borderRadius: '99px',
-      background: `color-mix(in srgb, ${color} 15%, transparent)`,
-      color, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-      letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
-    }}>{text}</span>
-  )
-}
 
 function SectionToggle({ label, note, active, onToggle }: { label: string; note: string; active: boolean; onToggle: () => void }) {
   return (
@@ -148,7 +124,7 @@ function SharingTab({ companions, userId, updateSharedSections }: {
   )
 }
 
-function SpacesTab({ userId }: { userId: string }) {
+export function SpacesTab({ userId }: { userId: string }) {
   const { spaces, ready, loading, createSpace, removeSpace, inviteMember, membersOf } = useSharedSpaces(userId)
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -245,17 +221,10 @@ function SpacesTab({ userId }: { userId: string }) {
   )
 }
 
-interface PendingReceived { id: string; inviterEmail: string; createdAt: string }
-
 export default function CompanionPanel({ open, userId, userEmail, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  const { companions, sent, received, active, loading, invite, accept, decline, remove, updateSharedSections } = useCompanions(userId)
+  const { companions, active, loading, updateSharedSections } = useCompanions(userId)
   const [tab, setTab] = useState<Tab>('companions')
-  const [emailInput, setEmailInput] = useState('')
-  const [inviteError, setInviteError] = useState<string | null>(null)
-  const [inviting, setInviting] = useState(false)
-  const [inviteDone, setInviteDone] = useState(false)
-  const [pendingReceived, setPendingReceived] = useState<PendingReceived[]>([])
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -264,25 +233,6 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
     if (open) document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [open, onClose])
-
-  // The companions row only has the recipient's own email (invitee_email) —
-  // showing that back to them as "who invited you" was a real bug. This
-  // resolves the actual inviter's email server-side.
-  useEffect(() => {
-    if (!open) return
-    fetch('/api/companions/pending-received').then(r => r.json()).then(d => setPendingReceived(d.items ?? [])).catch(() => {})
-  }, [open, received.length])
-
-  async function handleInvite() {
-    if (!emailInput.trim()) return
-    if (emailInput.toLowerCase().trim() === userEmail.toLowerCase()) { setInviteError("You can't invite yourself."); return }
-    setInviting(true); setInviteError(null)
-    const err = await invite(emailInput)
-    setInviting(false)
-    if (err) { setInviteError(err); return }
-    setEmailInput(''); setInviteDone(true)
-    setTimeout(() => setInviteDone(false), 3000)
-  }
 
   const tabStyle = (t: Tab): React.CSSProperties => ({
     flex: 1, padding: '0.4rem', borderRadius: '7px', cursor: 'pointer', border: 'none',
@@ -321,95 +271,9 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
         </div>
 
         {loading ? (
-          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.5 }}>Loading…</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.6 }}>Loading…</div>
         ) : tab === 'companions' ? (
-          <>
-            {/* Invite form */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Invite by email</div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <input
-                  value={emailInput} onChange={e => setEmailInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleInvite()}
-                  placeholder="their@email.com" type="email"
-                  style={{
-                    flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)',
-                    borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text)',
-                    fontFamily: 'var(--font-body)', fontSize: '0.78rem', outline: 'none',
-                  }}
-                />
-                <button onClick={handleInvite} disabled={inviting || !emailInput.trim()} style={{
-                  padding: '0.5rem 0.8rem', borderRadius: '8px', cursor: 'pointer',
-                  background: inviteDone ? 'var(--emerald)' : 'var(--gold)',
-                  border: 'none', color: 'var(--bg)', fontFamily: 'var(--font-body)', fontSize: '0.75rem',
-                }}>
-                  {inviteDone ? '✓' : inviting ? '…' : 'send'}
-                </button>
-              </div>
-              {inviteError && <div style={{ fontSize: '0.68rem', color: 'var(--rose)' }}>{inviteError}</div>}
-            </div>
-
-            {/* Pending received */}
-            {pendingReceived.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.8 }}>Invited you</div>
-                {pendingReceived.map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
-                    <Avatar email={c.inviterEmail} color="var(--amber)" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.inviterEmail}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.3rem' }}>
-                      <button onClick={async () => { await accept(c.id); setPendingReceived(prev => prev.filter(p => p.id !== c.id)) }} style={{ background: 'var(--emerald)', border: 'none', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--bg)' }}>accept</button>
-                      <button onClick={async () => { await decline(c.id); setPendingReceived(prev => prev.filter(p => p.id !== c.id)) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--muted)' }}>decline</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Active companions */}
-            {active.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Active</div>
-                {active.map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
-                    <Avatar email={c.invitee_email} color="var(--emerald)" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
-                      <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6 }}>
-                        {(c.shared_sections ?? []).length === 0 ? 'nothing shared yet' : `sharing ${(c.shared_sections ?? []).length} section${(c.shared_sections ?? []).length !== 1 ? 's' : ''}`}
-                      </div>
-                    </div>
-                    <Pill text="active" color="var(--emerald)" />
-                    <Link href={`/companion/${c.id}`} onClick={onClose} title="View their shared space" style={{ color: 'var(--muted)', fontSize: '0.65rem', opacity: 0.4, textDecoration: 'none' }}>→</Link>
-                    <button onClick={() => remove(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.75rem', opacity: 0.35 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Awaiting */}
-            {sent.filter(c => c.status === 'pending').length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Awaiting</div>
-                {sent.filter(c => c.status === 'pending').map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
-                    <Avatar email={c.invitee_email} />
-                    <div style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
-                    <Pill text="waiting" color="var(--muted)" />
-                    <button onClick={() => remove(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.75rem', opacity: 0.35 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {active.length === 0 && sent.filter(c => c.status === 'pending').length === 0 && pendingReceived.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.4 }}>
-                No friends yet.<br />Invite someone above.
-              </div>
-            )}
-          </>
+          <PeopleList userId={userId} userEmail={userEmail} onNavigate={onClose} />
         ) : tab === 'sharing' ? (
           <SharingTab companions={companions} userId={userId} updateSharedSections={updateSharedSections} />
         ) : (

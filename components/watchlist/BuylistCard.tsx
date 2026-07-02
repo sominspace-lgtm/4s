@@ -6,7 +6,7 @@ import RefillCard from '@/components/refill/RefillCard'
 import AddRefillFlow from '@/components/refill/AddRefillFlow'
 
 export default function BuylistCard({ userId }: { userId: string }) {
-  const { items, add, markBought, markOpened, snooze, togglePaused, submitFeedback, remove } = useBuyItems()
+  const { items, add, markBought, markOpened, snooze, togglePaused, update, submitFeedback, remove } = useBuyItems()
   const [showAdd, setShowAdd] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<RefillCategory | 'all'>('all')
@@ -59,6 +59,7 @@ export default function BuylistCard({ userId }: { userId: string }) {
           onSnooze={snooze}
           onTogglePaused={togglePaused}
           onFeedback={submitFeedback}
+          onUpdate={update}
           onRemove={remove}
         />
       ))}

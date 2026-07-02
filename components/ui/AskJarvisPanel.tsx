@@ -1,21 +1,18 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { goToSection } from '@/lib/utils/navigate'
 
 interface Props {
   open: boolean
   onClose: () => void
 }
 
-function goTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
 const PROMPTS = [
-  { label: 'What needs attention?',    run: () => goTo('section-brief') },
-  { label: 'What should I do next?',   run: () => goTo('section-brief') },
-  { label: 'What was shared with me?', run: () => goTo('section-shared') },
-  { label: 'Summarize my week',        run: () => goTo('week-review') },
+  { label: 'What needs attention?',    run: () => goToSection('brief') },
+  { label: 'What should I do next?',   run: () => goToSection('brief') },
+  { label: 'What was shared with me?', run: () => goToSection('shared') },
+  { label: 'Summarize my week',        run: () => goToSection('week-review') },
 ]
 
 // Not heavy AI yet — routes canned prompts to the existing summaries

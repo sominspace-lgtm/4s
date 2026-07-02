@@ -24,7 +24,7 @@ import HabitTracker from '@/components/habits/HabitTracker'
 import DomainGrid from '@/components/domains/DomainGrid'
 import MoneyHub from '@/components/money/MoneyHub'
 import CouncilSection from '@/components/council/CouncilSection'
-import SharedWithMeSection from '@/components/companion/SharedWithMeSection'
+import SharedHub from '@/components/companion/SharedHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
@@ -90,6 +90,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   }, [gain])
 
   const lang = 'en' as const
+  const [activeTab, setActiveTab] = useState('brief')
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -113,6 +114,22 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     const supabase = createClient()
     await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode: next } })
   }
+
+  // Tab navigation from anywhere (Brief summary cards, search, Jarvis).
+  // 'week-review' and 'brief-inbox' are anchors inside the Brief tab.
+  useEffect(() => {
+    function onNav(e: Event) {
+      const id = (e as CustomEvent<string>).detail
+      const anchor = id === 'week-review' || id === 'brief-inbox' ? id : null
+      setActiveTab(anchor ? 'brief' : id)
+      requestAnimationFrame(() => {
+        if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        else window.scrollTo({ top: 0, behavior: 'smooth' })
+      })
+    }
+    window.addEventListener('4s:navigate', onNav)
+    return () => window.removeEventListener('4s:navigate', onNav)
+  }, [])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -150,6 +167,10 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
   )
 
+  // Tab mode: only the active section renders. If the active tab was hidden
+  // (customize / simple mode / focus view), fall back to the first visible one.
+  const currentTab = visible.some(s => s.id === activeTab) ? activeTab : (visible[0]?.id ?? 'brief')
+
   function sectionLabel(id: string, idx: number): { label: string; group?: string } {
     const group = SECTION_GROUPS[id]
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
@@ -164,17 +185,19 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
   }
 
-  function renderSection(id: string, idx: number, collapsed: boolean) {
+  // Collapse only applies in Focus View's stacked layout — in tab mode the
+  // active section is always expanded and the toggle is hidden.
+  function renderSection(id: string, idx: number, collapsed: boolean, stacked: boolean) {
     const { label, group } = sectionLabel(id, idx)
-    const isFirst = idx === 0
+    const isFirst = !stacked || idx === 0
 
     const heading = (
       <SectionLabel
         key={`lbl-${id}`}
         style={isFirst ? { marginTop: 0 } : undefined}
         group={group}
-        collapsed={collapsed}
-        onToggleCollapse={() => toggleCollapsed(id)}
+        collapsed={stacked ? collapsed : false}
+        onToggleCollapse={stacked ? () => toggleCollapsed(id) : undefined}
       >
         {label}
       </SectionLabel>
@@ -182,19 +205,19 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" userId={userId} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} calendarConnected={!!initialCalendarUrl} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
-        case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} />
-        case 'shared':   return <SharedWithMeSection key="shared" onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />
+        case 'shared':   return <SharedHub key="shared" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
         default: return null
       }
     })()
 
-    return <>{heading}<div style={{ display: collapsed ? 'none' : undefined }}>{body}</div></>
+    return <>{heading}<div style={{ display: stacked && collapsed ? 'none' : undefined }}>{body}</div></>
   }
 
   return (
@@ -249,7 +272,13 @@ export default function DashboardClient({ email, userId, initialName, initialThe
           style={{ fontSize: '0.65rem', letterSpacing: '0.06em' }}
         >✦ Ask Jarvis</button>
       </div>
-      <SectionNav sections={visible} />
+      {!zenView && (
+        <SectionNav
+          sections={visible}
+          activeId={currentTab}
+          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        />
+      )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <AskJarvisPanel open={jarvisOpen} onClose={() => setJarvisOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
@@ -259,15 +288,21 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
-      <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 4rem' }}>
-        <TipsBanner />
-        <div id="week-review"><WeekReview /></div>
+      <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
+        {!zenView && currentTab === 'brief' && <TipsBanner />}
+        {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview /></div>}
         {zenView && focusConfig.showTimer && (
           <div style={{ marginBottom: '1.2rem' }}><TimerWidget /></div>
         )}
-        {visible.map((s, i) => (
-          <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed)}</div>
-        ))}
+        {zenView
+          ? visible.map((s, i) => (
+              <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed, true)}</div>
+            ))
+          : (() => {
+              const s = visible.find(v => v.id === currentTab)
+              return s ? <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, 0, false, false)}</div> : null
+            })()
+        }
         <FeedbackBox />
       </main>
       <MobileNav

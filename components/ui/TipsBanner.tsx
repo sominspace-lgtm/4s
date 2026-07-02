@@ -19,6 +19,7 @@ const ESTABLISHED_THRESHOLD = 5
 
 export default function TipsBanner() {
   const [visible, setVisible] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { items } = useWorkItems()
   const { captures } = useCaptures()
   const { habits } = useHabits()
@@ -26,21 +27,37 @@ export default function TipsBanner() {
   useEffect(() => {
     const seen = localStorage.getItem('4s-tips-seen')
     if (!seen) setVisible(true)
+    setMounted(true)
   }, [])
+
+  const activity = items.length + captures.length + habits.length
+  const established = activity >= ESTABLISHED_THRESHOLD
 
   useEffect(() => {
     if (!visible) return
-    const activity = items.length + captures.length + habits.length
-    if (activity >= ESTABLISHED_THRESHOLD) dismiss()
+    if (established) dismiss()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, captures.length, habits.length, visible])
+  }, [established, visible])
 
   function dismiss() {
     localStorage.setItem('4s-tips-seen', '1')
     setVisible(false)
   }
 
-  if (!visible) return null
+  if (!mounted) return null
+
+  // Dismissed but still new: collapse to a quiet re-open link.
+  // Established users get nothing — they don't need a quick start anymore.
+  if (!visible) {
+    if (established) return null
+    return (
+      <div style={{ marginBottom: '0.5rem', textAlign: 'right' }}>
+        <button onClick={() => setVisible(true)} className="btn btn-ghost" style={{ fontSize: '0.62rem', letterSpacing: '0.06em', opacity: 0.7 }}>
+          Show Quick Start
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div style={{

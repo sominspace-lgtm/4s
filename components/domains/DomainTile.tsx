@@ -36,12 +36,15 @@ export default function DomainTile({ domain, lastTouched, onOpen, onToggleShare 
 
   const touchedLabel = lastTouched
     ? `reviewed ${formatDistanceToNow(parseISO(lastTouched))} ago`
-    : 'never reviewed'
+    : 'not reviewed yet'
 
-  const daysSince = lastTouched ? differenceInDays(new Date(), parseISO(lastTouched)) : Infinity
-  const needsAttention = daysSince > 7
-  const statusLabel = needsAttention ? 'needs attention' : 'steady'
-  const statusColor = needsAttention ? 'var(--rose)' : 'var(--emerald)'
+  // A domain that was never opened isn't a problem — it's just new. Alarm
+  // colors are reserved for domains with real history that have gone stale.
+  const daysSince = lastTouched ? differenceInDays(new Date(), parseISO(lastTouched)) : null
+  const isNew = daysSince === null
+  const reviewDue = !isNew && daysSince > 7
+  const statusLabel = isNew ? 'not reviewed yet' : reviewDue ? 'review due' : 'steady'
+  const statusColor = isNew ? 'var(--muted)' : reviewDue ? 'var(--amber)' : 'var(--emerald)'
 
   const glowStyle = (open || hovered) ? {
     borderColor: `color-mix(in srgb, ${domain.color} 40%, transparent)`,

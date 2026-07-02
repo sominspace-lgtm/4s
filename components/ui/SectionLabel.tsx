@@ -12,7 +12,7 @@ export default function SectionLabel({ children, style, group, collapsed, onTogg
       {group && (
         <div style={{
           fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase',
-          color: 'var(--muted)', opacity: 0.35, marginBottom: '0.4rem',
+          color: 'var(--muted)', opacity: 0.55, marginBottom: '0.4rem',
           fontFamily: 'var(--font-body)',
         }}>{group}</div>
       )}

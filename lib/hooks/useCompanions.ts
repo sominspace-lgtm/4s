@@ -42,36 +42,48 @@ export function useCompanions(userId: string) {
 
   useEffect(() => { load() }, [userId])
 
+  // useCompanions() runs independently in the Friends panel, the Shared hub,
+  // and Brief — same pattern as the other hooks: broadcast on mutation so
+  // every instance reloads instead of going stale.
+  useEffect(() => {
+    function onChanged() { load() }
+    window.addEventListener('4s:companions-changed', onChanged)
+    return () => window.removeEventListener('4s:companions-changed', onChanged)
+  }, [userId])
+
+  function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:companions-changed')) }
+
   async function invite(email: string): Promise<string | null> {
     const { error } = await supabase
       .from('companions')
       .insert({ inviter_id: userId, invitee_email: email.toLowerCase().trim() })
     if (error) return error.message
-    await load(); return null
+    await load(); notifyChanged(); return null
   }
 
   async function accept(id: string): Promise<void> {
     const { error } = await supabase.from('companions').update({ status: 'accepted', invitee_id: userId }).eq('id', id)
     if (error) throw new Error(error.message)
-    await load()
+    await load(); notifyChanged()
   }
 
   async function decline(id: string): Promise<void> {
     const { error } = await supabase.from('companions').update({ status: 'declined' }).eq('id', id)
     if (error) throw new Error(error.message)
-    await load()
+    await load(); notifyChanged()
   }
 
   async function remove(id: string): Promise<void> {
     const { error } = await supabase.from('companions').delete().eq('id', id)
     if (error) throw new Error(error.message)
-    await load()
+    await load(); notifyChanged()
   }
 
   async function updateSharedSections(id: string, sections: string[]): Promise<void> {
     const { error } = await supabase.from('companions').update({ shared_sections: sections }).eq('id', id)
     if (error) throw new Error(error.message)
     setCompanions(prev => prev.map(c => c.id === id ? { ...c, shared_sections: sections } : c))
+    notifyChanged()
   }
 
   const sent = companions.filter(c => c.inviter_id === userId)

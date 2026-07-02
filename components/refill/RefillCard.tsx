@@ -18,15 +18,69 @@ interface Props {
   onSnooze: (id: string, days: number) => void
   onTogglePaused: (id: string) => void
   onFeedback: (id: string, fb: 'too-early' | 'just-right' | 'too-late') => void
+  onUpdate: (id: string, patch: Partial<BuyItem>) => void
   onRemove: (id: string) => void
 }
 
-export default function RefillCard({ item, userId, onMarkBought, onMarkOpened, onSnooze, onTogglePaused, onFeedback, onRemove }: Props) {
+const editInputStyle: React.CSSProperties = {
+  background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '6px',
+  color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.72rem',
+  fontWeight: 300, padding: '0.3rem 0.55rem', outline: 'none',
+}
+
+export default function RefillCard({ item, userId, onMarkBought, onMarkOpened, onSnooze, onTogglePaused, onFeedback, onUpdate, onRemove }: Props) {
   const [showFeedback, setShowFeedback] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({ name: '', category: item.category, cadence: '', notify: '', url: '', store: '' })
+
+  function startEdit() {
+    setDraft({
+      name: item.name, category: item.category,
+      cadence: String(item.cadence_days), notify: String(item.notify_days_before),
+      url: item.buy_url ?? '', store: item.store ?? '',
+    })
+    setEditing(true)
+  }
+
+  function saveEdit() {
+    if (!draft.name.trim()) return
+    onUpdate(item.id, {
+      name: draft.name.trim(),
+      category: draft.category,
+      cadence_days: parseInt(draft.cadence) || item.cadence_days,
+      notify_days_before: parseInt(draft.notify) || item.notify_days_before,
+      buy_url: draft.url.trim() || null,
+      store: draft.store.trim() || null,
+    })
+    setEditing(false)
+  }
   const status = computeStatus(item)
   const color = STATUS_COLOR[status]
   const due = runoutDate(item)
   const categoryLabel = REFILL_CATEGORIES.find(c => c.id === item.category)?.label ?? 'Other'
+
+  if (editing) {
+    return (
+      <div style={{ padding: '0.7rem 0', borderBottom: '1px solid var(--faint)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.4rem' }}>
+          <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Item name" style={{ ...editInputStyle, flex: 2, minWidth: '130px' }} />
+          <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value as BuyItem['category'] }))} style={{ ...editInputStyle, flex: 1, minWidth: '120px', cursor: 'pointer' }}>
+            {REFILL_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.4rem' }}>
+          <input value={draft.cadence} onChange={e => setDraft(d => ({ ...d, cadence: e.target.value }))} type="number" min={1} placeholder="Remind every X days" style={{ ...editInputStyle, width: '140px' }} />
+          <input value={draft.notify} onChange={e => setDraft(d => ({ ...d, notify: e.target.value }))} type="number" min={0} placeholder="Notify X days before" style={{ ...editInputStyle, width: '140px' }} />
+          <input value={draft.store} onChange={e => setDraft(d => ({ ...d, store: e.target.value }))} placeholder="Store (optional)" style={{ ...editInputStyle, flex: 1, minWidth: '110px' }} />
+          <input value={draft.url} onChange={e => setDraft(d => ({ ...d, url: e.target.value }))} placeholder="Product link (optional)" style={{ ...editInputStyle, flex: 1, minWidth: '140px' }} />
+        </div>
+        <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <button onClick={saveEdit} className="btn btn-primary" style={{ fontSize: '0.65rem' }} disabled={!draft.name.trim()}>Save</button>
+          <button onClick={() => setEditing(false)} className="btn btn-ghost" style={{ fontSize: '0.65rem' }}>cancel</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', padding: '0.7rem 0', borderBottom: '1px solid var(--faint)' }}>
@@ -65,6 +119,7 @@ export default function RefillCard({ item, userId, onMarkBought, onMarkOpened, o
             <button onClick={() => { onMarkBought(item.id); setShowFeedback(status === 'due-to-buy' || status === 'overdue') }} className="btn btn-secondary" style={{ fontSize: '0.62rem', padding: '0.2em 0.5em' }}>✓ bought</button>
           )}
           <button onClick={() => onSnooze(item.id, 7)} title="Snooze 7 days" className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.5em' }}>snooze</button>
+          <button onClick={startEdit} title="Edit item" className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.5em' }}>edit</button>
           <ShareMenu itemType="buy_item" itemId={item.id} userId={userId} />
           <button onClick={() => onTogglePaused(item.id)} title={item.status === 'paused' ? 'Resume tracking' : 'Pause tracking'} className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.4em' }}>
             {item.status === 'paused' ? '▶' : '⏸'}

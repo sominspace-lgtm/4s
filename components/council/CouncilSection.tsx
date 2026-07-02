@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
-import { useBuyItems } from '@/lib/hooks/useBuyItems'
+import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
@@ -66,7 +66,7 @@ function AdviceCard({ member }: { member: CouncilAdvice }) {
   )
 }
 
-export default function CouncilSection({ mode = 'balanced', userId }: { mode?: Mode; userId: string }) {
+export default function CouncilSection({ mode = 'balanced', userId, calendarConnected = false }: { mode?: Mode; userId: string; calendarConnected?: boolean }) {
   const { habits, completions } = useHabits()
   const { subs: subscriptions } = useSubscriptions()
   const { items: buyItems } = useBuyItems()
@@ -76,19 +76,36 @@ export default function CouncilSection({ mode = 'balanced', userId }: { mode?: M
   const { received } = useCompanions(userId)
   const [convened, setConvened] = useState(false)
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
+  const [suggestion, setSuggestion] = useState('')
   const [focusDomain, setFocusDomain] = useState<string | null>(null)
+
+  // Rule-based "what should I actually do next" — one concrete action,
+  // most urgent first, setup nudges only when nothing is on fire.
+  function suggestNextAction(input: { overdueTasks: number; pendingShares: number; refillsOverdue: number }): string {
+    if (input.overdueTasks > 0) return 'Clear or reschedule your overdue tasks first.'
+    if (input.pendingShares > 0) return 'Respond to the shared invite waiting for you.'
+    if (input.refillsOverdue > 0) return 'Restock the essentials that already ran out.'
+    if (!calendarConnected && habits.length === 0) return 'Connect your calendar or add one habit.'
+    if (!calendarConnected) return 'Connect your calendar so Planning can see your day.'
+    if (habits.length === 0) return 'Add one habit to give Health something to watch.'
+    if (subscriptions.length === 0 && buyItems.length === 0) return 'Track a renewal or a refill item so Finance has eyes.'
+    if (Object.keys(touched).length === 0) return 'Open one Life domain and leave a note — ten minutes is enough.'
+    return 'Nothing urgent. A good time to plan ahead.'
+  }
 
   function convene(domain: string | null = null) {
     const overdueTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'overdue').length
     const dueTodayTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'today').length
     const upcomingGifts = giftItems.map(g => ({ name: g.name, days: daysUntil(g) }))
     const pendingShares = received.filter(c => c.status === 'pending').length
+    const refillsOverdue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
 
     const result = generateCouncilAdvice({
       habits, completions, subscriptions, buyItems, domainTouched: touched, mode,
       overdueTasks, dueTodayTasks, upcomingGifts, pendingShares,
     })
     setAdvice(result)
+    setSuggestion(suggestNextAction({ overdueTasks, pendingShares, refillsOverdue }))
     setFocusDomain(domain)
     setConvened(true)
   }
@@ -124,6 +141,10 @@ export default function CouncilSection({ mode = 'balanced', userId }: { mode?: M
 
       {convened && (
         <>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>Council Review</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.8 }}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+          </div>
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             {ADVISORS.map(a => (
               <button key={a.domain} onClick={() => convene(a.domain)} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>
@@ -140,6 +161,15 @@ export default function CouncilSection({ mode = 'balanced', userId }: { mode?: M
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
             {shown.map(m => <AdviceCard key={m.domain} member={m} />)}
           </div>
+          {suggestion && !focusDomain && (
+            <div style={{
+              marginTop: '0.9rem', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6,
+              fontStyle: 'italic', paddingTop: '0.7rem', borderTop: '1px solid var(--faint)',
+            }}>
+              <strong style={{ color: 'var(--text)', fontStyle: 'normal' }}>Suggested next action: </strong>
+              {suggestion}
+            </div>
+          )}
         </>
       )}
 
