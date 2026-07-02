@@ -127,13 +127,13 @@ export function useBuyItems() {
     notes?: string | null
   }
 
-  async function add(input: AddInput) {
+  async function add(input: AddInput): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) return 'Not signed in'
     const category = input.category ?? 'other'
     const defaults = CATEGORY_DEFAULTS[category]
     const today = format(new Date(), 'yyyy-MM-dd')
-    const { data } = await supabase.from('buy_items').insert({
+    const { data, error } = await supabase.from('buy_items').insert({
       user_id: user.id,
       name: input.name,
       category,
@@ -155,7 +155,10 @@ export function useBuyItems() {
       // smart-supply items start as backup stock until marked opened
       status: input.tracking_mode === 'smart-supply' ? 'backup-stock' : 'stocked',
     }).select().single()
-    if (data) setItems(prev => [...prev, data])
+    if (error) return error.message
+    if (!data) return 'Item was not saved — no error returned, but nothing came back either.'
+    setItems(prev => [...prev, data])
+    return null
   }
 
   // Buying again: reset last_bought, keep every usage/tracking setting as-is.

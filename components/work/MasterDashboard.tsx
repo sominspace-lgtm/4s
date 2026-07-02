@@ -216,6 +216,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const [priority, setPriority] = useState(2)
   const [domain, setDomain] = useState('')
   const [recurDays, setRecurDays] = useState('')
+  const [addError, setAddError] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -226,11 +227,13 @@ export default function MasterDashboard({ userId }: { userId: string }) {
 
   const submit = useCallback(async () => {
     if (!title.trim()) return
-    await add({
+    setAddError(null)
+    const error = await add({
       title: title.trim(), notes: notes.trim() || null,
       due_date: due || null, priority, domain: domain || null,
       recur_days: recurDays ? parseInt(recurDays) : null,
     })
+    if (error) { setAddError(error); return }
     setTitle(''); setNotes(''); setDue(''); setPriority(2); setDomain('')
     setRecurDays(''); setShowAdd(false)
   }, [title, notes, due, priority, domain, recurDays, add])
@@ -337,6 +340,12 @@ export default function MasterDashboard({ userId }: { userId: string }) {
             </select>
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('Notes (optional)', lang)} rows={2} style={{ ...inputStyle, resize: 'none' }} />
+
+          {addError && (
+            <div style={{ fontSize: '0.68rem', color: 'var(--rose)', background: 'color-mix(in srgb, var(--rose) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)', borderRadius: '6px', padding: '0.4rem 0.6rem' }}>
+              Couldn't save: {addError}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '0.4rem' }}>
             <button onClick={() => { setShowAdd(false); setTitle('') }} style={{

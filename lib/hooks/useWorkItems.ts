@@ -57,14 +57,16 @@ export function useWorkItems() {
 
   useEffect(() => { load() }, [load])
 
-  async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'priority' | 'domain' | 'recur_days'>) {
+  async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'priority' | 'domain' | 'recur_days'>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('work_items')
       .insert({ ...fields, user_id: user.id, status: 'todo', shared: false })
       .select().single()
-    if (error || !data) return
+    if (error) return error.message
+    if (!data) return 'Task was not saved — no error returned, but nothing came back either.'
     setItems(prev => sortWorkItems([...prev, data as WorkItem]))
+    return null
   }
 
   async function setStatus(id: string, status: WorkItem['status']) {

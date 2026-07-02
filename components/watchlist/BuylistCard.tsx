@@ -8,6 +8,7 @@ import AddRefillFlow from '@/components/refill/AddRefillFlow'
 export default function BuylistCard({ userId }: { userId: string }) {
   const { items, add, markBought, markOpened, snooze, togglePaused, submitFeedback, remove } = useBuyItems()
   const [showAdd, setShowAdd] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<RefillCategory | 'all'>('all')
 
   const filtered = categoryFilter === 'all' ? items : items.filter(i => i.category === categoryFilter)
@@ -62,12 +63,23 @@ export default function BuylistCard({ userId }: { userId: string }) {
         />
       ))}
 
+      {addError && (
+        <div style={{ fontSize: '0.68rem', color: 'var(--rose)', background: 'color-mix(in srgb, var(--rose) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)', borderRadius: '6px', padding: '0.4rem 0.6rem', marginTop: '0.6rem' }}>
+          Couldn't save: {addError}
+        </div>
+      )}
+
       {!showAdd ? (
-        <button onClick={() => setShowAdd(true)} className="btn btn-secondary" style={{ marginTop: '1rem', width: '100%' }}>+ add refill item</button>
+        <button onClick={() => { setShowAdd(true); setAddError(null) }} className="btn btn-secondary" style={{ marginTop: '1rem', width: '100%' }}>+ add refill item</button>
       ) : (
         <AddRefillFlow
-          onCancel={() => setShowAdd(false)}
-          onSubmit={async input => { await add(input); setShowAdd(false) }}
+          onCancel={() => { setShowAdd(false); setAddError(null) }}
+          onSubmit={async input => {
+            setAddError(null)
+            const error = await add(input)
+            if (error) { setAddError(error); return }
+            setShowAdd(false)
+          }}
         />
       )}
     </div>
