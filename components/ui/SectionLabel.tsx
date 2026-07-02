@@ -8,7 +8,7 @@ interface SectionLabelProps {
 
 export default function SectionLabel({ children, style, group, collapsed, onToggleCollapse }: SectionLabelProps) {
   return (
-    <div style={{ margin: 'var(--space-large) 0 1rem', ...style }}>
+    <div className="section-label" style={{ margin: 'var(--space-large) 0 1rem', ...style }}>
       {group && (
         <div style={{
           fontSize: '0.55rem', letterSpacing: '0.18em', textTransform: 'uppercase',

@@ -177,4 +177,11 @@ select, option {
   textarea { min-height: 72px; }
   .btn { min-height: 40px; font-size: max(0.75rem, 1em) !important; }
   .card-interactive { padding: 1rem !important; }
+
+  /* Respacing pass: match the 1rem side padding used everywhere else,
+     tighten the rhythm between stacked sections, and left-align controls
+     that wrap instead of hugging the right edge. */
+  .page-pad { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .controls-row { justify-content: flex-start !important; }
+  .section-label { margin-top: 1.6rem !important; }
 }

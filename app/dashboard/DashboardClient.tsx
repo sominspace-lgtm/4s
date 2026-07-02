@@ -214,14 +214,14 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
       <QuickCapture />
       {isGamer && (
-        <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="page-pad" style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <XPBar />
           <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>
             LVL {level} · {xp} total XP · +25 per task, +10 per habit
           </span>
         </div>
       )}
-      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+      <div className="page-pad controls-row" style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setZenView(z => !z)}
           title="Focus View — hide secondary sections, show only what matters today"

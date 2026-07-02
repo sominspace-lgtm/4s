@@ -85,7 +85,7 @@ export default function CaptureSection() {
           <option value="">{t('+ domain', lang)}</option>
           {DOMAIN_IDS.map(id => <option key={id} value={id}>{domainLabel(id, lang)}</option>)}
         </select>
-        <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, flexShrink: 0 }}>{t('↵ enter', lang)}</span>
+        <span className="hide-mobile" style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, flexShrink: 0 }}>{t('↵ enter', lang)}</span>
       </div>
 
       {/* Inbox */}
