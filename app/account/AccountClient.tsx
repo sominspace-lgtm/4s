@@ -71,7 +71,7 @@ export default function AccountClient({ email, userId, displayName }: Props) {
     if (!('Notification' in window)) return
     const perm = await Notification.requestPermission()
     setNotifState(perm)
-    if (perm === 'granted') new Notification('4S', { body: "You'll be notified about overdue items.", icon: '/icon-192.png' })
+    if (perm === 'granted') new Notification('4S', { body: "You'll be notified about overdue items.", icon: '/icons/192.png' })
   }
 
   async function exportData() {

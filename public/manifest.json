@@ -1,14 +1,14 @@
 {
-  "name": "4S Personal OS",
+  "name": "4S Home",
   "short_name": "4S",
-  "description": "Your personal operating system",
+  "description": "Your private family life OS",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#120a10",
-  "theme_color": "#120a10",
+  "background_color": "#080a18",
+  "theme_color": "#080a18",
   "orientation": "portrait",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

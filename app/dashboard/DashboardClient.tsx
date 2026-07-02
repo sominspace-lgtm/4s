@@ -6,6 +6,7 @@ import ThemeProvider from '@/components/ui/ThemeProvider'
 import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, DEFAULT_FOCUS_CONFIG, type SectionConfig, type FocusConfig } from '@/components/ui/CustomizePanel'
 import FocusViewPanel from '@/components/ui/FocusViewPanel'
+import AskJarvisPanel from '@/components/ui/AskJarvisPanel'
 import TimerWidget from '@/components/focus/TimerWidget'
 import QuickCapture from '@/components/ui/QuickCapture'
 import TipsBanner from '@/components/ui/TipsBanner'
@@ -19,7 +20,6 @@ import MobileNav from '@/components/ui/MobileNav'
 import XPBar from '@/components/gamer/XPBar'
 import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
-import CaptureSection from '@/components/capture/CaptureSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import DomainGrid from '@/components/domains/DomainGrid'
 import MoneyHub from '@/components/money/MoneyHub'
@@ -44,11 +44,15 @@ interface Props {
   initialCalendarUrl: string | null
   initialLayout: SectionConfig[] | null
   initialFocusConfig: FocusConfig | null
+  initialSimpleMode: boolean
 }
 
-// Folded into Money hub / Brief "Needs Attention" — strip from any saved layout
-// so returning users don't see dangling, unrenderable section headings.
-const DEPRECATED_SECTION_IDS = new Set(['pulse', 'wishlist', 'spending'])
+// Simple mode: Today (Brief) · Quick Add (inside Brief) · Tasks · Calendar · Shared
+const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'calendar', 'shared'])
+
+// Folded into Money hub / Brief — strip from any saved layout so returning
+// users don't see dangling, unrenderable section headings.
+const DEPRECATED_SECTION_IDS = new Set(['pulse', 'wishlist', 'spending', 'capture'])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_SECTIONS
@@ -59,22 +63,22 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 }
 
 const SECTION_GROUPS: Record<string, string> = {
-  capture:  'capture',
   brief:    'at a glance',
   work:     'focus',
   habits:   'focus',
-  domains:  'inbox',
+  domains:  'life',
   money:    'money',
   calendar: 'review',
   council:  'review',
   shared:   'companions',
 }
 
-export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig }: Props) {
+export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
+  const [simpleMode, setSimpleMode] = useState(initialSimpleMode)
   const isGamer = mode === 'gamer'
   const { xp, level, progress, gain } = useXP(isGamer)
 
@@ -94,12 +98,20 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [zenView, setZenView] = useState(false)
   const [focusPanelOpen, setFocusPanelOpen] = useState(false)
+  const [jarvisOpen, setJarvisOpen] = useState(false)
 
   async function toggleCollapsed(id: string) {
     const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
     setSections(next)
     const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode } })
+  }
+
+  async function toggleSimpleMode() {
+    const next = !simpleMode
+    setSimpleMode(next)
+    const supabase = createClient()
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode: next } })
   }
 
   // Global keyboard shortcuts
@@ -126,23 +138,27 @@ export default function DashboardClient({ email, userId, initialName, initialThe
             body: overdue.length === 1
               ? `"${overdue[0].title}" is overdue`
               : `${overdue.length} items are overdue`,
-            icon: '/icon-192.png',
+            icon: '/icons/192.png',
           })
         }
       })
   }, [])
 
-  const visible = sections.filter(s => !s.hidden && (!zenView || focusConfig.sections.includes(s.id)))
+  const visible = sections.filter(s =>
+    !s.hidden
+    && (!zenView || focusConfig.sections.includes(s.id))
+    && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
+  )
 
   function sectionLabel(id: string, idx: number): { label: string; group?: string } {
     const group = SECTION_GROUPS[id]
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      brief: t('Today', lang), work: t('Work Hub', lang), habits: t('Daily Habits', lang),
-      capture: t('Quick Add · Inbox', lang), domains: t('Domains', lang),
+      brief: t('Brief', lang), work: t('Tasks', lang), habits: t('Habits', lang),
+      domains: t('Life', lang),
       money: t('Money', lang), calendar: t('Calendar', lang),
-      council: t('Your Council', lang), shared: t('Shared With Me', lang),
+      council: t('Council', lang), shared: t('Shared', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -167,7 +183,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} onOpenCompanions={() => setCompanionsOpen(true)} />
-        case 'capture':  return <CaptureSection key="capture" />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
@@ -206,7 +221,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
           </span>
         </div>
       )}
-      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+      <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setZenView(z => !z)}
           title="Focus View — hide secondary sections, show only what matters today"
@@ -221,19 +236,32 @@ export default function DashboardClient({ email, userId, initialName, initialThe
           className="btn btn-ghost"
           style={{ fontSize: '0.65rem' }}
         >⊹</button>
+        <button
+          onClick={toggleSimpleMode}
+          title={simpleMode ? 'Switch to Advanced mode' : 'Switch to Simple mode — Brief, Tasks, Calendar, Shared only'}
+          className="btn btn-ghost"
+          style={{ fontSize: '0.65rem', letterSpacing: '0.06em' }}
+        >{simpleMode ? 'Simple' : 'Advanced'}</button>
+        <button
+          onClick={() => setJarvisOpen(true)}
+          title="Ask Jarvis"
+          className="btn btn-ghost"
+          style={{ fontSize: '0.65rem', letterSpacing: '0.06em' }}
+        >✦ Ask Jarvis</button>
       </div>
       <SectionNav sections={visible} />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <AskJarvisPanel open={jarvisOpen} onClose={() => setJarvisOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
-      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
-      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
+      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 4rem' }}>
         <TipsBanner />
-        <WeekReview />
+        <div id="week-review"><WeekReview /></div>
         {zenView && focusConfig.showTimer && (
           <div style={{ marginBottom: '1.2rem' }}><TimerWidget /></div>
         )}

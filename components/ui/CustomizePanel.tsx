@@ -16,39 +16,39 @@ export interface FocusConfig {
 }
 
 export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
-  sections: ['brief', 'work', 'habits', 'capture', 'calendar'],
+  sections: ['brief', 'work', 'habits', 'calendar'],
   showTimer: false,
 }
 
+// Brief · Tasks · Habits · Life · Money · Calendar · Shared · Council
 export const DEFAULT_SECTIONS: SectionConfig[] = [
-  // Quick Add
-  { id: 'capture',  label: 'Quick Add · Inbox',  hidden: false },
-  // At a glance — Needs Attention (Pulse) now lives inside Brief
-  { id: 'brief',    label: 'Daily Brief',        hidden: false },
+  // At a glance — Needs Attention (Pulse) and Quick Add/Inbox (Capture) live inside Brief
+  { id: 'brief',    label: 'Brief',    hidden: false },
   // Companions — surfaced early so shared items aren't an afterthought
-  { id: 'shared',   label: 'Shared With Me',     hidden: false },
+  { id: 'shared',   label: 'Shared',   hidden: false },
   // Focus
-  { id: 'work',     label: 'Work Hub',           hidden: false },
-  { id: 'habits',   label: 'Daily Habits',       hidden: false },
-  // Domains
-  { id: 'domains',  label: 'Domains',            hidden: false },
+  { id: 'work',     label: 'Tasks',    hidden: false },
+  { id: 'habits',   label: 'Habits',   hidden: false },
+  // Life
+  { id: 'domains',  label: 'Life',     hidden: false },
   // Money — Wishlist, Gifts, Renewals, Buy Again all live here now
-  { id: 'money',    label: 'Money',              hidden: false },
+  { id: 'money',    label: 'Money',    hidden: false },
   // Review
-  { id: 'calendar', label: 'Calendar',           hidden: false },
-  { id: 'council',  label: 'Your Council',       hidden: false },
+  { id: 'calendar', label: 'Calendar', hidden: false },
+  { id: 'council',  label: 'Council',  hidden: false },
 ]
 
 interface CustomizePanelProps {
   open: boolean
   sections: SectionConfig[]
   focusConfig: FocusConfig
+  simpleMode: boolean
   userId: string
   onChange: (sections: SectionConfig[]) => void
   onClose: () => void
 }
 
-export default function CustomizePanel({ open, sections, focusConfig, userId, onChange, onClose }: CustomizePanelProps) {
+export default function CustomizePanel({ open, sections, focusConfig, simpleMode, userId, onChange, onClose }: CustomizePanelProps) {
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -62,7 +62,7 @@ export default function CustomizePanel({ open, sections, focusConfig, userId, on
 
   async function update(next: SectionConfig[]) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode } })
   }
 
   function toggle(id: string) {

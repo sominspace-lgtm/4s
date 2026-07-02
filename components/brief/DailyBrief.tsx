@@ -11,6 +11,7 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { DOMAINS } from '@/lib/constants/domains'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
+import CaptureSection from '@/components/capture/CaptureSection'
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
@@ -93,6 +94,19 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
 
   const hasStats = showOverdue || showToday || showHabits || showProgress || showInbox
 
+  function jumpTo(id: string) {
+    document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const jumpLinks = [
+    { id: 'work',     label: 'Tasks',    detail: overdue + dueToday > 0 ? `${overdue + dueToday} due` : 'clear' },
+    { id: 'habits',   label: 'Habits',   detail: `${habitsDoneToday}/${habitsTotal}` },
+    { id: 'domains',  label: 'Life',     detail: domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} to review` : 'steady' },
+    { id: 'money',    label: 'Money',    detail: moneyDueSoon > 0 ? `${moneyDueSoon} reminder${moneyDueSoon > 1 ? 's' : ''}` : 'quiet' },
+    { id: 'calendar', label: 'Calendar', detail: 'view' },
+    { id: 'council',  label: 'Council',  detail: 'ask' },
+  ]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
     <div style={{
@@ -141,8 +155,21 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-add-task'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:focus-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Capture thought</button>
-        <button onClick={() => document.getElementById('section-capture')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
+        <button onClick={() => { window.dispatchEvent(new CustomEvent('app:open-inbox')); document.getElementById('brief-inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
         <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
+      </div>
+
+      <div style={{ marginTop: '0.9rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {jumpLinks.map(l => (
+          <button key={l.id} onClick={() => jumpTo(l.id)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontFamily: 'var(--font-body)', fontSize: '0.66rem', color: 'var(--muted)',
+            display: 'flex', alignItems: 'baseline', gap: '0.3rem',
+          }}>
+            <span style={{ color: 'var(--text)', opacity: 0.85 }}>{l.label}</span>
+            <span style={{ opacity: 0.7 }}>{l.detail}</span>
+          </button>
+        ))}
       </div>
     </div>
 
@@ -151,6 +178,13 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
         Needs Attention
       </div>
       <PulseSection />
+    </div>
+
+    <div id="brief-inbox">
+      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+        Quick Add · Inbox
+      </div>
+      <CaptureSection />
     </div>
 
     <FamilyTodayCard userId={userId} />

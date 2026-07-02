@@ -46,17 +46,17 @@ export default function SearchModal({ open, onClose }: Props) {
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const commands: Command[] = [
-    { id: 'go-brief',    label: 'Go to Today',       icon: '◒', run: () => goTo('brief') },
-    { id: 'go-work',     label: 'Go to Work Hub',    icon: '◈', run: () => goTo('work') },
+    { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', run: () => goTo('brief') },
+    { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', run: () => goTo('work') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', run: () => goTo('habits') },
-    { id: 'go-capture',  label: 'Go to Capture',     icon: '○', run: () => goTo('capture') },
-    { id: 'go-domains',  label: 'Go to Domains',     icon: '◇', run: () => goTo('domains') },
-    { id: 'go-money',    label: 'Go to Money',       icon: '✦', run: () => goTo('spending') },
+    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', run: () => goTo('domains') },
+    { id: 'go-money',    label: 'Go to Money',       icon: '✦', run: () => goTo('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', run: () => goTo('calendar') },
+    { id: 'go-shared',   label: 'Go to Shared',      icon: '⇆', run: () => goTo('shared') },
     { id: 'go-council',  label: 'Go to Council',     icon: '⌂', run: () => goTo('council') },
-    { id: 'add-task',    label: 'Add Task',          hint: 'Work Hub', icon: '+', run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
-    { id: 'add-habit',   label: 'Add Habit',         hint: 'Habits',   icon: '+', run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
-    { id: 'capture-thought', label: 'Capture a Thought', hint: 'Capture', icon: '+', run: () => { goTo('capture'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
+    { id: 'add-task',    label: 'Add Task',          hint: 'Tasks',  icon: '+', run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
+    { id: 'add-habit',   label: 'Add Habit',         hint: 'Habits', icon: '+', run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
+    { id: 'capture-thought', label: 'Quick Add a Thought', hint: 'Brief', icon: '+', run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
     { id: 'switch-theme', label: 'Switch Theme',     icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
     { id: 'switch-mode',  label: 'Switch Mode',      icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
   ]

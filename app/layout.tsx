@@ -90,8 +90,8 @@ const instrumentSans = Instrument_Sans({
 })
 
 export const metadata: Metadata = {
-  title: '4S',
-  description: 'Your personal operating system',
+  title: '4S Home',
+  description: 'Your private family life OS',
   manifest: '/manifest.json',
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: '4S' },
 }
@@ -115,7 +115,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={fontVars}>
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/192.png" />
       </head>
       <body>
         {children}

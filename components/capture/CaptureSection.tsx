@@ -26,6 +26,12 @@ export default function CaptureSection() {
     return () => window.removeEventListener('app:focus-capture', onFocusRequest)
   }, [])
 
+  useEffect(() => {
+    function onOpenRequest() { setOpen(true) }
+    window.addEventListener('app:open-inbox', onOpenRequest)
+    return () => window.removeEventListener('app:open-inbox', onOpenRequest)
+  }, [])
+
   async function handleKey(e: React.KeyboardEvent) {
     if (e.key !== 'Enter' || !text.trim()) return
     await add(text.trim(), domain || undefined)

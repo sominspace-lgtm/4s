@@ -19,6 +19,7 @@ export default async function DashboardPage() {
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
   const focusConfig = prefs?.layout?.focus as FocusConfig | null
+  const simpleMode = Boolean(prefs?.layout?.simpleMode)
 
   return (
     <DashboardClient
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
       initialCalendarUrl={prefs?.calendar_url ?? null}
       initialLayout={layout ?? null}
       initialFocusConfig={focusConfig ?? null}
+      initialSimpleMode={simpleMode}
     />
   )
 }
