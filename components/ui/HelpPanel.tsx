@@ -42,12 +42,12 @@ const SECTIONS = [
   },
   {
     icon: '○',
-    title: 'Work Hub',
+    title: 'Tasks',
     body: 'Click the circle to cycle status: ○ todo → ◑ in-progress → ● done. Click the priority badge (P1/P2/P3) to change urgency. Edit notes inline by clicking them.',
   },
   {
     icon: '✦',
-    title: 'Domains',
+    title: 'Life',
     body: 'Eight life domains (Business, Health, Creative…). Each has its own notes and hidden/shared toggle. Tag tasks and captures to a domain for better organisation.',
   },
   {
@@ -57,8 +57,8 @@ const SECTIONS = [
   },
   {
     icon: '♡',
-    title: 'Quick Capture',
-    body: 'The bar at the top captures anything instantly. Use the domain dropdown to tag it right away, or leave it Unsorted and sort later from the Capture section.',
+    title: 'Quick Add · Inbox',
+    body: 'Drop anything instantly from the Quick Add card on Brief. Use the domain dropdown to tag it right away, or leave it in the Inbox and sort later.',
   },
 ]
 

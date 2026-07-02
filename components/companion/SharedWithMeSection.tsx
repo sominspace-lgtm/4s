@@ -29,10 +29,13 @@ export default function SharedWithMeSection({ onOpenCompanions }: { onOpenCompan
       borderTop: '2px solid color-mix(in srgb, var(--blush) 45%, var(--border))',
       borderRadius: '16px', padding: '1.3rem 1.5rem', boxShadow: '0 12px 32px var(--shadow)',
     }}>
-      <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400, marginBottom: '0.8rem' }}>Shared With Me</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>Shared With Me</div>
+        <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.02em' }}>Everything is private unless you share it.</div>
+      </div>
 
       {loading && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68 }}>Loading…</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68, marginTop: '0.5rem' }}>Loading…</div>
       )}
 
       {!loading && items.length === 0 && (

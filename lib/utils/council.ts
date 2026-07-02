@@ -133,12 +133,12 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
       return { verdict: 'quiet' as const, advice: `Self habits at ${Math.round(selfRate.rate * 100)}% — steady. Keep checking in with yourself.` }
     })(),
 
-    // Family
+    // Sharing — shared items and people
     (() => {
       const soonGift = [...upcomingGifts].sort((a, b) => a.days - b.days)[0]
       if (pendingShares > 0) return { verdict: 'watch' as const, advice: `${pendingShares} shared item${pendingShares > 1 ? 's are' : ' is'} waiting on your response.` }
       if (soonGift && soonGift.days <= 14) return { verdict: 'watch' as const, advice: `${soonGift.name} is coming up in ${soonGift.days}d — worth thinking about a gift.` }
-      return { verdict: 'quiet' as const, advice: 'Nothing urgent from family or companions right now.' }
+      return { verdict: 'quiet' as const, advice: 'Nothing urgent from companions or shared spaces right now.' }
     })(),
 
     // Planning
@@ -158,7 +158,7 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
     { id: 'creative',   label: 'Creative', icon: '✦', color: 'var(--amber)' },
     { id: 'home',       label: 'Home',     icon: '⌂', color: 'var(--slate)' },
     { id: 'self',       label: 'Self',     icon: '◎', color: 'var(--lavender)' },
-    { id: 'family',     label: 'Family',   icon: '♥', color: 'var(--blush)' },
+    { id: 'sharing',    label: 'Sharing',  icon: '⇆', color: 'var(--blush)' },
     { id: 'planning',   label: 'Planning', icon: '◒', color: 'var(--gold)' },
   ]
 

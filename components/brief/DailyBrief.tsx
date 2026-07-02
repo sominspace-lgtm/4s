@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits } from '@/lib/hooks/useHabits'
@@ -7,6 +8,7 @@ import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
 import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
+import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { DOMAINS } from '@/lib/constants/domains'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -29,16 +31,35 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
   )
 }
 
+function SummaryCard({ label, line, action, onAction }: { label: string; line: string; action: string; onAction: () => void }) {
+  return (
+    <div className="card-interactive" style={{
+      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
+      padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', minHeight: '84px',
+    }}>
+      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', opacity: 0.78 }}>{label}</div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.4, flex: 1 }}>{line}</div>
+      <button onClick={onAction} className="btn btn-ghost" style={{ fontSize: '0.65rem', alignSelf: 'flex-start', padding: 0 }}>{action} →</button>
+    </div>
+  )
+}
+
 export default function DailyBrief({ userId, onOpenCompanions }: { userId: string; onOpenCompanions: () => void }) {
   const lang = useLang()
   const { items } = useWorkItems()
   const { habits, completions } = useHabits()
   const { captures } = useCaptures()
   const { touched } = useDomainTouched()
-  const { subs } = useSubscriptions()
+  const { subs, total: monthlyTotal } = useSubscriptions()
   const { items: giftItems } = useGiftEvents()
+  const { items: wishItems } = useWatchItems()
   const { received } = useCompanions(userId)
   const pendingShares = received.filter(c => c.status === 'pending').length
+
+  const [sharedWithMeCount, setSharedWithMeCount] = useState(0)
+  useEffect(() => {
+    fetch('/api/companions/shared-with-me').then(r => r.json()).then(d => setSharedWithMeCount((d.items ?? []).length)).catch(() => {})
+  }, [])
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
@@ -98,13 +119,35 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
     document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const jumpLinks = [
-    { id: 'work',     label: 'Tasks',    detail: overdue + dueToday > 0 ? `${overdue + dueToday} due` : 'clear' },
-    { id: 'habits',   label: 'Habits',   detail: `${habitsDoneToday}/${habitsTotal}` },
-    { id: 'domains',  label: 'Life',     detail: domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} to review` : 'steady' },
-    { id: 'money',    label: 'Money',    detail: moneyDueSoon > 0 ? `${moneyDueSoon} reminder${moneyDueSoon > 1 ? 's' : ''}` : 'quiet' },
-    { id: 'calendar', label: 'Calendar', detail: 'view' },
-    { id: 'council',  label: 'Council',  detail: 'ask' },
+  const summaryCards = [
+    {
+      label: 'Tasks', action: 'Open Tasks', onAction: () => jumpTo('work'),
+      line: overdue + dueToday > 0 ? `${overdue} overdue · ${dueToday} due today` : 'Queue clear',
+    },
+    {
+      label: 'Habits', action: 'Open Habits', onAction: () => jumpTo('habits'),
+      line: habitsTotal > 0 ? `${habitsDoneToday}/${habitsTotal} done today` : 'No habits yet',
+    },
+    {
+      label: 'Life', action: 'Open Life', onAction: () => jumpTo('domains'),
+      line: domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} need review` : `${DOMAINS.length} domains · all steady`,
+    },
+    {
+      label: 'Calendar', action: 'Open Calendar', onAction: () => jumpTo('calendar'),
+      line: 'View your schedule',
+    },
+    {
+      label: 'Council', action: 'Ask Council', onAction: () => jumpTo('council'),
+      line: '6 advisors ready',
+    },
+    {
+      label: 'Money', action: 'Open Money', onAction: () => jumpTo('money'),
+      line: `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
+    },
+    {
+      label: 'Shared', action: 'Open Shared', onAction: () => jumpTo('shared'),
+      line: sharedWithMeCount > 0 ? `${sharedWithMeCount} shared with you` : 'Nothing shared yet',
+    },
   ]
 
   return (
@@ -158,19 +201,16 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
         <button onClick={() => { window.dispatchEvent(new CustomEvent('app:open-inbox')); document.getElementById('brief-inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
         <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
       </div>
+    </div>
 
-      <div style={{ marginTop: '0.9rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {jumpLinks.map(l => (
-          <button key={l.id} onClick={() => jumpTo(l.id)} style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            fontFamily: 'var(--font-body)', fontSize: '0.66rem', color: 'var(--muted)',
-            display: 'flex', alignItems: 'baseline', gap: '0.3rem',
-          }}>
-            <span style={{ color: 'var(--text)', opacity: 0.85 }}>{l.label}</span>
-            <span style={{ opacity: 0.7 }}>{l.detail}</span>
-          </button>
-        ))}
+    <div id="brief-inbox">
+      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+        Quick Add · Inbox
       </div>
+      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+        Drop a task, thought, reminder, or idea — sort it later.
+      </div>
+      <CaptureSection />
     </div>
 
     <div>
@@ -180,14 +220,16 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
       <PulseSection />
     </div>
 
-    <div id="brief-inbox">
-      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-        Quick Add · Inbox
-      </div>
-      <CaptureSection />
-    </div>
-
     <FamilyTodayCard userId={userId} />
+
+    <div>
+      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+        Everything, at a glance
+      </div>
+      <div className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.6rem' }}>
+        {summaryCards.map(c => <SummaryCard key={c.label} {...c} />)}
+      </div>
+    </div>
     </div>
   )
 }

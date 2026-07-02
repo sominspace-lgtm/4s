@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useWorkItems } from '@/lib/hooks/useWorkItems'
+import { useCaptures } from '@/lib/hooks/useCaptures'
+import { useHabits } from '@/lib/hooks/useHabits'
 
 const TIPS = [
   { key: '⌘K', label: 'Quick capture — grab any thought instantly' },
@@ -10,13 +13,27 @@ const TIPS = [
   { key: 'domain tile', label: 'Click any domain to expand and add notes' },
 ]
 
+// Once a user has a handful of real items beyond whatever onboarding
+// seeded, they're established — stop showing this automatically.
+const ESTABLISHED_THRESHOLD = 5
+
 export default function TipsBanner() {
   const [visible, setVisible] = useState(false)
+  const { items } = useWorkItems()
+  const { captures } = useCaptures()
+  const { habits } = useHabits()
 
   useEffect(() => {
     const seen = localStorage.getItem('4s-tips-seen')
     if (!seen) setVisible(true)
   }, [])
+
+  useEffect(() => {
+    if (!visible) return
+    const activity = items.length + captures.length + habits.length
+    if (activity >= ESTABLISHED_THRESHOLD) dismiss()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, captures.length, habits.length, visible])
 
   function dismiss() {
     localStorage.setItem('4s-tips-seen', '1')

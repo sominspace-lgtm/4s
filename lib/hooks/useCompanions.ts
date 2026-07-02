@@ -14,13 +14,13 @@ export interface Companion {
 }
 
 export const SHAREABLE_SECTIONS = [
-  { id: 'work',      label: 'Work Hub',           note: 'Items you mark ⇆' },
+  { id: 'work',      label: 'Tasks',               note: 'Items you mark ⇆' },
   { id: 'habits',    label: 'Habits',              note: 'Habits you mark ⇆' },
-  { id: 'capture',   label: 'Captures / Inbox',   note: 'Your idea inbox' },
-  { id: 'domains',   label: 'All Domains',         note: 'Notes in all domains' },
+  { id: 'capture',   label: 'Quick Add · Inbox',   note: 'Your idea inbox' },
+  { id: 'domains',   label: 'All of Life',         note: 'Notes in all domains' },
   { id: 'wishlist',  label: 'Wishlist',            note: 'Your full wishlist' },
-  { id: 'buylist',   label: 'Buy List',            note: 'Items to buy' },
-  { id: 'spending',  label: 'Subscriptions',       note: 'Monthly spending' },
+  { id: 'buylist',   label: 'Buy Again',           note: 'Items to buy' },
+  { id: 'spending',  label: 'Renewals',            note: 'Monthly spending' },
 ]
 
 export function useCompanions(userId: string) {

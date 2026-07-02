@@ -17,6 +17,31 @@ const VERDICT_STYLE: Record<string, React.CSSProperties> = {
   quiet: { color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', borderColor: 'var(--border)' },
 }
 
+const ADVISORS = [
+  { domain: 'money',    label: 'Finance',  icon: '◉', color: 'var(--emerald)', desc: 'Spending, renewals, bills' },
+  { domain: 'health',   label: 'Health',   icon: '○', color: 'var(--rose)',    desc: 'Habits and wellness patterns' },
+  { domain: 'home',     label: 'Home',     icon: '⌂', color: 'var(--slate)',   desc: 'Ignored household tasks' },
+  { domain: 'creative', label: 'Creative', icon: '✦', color: 'var(--amber)',  desc: 'Neglected ideas' },
+  { domain: 'planning', label: 'Planning', icon: '◒', color: 'var(--gold)',   desc: 'Calendar and commitments' },
+  { domain: 'sharing',  label: 'Sharing',  icon: '⇆', color: 'var(--blush)',  desc: 'Shared items and people' },
+]
+
+function AdvisorCard({ advisor, onAsk }: { advisor: typeof ADVISORS[number]; onAsk: () => void }) {
+  return (
+    <div className="card-interactive" style={{
+      borderRadius: '12px', padding: '0.9rem 1rem', border: '1px solid var(--border)',
+      background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '0.4rem',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ fontSize: '0.9rem', color: advisor.color }}>{advisor.icon}</span>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text)', fontWeight: 500 }}>{advisor.label}</span>
+      </div>
+      <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.78, lineHeight: 1.5, flex: 1 }}>{advisor.desc}</div>
+      <button onClick={onAsk} className="btn btn-ghost" style={{ fontSize: '0.64rem', alignSelf: 'flex-start', padding: 0 }}>Ask {advisor.label} →</button>
+    </div>
+  )
+}
+
 function AdviceCard({ member }: { member: CouncilAdvice }) {
   const s = VERDICT_STYLE[member.verdict]
   return (
@@ -71,18 +96,9 @@ export default function CouncilSection({ mode = 'balanced', userId }: { mode?: M
   const watchCount = advice.filter(a => a.verdict === 'watch').length
   const shown = focusDomain ? advice.filter(a => a.domain === focusDomain) : advice
 
-  const ASK_BUTTONS = [
-    { domain: 'money',    label: 'Ask Finance' },
-    { domain: 'health',   label: 'Ask Health' },
-    { domain: 'home',     label: 'Ask Home' },
-    { domain: 'creative', label: 'Ask Creative' },
-    { domain: 'family',   label: 'Ask Family' },
-    { domain: 'planning', label: 'Ask Planning' },
-  ]
-
   return (
     <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: convened ? '1.2rem' : '0.6rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.6rem' }}>
         <div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400 }}>Your Council</div>
           {convened && watchCount > 0 && (
@@ -94,20 +110,27 @@ export default function CouncilSection({ mode = 'balanced', userId }: { mode?: M
         </button>
       </div>
 
-      <div style={{ fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, marginBottom: '0.9rem' }}>
-        Your Council reviews your dashboard from different perspectives. Finance checks spending. Health checks habits. Home notices ignored tasks. Family watches shared items and gift dates. Planning checks what's due.
+      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, marginBottom: '0.9rem' }}>
+        Your Council reviews your dashboard from different perspectives.
       </div>
 
-      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: convened ? '1rem' : 0 }}>
-        {ASK_BUTTONS.map(b => (
-          <button key={b.domain} onClick={() => convene(b.domain)} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>
-            {b.label}
-          </button>
-        ))}
-      </div>
+      {!convened && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.6rem' }}>
+          {ADVISORS.map(a => (
+            <AdvisorCard key={a.domain} advisor={a} onAsk={() => convene(a.domain)} />
+          ))}
+        </div>
+      )}
 
       {convened && (
         <>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {ADVISORS.map(a => (
+              <button key={a.domain} onClick={() => convene(a.domain)} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>
+                Ask {a.label}
+              </button>
+            ))}
+          </div>
           {focusDomain && (
             <button onClick={() => setFocusDomain(null)} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',

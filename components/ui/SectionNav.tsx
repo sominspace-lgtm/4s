@@ -7,10 +7,9 @@ import { t } from '@/lib/i18n'
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
-  brief: 'Brief', work: 'Work', habits: 'Habits',
-  capture: 'Capture', domains: 'Domains',
-  pulse: 'Pulse', wishlist: 'Wishlist', spending: 'Money',
-  calendar: 'Calendar', council: 'Council',
+  brief: 'Brief', work: 'Tasks', habits: 'Habits',
+  domains: 'Life', money: 'Money',
+  calendar: 'Calendar', council: 'Council', shared: 'Shared',
 }
 
 interface Props {

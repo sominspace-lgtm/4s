@@ -13,12 +13,12 @@ import { useWatchItems } from '@/lib/hooks/useWatchItems'
 
 type MoneyTab = 'overview' | 'wishlist' | 'gifts' | 'renewals' | 'buyagain'
 
-const TABS: { id: MoneyTab; label: string }[] = [
+const TABS: { id: MoneyTab; label: string; helper?: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'wishlist', label: 'Wishlist' },
-  { id: 'gifts',    label: 'Gifts' },
-  { id: 'renewals', label: 'Renewals' },
-  { id: 'buyagain', label: 'Buy Again' },
+  { id: 'wishlist', label: 'Wishlist', helper: 'Things you want later.' },
+  { id: 'gifts',    label: 'Gifts',    helper: 'Ideas for people and occasions.' },
+  { id: 'renewals', label: 'Renewals', helper: 'Subscriptions and recurring bills.' },
+  { id: 'buyagain', label: 'Buy Again', helper: 'Things you purchase repeatedly.' },
 ]
 
 function OverviewStat({ label, value, color, onClick }: { label: string; value: string | number; color?: string; onClick: () => void }) {
@@ -77,6 +77,12 @@ export default function MoneyHub() {
             onClick={() => setTab('renewals')}
           />
           <OverviewStat label="buy again" value={overdueBuys > 0 ? `${overdueBuys} overdue` : buyItems.length} color={overdueBuys > 0 ? 'var(--rose)' : undefined} onClick={() => setTab('buyagain')} />
+        </div>
+      )}
+
+      {tab !== 'overview' && (
+        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.6rem' }}>
+          {TABS.find(tb => tb.id === tab)?.helper}
         </div>
       )}
 

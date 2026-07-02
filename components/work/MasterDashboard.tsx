@@ -96,10 +96,10 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
           {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68 }}>↻</span>}
         </span>
 
-        {/* Category-wide share toggle — visible to any companion sharing "Work Hub" */}
+        {/* Category-wide share toggle — visible to any companion sharing "Tasks" */}
         <button
           onClick={() => onToggleShared(item.id)}
-          title={item.shared ? 'Visible to all Work Hub companions' : 'Make visible to Work Hub companions'}
+          title={item.shared ? 'Visible to companions sharing Tasks' : 'Make visible to companions sharing Tasks'}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
             fontSize: '0.62rem', lineHeight: 1,
@@ -266,7 +266,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem', gap: '0.5rem', flexWrap: 'wrap' }} className="tabs-wrap">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <span style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>Work Hub</span>
+          <span style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>Tasks</span>
           {overdueCount > 0 && <span style={{ fontSize: '0.6rem', color: 'var(--rose)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{overdueCount} overdue</span>}
           {todayCount > 0   && <span style={{ fontSize: '0.6rem', color: 'var(--amber)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{todayCount} due today</span>}
         </div>
