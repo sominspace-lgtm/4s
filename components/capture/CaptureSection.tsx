@@ -6,10 +6,11 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
+import ShareMenu from '@/components/ui/ShareMenu'
 
 const DOMAIN_IDS = ['biz-active', 'biz-future', 'money', 'health', 'relationship', 'creative', 'home', 'self']
 
-export default function CaptureSection() {
+export default function CaptureSection({ userId }: { userId: string }) {
   const { captures, add, remove, assign } = useCaptures()
   const { add: addTask } = useWorkItems()
   const { add: addWish } = useWatchItems()
@@ -137,6 +138,7 @@ export default function CaptureSection() {
                   border: '1px solid var(--border)', borderRadius: '6px',
                   padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>→ wishlist</button>
+                <ShareMenu itemType="capture" itemId={c.id} userId={userId} />
                 {assigning === c.id ? (
                   <select
                     autoFocus

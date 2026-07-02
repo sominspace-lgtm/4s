@@ -78,7 +78,7 @@ function SharingTab({ companions, userId, updateSharedSections }: {
   if (active.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>
-        No active companions yet.<br />Invite someone in the Companions tab.
+        No accepted friends yet.<br />Invite someone in the Friends tab.
       </div>
     )
   }
@@ -95,7 +95,7 @@ function SharingTab({ companions, userId, updateSharedSections }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <p style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.7, lineHeight: 1.6 }}>
-        Choose what each companion can see. Individual items (work, habits) also need their ⇆ toggle enabled.
+        Choose what each friend can see. Individual items (tasks, habits) also need their ⇆ toggle enabled.
       </p>
 
       {/* Companion selector */}
@@ -140,7 +140,7 @@ function SharingTab({ companions, userId, updateSharedSections }: {
           ))}
 
           <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.4, marginTop: '0.5rem', lineHeight: 1.6 }}>
-            Changes save instantly. Your companion sees shared content in real-time.
+            Changes save instantly. Your friend sees shared content in real-time.
           </div>
         </div>
       )}
@@ -245,6 +245,8 @@ function SpacesTab({ userId }: { userId: string }) {
   )
 }
 
+interface PendingReceived { id: string; inviterEmail: string; createdAt: string }
+
 export default function CompanionPanel({ open, userId, userEmail, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const { companions, sent, received, active, loading, invite, accept, decline, remove, updateSharedSections } = useCompanions(userId)
@@ -253,6 +255,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
   const [inviteDone, setInviteDone] = useState(false)
+  const [pendingReceived, setPendingReceived] = useState<PendingReceived[]>([])
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -261,6 +264,14 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
     if (open) document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [open, onClose])
+
+  // The companions row only has the recipient's own email (invitee_email) —
+  // showing that back to them as "who invited you" was a real bug. This
+  // resolves the actual inviter's email server-side.
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/companions/pending-received').then(r => r.json()).then(d => setPendingReceived(d.items ?? [])).catch(() => {})
+  }, [open, received.length])
 
   async function handleInvite() {
     if (!emailInput.trim()) return
@@ -296,13 +307,13 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Companions</div>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Friends</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-          <button style={tabStyle('companions')} onClick={() => setTab('companions')}>Companions</button>
+          <button style={tabStyle('companions')} onClick={() => setTab('companions')}>Friends</button>
           <button style={tabStyle('sharing')} onClick={() => setTab('sharing')}>
             What I Share {active.length > 0 && <span style={{ opacity: 0.5 }}>({active.length})</span>}
           </button>
@@ -339,18 +350,18 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
             </div>
 
             {/* Pending received */}
-            {received.filter(c => c.status === 'pending').length > 0 && (
+            {pendingReceived.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.8 }}>Invited you</div>
-                {received.filter(c => c.status === 'pending').map(c => (
+                {pendingReceived.map(c => (
                   <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
-                    <Avatar email={c.invitee_email} color="var(--amber)" />
+                    <Avatar email={c.inviterEmail} color="var(--amber)" />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.inviterEmail}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.3rem' }}>
-                      <button onClick={() => accept(c.id)} style={{ background: 'var(--emerald)', border: 'none', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--bg)' }}>accept</button>
-                      <button onClick={() => decline(c.id)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--muted)' }}>decline</button>
+                      <button onClick={async () => { await accept(c.id); setPendingReceived(prev => prev.filter(p => p.id !== c.id)) }} style={{ background: 'var(--emerald)', border: 'none', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--bg)' }}>accept</button>
+                      <button onClick={async () => { await decline(c.id); setPendingReceived(prev => prev.filter(p => p.id !== c.id)) }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.25rem 0.55rem', fontSize: '0.65rem', cursor: 'pointer', color: 'var(--muted)' }}>decline</button>
                     </div>
                   </div>
                 ))}
@@ -393,9 +404,9 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
               </div>
             )}
 
-            {active.length === 0 && sent.filter(c => c.status === 'pending').length === 0 && received.filter(c => c.status === 'pending').length === 0 && (
+            {active.length === 0 && sent.filter(c => c.status === 'pending').length === 0 && pendingReceived.length === 0 && (
               <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.4 }}>
-                No companions yet.<br />Invite someone above.
+                No friends yet.<br />Invite someone above.
               </div>
             )}
           </>

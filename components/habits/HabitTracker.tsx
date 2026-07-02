@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useHabits } from '@/lib/hooks/useHabits'
+import { useHabits, type ScheduleType } from '@/lib/hooks/useHabits'
 import { getLast7Days, DOMAIN_COLORS } from '@/lib/utils/habits'
 import HabitRow from './HabitRow'
 import { SkeletonRow } from '@/components/ui/Skeleton'
+
+const DOW = [{ id: 0, label: 'S' }, { id: 1, label: 'M' }, { id: 2, label: 'T' }, { id: 3, label: 'W' }, { id: 4, label: 'T' }, { id: 5, label: 'F' }, { id: 6, label: 'S' }]
 
 const DOMAINS = [
   { id: 'biz-active', label: 'Business (Active)' },
@@ -18,10 +20,13 @@ const DOMAINS = [
 ]
 
 export default function HabitTracker() {
-  const { habits, completions, loading, toggleDay, addHabit, deleteHabit } = useHabits()
+  const { habits, completions, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit } = useHabits()
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
+  const [scheduleType, setScheduleType] = useState<ScheduleType>('daily')
+  const [intervalDays, setIntervalDays] = useState('2')
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([])
   const days = getLast7Days()
 
   useEffect(() => {
@@ -30,11 +35,22 @@ export default function HabitTracker() {
     return () => window.removeEventListener('app:open-add-habit', onOpenRequest)
   }, [])
 
+  function toggleDow(id: number) {
+    setDaysOfWeek(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id].sort())
+  }
+
   async function handleAdd() {
     if (!name.trim()) return
-    await addHabit(name.trim(), category)
+    await addHabit(name.trim(), category, {
+      schedule_type: scheduleType,
+      interval_days: scheduleType === 'interval' ? (parseInt(intervalDays) || 2) : null,
+      days_of_week: scheduleType === 'weekly' ? (daysOfWeek.length > 0 ? daysOfWeek : [1]) : null,
+    })
     setName('')
     setCategory('')
+    setScheduleType('daily')
+    setIntervalDays('2')
+    setDaysOfWeek([])
     setShowForm(false)
   }
 
@@ -71,32 +87,67 @@ export default function HabitTracker() {
       )}
 
       {!loading && habits.map(h => (
-        <HabitRow key={h.id} habit={h} completions={completions[h.id] || []} days={days} onToggle={toggleDay} onDelete={deleteHabit} />
+        <HabitRow key={h.id} habit={h} completions={completions[h.id] || []} days={days} onToggle={toggleDay} onDelete={deleteHabit} onTogglePaused={togglePaused} onUpdateSchedule={updateSchedule} />
       ))}
 
       {showForm && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)', flexWrap: 'wrap' }}>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Habit name (e.g. Walk, Journal)"
-            aria-label="Habit name"
-            style={{ ...inputStyle, flex: 2, minWidth: '140px' }}
-          />
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            aria-label="Category"
-            style={{ ...inputStyle, flex: 1, minWidth: '130px', color: category ? 'var(--text)' : 'var(--muted)', cursor: 'pointer' }}
-          >
-            <option value="">No category</option>
-            {DOMAINS.map(d => (
-              <option key={d.id} value={d.id}>{d.label}</option>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="Habit name (e.g. Walk, Journal)"
+              aria-label="Habit name"
+              style={{ ...inputStyle, flex: 2, minWidth: '140px' }}
+            />
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              aria-label="Category"
+              style={{ ...inputStyle, flex: 1, minWidth: '130px', color: category ? 'var(--text)' : 'var(--muted)', cursor: 'pointer' }}
+            >
+              <option value="">No category</option>
+              {DOMAINS.map(d => (
+                <option key={d.id} value={d.id}>{d.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.7 }}>Schedule</span>
+            {(['daily', 'weekly', 'interval'] as ScheduleType[]).map(s => (
+              <button key={s} onClick={() => setScheduleType(s)} style={{
+                fontSize: '0.65rem', padding: '0.2em 0.6em', borderRadius: '99px', cursor: 'pointer',
+                border: scheduleType === s ? '1px solid color-mix(in srgb, var(--gold) 40%, transparent)' : '1px solid var(--border)',
+                background: scheduleType === s ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+                color: scheduleType === s ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-body)',
+              }}>{s === 'daily' ? 'Every day' : s === 'weekly' ? 'Specific days' : 'Every N days'}</button>
             ))}
-          </select>
+
+            {scheduleType === 'weekly' && (
+              <div style={{ display: 'flex', gap: '0.2rem' }}>
+                {DOW.map(d => (
+                  <button key={d.id} onClick={() => toggleDow(d.id)} style={{
+                    width: '22px', height: '22px', borderRadius: '5px', cursor: 'pointer', fontSize: '0.6rem',
+                    border: daysOfWeek.includes(d.id) ? '1px solid var(--gold)' : '1px solid var(--border)',
+                    background: daysOfWeek.includes(d.id) ? 'color-mix(in srgb, var(--gold) 20%, transparent)' : 'transparent',
+                    color: daysOfWeek.includes(d.id) ? 'var(--text)' : 'var(--muted)',
+                  }}>{d.label}</button>
+                ))}
+              </div>
+            )}
+            {scheduleType === 'interval' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>every</span>
+                <input value={intervalDays} onChange={e => setIntervalDays(e.target.value)} type="number" min={2} style={{ ...inputStyle, width: '54px', padding: '0.2em 0.4em' }} />
+                <span style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>days</span>
+              </div>
+            )}
+          </div>
+
           <button onClick={handleAdd} style={{
-            padding: '0.45em 1em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+            alignSelf: 'flex-start', padding: '0.45em 1em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
             background: 'color-mix(in srgb, var(--gold) 8%, transparent)', color: 'var(--gold)',
             fontFamily: 'var(--font-body)', fontSize: '0.73rem', cursor: 'pointer',
           }}>

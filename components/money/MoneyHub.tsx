@@ -86,7 +86,7 @@ export default function MoneyHub({ userId }: { userId: string }) {
         </div>
       )}
 
-      {tab === 'wishlist' && <WishlistCard />}
+      {tab === 'wishlist' && <WishlistCard userId={userId} />}
       {tab === 'gifts'    && <GiftsCard />}
       {tab === 'renewals' && <SubsCard />}
       {tab === 'buyagain' && <BuylistCard userId={userId} />}

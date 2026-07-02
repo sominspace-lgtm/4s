@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
-import { useHabits } from '@/lib/hooks/useHabits'
+import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
@@ -71,10 +71,13 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
   const inProgress = items.filter(i => i.status === 'in-progress').length
   const inboxCount = captures.length
 
-  const habitsTotal     = habits.length
-  const habitsDoneToday = habits.filter(h => (completions[h.id] ?? []).includes(today)).length
+  // "Due today" respects each habit's schedule (daily/weekly/every-N-days)
+  // and skips paused ones, instead of counting every habit that ever existed.
+  const habitsDueToday  = habits.filter(h => isDueOn(h, today, completions[h.id] ?? []))
+  const habitsTotal     = habitsDueToday.length
+  const habitsDoneToday = habitsDueToday.filter(h => (completions[h.id] ?? []).includes(today)).length
   const weekRate = habitsTotal === 0 ? null : Math.round(
-    habits.reduce((sum, h) => {
+    habitsDueToday.reduce((sum, h) => {
       const done = new Set(completions[h.id] ?? [])
       return sum + week.filter(d => done.has(d)).length
     }, 0) / (habitsTotal * week.length) * 100
@@ -216,7 +219,7 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
       <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
         Drop a task, thought, reminder, or idea — sort it later.
       </div>
-      <CaptureSection />
+      <CaptureSection userId={userId} />
     </div>
 
     <div>

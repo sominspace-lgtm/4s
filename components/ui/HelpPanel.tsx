@@ -27,8 +27,8 @@ const SECTIONS = [
   },
   {
     icon: '⇆',
-    title: 'Companions',
-    body: 'Add friends by email. Choose exactly which sections they can see (work, habits, captures, wishlist, etc.). They get a read-only link to your shared content.',
+    title: 'Friends',
+    body: 'Add friends by email. Choose exactly which sections they can see (tasks, habits, captures, wishlist, etc.). They get a read-only link to your shared content.',
   },
   {
     icon: '⊹',

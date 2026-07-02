@@ -40,7 +40,7 @@ export default function SharedWithMeSection({ onOpenCompanions }: { onOpenCompan
 
       {!loading && items.length === 0 && (
         <div style={{ padding: '1rem 0', textAlign: 'center', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.8rem' }}>
-          No one has shared anything yet.<br />Shared notes, tasks, lists, reminders, gift ideas, and plans will appear here.
+          No one has shared anything yet.<br />Shared notes, tasks, lists, reminders, gift ideas, and plans will appear here.<br />Everything is private unless you share it.
         </div>
       )}
 
