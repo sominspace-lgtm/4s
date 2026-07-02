@@ -23,6 +23,14 @@ export default function ShareMenu({ itemType, itemId, userId }: ShareMenuProps) 
 
   const isShared = links.length > 0
 
+  const badgeLabel = isShared
+    ? links.map(l => {
+        if (l.space_id) return spaces.find(s => s.id === l.space_id)?.name ?? 'a group'
+        const c = companions.find(c => c.invitee_id === l.shared_with_user_id)
+        return c ? c.invitee_email.split('@')[0] : 'someone'
+      }).join(', ')
+    : null
+
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setTab(null) }
@@ -32,7 +40,14 @@ export default function ShareMenu({ itemType, itemId, userId }: ShareMenuProps) 
   }, [open])
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={ref} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+      {badgeLabel && (
+        <span style={{
+          fontSize: '0.56rem', letterSpacing: '0.03em', color: 'var(--gold)', opacity: 0.85,
+          background: 'color-mix(in srgb, var(--gold) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
+          borderRadius: '99px', padding: '0.1em 0.5em', whiteSpace: 'nowrap',
+        }}>Shared with {badgeLabel}</span>
+      )}
       <button
         onClick={() => setOpen(o => !o)}
         title={isShared ? 'Shared — click to manage' : 'Private — click to share'}

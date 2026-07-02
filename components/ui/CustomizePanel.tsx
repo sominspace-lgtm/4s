@@ -21,9 +21,9 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
 }
 
 export const DEFAULT_SECTIONS: SectionConfig[] = [
-  // Capture
-  { id: 'capture',  label: 'Capture',            hidden: false },
-  // At a glance
+  // Quick Add
+  { id: 'capture',  label: 'Quick Add · Inbox',  hidden: false },
+  // At a glance — Needs Attention (Pulse) now lives inside Brief
   { id: 'brief',    label: 'Daily Brief',        hidden: false },
   // Companions — surfaced early so shared items aren't an afterthought
   { id: 'shared',   label: 'Shared With Me',     hidden: false },
@@ -32,11 +32,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'habits',   label: 'Daily Habits',       hidden: false },
   // Domains
   { id: 'domains',  label: 'Domains',            hidden: false },
-  // Check-in
-  { id: 'pulse',    label: "Today's Pulse",      hidden: false },
-  // Money
-  { id: 'wishlist', label: 'Wishlist',           hidden: false },
-  { id: 'spending', label: 'Recurring Spending', hidden: false },
+  // Money — Wishlist, Gifts, Renewals, Buy Again all live here now
+  { id: 'money',    label: 'Money',              hidden: false },
   // Review
   { id: 'calendar', label: 'Calendar',           hidden: false },
   { id: 'council',  label: 'Your Council',       hidden: false },

@@ -9,6 +9,8 @@ import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscrip
 import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { DOMAINS } from '@/lib/constants/domains'
+import PulseSection from '@/components/pulse/PulseSection'
+import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
@@ -92,6 +94,7 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
   const hasStats = showOverdue || showToday || showHabits || showProgress || showInbox
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',
       padding: '1.2rem 1.5rem', position: 'relative', overflow: 'hidden',
@@ -141,6 +144,16 @@ export default function DailyBrief({ userId, onOpenCompanions }: { userId: strin
         <button onClick={() => document.getElementById('section-capture')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
         <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
       </div>
+    </div>
+
+    <div>
+      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+        Needs Attention
+      </div>
+      <PulseSection />
+    </div>
+
+    <FamilyTodayCard userId={userId} />
     </div>
   )
 }

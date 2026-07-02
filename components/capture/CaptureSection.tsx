@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useCaptures } from '@/lib/hooks/useCaptures'
+import { useWorkItems } from '@/lib/hooks/useWorkItems'
+import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
 
@@ -9,6 +11,8 @@ const DOMAIN_IDS = ['biz-active', 'biz-future', 'money', 'health', 'relationship
 
 export default function CaptureSection() {
   const { captures, add, remove, assign } = useCaptures()
+  const { add: addTask } = useWorkItems()
+  const { add: addWish } = useWatchItems()
   const lang = useLang()
   const [text, setText] = useState('')
   const [domain, setDomain] = useState('')
@@ -28,6 +32,16 @@ export default function CaptureSection() {
     setText('')
     setDomain('')
     setOpen(true)
+  }
+
+  async function makeTask(captureId: string, text: string) {
+    await addTask({ title: text, notes: null, due_date: null, priority: 2, domain: null, recur_days: null })
+    await remove(captureId)
+  }
+
+  async function makeWishlist(captureId: string, text: string) {
+    await addWish('price', text, '')
+    await remove(captureId)
   }
 
   return (
@@ -80,7 +94,7 @@ export default function CaptureSection() {
             fontFamily: 'var(--font-body)',
           }}
         >
-          <span>{t('Unsorted', lang)}</span>
+          <span>{t('Inbox', lang)}</span>
           {captures.length > 0 && (
             <span style={{
               background: 'rgba(232,160,192,0.15)', color: 'var(--gold)',
@@ -107,6 +121,16 @@ export default function CaptureSection() {
                 fontSize: '0.8rem', color: 'var(--muted)',
               }}>
                 <span style={{ flex: 1, color: 'var(--text)' }}>{c.text}</span>
+                <button onClick={() => makeTask(c.id, c.text)} title="Make this a task" style={{
+                  fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
+                  border: '1px solid var(--border)', borderRadius: '6px',
+                  padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>→ task</button>
+                <button onClick={() => makeWishlist(c.id, c.text)} title="Add to wishlist" style={{
+                  fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
+                  border: '1px solid var(--border)', borderRadius: '6px',
+                  padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>→ wishlist</button>
                 {assigning === c.id ? (
                   <select
                     autoFocus

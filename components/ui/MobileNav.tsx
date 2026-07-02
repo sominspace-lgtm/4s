@@ -14,7 +14,7 @@ export default function MobileNav({ onCapture, onSearch, onFocus }: Props) {
   const actions = [
     { icon: '⌕', label: 'search', onClick: () => { setOpen(false); onSearch() } },
     { icon: '◎', label: 'focus', onClick: () => { setOpen(false); onFocus() } },
-    { icon: '○', label: 'capture', onClick: () => { setOpen(false); onCapture() } },
+    { icon: '○', label: 'quick add', onClick: () => { setOpen(false); onCapture() } },
   ]
 
   return (

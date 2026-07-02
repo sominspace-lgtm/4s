@@ -162,19 +162,31 @@ function SpacesTab({ userId }: { userId: string }) {
     )
   }
 
-  async function handleCreate() {
-    if (!name.trim()) return
+  async function handleCreate(presetName?: string) {
+    const label = presetName ?? name.trim()
+    if (!label) return
     setCreating(true)
-    await createSpace(name.trim())
+    await createSpace(label)
     setCreating(false)
     setName('')
   }
+
+  const STARTER_SPACES = ['Family', 'Couple', 'Trip', 'Household', 'Friends', 'Roommates']
+  const existingNames = new Set(spaces.map(s => s.name))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <p style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.78, lineHeight: 1.6 }}>
         Spaces are named groups — Family, Couple, Trip, Household — you can share items with all at once.
       </p>
+
+      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+        {STARTER_SPACES.filter(n => !existingNames.has(n)).map(n => (
+          <button key={n} onClick={() => handleCreate(n)} disabled={creating} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>
+            + {n}
+          </button>
+        ))}
+      </div>
 
       <div style={{ display: 'flex', gap: '0.4rem' }}>
         <input
@@ -187,7 +199,7 @@ function SpacesTab({ userId }: { userId: string }) {
             fontFamily: 'var(--font-body)', fontSize: '0.78rem', outline: 'none',
           }}
         />
-        <button onClick={handleCreate} disabled={creating || !name.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem' }}>
+        <button onClick={() => handleCreate()} disabled={creating || !name.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem' }}>
           create
         </button>
       </div>

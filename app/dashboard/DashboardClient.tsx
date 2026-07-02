@@ -20,13 +20,9 @@ import XPBar from '@/components/gamer/XPBar'
 import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import CaptureSection from '@/components/capture/CaptureSection'
-import PulseSection from '@/components/pulse/PulseSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import DomainGrid from '@/components/domains/DomainGrid'
-import SubsCard from '@/components/subscriptions/SubsCard'
-import GiftsCard from '@/components/subscriptions/GiftsCard'
-import WishlistCard from '@/components/watchlist/WishlistCard'
-import BuylistCard from '@/components/watchlist/BuylistCard'
+import MoneyHub from '@/components/money/MoneyHub'
 import CouncilSection from '@/components/council/CouncilSection'
 import SharedWithMeSection from '@/components/companion/SharedWithMeSection'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
@@ -50,11 +46,16 @@ interface Props {
   initialFocusConfig: FocusConfig | null
 }
 
+// Folded into Money hub / Brief "Needs Attention" — strip from any saved layout
+// so returning users don't see dangling, unrenderable section headings.
+const DEPRECATED_SECTION_IDS = new Set(['pulse', 'wishlist', 'spending'])
+
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_SECTIONS
-  const savedIds = new Set(saved.map(s => s.id))
+  const cleaned = saved.filter(s => !DEPRECATED_SECTION_IDS.has(s.id))
+  const savedIds = new Set(cleaned.map(s => s.id))
   const missing = DEFAULT_SECTIONS.filter(s => !savedIds.has(s.id))
-  return [...saved, ...missing]
+  return [...cleaned, ...missing]
 }
 
 const SECTION_GROUPS: Record<string, string> = {
@@ -63,9 +64,7 @@ const SECTION_GROUPS: Record<string, string> = {
   work:     'focus',
   habits:   'focus',
   domains:  'inbox',
-  pulse:    'check-in',
-  wishlist: 'money',
-  spending: 'money',
+  money:    'money',
   calendar: 'review',
   council:  'review',
   shared:   'companions',
@@ -141,9 +140,8 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), work: t('Work Hub', lang), habits: t('Daily Habits', lang),
-      capture: t('Capture', lang), domains: t('Domains', lang),
-      pulse: t("Today's Pulse", lang), wishlist: t('Wishlist', lang),
-      spending: t('Recurring Spending', lang), calendar: t('Calendar', lang),
+      capture: t('Quick Add · Inbox', lang), domains: t('Domains', lang),
+      money: t('Money', lang), calendar: t('Calendar', lang),
       council: t('Your Council', lang), shared: t('Shared With Me', lang),
     }
 
@@ -171,15 +169,9 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         case 'brief':    return <DailyBrief key="brief" userId={userId} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'capture':  return <CaptureSection key="capture" />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'pulse':    return <PulseSection key="pulse" />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
-        case 'spending': return (
-          <div key="spending" className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-            <SubsCard /><BuylistCard /><GiftsCard />
-          </div>
-        )
-        case 'wishlist': return <WishlistCard key="wishlist" />
+        case 'money':    return <MoneyHub key="money" />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
         case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} />
         case 'shared':   return <SharedWithMeSection key="shared" onOpenCompanions={() => setCompanionsOpen(true)} />
