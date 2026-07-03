@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
@@ -8,7 +8,8 @@ import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
 import { useCompanions } from '@/lib/hooks/useCompanions'
-import { generateCouncilAdvice, type CouncilAdvice } from '@/lib/utils/council'
+import { useAppSnapshot } from '@/lib/hooks/useAppSnapshot'
+import { generateCouncilAdvice, COUNCIL_DOMAINS, type CouncilAdvice } from '@/lib/utils/council'
 import type { Mode } from '@/lib/constants/modes'
 
 const VERDICT_STYLE: Record<string, React.CSSProperties> = {
@@ -78,6 +79,11 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
   const [suggestion, setSuggestion] = useState('')
   const [focusDomain, setFocusDomain] = useState<string | null>(null)
+  // 'loading' → AI request in flight (rule-based advice already shown),
+  // 'ai' → advice was upgraded by the model, 'rules' → AI unavailable.
+  const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ai' | 'rules'>('idle')
+  const buildSnapshot = useAppSnapshot(userId, calendarConnected)
+  const conveneSeq = useRef(0)
 
   // Rule-based "what should I actually do next" — one concrete action,
   // most urgent first, setup nudges only when nothing is on fire.
@@ -100,6 +106,8 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
     const pendingShares = received.filter(c => c.status === 'pending').length
     const refillsOverdue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
 
+    // Rule-based review renders instantly; the AI pass replaces it when (if)
+    // it lands. A sequence counter drops stale responses on rapid reconvenes.
     const result = generateCouncilAdvice({
       habits, completions, subscriptions, buyItems, domainTouched: touched, mode,
       overdueTasks, dueTodayTasks, upcomingGifts, pendingShares,
@@ -108,6 +116,35 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
     setSuggestion(suggestNextAction({ overdueTasks, pendingShares, refillsOverdue }))
     setFocusDomain(domain)
     setConvened(true)
+
+    const seq = ++conveneSeq.current
+    setAiStatus('loading')
+    fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task: 'council', mode, snapshot: buildSnapshot() }),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
+      .then(data => {
+        if (seq !== conveneSeq.current) return
+        const advisors = data?.result?.advisors
+        if (!Array.isArray(advisors) || advisors.length === 0) { setAiStatus('rules'); return }
+        const byDomain = new Map(advisors.map((a: { domain: string; verdict: string; advice: string }) => [a.domain, a]))
+        setAdvice(COUNCIL_DOMAINS.map(d => {
+          const ai = byDomain.get(d.id)
+          const fallback = result.find(r => r.domain === d.id)
+          return {
+            domain: d.id, label: d.label, icon: d.icon, color: d.color,
+            verdict: (ai?.verdict as CouncilAdvice['verdict']) ?? fallback?.verdict ?? 'quiet',
+            advice: ai?.advice ?? fallback?.advice ?? '',
+          }
+        }))
+        if (typeof data.result.suggestedAction === 'string' && data.result.suggestedAction) {
+          setSuggestion(data.result.suggestedAction)
+        }
+        setAiStatus('ai')
+      })
+      .catch(() => { if (seq === conveneSeq.current) setAiStatus('rules') })
   }
 
   const watchCount = advice.filter(a => a.verdict === 'watch').length
@@ -144,6 +181,15 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>Council Review</span>
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.8 }}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+            {aiStatus === 'loading' && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.8 }}>✦ thinking…</span>}
+            {aiStatus === 'ai' && (
+              <span style={{
+                fontSize: '0.58rem', letterSpacing: '0.05em', textTransform: 'uppercase',
+                color: 'var(--gold)', padding: '0.1em 0.55em', borderRadius: '99px',
+                background: 'color-mix(in srgb, var(--gold) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
+              }}>✦ ai review</span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
             {ADVISORS.map(a => (
@@ -174,7 +220,10 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
       )}
 
       <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.04em' }}>
-        rule-based analysis · ai-powered advice coming soon
+        {aiStatus === 'ai' ? 'ai-powered review · your data stays in this request'
+          : aiStatus === 'loading' ? 'rule-based review shown · ai review on the way…'
+          : aiStatus === 'rules' ? 'rule-based review · ai unavailable right now'
+          : 'reviews use your live dashboard data'}
       </div>
     </div>
   )

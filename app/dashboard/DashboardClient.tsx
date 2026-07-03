@@ -280,7 +280,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         />
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <AskJarvisPanel open={jarvisOpen} onClose={() => setJarvisOpen(false)} />
+      <AskJarvisPanel open={jarvisOpen} userId={userId} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />

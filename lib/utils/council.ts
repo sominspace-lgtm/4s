@@ -5,6 +5,21 @@ import type { BuyItem } from '@/lib/hooks/useBuyItems'
 import { getLast7Days } from './habits'
 import { MODES, type Mode } from '@/lib/constants/modes'
 
+// Shared advisor metadata — used by the rule-based generator below and to
+// dress AI-generated advice (which returns only domain/verdict/advice).
+export const COUNCIL_DOMAINS = [
+  { id: 'biz-active', label: 'Business', icon: '◈', color: 'var(--gold)' },
+  { id: 'biz-future', label: 'Pipeline', icon: '◇', color: 'var(--purple)' },
+  { id: 'money',      label: 'Finance',  icon: '◉', color: 'var(--emerald)' },
+  { id: 'health',     label: 'Health',   icon: '○', color: 'var(--rose)' },
+  { id: 'relationship',label:'Relationship',icon:'♡',color:'var(--blush)' },
+  { id: 'creative',   label: 'Creative', icon: '✦', color: 'var(--amber)' },
+  { id: 'home',       label: 'Home',     icon: '⌂', color: 'var(--slate)' },
+  { id: 'self',       label: 'Self',     icon: '◎', color: 'var(--lavender)' },
+  { id: 'sharing',    label: 'Sharing',  icon: '⇆', color: 'var(--blush)' },
+  { id: 'planning',   label: 'Planning', icon: '◒', color: 'var(--gold)' },
+]
+
 export interface CouncilAdvice {
   domain: string
   label: string
@@ -149,20 +164,7 @@ export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
     })(),
   ]
 
-  const DOMAINS = [
-    { id: 'biz-active', label: 'Business', icon: '◈', color: 'var(--gold)' },
-    { id: 'biz-future', label: 'Pipeline', icon: '◇', color: 'var(--purple)' },
-    { id: 'money',      label: 'Finance',  icon: '◉', color: 'var(--emerald)' },
-    { id: 'health',     label: 'Health',   icon: '○', color: 'var(--rose)' },
-    { id: 'relationship',label:'Relationship',icon:'♡',color:'var(--blush)' },
-    { id: 'creative',   label: 'Creative', icon: '✦', color: 'var(--amber)' },
-    { id: 'home',       label: 'Home',     icon: '⌂', color: 'var(--slate)' },
-    { id: 'self',       label: 'Self',     icon: '◎', color: 'var(--lavender)' },
-    { id: 'sharing',    label: 'Sharing',  icon: '⇆', color: 'var(--blush)' },
-    { id: 'planning',   label: 'Planning', icon: '◒', color: 'var(--gold)' },
-  ]
-
-  return DOMAINS.map((d, i) => {
+  return COUNCIL_DOMAINS.map((d, i) => {
     const raw = advice[i]
     return {
       domain: d.id, label: d.label, icon: d.icon, color: d.color,
