@@ -17,6 +17,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Honor ?next= so flows that bounce through login (e.g. Alexa account
+  // linking → /api/alexa/authorize) return to where they started. Only
+  // same-origin relative paths are allowed, never an external URL.
+  function nextTarget(fallback: string): string {
+    if (typeof window === 'undefined') return fallback
+    const n = new URLSearchParams(window.location.search).get('next')
+    return n && n.startsWith('/') && !n.startsWith('//') ? n : fallback
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -41,7 +50,7 @@ export default function LoginPage() {
       if (error) { setError(error.message); setLoading(false); return }
       // Email confirmation is off — session is returned immediately
       if (data.session) {
-        router.push('/onboard')
+        router.push(nextTarget('/onboard'))
         return
       }
       // Fallback: try signing in
@@ -50,7 +59,7 @@ export default function LoginPage() {
         // Confirmation might be required — tell user
         setSent(true)
       } else {
-        router.push('/onboard')
+        router.push(nextTarget('/onboard'))
       }
       setLoading(false)
       return
@@ -60,7 +69,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
     if (!rememberMe) sessionStorage.setItem('4s-session-only', '1')
-    router.push('/dashboard')
+    router.push(nextTarget('/dashboard'))
   }
 
   const inputStyle: React.CSSProperties = {
