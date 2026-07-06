@@ -45,6 +45,46 @@ function slot(body: AlexaRequestBody, name: string): string {
   return (body.request.intent?.slots?.[name]?.value ?? '').trim()
 }
 
+// Fuzzy-match a spoken name to a list item (task title, habit name, refill).
+// Voice transcription is imperfect, so we match on exact, substring, then
+// word overlap, and only accept a reasonably confident hit.
+function norm(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+function bestMatch<T>(items: T[], spoken: string, key: (t: T) => string): T | null {
+  const q = norm(spoken)
+  if (!q) return null
+  let best: T | null = null
+  let bestScore = 0
+  for (const it of items) {
+    const name = norm(key(it))
+    if (!name) continue
+    let score = 0
+    if (name === q) score = 100
+    else if (name.includes(q) || q.includes(name)) score = 60 + Math.min(name.length, q.length)
+    else {
+      const nWords = new Set(name.split(' '))
+      score = q.split(' ').filter(w => w.length > 2 && nWords.has(w)).length * 15
+    }
+    if (score > bestScore) { bestScore = score; best = it }
+  }
+  return bestScore >= 20 ? best : null
+}
+
+// Server copy of the habit schedule check (the client version lives in a
+// 'use client' module we can't import here).
+interface HabitRow { schedule_type: string; interval_days: number | null; days_of_week: number[] | null; paused: boolean }
+function isHabitDue(habit: HabitRow, dates: string[], dateStr: string): boolean {
+  if (habit.paused) return false
+  if (habit.schedule_type === 'daily') return true
+  if (habit.schedule_type === 'weekly') return (habit.days_of_week ?? []).includes(parseISO(dateStr).getDay())
+  const n = habit.interval_days ?? 1
+  const prior = dates.filter(d => d <= dateStr).sort()
+  const last = prior[prior.length - 1]
+  if (!last) return true
+  return differenceInCalendarDays(parseISO(dateStr), parseISO(last)) >= n
+}
+
 export async function POST(request: Request) {
   let body: AlexaRequestBody
   try {
@@ -158,11 +198,114 @@ export async function POST(request: Request) {
       return say(brief, { end: true })
     }
 
+    case 'ListTasksIntent': {
+      const { data } = await admin.from('work_items')
+        .select('title, due_date, priority').eq('user_id', userId).neq('status', 'done')
+      const open = data ?? []
+      if (open.length === 0) return say('You have no open tasks. Clear runway.', { end: true })
+      const sorted = [...open].sort((a, b) =>
+        (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || (a.priority - b.priority)).slice(0, 5)
+      const list = sorted.map(t => t.due_date ? `${t.title}, ${spokenDate(t.due_date)}` : t.title).join('; ')
+      const more = open.length > 5 ? ` And ${open.length - 5} more.` : ''
+      return say(`You have ${open.length} open task${open.length > 1 ? 's' : ''}. ${list}.${more}`, { end: true })
+    }
+
+    case 'CompleteTaskIntent': {
+      const text = slot(body, 'TaskText')
+      if (!text) return say('Which task should I mark done?', { reprompt: 'Say the task name.' })
+      const { data } = await admin.from('work_items').select('id, title').eq('user_id', userId).neq('status', 'done')
+      const match = bestMatch(data ?? [], text, t => t.title)
+      if (!match) return say(`I couldn't find an open task matching ${text}.`, { end: true })
+      const { error } = await admin.from('work_items').update({ status: 'done' }).eq('id', match.id)
+      if (error) return say(`I couldn't update that. ${error.message}`, { end: true })
+      return say(`Marked "${match.title}" as done. Nice work.`, { end: true })
+    }
+
+    case 'HabitsIntent': {
+      const today = format(new Date(), 'yyyy-MM-dd')
+      const { data: habits } = await admin.from('habits').select('*').eq('user_id', userId)
+      const { data: comps } = await admin.from('habit_completions').select('habit_id, completed_date').eq('user_id', userId)
+      const byHabit: Record<string, string[]> = {}
+      ;(comps ?? []).forEach(c => { (byHabit[c.habit_id] ??= []).push(c.completed_date) })
+      const due = (habits ?? []).filter(h => isHabitDue(h, byHabit[h.id] ?? [], today))
+      if (due.length === 0) {
+        return say((habits?.length ?? 0) === 0
+          ? 'You have no habits yet. Say, add a habit, then its name.'
+          : 'No habits are due today. All caught up.', { end: true })
+      }
+      const remaining = due.filter(h => !(byHabit[h.id] ?? []).includes(today)).map(h => h.name)
+      if (remaining.length === 0) return say(`All ${due.length} habits done today. Strong.`, { end: true })
+      return say(`${due.length - remaining.length} of ${due.length} habits done. Still due: ${remaining.join(', ')}.`, { end: true })
+    }
+
+    case 'CompleteHabitIntent': {
+      const name = slot(body, 'HabitName')
+      if (!name) return say('Which habit did you do?', { reprompt: 'Say the habit name.' })
+      const { data: habits } = await admin.from('habits').select('id, name').eq('user_id', userId)
+      const match = bestMatch(habits ?? [], name, h => h.name)
+      if (!match) return say(`I couldn't find a habit matching ${name}.`, { end: true })
+      const today = format(new Date(), 'yyyy-MM-dd')
+      const { data: exists } = await admin.from('habit_completions')
+        .select('habit_id').eq('habit_id', match.id).eq('completed_date', today).maybeSingle()
+      if (exists) return say(`${match.name} is already checked off today.`, { end: true })
+      const { error } = await admin.from('habit_completions').insert({ habit_id: match.id, completed_date: today, user_id: userId })
+      if (error) return say(`I couldn't log that. ${error.message}`, { end: true })
+      return say(`Logged ${match.name} for today. Keep it going.`, { end: true })
+    }
+
+    case 'AddHabitIntent': {
+      const name = slot(body, 'HabitName')
+      if (!name) return say('What habit should I add?', { reprompt: 'Say the habit name.' })
+      const { error } = await admin.from('habits').insert({
+        name, user_id: userId, schedule_type: 'daily', category: null, interval_days: null, days_of_week: null,
+      })
+      if (error) return say(`I couldn't add that habit. ${error.message}`, { end: true })
+      return say(`Added the daily habit ${name}.`, { end: true })
+    }
+
+    case 'MoneyIntent': {
+      const { data: subs } = await admin.from('subscriptions').select('name, cost_monthly, renewal_date').eq('user_id', userId)
+      const { data: buys } = await admin.from('buy_items').select('name, last_bought, cadence_days, status').eq('user_id', userId)
+      const total = (subs ?? []).reduce((s, x) => s + Number(x.cost_monthly || 0), 0)
+      const soon = (subs ?? []).filter(s => s.renewal_date && differenceInCalendarDays(parseISO(s.renewal_date), new Date()) <= 7)
+      const refills = (buys ?? []).filter(b => b.status !== 'paused' && b.last_bought
+        && differenceInCalendarDays(addDays(parseISO(b.last_bought), b.cadence_days ?? 30), new Date()) <= 0)
+      const parts = [`You're spending about ${Math.round(total)} dollars a month on subscriptions`]
+      if (soon.length) parts.push(`${soon.map(s => s.name).join(', ')} renew${soon.length === 1 ? 's' : ''} within a week`)
+      if (refills.length) parts.push(`it's time to rebuy ${refills.map(b => b.name).join(', ')}`)
+      return say(parts.join('. ') + '.', { end: true })
+    }
+
+    case 'MarkBoughtIntent': {
+      const name = slot(body, 'ItemName')
+      if (!name) return say('Which item did you buy?', { reprompt: 'Say the item name.' })
+      const { data: buys } = await admin.from('buy_items').select('id, name').eq('user_id', userId)
+      const match = bestMatch(buys ?? [], name, b => b.name)
+      if (!match) return say(`I couldn't find a refill item matching ${name}.`, { end: true })
+      const { error } = await admin.from('buy_items')
+        .update({ last_bought: format(new Date(), 'yyyy-MM-dd'), status: 'stocked', snoozed_until: null }).eq('id', match.id)
+      if (error) return say(`I couldn't update that. ${error.message}`, { end: true })
+      return say(`Marked ${match.name} as bought. I'll remind you next time.`, { end: true })
+    }
+
+    case 'CalendarIntent': {
+      const now = new Date()
+      const within = (iso: string | null) => iso ? differenceInCalendarDays(parseISO(iso), now) : 999
+      const { data: tasks } = await admin.from('work_items').select('title, due_date').eq('user_id', userId).neq('status', 'done')
+      const { data: subs } = await admin.from('subscriptions').select('name, renewal_date').eq('user_id', userId)
+      const items: { label: string; d: number }[] = []
+      ;(tasks ?? []).forEach(t => { const d = within(t.due_date); if (d >= 0 && d <= 14) items.push({ label: `${t.title} ${spokenDate(t.due_date!)}`, d }) })
+      ;(subs ?? []).forEach(s => { const d = within(s.renewal_date); if (d >= 0 && d <= 14) items.push({ label: `${s.name} renews ${spokenDate(s.renewal_date!)}`, d }) })
+      if (items.length === 0) return say('Nothing scheduled in the next two weeks.', { end: true })
+      items.sort((a, b) => a.d - b.d)
+      return say(`Coming up: ${items.slice(0, 6).map(i => i.label).join('; ')}.`, { end: true })
+    }
+
     case 'LinkAccountIntent':
       return say("You're already linked. Say: ask four s what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
-      return say('You can say: add a task to call the dentist tomorrow. Or, capture, remember to water the plants. Or, remind me to buy coffee every 14 days. Or ask, what needs attention?', {
+      return say('You can add a task, capture a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, or say you bought something. Or ask about your money or what is coming up. What would you like?', {
         reprompt: 'What would you like to do?',
       })
 
