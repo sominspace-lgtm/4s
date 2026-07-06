@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import Link from 'next/link'
 import type { Lang } from '@/lib/i18n'
 
 interface Props {
@@ -11,54 +12,49 @@ interface Props {
 
 const SECTIONS = [
   {
-    icon: '⌘/',
-    title: 'Search everything',
-    body: 'Press ⌘/ (or Ctrl+/) to open search. Jump between tasks, habits, captures, and wishlist items instantly. Arrow keys navigate, Enter opens.',
+    icon: '○',
+    title: 'Tasks — just type it',
+    body: 'Type tasks like you’d say them — "hw due today", "call mom friday", "p1 pay rent tomorrow". 4S sets the date and priority and shows a suggestion to confirm. Click the circle to cycle ○ → ◑ → ●; click P1/P2/P3 to change priority.',
+  },
+  {
+    icon: '◉',
+    title: 'Habits',
+    body: 'Daily, weekly, or every-N-days schedules. "Due today" only counts the habits that actually are. Pause any habit without losing its history.',
+  },
+  {
+    icon: '◉',
+    title: 'Money & Refill',
+    body: 'Wishlist, Gifts, Renewals, and Buy Again. Add something you run out of and 4S stays quiet until it’s time to rebuy — or scan a photo / paste a link and let AI fill the details.',
   },
   {
     icon: '◎',
-    title: 'Focus mode',
-    body: 'Click ◎ in the header to enter a distraction-free timer. Pick 15, 25, 45, 60, or 90 minutes — or type a custom duration. The page dims so you stay on track.',
+    title: 'Calendar',
+    body: 'Native Agenda and Month views built from your tasks, renewals, refills, and gifts. Connect Google Calendar to see events alongside them.',
   },
   {
-    icon: '◻',
-    title: 'Archive',
-    body: 'Click ◻ to see all completed and cancelled tasks grouped by month. Nothing is deleted — everything is archived.',
+    icon: '⚖',
+    title: 'Council',
+    body: 'Convene your Council for a calm per-area review plus one suggested next action. Runs on rules instantly; upgrades to a real AI review when AI is enabled.',
+  },
+  {
+    icon: '✦',
+    title: 'Ask Jarvis & AI',
+    body: 'Ask a free-text question about your day, get an AI Council review, and scan refill labels — all powered by Claude when an API key is set. Only counts, titles, and dates are sent, never your notes.',
   },
   {
     icon: '⇆',
-    title: 'Friends',
-    body: 'Add friends by email. Choose exactly which sections they can see (tasks, habits, captures, wishlist, etc.). They get a read-only link to your shared content.',
-  },
-  {
-    icon: '⊹',
-    title: 'Customize layout',
-    body: 'Drag and reorder sections, or toggle the eye icon to hide/show any section. Your layout is saved automatically.',
+    title: 'Shared & People',
+    body: 'Invite friends by email; accept or decline. Only accepted people become share targets. Shared spaces (Family, Couple, Trip) let you share with a whole group. Private by default, always.',
   },
   {
     icon: '◐',
     title: 'Themes & modes',
-    body: '15 visual themes (Sunset, Midnight, Linen, Ember…) and 10 personality modes (Balanced, Coach, Gamer…). Mix freely. Gamer mode earns XP for tasks (+25) and habits (+10).',
+    body: '13 visual themes (dark & light) change only the look; 10 personality modes change only the tone. Mix freely. Gamer mode earns XP (+25 per task, +10 per habit).',
   },
   {
-    icon: '○',
-    title: 'Tasks',
-    body: 'Click the circle to cycle status: ○ todo → ◑ in-progress → ● done. Click the priority badge (P1/P2/P3) to change urgency. Edit notes inline by clicking them.',
-  },
-  {
-    icon: '✦',
-    title: 'Life',
-    body: 'Eight life domains (Business, Health, Creative…). Each has its own notes and hidden/shared toggle. Tag tasks and captures to a domain for better organisation.',
-  },
-  {
-    icon: '↻',
-    title: 'Recurring tasks',
-    body: 'When adding a task, set a repeat interval (daily, weekly, monthly…). When you complete it, the next occurrence is created automatically.',
-  },
-  {
-    icon: '♡',
-    title: 'Quick Add · Inbox',
-    body: 'Drop anything instantly from the Quick Add card on Brief. Use the domain dropdown to tag it right away, or leave it in the Inbox and sort later.',
+    icon: '🎙',
+    title: 'Alexa',
+    body: 'Link once from Account → Connect Alexa, then control 4S by voice: "Alexa, open four s", then "what needs attention", "read my tasks", "i did meditation", "money summary".',
   },
 ]
 
@@ -127,6 +123,10 @@ export default function HelpPanel({ open, onClose, lang = 'en' }: Props) {
 
         {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          <Link href="/guide" onClick={onClose} className="btn btn-secondary" style={{ fontSize: '0.75rem', textAlign: 'center', textDecoration: 'none' }}>
+            Open the full guide →
+          </Link>
 
           {/* Keyboard shortcuts */}
           <div>

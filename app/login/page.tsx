@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Logo from '@/components/ui/Logo'
 
 type Mode = 'magic' | 'signin' | 'signup'
 
@@ -107,14 +108,17 @@ export default function LoginPage() {
       padding: '2rem',
     }}>
       <div style={{ width: '100%', maxWidth: '380px' }}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{
-            fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '3rem', fontWeight: 300,
-            color: '#f5e8f0', marginBottom: '0.25rem', letterSpacing: '0.02em', lineHeight: 1,
-          }}>4S</h1>
-          <p style={{ color: 'rgba(245,232,240,0.4)', fontSize: '0.82rem', fontFamily: 'Inter, sans-serif', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            personal operating system
-          </p>
+        <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <Logo size={56} />
+          <div>
+            <h1 style={{
+              fontFamily: 'Cormorant Garamond, Georgia, serif', fontSize: '3rem', fontWeight: 300,
+              color: '#f5e8f0', marginBottom: '0.1rem', letterSpacing: '0.02em', lineHeight: 1,
+            }}>4S</h1>
+            <p style={{ color: 'rgba(245,232,240,0.4)', fontSize: '0.75rem', fontFamily: 'Inter, sans-serif', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              personal operating system
+            </p>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.5rem' }}>
