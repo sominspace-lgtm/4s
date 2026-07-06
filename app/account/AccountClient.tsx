@@ -55,13 +55,17 @@ export default function AccountClient({ email, userId, displayName }: Props) {
 
   const [alexaCode, setAlexaCode] = useState<string | null>(null)
   const [alexaLoading, setAlexaLoading] = useState(false)
+  const [alexaErr, setAlexaErr] = useState<string | null>(null)
 
   async function connectAlexa() {
-    setAlexaLoading(true); setAlexaCode(null)
+    setAlexaLoading(true); setAlexaCode(null); setAlexaErr(null)
     try {
       const res = await fetch('/api/alexa/link-code', { method: 'POST' })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (data.code) setAlexaCode(data.code)
+      else setAlexaErr(data.error || `Couldn't generate a code (status ${res.status}).`)
+    } catch {
+      setAlexaErr('Network error — try again.')
     } finally { setAlexaLoading(false) }
   }
 
@@ -183,6 +187,7 @@ export default function AccountClient({ email, userId, displayName }: Props) {
             <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
               Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link&rdquo;</em> and read it out. Links your Echo to this account.
             </span>
+            {alexaErr && <div style={{ fontSize: '0.68rem', color: 'var(--rose)' }}>{alexaErr}</div>}
             {!alexaCode ? (
               <Btn onClick={connectAlexa} disabled={alexaLoading}>{alexaLoading ? 'generating…' : 'Get my code'}</Btn>
             ) : (
