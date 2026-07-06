@@ -26,6 +26,16 @@ export default function LoginPage() {
     return n && n.startsWith('/') && !n.startsWith('//') ? n : fallback
   }
 
+  // API-route targets (e.g. Alexa account linking) end in a 302 to an external
+  // Amazon URL. router.push does a soft in-app navigation that won't follow
+  // that redirect, so hard-navigate the browser for those; keep the SPA push
+  // for normal page targets.
+  function goNext(fallback: string) {
+    const target = nextTarget(fallback)
+    if (target.startsWith('/api/')) window.location.assign(target)
+    else router.push(target)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -50,7 +60,7 @@ export default function LoginPage() {
       if (error) { setError(error.message); setLoading(false); return }
       // Email confirmation is off — session is returned immediately
       if (data.session) {
-        router.push(nextTarget('/onboard'))
+        goNext('/onboard')
         return
       }
       // Fallback: try signing in
@@ -59,7 +69,7 @@ export default function LoginPage() {
         // Confirmation might be required — tell user
         setSent(true)
       } else {
-        router.push(nextTarget('/onboard'))
+        goNext('/onboard')
       }
       setLoading(false)
       return
@@ -69,7 +79,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
     if (!rememberMe) sessionStorage.setItem('4s-session-only', '1')
-    router.push(nextTarget('/dashboard'))
+    goNext('/dashboard')
   }
 
   const inputStyle: React.CSSProperties = {

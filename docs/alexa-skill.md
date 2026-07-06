@@ -8,10 +8,10 @@ replies with speech.
 
 Once set up you can say things like:
 
-- *"Alexa, ask 4S to add a task to call the dentist tomorrow."*
-- *"Alexa, tell 4S to capture: remember to water the plants."*
-- *"Alexa, ask 4S to remind me to buy coffee every 14 days."*
-- *"Alexa, ask 4S what needs attention."*
+- *"Alexa, ask four s to add a task to call the dentist tomorrow."*
+- *"Alexa, tell four s to capture: remember to water the plants."*
+- *"Alexa, ask four s to remind me to buy coffee."* (defaults to a 30-day reminder; adjust the interval in the app)
+- *"Alexa, ask four s what needs attention."*
 
 ---
 
@@ -37,8 +37,8 @@ In the Supabase SQL editor, run `supabase/migrations/alexa_account_linking.sql`.
 
 ### 2. Set the invocation name
 
-**Build → Invocation** → set the invocation name to `4 s` (Alexa hears "4S"
-well as "four s"). Save.
+**Build → Invocation** → set the invocation name to `four s`. (It can't start
+with a digit, so "4 s" is rejected — "four s" is what you say aloud.) Save.
 
 ### 3. Paste the interaction model
 
@@ -92,7 +92,7 @@ now knows who you are on every request.
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "4 s",
+      "invocationName": "four s",
       "intents": [
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
@@ -122,16 +122,12 @@ now knows who you are on every request.
         },
         {
           "name": "AddRefillIntent",
-          "slots": [
-            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
-            { "name": "Days", "type": "AMAZON.NUMBER" }
-          ],
+          "slots": [{ "name": "ItemName", "type": "AMAZON.SearchQuery" }],
           "samples": [
-            "remind me to buy {ItemName} every {Days} days",
             "remind me to buy {ItemName}",
             "add a refill for {ItemName}",
             "buy again {ItemName}",
-            "restock {ItemName} every {Days} days"
+            "restock {ItemName}"
           ]
         },
         {
