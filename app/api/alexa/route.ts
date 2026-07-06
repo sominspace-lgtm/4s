@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         due_date: parsed?.dueDate ?? null, priority: parsed?.priority ?? 2,
         notes: null, domain: null, recur_days: null,
       })
-      if (error) return say('I could not save that task just now.', { end: true })
+      if (error) return say(`I could not save that task. ${error.message}`, { end: true })
       const whenPart = parsed?.dueDate ? `, due ${spokenDate(parsed.dueDate)}` : ''
       return say(`Added "${title}"${whenPart} to your tasks.`, { end: true })
     }
