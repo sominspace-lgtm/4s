@@ -58,12 +58,17 @@ const SECTIONS = [
   },
 ]
 
-const SHORTCUTS = [
-  { keys: '⌘ /', desc: 'Open search' },
-  { keys: '⌘ K', desc: 'Quick capture (mobile FAB on small screens)' },
-  { keys: '↑ ↓', desc: 'Navigate search results' },
-  { keys: 'Enter', desc: 'Select search result' },
-  { keys: 'Esc', desc: 'Close any panel or modal' },
+// Icon actions instead of keyboard shortcuts — everyone here is on a phone,
+// Mac, or Windows, so tap targets matter more than key combos.
+const ACTIONS = [
+  { icon: '⌕', desc: 'Search — find any task, habit, note, or item' },
+  { icon: '＋', desc: 'Quick add — jot anything down instantly (＋ button, bottom-right on mobile)' },
+  { icon: '◎', desc: 'Focus — a calm, distraction-free timer' },
+  { icon: '◻', desc: 'Archive — everything you’ve completed' },
+  { icon: '⇆', desc: 'Friends & sharing' },
+  { icon: '◐', desc: 'Theme & mode — change the look and tone' },
+  { icon: '⊹', desc: 'Customize — reorder or hide any tab' },
+  { icon: '✦', desc: 'Ask Jarvis — a free-text question about your day' },
 ]
 
 export default function HelpPanel({ open, onClose, lang = 'en' }: Props) {
@@ -128,20 +133,19 @@ export default function HelpPanel({ open, onClose, lang = 'en' }: Props) {
             Open the full guide →
           </Link>
 
-          {/* Keyboard shortcuts */}
+          {/* Getting around — icon actions */}
           <div>
             <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.6rem', opacity: 0.7 }}>
-              {lang === 'ko' ? '단축키' : 'keyboard shortcuts'}
+              {lang === 'ko' ? '둘러보기' : 'getting around'}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {SHORTCUTS.map(s => (
-                <div key={s.keys} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <kbd style={{
-                    fontSize: '0.6rem', padding: '0.2em 0.55em', borderRadius: '5px',
-                    background: 'var(--surface2)', border: '1px solid var(--border)',
-                    color: 'var(--text)', fontFamily: 'var(--font-body)',
-                    whiteSpace: 'nowrap', flexShrink: 0, minWidth: '3.5rem', textAlign: 'center',
-                  }}>{s.keys}</kbd>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {ACTIONS.map(s => (
+                <div key={s.desc} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{
+                    fontSize: '0.85rem', width: '2rem', height: '2rem', flexShrink: 0,
+                    borderRadius: '8px', background: 'var(--surface2)', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)',
+                  }}>{s.icon}</span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.4 }}>{s.desc}</span>
                 </div>
               ))}

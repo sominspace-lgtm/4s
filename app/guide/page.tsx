@@ -51,9 +51,23 @@ const NAV = [
   ['shared', 'Shared'],
   ['ai', 'AI'],
   ['alexa', 'Alexa'],
-  ['keys', 'Shortcuts'],
+  ['keys', 'Getting around'],
   ['themes', 'Themes'],
 ]
+
+function IconRow({ icon, children }: { icon: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <span style={{
+        width: '2rem', height: '2rem', flexShrink: 0, borderRadius: '8px',
+        background: 'var(--surface2)', border: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--gold)', fontSize: '0.9rem',
+      }}>{icon}</span>
+      <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{children}</span>
+    </div>
+  )
+}
 
 export default function GuidePage() {
   return (
@@ -94,7 +108,7 @@ export default function GuidePage() {
         </Card>
         <Card title="Quick Add · Inbox">
           On Brief there&rsquo;s a Quick Add box. Drop any task, thought, or reminder there and sort it later — it lands in your Inbox until you file it.
-          Press <Say>⌘K</Say> (or the + button on mobile) to capture from anywhere.
+          Tap the <Say>＋</Say> button (bottom-right on mobile) to capture from anywhere.
         </Card>
       </Section>
 
@@ -196,14 +210,17 @@ export default function GuidePage() {
         </Card>
       </Section>
 
-      <Section id="keys" kicker="move faster" title="Keyboard shortcuts">
+      <Section id="keys" kicker="move faster" title="Getting around">
         <Card>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.5rem 1rem', alignItems: 'center' }}>
-            <Say>⌘K</Say><span>Quick capture from anywhere</span>
-            <Say>⌘/</Say><span>Open search</span>
-            <Say>↑ ↓</Say><span>Move through search results</span>
-            <Say>Enter</Say><span>Open the selected result</span>
-            <Say>Esc</Say><span>Close any panel or modal</span>
+          Tap these anywhere in 4S — they work the same on phone, Mac, and Windows.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginTop: '0.8rem' }}>
+            <IconRow icon="⌕">Search — find any task, habit, note, or item</IconRow>
+            <IconRow icon="＋">Quick add — jot anything down (＋ button, bottom-right on mobile)</IconRow>
+            <IconRow icon="✦">Ask Jarvis — a free-text question about your day</IconRow>
+            <IconRow icon="◎">Focus — a calm, distraction-free timer</IconRow>
+            <IconRow icon="◐">Theme &amp; mode — change the look and tone</IconRow>
+            <IconRow icon="⊹">Customize — reorder or hide any tab</IconRow>
+            <IconRow icon="?">Guide — this page, any time</IconRow>
           </div>
         </Card>
       </Section>

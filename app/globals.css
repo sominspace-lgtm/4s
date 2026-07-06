@@ -134,6 +134,21 @@ html, body {
 .btn-danger:hover { background: color-mix(in srgb, var(--rose) 10%, transparent); }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
+/* Pill controls — consistent tappable icon+label buttons (dashboard bar) */
+.pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 0.03em;
+  color: var(--muted); text-decoration: none; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; padding: 0.42rem 0.85rem; min-height: 36px;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.pill:hover { color: var(--text); border-color: color-mix(in srgb, var(--gold) 35%, var(--border)); }
+.pill span[aria-hidden] { opacity: 0.75; font-size: 0.85em; }
+.pill-accent { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 30%, var(--border)); }
+.pill-accent:hover { background: color-mix(in srgb, var(--gold) 8%, transparent); }
+.pill-on { color: var(--text); border-color: color-mix(in srgb, var(--gold) 45%, var(--border)); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); }
+
 /* Mono elements */
 code, pre, kbd, samp { font-family: var(--font-mono); }
 
