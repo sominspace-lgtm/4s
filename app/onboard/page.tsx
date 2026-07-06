@@ -163,6 +163,11 @@ export default function OnboardPage() {
                 style={{ ...inputStyle, marginBottom: '2rem', fontSize: '1rem' }}
               />
               <NextBtn label={displayName.trim() ? 'Continue →' : 'Skip →'} onClick={() => setStep(1)} />
+              <div style={{ textAlign: 'center', marginTop: '1.1rem' }}>
+                <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.85 }}>
+                  New here? Take the 2-minute tour →
+                </a>
+              </div>
             </div>
           )}
 
@@ -341,6 +346,11 @@ export default function OnboardPage() {
                 <button onClick={finish} disabled={saving} className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.05em' }}>
                   {saving ? 'Setting up…' : 'Enter your OS →'}
                 </button>
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '1.1rem' }}>
+                <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.85 }}>
+                  Want the full tour? Open the guide →
+                </a>
               </div>
             </div>
           )}

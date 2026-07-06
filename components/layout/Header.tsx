@@ -153,16 +153,11 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>?</button>
 
-        <kbd
-          onClick={onSearch}
-          title="Search everything (⌘/)"
-          style={{
-            fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5,
-            background: 'var(--hover-bg)', border: '1px solid var(--border)',
-            borderRadius: '6px', padding: '0.3em 0.55em', cursor: 'pointer',
-            fontFamily: 'var(--font-body)', letterSpacing: '0.04em', userSelect: 'none',
-          }}
-        >⌘/</kbd>
+        <button onClick={onSearch} title="Search everything" aria-label="Search" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>⌕</button>
         <button onClick={onFocus} title="Focus mode" aria-label="Focus mode" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
