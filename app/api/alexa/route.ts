@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Bad request' }, { status: 400 })
   }
 
+  try {
   // 1. Only accept requests from our own skill.
   const appId = body.context?.System?.application?.applicationId
   if (SKILL_ID && appId !== SKILL_ID) {
@@ -90,7 +91,8 @@ export async function POST(request: Request) {
         .from('alexa_link_codes').select('user_id').eq('code', code).maybeSingle()
       if (!match) return say("That code didn't match. Open 4S, tap Connect Alexa for a fresh code, and try again.", { end: true })
       // Bind this Alexa account, then clear the user's codes.
-      await admin.from('alexa_links').upsert({ user_id: match.user_id, alexa_user_id: alexaUserId })
+      const { error: linkErr } = await admin.from('alexa_links').upsert({ user_id: match.user_id, alexa_user_id: alexaUserId })
+      if (linkErr) return say(`I found your code but could not save the link. ${linkErr.message}`, { end: true })
       await admin.from('alexa_link_codes').delete().eq('user_id', match.user_id)
       return say("You're linked. Try saying: ask four s what needs attention.", { end: true })
     }
@@ -169,6 +171,12 @@ export async function POST(request: Request) {
       return say("I'm not sure how to help with that yet. Say help to hear what I can do.", {
         reprompt: 'What would you like to do?',
       })
+  }
+  } catch (err) {
+    // Never return silence — Alexa treats an empty/errored response as "no
+    // response." Speak the error so it's visible in the test simulator.
+    const message = err instanceof Error ? err.message : 'unknown error'
+    return say(`Sorry, something went wrong. ${message}`, { end: true })
   }
 }
 
