@@ -96,7 +96,10 @@ export async function POST(request: Request) {
       await admin.from('alexa_link_codes').delete().eq('user_id', match.user_id)
       return say("You're linked. Try saying: ask four s what needs attention.", { end: true })
     }
-    return say('You are not linked yet. Open the 4S app, go to Account, tap Connect Alexa, then say: ask four s to link, followed by your four digit code.', { end: true })
+    // Keep the session open and take the code conversationally — one-shot
+    // "ask four s to link 1234" is unreliable to parse, but reading four digits
+    // inside an open session is not.
+    return say('You are not linked yet. Get a code from the 4S app under Account, Connect Alexa, then just say the four digits now.', { reprompt: 'Say your four digit code from the app.' })
   }
   const userId = link.user_id as string
 
