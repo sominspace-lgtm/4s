@@ -23,7 +23,13 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const publicPaths = ['/login', '/onboard']
-  const isPublic = publicPaths.some(p => pathname.startsWith(p)) || pathname.startsWith('/auth')
+  // /api/alexa/* must bypass the browser-session gate: the skill webhook is
+  // called server-to-server by Amazon (no cookie, authenticates by link token),
+  // and /api/alexa/authorize does its own session check + login?next= redirect
+  // for account linking. Without this, both get bounced to /login.
+  const isPublic = publicPaths.some(p => pathname.startsWith(p))
+    || pathname.startsWith('/auth')
+    || pathname.startsWith('/api/alexa')
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
