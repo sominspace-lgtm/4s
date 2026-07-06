@@ -7,22 +7,31 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // and binds their Alexa account. One active code per user — generating a new
 // one replaces the old.
 export async function POST() {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: 'Server is missing SUPABASE_SERVICE_ROLE_KEY.' }, { status: 500 })
+    }
 
-  const admin = createAdminClient()
-  await admin.from('alexa_link_codes').delete().eq('user_id', user.id)
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Retry a couple times in the (tiny) chance of a code collision.
-  let lastError = ''
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const code = String(Math.floor(1000 + Math.random() * 9000))
-    const { error } = await admin.from('alexa_link_codes').insert({ code, user_id: user.id })
-    if (!error) return NextResponse.json({ code })
-    lastError = error.message
-    // A missing-table / schema error won't be fixed by retrying — stop early.
-    if (!/duplicate key|unique/i.test(error.message)) break
+    const admin = createAdminClient()
+    await admin.from('alexa_link_codes').delete().eq('user_id', user.id)
+
+    // Retry a couple times in the (tiny) chance of a code collision.
+    let lastError = ''
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = String(Math.floor(1000 + Math.random() * 9000))
+      const { error } = await admin.from('alexa_link_codes').insert({ code, user_id: user.id })
+      if (!error) return NextResponse.json({ code })
+      lastError = error.message
+      // A missing-table / schema error won't be fixed by retrying — stop early.
+      if (!/duplicate key|unique/i.test(error.message)) break
+    }
+    return NextResponse.json({ error: lastError || 'Could not generate a code, try again.' }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unexpected error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-  return NextResponse.json({ error: lastError || 'Could not generate a code, try again.' }, { status: 500 })
 }
