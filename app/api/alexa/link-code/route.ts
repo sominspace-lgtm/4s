@@ -15,10 +15,14 @@ export async function POST() {
   await admin.from('alexa_link_codes').delete().eq('user_id', user.id)
 
   // Retry a couple times in the (tiny) chance of a code collision.
+  let lastError = ''
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = String(Math.floor(1000 + Math.random() * 9000))
     const { error } = await admin.from('alexa_link_codes').insert({ code, user_id: user.id })
     if (!error) return NextResponse.json({ code })
+    lastError = error.message
+    // A missing-table / schema error won't be fixed by retrying — stop early.
+    if (!/duplicate key|unique/i.test(error.message)) break
   }
-  return NextResponse.json({ error: 'Could not generate a code, try again.' }, { status: 500 })
+  return NextResponse.json({ error: lastError || 'Could not generate a code, try again.' }, { status: 500 })
 }
