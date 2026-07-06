@@ -131,6 +131,17 @@ now knows who you are on every request.
           ]
         },
         {
+          "name": "LinkAccountIntent",
+          "slots": [{ "name": "Code", "type": "AMAZON.FOUR_DIGIT_NUMBER" }],
+          "samples": [
+            "link {Code}",
+            "to link {Code}",
+            "link account {Code}",
+            "connect {Code}",
+            "my code is {Code}"
+          ]
+        },
+        {
           "name": "WhatsNextIntent",
           "samples": [
             "what needs attention",

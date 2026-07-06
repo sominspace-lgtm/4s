@@ -53,6 +53,18 @@ export default function AccountClient({ email, userId, displayName }: Props) {
   const [deleteInput, setDeleteInput] = useState('')
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null)
 
+  const [alexaCode, setAlexaCode] = useState<string | null>(null)
+  const [alexaLoading, setAlexaLoading] = useState(false)
+
+  async function connectAlexa() {
+    setAlexaLoading(true); setAlexaCode(null)
+    try {
+      const res = await fetch('/api/alexa/link-code', { method: 'POST' })
+      const data = await res.json()
+      if (data.code) setAlexaCode(data.code)
+    } finally { setAlexaLoading(false) }
+  }
+
   async function saveName() {
     const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, display_name: name.trim() || email.split('@')[0] })
     if (error) return
@@ -159,6 +171,34 @@ export default function AccountClient({ email, userId, displayName }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.73rem', color: 'var(--muted)' }}>Download everything as JSON — habits, tasks, captures, preferences.</span>
             <Btn onClick={exportData} disabled={exporting}>{exporting ? 'exporting…' : 'Export'}</Btn>
+          </div>
+        </Row>
+      </div>
+
+      {/* Alexa */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Alexa</div>
+        <Row label="Connect Alexa">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+              Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link&rdquo;</em> and read it out. Links your Echo to this account.
+            </span>
+            {!alexaCode ? (
+              <Btn onClick={connectAlexa} disabled={alexaLoading}>{alexaLoading ? 'generating…' : 'Get my code'}</Btn>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontSize: '2rem', letterSpacing: '0.35em',
+                  color: 'var(--gold)', padding: '0.4rem 0', textAlign: 'center',
+                  background: 'color-mix(in srgb, var(--gold) 8%, transparent)', borderRadius: '10px',
+                  border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
+                }}>{alexaCode}</div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center' }}>
+                  Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link {alexaCode.split('').join(' ')}&rdquo;</strong>
+                </span>
+                <Btn onClick={connectAlexa} disabled={alexaLoading}>New code</Btn>
+              </div>
+            )}
           </div>
         </Row>
       </div>

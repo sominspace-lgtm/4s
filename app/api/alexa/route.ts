@@ -21,7 +21,7 @@ const SKILL_ID = process.env.ALEXA_SKILL_ID // set to your skill's ApplicationId
 interface AlexaSlot { value?: string }
 interface AlexaRequestBody {
   version: string
-  context?: { System?: { application?: { applicationId?: string }; user?: { accessToken?: string } } }
+  context?: { System?: { application?: { applicationId?: string }; user?: { userId?: string; accessToken?: string } } }
   request: {
     type: string
     timestamp?: string
@@ -70,30 +70,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ version: '1.0', response: {} })
   }
 
-  // 3. Resolve the linked 4S user.
-  const token = body.context?.System?.user?.accessToken
-  if (!token) {
-    return NextResponse.json({
-      version: '1.0',
-      response: {
-        outputSpeech: { type: 'PlainText', text: 'Please link your 4S account in the Alexa app to get started.' },
-        card: { type: 'LinkAccount' },
-        shouldEndSession: true,
-      },
-    })
+  // 3. Resolve the linked 4S user by the stable anonymous Alexa user id.
+  const alexaUserId = body.context?.System?.user?.userId
+  if (!alexaUserId) {
+    return say('I could not identify your Alexa account. Please try again.', { end: true })
   }
 
   const admin = createAdminClient()
-  const { data: link } = await admin.from('alexa_links').select('user_id').eq('token', token).maybeSingle()
+  const { data: link } = await admin
+    .from('alexa_links').select('user_id').eq('alexa_user_id', alexaUserId).maybeSingle()
+
+  // Not linked yet — the only thing we accept is the pairing code.
   if (!link) {
-    return NextResponse.json({
-      version: '1.0',
-      response: {
-        outputSpeech: { type: 'PlainText', text: 'Your 4S link has expired. Please re-link the skill in the Alexa app.' },
-        card: { type: 'LinkAccount' },
-        shouldEndSession: true,
-      },
-    })
+    const intentName = body.request.intent?.name ?? ''
+    if (body.request.type === 'IntentRequest' && intentName === 'LinkAccountIntent') {
+      const code = slot(body, 'Code')
+      if (!code) return say('What is your four digit code? You can find it in the 4S app under Account, Connect Alexa.', { reprompt: 'Say your four digit code.' })
+      const { data: match } = await admin
+        .from('alexa_link_codes').select('user_id').eq('code', code).maybeSingle()
+      if (!match) return say("That code didn't match. Open 4S, tap Connect Alexa for a fresh code, and try again.", { end: true })
+      // Bind this Alexa account, then clear the user's codes.
+      await admin.from('alexa_links').upsert({ user_id: match.user_id, alexa_user_id: alexaUserId })
+      await admin.from('alexa_link_codes').delete().eq('user_id', match.user_id)
+      return say("You're linked. Try saying: ask four s what needs attention.", { end: true })
+    }
+    return say('You are not linked yet. Open the 4S app, go to Account, tap Connect Alexa, then say: ask four s to link, followed by your four digit code.', { end: true })
   }
   const userId = link.user_id as string
 
@@ -151,6 +152,9 @@ export async function POST(request: Request) {
       const brief = await buildBrief(admin, userId, true)
       return say(brief, { end: true })
     }
+
+    case 'LinkAccountIntent':
+      return say("You're already linked. Say: ask four s what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
       return say('You can say: add a task to call the dentist tomorrow. Or, capture, remember to water the plants. Or, remind me to buy coffee every 14 days. Or ask, what needs attention?', {
