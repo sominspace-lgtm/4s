@@ -1,36 +1,58 @@
-// The 4S mark — a rounded tile with a soft aurora, a quiet orbiting dot
-// (the "alive but quiet" companion), and the 4S monogram. Theme-reactive:
-// uses CSS variables so it matches whatever theme is active. For fixed-palette
-// exports (PWA / Alexa icons) the same shape is rendered with hard colors.
+// The 4S mark — "4S" is the hero, wrapped in a ring of SOS Morse code
+// (··· ––– ···) orbiting it like a quiet distress signal. Theme-reactive:
+// uses var(--gold) for the monogram and the ring so it stays monochrome in
+// whatever theme is active. The fixed-palette PWA / Alexa exports (in
+// public/icons + alexa-icons) render the same shape in near-white on charcoal.
+
+// Nine Morse glyphs evenly spaced around a circle (r=40, center 50,50),
+// starting at top and going clockwise: S (··· dots), O (––– dashes), S (··· dots).
+const R = 40
+const CENTER = 50
+const RING = Array.from({ length: 9 }, (_, i) => {
+  const angle = -90 + i * 40 // degrees, clockwise from top
+  const rad = (angle * Math.PI) / 180
+  return {
+    isDash: i >= 3 && i <= 5, // middle three = O
+    cx: CENTER + R * Math.cos(rad),
+    cy: CENTER + R * Math.sin(rad),
+    rot: angle + 90, // tangent to the ring
+  }
+})
+
 export default function Logo({ size = 40, glow = true }: { size?: number; glow?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="4S" role="img">
       <defs>
-        <radialGradient id="lg-bg" cx="50%" cy="32%" r="80%">
+        <radialGradient id="lg-bg" cx="50%" cy="30%" r="85%">
           <stop offset="0%" stopColor="var(--surface2)" />
-          <stop offset="60%" stopColor="var(--surface)" />
+          <stop offset="58%" stopColor="var(--surface)" />
           <stop offset="100%" stopColor="var(--bg)" />
         </radialGradient>
-        <linearGradient id="lg-fg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--blush)" />
-          <stop offset="100%" stopColor="var(--gold)" />
-        </linearGradient>
       </defs>
 
       <rect x="1" y="1" width="98" height="98" rx="26" fill="url(#lg-bg)" />
-      {glow && (
-        <ellipse cx="50" cy="30" rx="46" ry="34" fill="var(--glow)" opacity="0.5" />
-      )}
-      <rect x="1.5" y="1.5" width="97" height="97" rx="25.5" fill="none" stroke="var(--gold)" strokeOpacity="0.18" strokeWidth="1" />
+      {glow && <ellipse cx="50" cy="30" rx="46" ry="34" fill="var(--glow)" opacity="0.5" />}
+      <rect x="1.5" y="1.5" width="97" height="97" rx="25.5" fill="none" stroke="var(--gold)" strokeOpacity="0.16" strokeWidth="1" />
 
-      {/* quiet orbit + companion dot */}
-      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--gold)" strokeOpacity="0.14" strokeWidth="1" strokeDasharray="3 6" />
-      <circle cx="82" cy="34" r="3" fill="var(--gold)" opacity="0.9" />
+      {/* SOS Morse ring */}
+      <g fill="var(--gold)" opacity="0.85">
+        {RING.map((p, i) =>
+          p.isDash ? (
+            <rect
+              key={i}
+              x={p.cx - 4.5} y={p.cy - 1.6} width="9" height="3.2" rx="1.6"
+              transform={`rotate(${p.rot} ${p.cx} ${p.cy})`}
+            />
+          ) : (
+            <circle key={i} cx={p.cx} cy={p.cy} r="3" />
+          )
+        )}
+      </g>
 
-      {/* monogram */}
+      {/* 4S hero */}
       <text x="50" y="52" textAnchor="middle" dominantBaseline="central"
-        fontFamily="var(--font-display), Georgia, serif" fontWeight="500" fontSize="52"
-        letterSpacing="-2" fill="url(#lg-fg)">4S</text>
+        fontFamily="var(--font-display), Georgia, serif" fontWeight="600" fontSize="42"
+        letterSpacing="-2" fill="var(--gold)">4S</text>
     </svg>
   )
 }
