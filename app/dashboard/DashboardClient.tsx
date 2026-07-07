@@ -121,6 +121,19 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return () => window.removeEventListener('4s:navigate', onNav)
   }, [])
 
+  // Switch the active Guide from anywhere (e.g. the Adaptive Guide suggestion
+  // in Brief). Updates live state and persists — the user always chooses.
+  useEffect(() => {
+    function onGuide(e: Event) {
+      const next = (e as CustomEvent<Mode>).detail
+      if (!next) return
+      setMode(next)
+      createClient().from('user_prefs').upsert({ user_id: userId, mode: next })
+    }
+    window.addEventListener('4s:set-guide', onGuide)
+    return () => window.removeEventListener('4s:set-guide', onGuide)
+  }, [userId])
+
   // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
