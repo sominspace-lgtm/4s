@@ -18,6 +18,7 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
+import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
@@ -304,6 +305,13 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onSearch={() => setSearchOpen(true)}
         onFocus={() => setFocusOpen(true)}
       />
+      {!zenView && (
+        <BottomNav
+          sections={visible}
+          activeId={currentTab}
+          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        />
+      )}
     </ThemeProvider>
     </LangContext.Provider>
   )

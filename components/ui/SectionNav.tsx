@@ -23,7 +23,7 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
   if (sections.length < 2) return null
 
   return (
-    <div style={{
+    <div className="section-nav" style={{
       position: 'sticky', top: 0, zIndex: 90,
       background: 'color-mix(in srgb, var(--bg) 85%, transparent)',
       backdropFilter: 'blur(12px)',

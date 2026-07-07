@@ -192,6 +192,15 @@ select, option {
 .mobile-nav { display: none; }
 @media (max-width: 768px) { .mobile-nav { display: block !important; } }
 
+/* Bottom section nav — mobile only; replaces the top section nav there */
+.bottom-nav { display: none; }
+@media (max-width: 600px) {
+  .bottom-nav { display: flex; }
+  .section-nav { display: none; }
+  .mobile-nav { bottom: 5rem !important; }
+  main { padding-bottom: 5.5rem !important; }
+}
+
 /* Council review — grid on desktop, one-card-at-a-time swipe on mobile */
 .council-cards {
   display: grid;
