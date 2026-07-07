@@ -43,7 +43,7 @@ function AdvisorCard({ advisor, onAsk }: { advisor: typeof ADVISORS[number]; onA
   )
 }
 
-function AdviceCard({ member }: { member: CouncilAdvice }) {
+function AdviceCard({ member, onDismiss }: { member: CouncilAdvice; onDismiss: () => void }) {
   const s = VERDICT_STYLE[member.verdict]
   return (
     <div style={{
@@ -60,14 +60,18 @@ function AdviceCard({ member }: { member: CouncilAdvice }) {
           color: s.color as string, borderColor: s.borderColor as string, background: 'transparent',
         }}>{member.verdict}</span>
       </div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.6, fontWeight: 300 }}>
+      <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.6, fontWeight: 300, flex: 1 }}>
         {member.advice}
       </div>
+      <button onClick={onDismiss} style={{
+        alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+        color: 'var(--muted)', opacity: 0.6, fontSize: '0.62rem', fontFamily: 'var(--font-body)',
+      }}>Not now</button>
     </div>
   )
 }
 
-export default function CouncilSection({ mode = 'balanced', userId, calendarConnected = false }: { mode?: Mode; userId: string; calendarConnected?: boolean }) {
+export default function CouncilSection({ mode = 'peaceful', userId, calendarConnected = false }: { mode?: Mode; userId: string; calendarConnected?: boolean }) {
   const { habits, completions } = useHabits()
   const { subs: subscriptions } = useSubscriptions()
   const { items: buyItems } = useBuyItems()
@@ -79,6 +83,8 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
   const [suggestion, setSuggestion] = useState('')
   const [focusDomain, setFocusDomain] = useState<string | null>(null)
+  // Session-level dismiss — clear a card from this review without persisting.
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   // 'loading' → AI request in flight (rule-based advice already shown),
   // 'ai' → advice was upgraded by the model, 'rules' → AI unavailable.
   const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ai' | 'rules'>('idle')
@@ -115,6 +121,7 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
     setAdvice(result)
     setSuggestion(suggestNextAction({ overdueTasks, pendingShares, refillsOverdue }))
     setFocusDomain(domain)
+    setDismissed(new Set())
     setConvened(true)
 
     const seq = ++conveneSeq.current
@@ -148,7 +155,12 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
   }
 
   const watchCount = advice.filter(a => a.verdict === 'watch').length
-  const shown = focusDomain ? advice.filter(a => a.domain === focusDomain) : advice
+  // Lead with what needs attention (watch → quiet → fine), drop dismissed cards.
+  const VERDICT_ORDER: Record<string, number> = { watch: 0, quiet: 1, fine: 2 }
+  const shown = (focusDomain ? advice.filter(a => a.domain === focusDomain) : advice)
+    .filter(a => !dismissed.has(a.domain))
+    .slice()
+    .sort((a, b) => VERDICT_ORDER[a.verdict] - VERDICT_ORDER[b.verdict])
 
   return (
     <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
@@ -204,9 +216,18 @@ export default function CouncilSection({ mode = 'balanced', userId, calendarConn
               fontSize: '0.68rem', padding: 0, marginBottom: '0.6rem', textDecoration: 'underline',
             }}>← view all</button>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-            {shown.map(m => <AdviceCard key={m.domain} member={m} />)}
-          </div>
+          {shown.length > 0 ? (
+            <div className="council-cards">
+              {shown.map(m => <AdviceCard key={m.domain} member={m} onDismiss={() => setDismissed(prev => new Set(prev).add(m.domain))} />)}
+            </div>
+          ) : (
+            <div style={{
+              borderRadius: '12px', padding: '1rem 1.1rem', border: '1px solid var(--border)',
+              background: 'var(--hover-bg)', fontSize: '0.78rem', color: 'var(--muted)', fontStyle: 'italic',
+            }}>
+              Nothing left needs reflection right now. {focusDomain ? '' : 'Reconvene anytime.'}
+            </div>
+          )}
           {suggestion && !focusDomain && (
             <div style={{
               marginTop: '0.9rem', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6,
