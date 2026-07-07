@@ -29,7 +29,7 @@ const PREVIEW = [
 
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('magic')
+  const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

@@ -8,7 +8,7 @@ import CalendarMonth from './CalendarMonth'
 // Native views (agenda + month grid) built from 4S data, with the Google
 // Calendar embed below them.
 function NativeCalendarCard() {
-  const [view, setView] = useState<'agenda' | 'month'>('agenda')
+  const [view, setView] = useState<'agenda' | 'month'>('month')
 
   const toggleBtn = (active: boolean): React.CSSProperties => ({
     fontSize: '0.66rem', padding: '0.3em 0.75em', borderRadius: '7px', cursor: 'pointer',

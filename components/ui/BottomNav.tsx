@@ -1,24 +1,23 @@
 'use client'
 
-import { useLang } from '@/lib/LangContext'
-
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
   brief: 'Brief', work: 'Tasks', habits: 'Habits', domains: 'Life',
-  money: 'Money', calendar: 'Calendar', council: 'Council', shared: 'Shared', people: 'People',
+  money: 'Money', calendar: 'Calendar', council: 'Council', shared: 'Shared',
 }
 const ICONS: Record<string, string> = {
   brief: '◒', work: '◈', habits: '◉', domains: '◇',
-  money: '✦', calendar: '◎', council: '⌂', shared: '⇆', people: '♡',
+  money: '✦', calendar: '◎', council: '⌂', shared: '⇆',
 }
 
 // Thumb-first bottom navigation for mobile. Shows the first few core tabs and
 // drives the same tab switch as the top SectionNav (which is hidden on mobile).
 export default function BottomNav({ sections, activeId, onSelect }: { sections: Section[]; activeId: string; onSelect: (id: string) => void }) {
-  const lang = useLang()
-  const nav = sections.slice(0, 5)
-  if (nav.length < 2) return null
+  if (sections.length < 2) return null
+  // Show every section; the row scrolls horizontally so nothing is unreachable
+  // once the top nav is hidden on mobile. Even spacing when few, scroll when many.
+  const fill = sections.length <= 5
 
   return (
     <nav className="bottom-nav" aria-label="Sections" style={{
@@ -26,8 +25,9 @@ export default function BottomNav({ sections, activeId, onSelect }: { sections: 
       background: 'color-mix(in srgb, var(--bg) 92%, transparent)',
       backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
       borderTop: '1px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)',
+      overflowX: 'auto', scrollbarWidth: 'none',
     }}>
-      {nav.map(s => {
+      {sections.map(s => {
         const active = s.id === activeId
         return (
           <button
@@ -35,14 +35,15 @@ export default function BottomNav({ sections, activeId, onSelect }: { sections: 
             onClick={() => onSelect(s.id)}
             aria-current={active ? 'page' : undefined}
             style={{
-              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
-              background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 0.2rem 0.55rem',
+              flex: fill ? 1 : '0 0 auto', minWidth: '3.9rem',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 0.35rem 0.55rem',
               color: active ? 'var(--gold)' : 'var(--muted)', fontFamily: 'var(--font-body)',
               transition: 'color var(--t-fast)',
             }}
           >
             <span style={{ fontSize: '1.05rem', lineHeight: 1, opacity: active ? 1 : 0.8 }}>{ICONS[s.id] ?? '•'}</span>
-            <span style={{ fontSize: '0.58rem', letterSpacing: '0.02em' }}>{lang === 'ko' ? (NAV_LABELS[s.id] ?? s.label ?? s.id) : (NAV_LABELS[s.id] ?? s.label ?? s.id)}</span>
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{NAV_LABELS[s.id] ?? s.label ?? s.id}</span>
           </button>
         )
       })}

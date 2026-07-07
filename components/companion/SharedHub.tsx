@@ -5,13 +5,15 @@ import Link from 'next/link'
 import { useCompanions, SHAREABLE_SECTIONS } from '@/lib/hooks/useCompanions'
 import PeopleList, { Avatar } from './PeopleList'
 import { SpacesTab } from './CompanionPanel'
+import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 
-type SharedTab = 'with-me' | 'by-me' | 'spaces' | 'people'
+type SharedTab = 'with-me' | 'by-me' | 'spaces' | 'friends' | 'people'
 
 const TABS: { id: SharedTab; label: string }[] = [
   { id: 'with-me', label: 'Shared With Me' },
   { id: 'by-me',   label: 'Shared By Me' },
   { id: 'spaces',  label: 'Spaces' },
+  { id: 'friends', label: 'Friends' },
   { id: 'people',  label: 'People' },
 ]
 
@@ -162,10 +164,11 @@ export default function SharedHub({ userId, userEmail, onOpenCompanions }: {
         ))}
       </div>
 
-      {tab === 'with-me' && <WithMeTab onOpenPeople={() => setTab('people')} />}
+      {tab === 'with-me' && <WithMeTab onOpenPeople={() => setTab('friends')} />}
       {tab === 'by-me'   && <ByMeTab userId={userId} onManageSharing={onOpenCompanions} />}
       {tab === 'spaces'  && <SpacesTab userId={userId} />}
-      {tab === 'people'  && <PeopleList userId={userId} userEmail={userEmail} />}
+      {tab === 'friends' && <PeopleList userId={userId} userEmail={userEmail} />}
+      {tab === 'people'  && <RelationshipMemory />}
     </div>
   )
 }

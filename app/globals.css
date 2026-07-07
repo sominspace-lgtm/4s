@@ -194,6 +194,7 @@ select, option {
 
 /* Bottom section nav — mobile only; replaces the top section nav there */
 .bottom-nav { display: none; }
+.bottom-nav::-webkit-scrollbar { display: none; }
 @media (max-width: 600px) {
   .bottom-nav { display: flex; }
   .section-nav { display: none; }
