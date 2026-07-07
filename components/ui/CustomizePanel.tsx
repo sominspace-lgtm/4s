@@ -26,6 +26,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'brief',    label: 'Brief',    hidden: false },
   // Companions — surfaced early so shared items aren't an afterthought
   { id: 'shared',   label: 'Shared',   hidden: false },
+  // Relationship Memory — the people you want to stay close to
+  { id: 'people',   label: 'People',   hidden: false },
   // Focus
   { id: 'work',     label: 'Tasks',    hidden: false },
   { id: 'habits',   label: 'Habits',   hidden: false },

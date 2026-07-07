@@ -26,6 +26,7 @@ import DomainGrid from '@/components/domains/DomainGrid'
 import MoneyHub from '@/components/money/MoneyHub'
 import CouncilSection from '@/components/council/CouncilSection'
 import SharedHub from '@/components/companion/SharedHub'
+import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
@@ -71,6 +72,7 @@ const SECTION_GROUPS: Record<string, string> = {
   calendar: 'review',
   council:  'review',
   shared:   'companions',
+  people:   'companions',
 }
 
 export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
@@ -217,6 +219,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
         case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />
         case 'shared':   return <SharedHub key="shared" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'people':   return <RelationshipMemory key="people" />
         default: return null
       }
     })()
