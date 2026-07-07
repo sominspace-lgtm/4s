@@ -19,6 +19,7 @@ import type { Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import CaptureSection from '@/components/capture/CaptureSection'
+import DailyReflection from '@/components/brief/DailyReflection'
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
@@ -67,6 +68,17 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   useEffect(() => {
     fetch('/api/companions/shared-with-me').then(r => r.json()).then(d => setSharedWithMeCount((d.items ?? []).length)).catch(() => {})
   }, [])
+
+  // A whisper is dismissible for the day, so it never nags.
+  const [whisperDismissed, setWhisperDismissed] = useState(false)
+  useEffect(() => {
+    const key = `4s-whisper-${format(new Date(), 'yyyy-MM-dd')}`
+    setWhisperDismissed(localStorage.getItem(key) === '1')
+  }, [])
+  function dismissWhisper() {
+    localStorage.setItem(`4s-whisper-${format(new Date(), 'yyyy-MM-dd')}`, '1')
+    setWhisperDismissed(true)
+  }
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
@@ -144,13 +156,20 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const lifeReviewedOnce = DOMAINS.some(d => touched[d.id])
   const moneyTracksAnything = subs.length > 0 || wishItems.length > 0 || buyItems.length > 0 || giftItems.length > 0
 
-  // Quiet-maintenance line — only a high-proactivity Guide (Butler, Executive,
-  // Navigator, Challenger) speaks up about things that aren't urgent yet.
-  const maintenanceBits: string[] = []
-  if (lifeReviewedOnce && domainsNeedingReview.length > 0) maintenanceBits.push(`${domainsNeedingReview[0].label} review`)
-  if (refillsDue > 0) maintenanceBits.push(`${refillsDue} to buy again`)
-  if (moneyTracksAnything && moneyDueSoon > 0) maintenanceBits.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
-  const showMaintenance = proactivity === 'high' && maintenanceBits.length > 0
+  // Whisper — one gentle, timely nudge. Quiet Guides (low proactivity) stay
+  // silent; the rest surface a single soft line, dismissible for the day.
+  const giftSoon = giftItems.filter(g => { const d = giftDaysUntil(g); return d >= 0 && d <= 10 }).length
+  function pickWhisper(): string | null {
+    if (proactivity === 'low') return null
+    if (domainsNeedingReview.some(d => d.id === 'relationship')) return 'Someone may deserve a hello today.'
+    if (giftSoon > 0) return 'A gift moment is coming up — worth a thought.'
+    if (refillsDue > 0) return 'You may be running low on something.'
+    if (lifeReviewedOnce && domainsNeedingReview.length > 0) return `${domainsNeedingReview[0].label} could use a quiet check-in.`
+    if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
+    if (inboxCount > 4) return 'A few notes are waiting whenever you\'re ready.'
+    return null
+  }
+  const whisper = whisperDismissed ? null : pickWhisper()
 
   const summaryCards = [
     {
@@ -238,9 +257,11 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         {getInsight()}
       </div>
 
-      {showMaintenance && (
-        <div style={{ marginTop: '0.6rem', fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.85, lineHeight: 1.5 }}>
-          <span style={{ opacity: 0.7 }}>Quietly maintaining · </span>{maintenanceBits.slice(0, 3).join(' · ')}
+      {whisper && (
+        <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+          <span aria-hidden style={{ color: 'var(--gold)', opacity: 0.7 }}>❋</span>
+          <span style={{ flex: 1, fontStyle: 'italic' }}>{whisper}</span>
+          <button onClick={dismissWhisper} aria-label="Dismiss" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.7rem', padding: '0 0.2rem' }}>✕</button>
         </div>
       )}
 
@@ -251,6 +272,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
       </div>
     </div>
+
+    <DailyReflection />
 
     <div id="brief-inbox">
       <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
