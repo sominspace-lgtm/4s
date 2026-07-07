@@ -7,7 +7,10 @@ import { MODES, type Mode } from '@/lib/constants/modes'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
-const MODE_ICONS: Partial<Record<Mode, string>> = { gamer: '🎮', hype: '🔥', monk: '☯', peaceful: '🌿' }
+const MODE_ICONS: Partial<Record<Mode, string>> = {
+  peaceful: '🌿', monk: '☯', friend: '🤝', teacher: '📖', therapist: '🫧',
+  navigator: '🧭', executive: '▲', butler: '🎩', challenger: '⚡',
+}
 
 // Read straight from the real theme tokens instead of maintaining a second
 // hand-copied palette — the swatch always matches what the theme actually
@@ -91,7 +94,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.9rem' }}>
             <button style={tabStyle(tab === 'theme')} onClick={() => setTab('theme')}>{t('Theme', lang)}</button>
-            <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>{t('Mode', lang)}</button>
+            <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>{t('Guide', lang)}</button>
           </div>
 
           {tab === 'theme' && (
@@ -159,7 +162,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
           )}
 
           <div style={{ marginTop: '0.8rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, letterSpacing: '0.04em' }}>
-            {t('theme + mode stack — mix freely', lang)}
+            {t('theme + guide stack — mix freely', lang)}
           </div>
         </div>
       )}

@@ -18,7 +18,6 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
-import XPBar from '@/components/gamer/XPBar'
 import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
@@ -31,7 +30,6 @@ import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
-import { useXP } from '@/lib/hooks/useXP'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -80,15 +78,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
   const [simpleMode, setSimpleMode] = useState(initialSimpleMode)
-  const isGamer = mode === 'gamer'
-  const { xp, level, progress, gain } = useXP(isGamer)
-
-  // Listen for XP gain events (fired by work/habit hooks)
-  useEffect(() => {
-    function onXP(e: Event) { gain((e as CustomEvent<number>).detail) }
-    window.addEventListener('4s:xp', onXP)
-    return () => window.removeEventListener('4s:xp', onXP)
-  }, [gain])
 
   const lang = 'en' as const
   const [activeTab, setActiveTab] = useState('brief')
@@ -237,14 +226,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       />
 
       <QuickCapture />
-      {isGamer && (
-        <div className="page-pad" style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <XPBar />
-          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.5 }}>
-            LVL {level} · {xp} total XP · +25 per task, +10 per habit
-          </span>
-        </div>
-      )}
       <div className="page-pad controls-row" style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', flexWrap: 'wrap' }}>
         <button onClick={() => setJarvisOpen(true)} title="Ask a question about your day" className="pill pill-accent">
           <span aria-hidden>✦</span> Ask Jarvis

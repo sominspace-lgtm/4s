@@ -61,10 +61,11 @@ function daysSinceTouched(touched: string | undefined): number {
 
 export function generateCouncilAdvice(input: CouncilInput): CouncilAdvice[] {
   const {
-    habits, completions, subscriptions, buyItems, domainTouched, mode = 'balanced',
+    habits, completions, subscriptions, buyItems, domainTouched, mode = 'peaceful',
     overdueTasks = 0, dueTodayTasks = 0, upcomingGifts = [], pendingShares = 0,
   } = input
-  const modeConfig = MODES[mode]
+  // Fall back to Peaceful if a legacy Guide value (pre-migration) is stored.
+  const modeConfig = MODES[mode] ?? MODES.peaceful
   const week = getLast7Days()
 
   // Money

@@ -133,7 +133,7 @@ export async function POST(request: Request) {
           model: MODEL,
           max_tokens: 2048,
           output_config: { format: { type: 'json_schema', schema: COUNCIL_SCHEMA } },
-          system: `You are the Council in 4S Home, a calm personal life dashboard. Ten advisors each review one life domain: biz-active (Business), biz-future (Pipeline), money (Finance), health (Health), relationship (Relationship), creative (Creative), home (Home), self (Self), sharing (Sharing), planning (Planning). Personality mode: ${body.mode ?? 'balanced'} — adjust tone accordingly but stay kind and never alarmist. Verdicts: "watch" only when the data shows something real to act on, "fine" when actively healthy, "quiet" when there is simply no data yet. For empty areas suggest gentle setup, never guilt. Return exactly one entry per domain.`,
+          system: `You are the Council in 4S Home, a calm personal life dashboard. Ten advisors each review one life domain: biz-active (Business), biz-future (Pipeline), money (Finance), health (Health), relationship (Relationship), creative (Creative), home (Home), self (Self), sharing (Sharing), planning (Planning). Guide (voice): ${body.mode ?? 'peaceful'} — adjust tone accordingly but stay kind and never alarmist. Verdicts: "watch" only when the data shows something real to act on, "fine" when actively healthy, "quiet" when there is simply no data yet. For empty areas suggest gentle setup, never guilt. Return exactly one entry per domain.`,
           messages: [{
             role: 'user',
             content: `Here is my current dashboard data as JSON. Convene the council.\n\n${JSON.stringify(body.snapshot ?? {})}`,

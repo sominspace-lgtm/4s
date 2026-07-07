@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       userId={user.id}
       initialName={prefs?.display_name ?? null}
       initialTheme={prefs?.theme ?? 'sunset'}
-      initialMode={prefs?.mode ?? 'balanced'}
+      initialMode={prefs?.mode ?? 'peaceful'}
       initialCalendarUrl={prefs?.calendar_url ?? null}
       initialLayout={layout ?? null}
       initialFocusConfig={focusConfig ?? null}

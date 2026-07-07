@@ -36,16 +36,16 @@ function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: strin
   const isNight = time === 'night'
 
   switch (mode) {
-    case 'harsh':    return { prefix: isNight ? 'Still up,' : time === 'morning' ? 'Wake up,' : time === 'afternoon' ? 'Still at it,' : 'End strong,' }
-    case 'peaceful': return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
-    case 'teacher':  return { prefix: `Good ${time},`, suffix: '— ready to reflect?' }
-    case 'friend':   return { prefix: time === 'morning' ? 'Morning,' : time === 'afternoon' ? 'Hey,' : time === 'evening' ? 'Evening,' : 'Still up,' }
-    case 'coach':    return { prefix: time === 'morning' ? "Let's go," : time === 'afternoon' ? 'Keep pushing,' : time === 'evening' ? 'Finish strong,' : 'Rest up,' }
-    case 'ceo':      return { prefix: '' }
-    case 'monk':     return { prefix: isNight ? 'Rest now,' : 'Be present,' }
-    case 'hype':     return { prefix: time === 'morning' ? 'RISE UP,' : time === 'afternoon' ? "LET'S GO," : time === 'evening' ? 'LAST PUSH,' : 'STILL GOING??' }
-    case 'gamer':    return { prefix: time === 'morning' ? 'New day, new quests,' : time === 'afternoon' ? 'Mid-session,' : time === 'evening' ? 'Final boss hour,' : 'Night grind,' }
-    default:         return { prefix: `Good ${time},` }
+    case 'peaceful':   return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
+    case 'monk':       return { prefix: isNight ? 'Rest now,' : 'Be present,' }
+    case 'friend':     return { prefix: time === 'morning' ? 'Morning,' : time === 'afternoon' ? 'Hey,' : time === 'evening' ? 'Evening,' : 'Still up,' }
+    case 'teacher':    return { prefix: `Good ${time},`, suffix: '— ready to reflect?' }
+    case 'therapist':  return { prefix: isNight ? 'Still with you,' : `Good ${time},`, suffix: '— how are you, really?' }
+    case 'navigator':  return { prefix: `Good ${time},`, suffix: '— let\'s look ahead.' }
+    case 'executive':  return { prefix: '' }
+    case 'butler':     return { prefix: isNight ? 'Good evening,' : `Good ${time},` }
+    case 'challenger': return { prefix: time === 'morning' ? "Let's move," : time === 'afternoon' ? 'Still going,' : time === 'evening' ? 'Finish it,' : 'Late one,' }
+    default:           return { prefix: `Good ${time},` }
   }
 }
 
@@ -84,11 +84,10 @@ export default function Header({ email, userId, initialName, initialTheme, initi
   function handleModeChange(m: Mode) { setMode(m); onModeChange(m) }
 
   const { prefix, suffix } = getGreeting(mode, h)
-  const isHype = mode === 'hype'
-  const displayName = isHype ? name.toUpperCase() : name
+  const displayName = name
 
   const accentStyle: React.CSSProperties = {
-    fontStyle: ['balanced', 'peaceful', 'teacher', 'friend', 'monk'].includes(mode) ? 'italic' : 'normal',
+    fontStyle: ['peaceful', 'monk', 'friend', 'teacher', 'therapist'].includes(mode) ? 'italic' : 'normal',
     background: 'linear-gradient(90deg, var(--gold), var(--rose))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
@@ -139,8 +138,8 @@ export default function Header({ email, userId, initialName, initialTheme, initi
 
         <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>
           {format(now, "EEEE, MMMM d · yyyy")}
-          {mode !== 'balanced' && (
-            <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} mode</span>
+          {mode !== 'peaceful' && (
+            <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} guide</span>
           )}
         </div>
       </div>

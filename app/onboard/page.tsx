@@ -80,7 +80,7 @@ export default function OnboardPage() {
   const [displayName, setDisplayName] = useState('')
   const [focusDomains, setFocusDomains] = useState<string[]>([])
   const [selectedTheme, setSelectedTheme] = useState('sunset')
-  const [selectedMode, setSelectedMode] = useState('balanced')
+  const [selectedMode, setSelectedMode] = useState('peaceful')
   const [habitName, setHabitName] = useState('')
   const [habitCategory, setHabitCategory] = useState('health')
   const [captureText, setCaptureText] = useState('')
@@ -235,7 +235,7 @@ export default function OnboardPage() {
                 Make it <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>yours</em>.
               </div>
               <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '1.6rem', lineHeight: 1.7 }}>
-                Pick an aesthetic and a personality for your OS. You can change these anytime.
+                Pick an aesthetic and a Guide for your OS. You can change these anytime.
               </div>
 
               {/* Theme grid */}
@@ -266,10 +266,10 @@ export default function OnboardPage() {
                 })}
               </div>
 
-              {/* Mode list */}
-              <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.35rem' }}>Personality — tone &amp; behavior</div>
+              {/* Guide list */}
+              <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.35rem' }}>Your Guide — voice &amp; proactivity</div>
               <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.85, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                Choose how 4S should feel when it talks to you. This changes tone and greetings, not your data.
+                Choose the voice that guides you. It shapes tone, greetings, and how much 4S speaks up — never your data.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '2rem' }}>
                 {MODE_LIST.map(m => {

@@ -93,9 +93,6 @@ export function useWorkItems() {
     if (error) return
     notifyChanged()
 
-    // Emit XP event when completing
-    if (status === 'done') window.dispatchEvent(new CustomEvent('4s:xp', { detail: 25 }))
-
     if (status === 'done') {
       // If recurring, create next occurrence
       if (item?.recur_days) {

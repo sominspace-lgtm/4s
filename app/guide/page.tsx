@@ -218,7 +218,7 @@ export default function GuidePage() {
             <IconRow icon="＋">Quick add — jot anything down (＋ button, bottom-right on mobile)</IconRow>
             <IconRow icon="✦">Ask Jarvis — a free-text question about your day</IconRow>
             <IconRow icon="◎">Focus — a calm, distraction-free timer</IconRow>
-            <IconRow icon="◐">Theme &amp; mode — change the look and tone</IconRow>
+            <IconRow icon="◐">Theme &amp; Guide — change the look and the voice</IconRow>
             <IconRow icon="⊹">Customize — reorder or hide any tab</IconRow>
             <IconRow icon="?">Guide — this page, any time</IconRow>
           </div>
