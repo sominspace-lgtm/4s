@@ -5,6 +5,7 @@ import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 import { goToSection } from '@/lib/utils/navigate'
+import { DOMAINS } from '@/lib/constants/domains'
 
 const TYPE_ICON: Record<string, string> = {
   capture:  '○',
@@ -26,7 +27,24 @@ interface Command {
   label: string
   hint?: string
   icon: string
+  keywords?: string[]
   run: () => void
+}
+
+// Score a command against a natural-language query. Every query token that
+// appears in the label or a keyword adds a point; an exact phrase match is
+// weighted heavily so "review health" beats a generic "Go to Life". This is
+// what lets Search act as a command center: "pay rent", "what needs
+// attention", "doctor" all route to the right place without exact labels.
+function scoreCommand(cmd: Command, q: string): number {
+  const hay = `${cmd.label} ${(cmd.keywords ?? []).join(' ')}`.toLowerCase()
+  const query = q.trim().toLowerCase()
+  const tokens = query.split(/\s+/).filter(tok => tok.length >= 2)
+  if (tokens.length === 0) return 0
+  let score = 0
+  for (const tok of tokens) if (hay.includes(tok)) score += 1
+  if (query.length >= 3 && hay.includes(query)) score += 3
+  return score
 }
 
 function goTo(sectionId: string) {
@@ -46,25 +64,45 @@ export default function SearchModal({ open, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const commands: Command[] = [
-    { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', run: () => goTo('brief') },
-    { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', run: () => goTo('work') },
-    { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', run: () => goTo('habits') },
-    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', run: () => goTo('domains') },
-    { id: 'go-money',    label: 'Go to Money',       icon: '✦', run: () => goTo('money') },
-    { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', run: () => goTo('calendar') },
-    { id: 'go-shared',   label: 'Go to Shared',      icon: '⇆', run: () => goTo('shared') },
-    { id: 'go-council',  label: 'Go to Council',     icon: '⌂', run: () => goTo('council') },
-    { id: 'add-task',    label: 'Add Task',          hint: 'Tasks',  icon: '+', run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
-    { id: 'add-habit',   label: 'Add Habit',         hint: 'Habits', icon: '+', run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
-    { id: 'capture-thought', label: 'Quick Add a Thought', hint: 'Brief', icon: '+', run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
-    { id: 'switch-theme', label: 'Switch Theme',     icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
-    { id: 'switch-mode',  label: 'Switch Mode',      icon: '◐', run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
+  const baseCommands: Command[] = [
+    { id: 'what-attention', label: 'What needs attention', hint: 'Brief', icon: '◒', keywords: ['attention', 'urgent', 'important', 'priorities', 'what matters', 'today', 'now', 'focus'], run: () => goTo('brief') },
+    { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
+    { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goTo('work') },
+    { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goTo('habits') },
+    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance'], run: () => goTo('domains') },
+    { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goTo('money') },
+    { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('calendar') },
+    { id: 'go-shared',   label: 'Go to Shared',      icon: '⇆', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space'], run: () => goTo('shared') },
+    { id: 'go-council',  label: 'Go to Council',     icon: '⌂', keywords: ['council', 'advice', 'advisor', 'reflect', 'decision', 'guidance'], run: () => goTo('council') },
+    { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
+    { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
+    { id: 'capture-thought', label: 'Capture a thought', hint: 'Brief', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'inbox', 'quick add'], run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
+    { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
+    { id: 'switch-mode',  label: 'Switch mode',      icon: '◐', keywords: ['mode', 'personality', 'tone', 'guide', 'voice'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
   ]
 
+  // A "Review <domain>" command per life domain, so "review health" or just
+  // "health" jumps straight to Life. Hidden from the default list (only base
+  // commands show when the query is empty) so they never clutter.
+  const domainCommands: Command[] = DOMAINS.filter(d => !d.hidden).map(d => ({
+    id: `review-${d.id}`,
+    label: `Review ${d.label}`,
+    hint: d.sublabel,
+    icon: d.icon,
+    keywords: ['review', 'check', d.label.toLowerCase(), d.sublabel.toLowerCase()],
+    run: () => goTo('domains'),
+  }))
+
+  const allCommands = [...baseCommands, ...domainCommands]
+
   const matchedCommands = query.trim()
-    ? commands.filter(c => c.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : commands.slice(0, 6)
+    ? allCommands
+        .map(c => ({ c, s: scoreCommand(c, query) }))
+        .filter(x => x.s > 0)
+        .sort((a, b) => b.s - a.s)
+        .slice(0, 7)
+        .map(x => x.c)
+    : baseCommands.slice(0, 6)
 
   const totalCount = matchedCommands.length + results.length
 

@@ -69,6 +69,11 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
 
+  const hour = new Date().getHours()
+  const greeting = lang === 'ko'
+    ? (hour < 12 ? '좋은 아침이에요' : hour < 18 ? '좋은 오후예요' : '편안한 저녁이에요')
+    : (hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening')
+
   const dueToday   = items.filter(i => dueUrgency(i.due_date) === 'today'   && i.status !== 'done').length
   const overdue    = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
   const inProgress = items.filter(i => i.status === 'in-progress').length
@@ -179,6 +184,10 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
         position: 'absolute', top: 0, right: 0, width: '200px', height: '100%', pointerEvents: 'none',
         background: 'radial-gradient(ellipse at top right, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%)',
       }} />
+
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 1.9rem)', fontWeight: 300, color: 'var(--text)', lineHeight: 1, marginBottom: summaryParts.length > 0 ? '0.6rem' : '0.2rem' }}>
+        {greeting}
+      </div>
 
       {summaryParts.length > 0 && (
         <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>

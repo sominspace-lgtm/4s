@@ -52,6 +52,39 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
   const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
   const urgency = dueUrgency(item.due_date)
 
+  // Swipe right to complete — the primary mobile gesture. Only engages on a
+  // clearly horizontal drag so vertical scrolling and tapping controls still
+  // work. Right-swipe only (dx clamped ≥ 0); past the threshold marks done.
+  const [dragX, setDragX] = useState(0)
+  const startX = useRef<number | null>(null)
+  const startY = useRef(0)
+  const swiping = useRef(false)
+  const SWIPE_DONE = 72
+
+  function onTouchStart(e: React.TouchEvent) {
+    if (item.status === 'done') return
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+    swiping.current = false
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    if (startX.current === null) return
+    const dx = e.touches[0].clientX - startX.current
+    const dy = e.touches[0].clientY - startY.current
+    if (!swiping.current) {
+      if (Math.abs(dx) < 10) return
+      if (Math.abs(dy) > Math.abs(dx)) { startX.current = null; return } // vertical scroll wins
+      swiping.current = true
+    }
+    setDragX(Math.max(0, Math.min(dx, 96)))
+  }
+  function onTouchEnd() {
+    if (swiping.current && dragX > SWIPE_DONE) onStatus(item.id, 'done')
+    startX.current = null
+    swiping.current = false
+    setDragX(0)
+  }
+
   async function saveNotes() {
     setEditingNotes(false)
     if (notesDraft !== (item.notes ?? '')) onUpdate(item.id, { notes: notesDraft || null })
@@ -65,7 +98,20 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ borderBottom: '1px solid var(--faint)', padding: '0.55rem 0' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{
+        borderBottom: '1px solid var(--faint)', padding: '0.55rem 0',
+        transform: dragX ? `translateX(${dragX}px)` : undefined,
+        transition: dragX ? 'none' : 'transform 0.2s ease',
+        background: dragX > SWIPE_DONE
+          ? 'linear-gradient(90deg, color-mix(in srgb, var(--emerald) 22%, transparent), transparent 60%)'
+          : dragX > 0
+            ? 'linear-gradient(90deg, color-mix(in srgb, var(--emerald) 10%, transparent), transparent 60%)'
+            : undefined,
+        touchAction: 'pan-y',
+      }}
     >
       {/* Main row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem' }}>
