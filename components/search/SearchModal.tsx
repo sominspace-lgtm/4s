@@ -51,6 +51,11 @@ function goTo(sectionId: string) {
   goToSection(sectionId)
 }
 
+// Where each search result lives, so activating one jumps to the right tab.
+const RESULT_SECTION: Record<SearchResult['type'], string> = {
+  capture: 'brief', work: 'work', wishlist: 'money', habit: 'habits', note: 'brief',
+}
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -121,7 +126,8 @@ export default function SearchModal({ open, onClose }: Props) {
 
   function runAt(i: number) {
     if (i < matchedCommands.length) { matchedCommands[i].run(); onClose(); return }
-    if (results[i - matchedCommands.length]) onClose()
+    const r = results[i - matchedCommands.length]
+    if (r) { goTo(RESULT_SECTION[r.type] ?? 'brief'); onClose() }
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -181,7 +187,7 @@ export default function SearchModal({ open, onClose }: Props) {
               </div>
             )}
             {results.map((r, i) => (
-              <ResultRow key={r.id} result={r} active={matchedCommands.length + i === idx} onHover={() => setIdx(matchedCommands.length + i)} onClick={onClose} lang={lang} />
+              <ResultRow key={r.id} result={r} active={matchedCommands.length + i === idx} onHover={() => setIdx(matchedCommands.length + i)} onClick={() => runAt(matchedCommands.length + i)} lang={lang} />
             ))}
           </div>
         )}
