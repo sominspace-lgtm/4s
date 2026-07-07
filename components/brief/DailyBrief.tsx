@@ -14,6 +14,8 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { DOMAINS } from '@/lib/constants/domains'
 import { goToSection } from '@/lib/utils/navigate'
+import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
+import type { Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import CaptureSection from '@/components/capture/CaptureSection'
@@ -47,7 +49,7 @@ function SummaryCard({ label, line, action, onAction }: { label: string; line: s
   )
 }
 
-export default function DailyBrief({ userId, calendarConnected = false, onOpenCompanions }: { userId: string; calendarConnected?: boolean; onOpenCompanions: () => void }) {
+export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false, onOpenCompanions }: { userId: string; mode?: Mode; calendarConnected?: boolean; onOpenCompanions: () => void }) {
   const lang = useLang()
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
@@ -70,9 +72,14 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
   const week  = getLast7Days()
 
   const hour = new Date().getHours()
+  // Brief greets in the active Guide's voice (KO stays neutral for now).
   const greeting = lang === 'ko'
     ? (hour < 12 ? '좋은 아침이에요' : hour < 18 ? '좋은 오후예요' : '편안한 저녁이에요')
-    : (hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening')
+    : guideGreetingLine(mode, hour)
+  // Proactivity shapes how much Brief surfaces: a quiet Guide stays minimal,
+  // a proactive one shows an extra quiet-maintenance line.
+  const proactivity = proactivityOf(mode)
+  const maxParts = proactivity === 'low' ? 2 : 4
 
   const dueToday   = items.filter(i => dueUrgency(i.due_date) === 'today'   && i.status !== 'done').length
   const overdue    = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
@@ -137,6 +144,14 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
   const lifeReviewedOnce = DOMAINS.some(d => touched[d.id])
   const moneyTracksAnything = subs.length > 0 || wishItems.length > 0 || buyItems.length > 0 || giftItems.length > 0
 
+  // Quiet-maintenance line — only a high-proactivity Guide (Butler, Executive,
+  // Navigator, Challenger) speaks up about things that aren't urgent yet.
+  const maintenanceBits: string[] = []
+  if (lifeReviewedOnce && domainsNeedingReview.length > 0) maintenanceBits.push(`${domainsNeedingReview[0].label} review`)
+  if (refillsDue > 0) maintenanceBits.push(`${refillsDue} to buy again`)
+  if (moneyTracksAnything && moneyDueSoon > 0) maintenanceBits.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
+  const showMaintenance = proactivity === 'high' && maintenanceBits.length > 0
+
   const summaryCards = [
     {
       label: 'Tasks', action: 'Open Tasks', onAction: () => goToSection('work'),
@@ -191,7 +206,7 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
 
       {summaryParts.length > 0 && (
         <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>
-          {summaryParts.slice(0, 4).join(' · ')}
+          {summaryParts.slice(0, maxParts).join(' · ')}
         </div>
       )}
 
@@ -222,6 +237,12 @@ export default function DailyBrief({ userId, calendarConnected = false, onOpenCo
         {lang !== 'ko' && <strong style={{ color: 'var(--text)', fontStyle: 'normal' }}>Suggested next action: </strong>}
         {getInsight()}
       </div>
+
+      {showMaintenance && (
+        <div style={{ marginTop: '0.6rem', fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.85, lineHeight: 1.5 }}>
+          <span style={{ opacity: 0.7 }}>Quietly maintaining · </span>{maintenanceBits.slice(0, 3).join(' · ')}
+        </div>
+      )}
 
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-add-task'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>

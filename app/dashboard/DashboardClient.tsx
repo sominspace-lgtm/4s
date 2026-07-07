@@ -195,7 +195,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" userId={userId} calendarConnected={!!initialCalendarUrl} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />

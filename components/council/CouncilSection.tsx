@@ -11,6 +11,7 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useAppSnapshot } from '@/lib/hooks/useAppSnapshot'
 import { generateCouncilAdvice, COUNCIL_DOMAINS, type CouncilAdvice } from '@/lib/utils/council'
 import type { Mode } from '@/lib/constants/modes'
+import { proactivityOf } from '@/lib/utils/guideVoice'
 
 const VERDICT_STYLE: Record<string, React.CSSProperties> = {
   fine:  { color: 'var(--gold)',  background: 'color-mix(in srgb, var(--gold) 8%, transparent)', borderColor: 'color-mix(in srgb, var(--gold) 20%, transparent)' },
@@ -154,6 +155,14 @@ export default function CouncilSection({ mode = 'peaceful', userId, calendarConn
       .catch(() => { if (seq === conveneSeq.current) setAiStatus('rules') })
   }
 
+  // A quiet Guide's Council waits until asked; a proactive one leans in.
+  const proactivity = proactivityOf(mode)
+  const councilIntro = proactivity === 'low'
+    ? 'Your Council waits quietly until you ask.'
+    : proactivity === 'high'
+      ? 'Your Council keeps an eye on every area — convene for the full read.'
+      : 'Your Council reviews your dashboard from different perspectives.'
+
   const watchCount = advice.filter(a => a.verdict === 'watch').length
   // Lead with what needs attention (watch → quiet → fine), drop dismissed cards.
   const VERDICT_ORDER: Record<string, number> = { watch: 0, quiet: 1, fine: 2 }
@@ -177,7 +186,7 @@ export default function CouncilSection({ mode = 'peaceful', userId, calendarConn
       </div>
 
       <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 300, marginBottom: '0.9rem' }}>
-        Your Council reviews your dashboard from different perspectives.
+        {councilIntro}
       </div>
 
       {!convened && (

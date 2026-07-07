@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import ThemeModePicker from '@/components/ui/ThemeModePicker'
 import type { Mode } from '@/lib/constants/modes'
+import { guideGreeting } from '@/lib/utils/guideVoice'
 
 interface HeaderProps {
   email: string
@@ -21,32 +22,6 @@ interface HeaderProps {
   onFocus: () => void
   onArchive: () => void
   onHelp: () => void
-}
-
-// Returns text before and after the name
-function getTimeOfDay(hour: number) {
-  if (hour >= 5  && hour < 12) return 'morning'
-  if (hour >= 12 && hour < 17) return 'afternoon'
-  if (hour >= 17 && hour < 21) return 'evening'
-  return 'night'
-}
-
-function getGreeting(mode: Mode, hour: number): { prefix: string; suffix?: string } {
-  const time = getTimeOfDay(hour)
-  const isNight = time === 'night'
-
-  switch (mode) {
-    case 'peaceful':   return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
-    case 'monk':       return { prefix: isNight ? 'Rest now,' : 'Be present,' }
-    case 'friend':     return { prefix: time === 'morning' ? 'Morning,' : time === 'afternoon' ? 'Hey,' : time === 'evening' ? 'Evening,' : 'Still up,' }
-    case 'teacher':    return { prefix: `Good ${time},`, suffix: '— ready to reflect?' }
-    case 'therapist':  return { prefix: isNight ? 'Still with you,' : `Good ${time},`, suffix: '— how are you, really?' }
-    case 'navigator':  return { prefix: `Good ${time},`, suffix: '— let\'s look ahead.' }
-    case 'executive':  return { prefix: '' }
-    case 'butler':     return { prefix: isNight ? 'Good evening,' : `Good ${time},` }
-    case 'challenger': return { prefix: time === 'morning' ? "Let's move," : time === 'afternoon' ? 'Still going,' : time === 'evening' ? 'Finish it,' : 'Late one,' }
-    default:           return { prefix: `Good ${time},` }
-  }
 }
 
 export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive, onHelp }: HeaderProps) {
@@ -83,7 +58,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
   function handleThemeChange(t: string) { setTheme(t); onThemeChange(t) }
   function handleModeChange(m: Mode) { setMode(m); onModeChange(m) }
 
-  const { prefix, suffix } = getGreeting(mode, h)
+  const { prefix, suffix } = guideGreeting(mode, h)
   const displayName = name
 
   const accentStyle: React.CSSProperties = {
