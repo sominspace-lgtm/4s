@@ -20,6 +20,16 @@ import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import CaptureSection from '@/components/capture/CaptureSection'
 import DailyReflection from '@/components/brief/DailyReflection'
+import Breathing from '@/components/focus/Breathing'
+
+const CALM_QUOTES = [
+  "You don't have to do everything today.",
+  'One breath, then one small thing.',
+  'Rest is productive too.',
+  "This will pass — you've moved through hard days before.",
+  'Slow is smooth, and smooth is calm.',
+  'Do less, but do it gently.',
+]
 import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
@@ -105,8 +115,15 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     localStorage.setItem(`4s-energy-${format(new Date(), 'yyyy-MM-dd')}`, v)
     setEnergy(v)
   }
-  function enterRecovery() { localStorage.setItem('4s-recovery', '1'); setRecovery(true) }
+  // A calming line for recovery days, chosen client-side to avoid a hydration
+  // mismatch, and refreshed each time recovery is entered.
+  const [quote, setQuote] = useState(CALM_QUOTES[0])
+  function pickQuote() { setQuote(CALM_QUOTES[Math.floor(Math.random() * CALM_QUOTES.length)]) }
+  useEffect(pickQuote, [])
+  function enterRecovery() { localStorage.setItem('4s-recovery', '1'); setRecovery(true); pickQuote() }
   function exitRecovery() { localStorage.removeItem('4s-recovery'); setRecovery(false) }
+  // Enter Focus view (the timer + decluttered layout) from anywhere in Brief.
+  function enterFocus() { window.dispatchEvent(new CustomEvent('4s:enter-focus')) }
   const lowDay = recovery || energy === 'low'
 
   // Adaptive Guide suggestion — dismissible per week so it never nags.
@@ -295,9 +312,14 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       </div>
 
       {recovery ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.7rem', padding: '0.55rem 0.85rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--emerald) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>Recovery mode. Just the essentials today — you&apos;re doing enough.</span>
-          <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.68rem', marginLeft: 'auto' }}>I&apos;m okay now</button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.6rem', marginBottom: '0.7rem', padding: '1.2rem 1rem', borderRadius: '14px', background: 'color-mix(in srgb, var(--emerald) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Just the essentials today — you&apos;re doing enough.</span>
+          <Breathing />
+          <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.2rem' }}>
+            <button onClick={enterFocus} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>◎ Focus view</button>
+            <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>I&apos;m okay now</button>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
@@ -311,7 +333,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
               color: energy === v ? 'var(--gold)' : 'var(--muted)',
             }}>{v}</button>
           ))}
-          <button onClick={enterRecovery} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Overwhelmed?</button>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <button onClick={enterFocus} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><span aria-hidden>◎</span> Focus</button>
+            <button onClick={enterRecovery} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Overwhelmed?</button>
+          </div>
         </div>
       )}
 

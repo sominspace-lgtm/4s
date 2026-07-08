@@ -131,6 +131,13 @@ export default function DashboardClient({ email, userId, initialName, initialThe
     return () => window.removeEventListener('4s:set-guide', onGuide)
   }, [userId])
 
+  // Entering Focus view from anywhere (e.g. the Brief energy row / Recovery).
+  useEffect(() => {
+    function onFocus() { setZenView(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+    window.addEventListener('4s:enter-focus', onFocus)
+    return () => window.removeEventListener('4s:enter-focus', onFocus)
+  }, [])
+
   // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
