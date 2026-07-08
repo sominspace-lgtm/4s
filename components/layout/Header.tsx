@@ -22,9 +22,71 @@ interface HeaderProps {
   onFocus: () => void
   onArchive: () => void
   onHelp: () => void
+  onJarvis: () => void
+  zenView: boolean
+  onToggleZen: () => void
+  onConfigureFocus: () => void
+  simpleMode: boolean
+  onToggleSimple: () => void
 }
 
-export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive, onHelp }: HeaderProps) {
+// One quiet overflow menu instead of a row of icon-only buttons — every
+// action gets a label, and the header keeps a single obvious hierarchy:
+// Search, Appearance, everything else behind ⋯.
+function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: () => void; href?: string; divider?: boolean }[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  const itemStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+    background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+    padding: '0.55rem 0.9rem', borderRadius: '8px', textDecoration: 'none',
+    color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.8rem',
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} title="More" aria-label="More options" aria-expanded={open} style={{
+        background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+        padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
+        fontSize: '0.85rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+      }}>⋯</button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 120,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '14px', padding: '0.4rem', width: '220px',
+          boxShadow: '0 8px 32px var(--shadow)',
+        }}>
+          {items.map((it, i) => it.divider ? (
+            <div key={i} style={{ height: 1, background: 'var(--faint)', margin: '0.35rem 0.5rem' }} />
+          ) : it.href ? (
+            <a key={i} href={it.href} style={itemStyle}>
+              <span aria-hidden style={{ width: '1.1em', textAlign: 'center', color: 'var(--muted)' }}>{it.icon}</span>{it.label}
+            </a>
+          ) : (
+            <button key={i} onClick={() => { setOpen(false); it.onClick?.() }} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover-bg)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span aria-hidden style={{ width: '1.1em', textAlign: 'center', color: 'var(--muted)' }}>{it.icon}</span>{it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onFocus, onArchive, onHelp, onJarvis, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   const fallback = email.split('@')[0]
 
@@ -119,39 +181,12 @@ export default function Header({ email, userId, initialName, initialTheme, initi
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {/* Help button */}
-        <button onClick={onHelp} title="Help & tutorial" aria-label="Help" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>?</button>
-
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
         <button onClick={onSearch} title="Search everything" aria-label="Search" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+          padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>⌕</button>
-        <button onClick={onFocus} title="Focus mode" aria-label="Focus mode" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>◎</button>
-        <button onClick={onArchive} title="Archive" aria-label="Archive" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.75rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>◻</button>
-        <button onClick={onCompanions} title="Friends" aria-label="Friends" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>⇆</button>
-        <button onClick={onCustomize} title="Customize layout" aria-label="Customize layout" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.85rem', lineHeight: 1,
-        }}>⊹</button>
         <ThemeModePicker
           userId={userId}
           currentTheme={theme}
@@ -159,16 +194,22 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           onThemeChange={handleThemeChange}
           onModeChange={handleModeChange}
         />
-        <a href="/account" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.7rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
-          fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'none', lineHeight: 1.5,
-        }}>account</a>
-        <button onClick={signOut} aria-label="Sign out" style={{
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.4rem 0.85rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
-          fontSize: '0.8rem', cursor: 'pointer',
-        }}>sign out</button>
+        <MoreMenu items={[
+          { icon: '✦', label: 'Ask Jarvis', onClick: onJarvis },
+          { icon: '◎', label: 'Focus timer', onClick: onFocus },
+          { icon: '◐', label: zenView ? 'Exit Focus view' : 'Focus view', onClick: onToggleZen },
+          ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
+          { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
+          { divider: true, icon: '', label: '' },
+          { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
+          { icon: '⇆', label: 'Friends', onClick: onCompanions },
+          { icon: '◻', label: 'Archive', onClick: onArchive },
+          { divider: true, icon: '', label: '' },
+          { icon: '?', label: 'Help & tutorial', onClick: onHelp },
+          { icon: '↗', label: 'Guide', href: '/guide' },
+          { icon: '○', label: 'Account', href: '/account' },
+          { icon: '←', label: 'Sign out', onClick: signOut },
+        ]} />
       </div>
     </header>
   )

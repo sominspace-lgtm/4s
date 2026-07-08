@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import SectionLabel from '@/components/ui/SectionLabel'
@@ -208,7 +207,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <DomainGrid key="domains" />
@@ -236,36 +235,15 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onFocus={() => setFocusOpen(true)}
         onArchive={() => setArchiveOpen(true)}
         onHelp={() => setHelpOpen(true)}
+        onJarvis={() => setJarvisOpen(true)}
+        zenView={zenView}
+        onToggleZen={() => setZenView(z => !z)}
+        onConfigureFocus={() => setFocusPanelOpen(true)}
+        simpleMode={simpleMode}
+        onToggleSimple={toggleSimpleMode}
       />
 
       <QuickCapture />
-      <div className="page-pad controls-row" style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', flexWrap: 'wrap' }}>
-        <button onClick={() => setJarvisOpen(true)} title="Ask a question about your day" className="pill pill-accent">
-          <span aria-hidden>✦</span> Ask Jarvis
-        </button>
-        <button
-          onClick={() => setZenView(z => !z)}
-          title="Focus View — hide everything but what matters today"
-          className={`pill${zenView ? ' pill-on' : ''}`}
-        >
-          <span aria-hidden>◐</span> {zenView ? 'Exit focus' : 'Focus view'}
-        </button>
-        {zenView && (
-          <button onClick={() => setFocusPanelOpen(true)} title="Choose what Focus View shows" className="pill">
-            <span aria-hidden>⚙</span> Configure
-          </button>
-        )}
-        <button
-          onClick={toggleSimpleMode}
-          title={simpleMode ? 'Show all tabs' : 'Show only Brief, Tasks, Calendar, and Shared'}
-          className={`pill${simpleMode ? ' pill-on' : ''}`}
-        >
-          <span aria-hidden>{simpleMode ? '▦' : '▤'}</span> {simpleMode ? 'Full view' : 'Simple view'}
-        </button>
-        <Link href="/guide" title="How to use 4S" className="pill">
-          <span aria-hidden>?</span> Guide
-        </Link>
-      </div>
       {!zenView && (
         <SectionNav
           sections={visible}
@@ -298,11 +276,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         }
         <FeedbackBox />
       </main>
-      <MobileNav
-        onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-        onSearch={() => setSearchOpen(true)}
-        onFocus={() => setFocusOpen(true)}
-      />
+      <MobileNav onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))} />
       {!zenView && (
         <BottomNav
           sections={visible}

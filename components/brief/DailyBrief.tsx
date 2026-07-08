@@ -44,20 +44,24 @@ function Stat({ label, value, color }: { label: string; value: string | number; 
   )
 }
 
-function SummaryCard({ label, line, action, onAction }: { label: string; line: string; action: string; onAction: () => void }) {
+// One quiet line per area — a calm index, not a second dashboard. The tab
+// bar already navigates; this only says whether anything needs you.
+function AreaRow({ label, line, onAction }: { label: string; line: string; onAction: () => void }) {
   return (
-    <div className="card-interactive" style={{
-      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',
-      padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', minHeight: '84px',
+    <button onClick={onAction} style={{
+      display: 'flex', alignItems: 'baseline', gap: '0.75rem', width: '100%',
+      background: 'none', border: 'none', borderBottom: '1px solid var(--faint)',
+      cursor: 'pointer', textAlign: 'left', padding: '0.55rem 0.2rem',
+      fontFamily: 'var(--font-body)',
     }}>
-      <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', opacity: 0.78 }}>{label}</div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.4, flex: 1 }}>{line}</div>
-      <button onClick={onAction} className="btn btn-ghost" style={{ fontSize: '0.65rem', alignSelf: 'flex-start', padding: 0 }}>{action} →</button>
-    </div>
+      <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', width: '5.2rem', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1, lineHeight: 1.4 }}>{line}</span>
+      <span aria-hidden style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.5 }}>→</span>
+    </button>
   )
 }
 
-export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false, onOpenCompanions }: { userId: string; mode?: Mode; calendarConnected?: boolean; onOpenCompanions: () => void }) {
+export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false }: { userId: string; mode?: Mode; calendarConnected?: boolean }) {
   const lang = useLang()
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
@@ -314,11 +318,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         </div>
       )}
 
+      {/* Two quiet actions — the inbox lives one scroll below, sharing lives in Shared */}
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-add-task'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:focus-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Capture thought</button>
-        <button onClick={() => { window.dispatchEvent(new CustomEvent('app:open-inbox')); document.getElementById('brief-inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Review inbox</button>
-        <button onClick={onOpenCompanions} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Share something</button>
       </div>
     </div>
 
@@ -356,8 +359,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
         Everything, at a glance
       </div>
-      <div className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.6rem' }}>
-        {summaryCards.map(c => <SummaryCard key={c.label} {...c} />)}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.4rem 1rem' }}>
+        {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
       </div>
     </div>
     </div>
