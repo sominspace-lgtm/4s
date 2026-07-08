@@ -36,10 +36,6 @@ export default function FocusViewPanel({ open, sections, focusConfig, simpleMode
     update({ ...focusConfig, sections: has ? focusConfig.sections.filter(s => s !== id) : [...focusConfig.sections, id] })
   }
 
-  function toggleTimer() {
-    update({ ...focusConfig, showTimer: !focusConfig.showTimer })
-  }
-
   return (
     <>
       <div style={{
@@ -99,28 +95,6 @@ export default function FocusViewPanel({ open, sections, focusConfig, simpleMode
           )
         })}
 
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, marginTop: '1rem' }}>
-          Widgets
-        </div>
-        <button
-          onClick={toggleTimer}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left',
-            padding: '0.5rem 0.7rem', borderRadius: '8px', cursor: 'pointer',
-            background: focusConfig.showTimer ? 'color-mix(in srgb, var(--gold) 8%, transparent)' : 'transparent',
-            border: `1px solid ${focusConfig.showTimer ? 'color-mix(in srgb, var(--gold) 30%, transparent)' : 'var(--border)'}`,
-          }}
-        >
-          <div style={{
-            width: 14, height: 14, borderRadius: '4px', flexShrink: 0,
-            border: `1.5px solid ${focusConfig.showTimer ? 'var(--gold)' : 'var(--border)'}`,
-            background: focusConfig.showTimer ? 'var(--gold)' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {focusConfig.showTimer && <span style={{ fontSize: '0.5rem', color: 'var(--bg)', lineHeight: 1 }}>✓</span>}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: focusConfig.showTimer ? 'var(--text)' : 'var(--muted)' }}>◔ Timer</span>
-        </button>
       </div>
     </>
   )

@@ -30,6 +30,9 @@ export default function FocusMode({ open, onClose }: Props) {
   const [seconds,  setSeconds]  = useState(25 * 60)
   const [running,  setRunning]  = useState(false)
   const [finished, setFinished] = useState(false)
+  // Session outcome — completing the work belongs to the session itself.
+  const [loggedWork,  setLoggedWork]  = useState(false)
+  const [loggedHabit, setLoggedHabit] = useState(false)
   const interval = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -39,6 +42,31 @@ export default function FocusMode({ open, onClose }: Props) {
     supabase.from('habits').select('id, name, category').limit(20)
       .then(({ data }) => setHabits(data ?? []))
   }, [open])
+
+  // Esc leaves the session — an immersive surface needs an obvious exit.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  async function markWorkDone() {
+    if (!selectedWork) return
+    setLoggedWork(true)
+    await supabase.from('work_items').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', selectedWork)
+    window.dispatchEvent(new CustomEvent('4s:work-items-changed'))
+  }
+
+  async function logHabit() {
+    if (!selectedHabit) return
+    setLoggedHabit(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const today = new Date().toISOString().slice(0, 10)
+    await supabase.from('habit_completions').insert({ habit_id: selectedHabit, completed_date: today, user_id: user.id })
+    window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+  }
 
   const stop = useCallback(() => {
     if (interval.current) clearInterval(interval.current)
@@ -59,6 +87,8 @@ export default function FocusMode({ open, onClose }: Props) {
   function startTimer() {
     setSeconds(preset * 60)
     setFinished(false)
+    setLoggedWork(false)
+    setLoggedHabit(false)
     setRunning(true)
   }
 
@@ -86,7 +116,7 @@ export default function FocusMode({ open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div style={{
+    <div className="fade-in" style={{
       position: 'fixed', inset: 0, zIndex: 600,
       background: 'var(--bg)',
       backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',
@@ -186,9 +216,22 @@ export default function FocusMode({ open, onClose }: Props) {
       </div>
 
       {finished && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--emerald)', textAlign: 'center' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--emerald)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.7rem', alignItems: 'center' }}>
           {t('Session complete — great work.', lang)}
-          <br /><button onClick={startTimer} style={{ marginTop: '0.5rem', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>{t('go again', lang)}</button>
+          {/* Close the loop here — the session owns its outcome */}
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {selectedWorkItem && (
+              <button onClick={markWorkDone} disabled={loggedWork} className="btn btn-secondary" style={{ fontSize: '0.72rem', opacity: loggedWork ? 0.6 : 1 }}>
+                {loggedWork ? '✓ Task done' : `Mark "${selectedWorkItem.title.slice(0, 28)}${selectedWorkItem.title.length > 28 ? '…' : ''}" done`}
+              </button>
+            )}
+            {selectedHabitItem && (
+              <button onClick={logHabit} disabled={loggedHabit} className="btn btn-secondary" style={{ fontSize: '0.72rem', opacity: loggedHabit ? 0.6 : 1 }}>
+                {loggedHabit ? '✓ Habit logged' : `Log "${selectedHabitItem.name.slice(0, 28)}${selectedHabitItem.name.length > 28 ? '…' : ''}"`}
+              </button>
+            )}
+          </div>
+          <button onClick={startTimer} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>{t('go again', lang)}</button>
         </div>
       )}
 

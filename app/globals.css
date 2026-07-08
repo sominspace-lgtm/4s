@@ -260,3 +260,17 @@ select, option {
   .controls-row { justify-content: flex-start !important; }
   .section-label { margin-top: 1.6rem !important; }
 }
+
+/* Motion — entrances breathe in; nothing jumps */
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fade-in 0.25s ease both; }
+
+/* Respect reduced motion everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

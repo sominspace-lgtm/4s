@@ -7,7 +7,6 @@ import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, DEFAULT_FOCUS_CONFIG, type SectionConfig, type FocusConfig } from '@/components/ui/CustomizePanel'
 import FocusViewPanel from '@/components/ui/FocusViewPanel'
 import AskJarvisPanel from '@/components/ui/AskJarvisPanel'
-import TimerWidget from '@/components/focus/TimerWidget'
 import QuickCapture from '@/components/ui/QuickCapture'
 import CompanionPanel from '@/components/companion/CompanionPanel'
 import SearchModal from '@/components/search/SearchModal'
@@ -262,9 +261,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
         {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview /></div>}
-        {zenView && focusConfig.showTimer && (
-          <div style={{ marginBottom: '1.2rem' }}><TimerWidget /></div>
-        )}
         {zenView
           ? visible.map((s, i) => (
               <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed, true)}</div>
