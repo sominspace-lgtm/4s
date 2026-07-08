@@ -186,6 +186,12 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>⌕</button>
+        <button onClick={onToggleZen} title={zenView ? 'Exit Focus view' : 'Focus view'} aria-label="Focus view" aria-pressed={zenView} style={{
+          background: zenView ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
+          border: `1px solid ${zenView ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
+          borderRadius: '8px', padding: '0.4rem 0.7rem', cursor: 'pointer',
+          color: zenView ? 'var(--gold)' : 'var(--muted)', fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>◐</button>
         <ThemeModePicker
           userId={userId}
           currentTheme={theme}
@@ -195,7 +201,6 @@ export default function Header({ email, userId, initialName, initialTheme, initi
         />
         <MoreMenu items={[
           { icon: '✦', label: 'Ask Jarvis', onClick: onJarvis },
-          { icon: '◐', label: zenView ? 'Exit Focus view' : 'Focus view', onClick: onToggleZen },
           ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
           { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
           { divider: true, icon: '', label: '' },

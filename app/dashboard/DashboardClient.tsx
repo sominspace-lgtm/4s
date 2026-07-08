@@ -19,7 +19,7 @@ import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
-import DomainGrid from '@/components/domains/DomainGrid'
+import LifeHub from '@/components/life/LifeHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import CouncilSection from '@/components/council/CouncilSection'
 import SharedHub from '@/components/companion/SharedHub'
@@ -215,7 +215,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
-        case 'domains':  return <DomainGrid key="domains" />
+        case 'domains':  return <LifeHub key="domains" />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
         case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />

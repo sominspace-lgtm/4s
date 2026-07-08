@@ -74,7 +74,7 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
     { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goTo('work') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goTo('habits') },
-    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance'], run: () => goTo('domains') },
+    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions', 'home brain', 'wifi', 'password', 'serial', 'manual', 'household'], run: () => goTo('domains') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goTo('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('calendar') },
     { id: 'go-shared',   label: 'Go to Shared',      icon: '⇆', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space'], run: () => goTo('shared') },
