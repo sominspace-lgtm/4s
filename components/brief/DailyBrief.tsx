@@ -91,6 +91,24 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     setWhisperDismissed(true)
   }
 
+  // Energy Mode — an optional daily read on capacity. Low keeps Brief to
+  // essentials. Recovery Mode — for overwhelmed days; persists until lifted
+  // and forces the lightest, kindest Brief. Both stored locally, never required.
+  const [energy, setEnergy] = useState<'low' | 'normal' | 'high' | null>(null)
+  const [recovery, setRecovery] = useState(false)
+  useEffect(() => {
+    const d = format(new Date(), 'yyyy-MM-dd')
+    setEnergy((localStorage.getItem(`4s-energy-${d}`) as 'low' | 'normal' | 'high' | null) || null)
+    setRecovery(localStorage.getItem('4s-recovery') === '1')
+  }, [])
+  function chooseEnergy(v: 'low' | 'normal' | 'high') {
+    localStorage.setItem(`4s-energy-${format(new Date(), 'yyyy-MM-dd')}`, v)
+    setEnergy(v)
+  }
+  function enterRecovery() { localStorage.setItem('4s-recovery', '1'); setRecovery(true) }
+  function exitRecovery() { localStorage.removeItem('4s-recovery'); setRecovery(false) }
+  const lowDay = recovery || energy === 'low'
+
   // Adaptive Guide suggestion — dismissible per week so it never nags.
   const [adaptiveDismissed, setAdaptiveDismissed] = useState(true)
   useEffect(() => {
@@ -116,7 +134,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   // Proactivity shapes how much Brief surfaces: a quiet Guide stays minimal,
   // a proactive one shows an extra quiet-maintenance line.
   const proactivity = proactivityOf(mode)
-  const maxParts = proactivity === 'low' ? 2 : 4
+  const maxParts = lowDay ? 1 : proactivity === 'low' ? 2 : 4
 
   const dueToday   = items.filter(i => dueUrgency(i.due_date) === 'today'   && i.status !== 'done').length
   const overdue    = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
@@ -194,7 +212,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     if (inboxCount > 4) return 'A few notes are waiting whenever you\'re ready.'
     return null
   }
-  const whisper = whisperDismissed ? null : pickWhisper()
+  const whisper = (whisperDismissed || lowDay) ? null : pickWhisper()
 
   // Adaptive Guide — read the week and gently suggest a fitting Guide. Only
   // surfaces a Guide different from the current one; the user always chooses.
@@ -272,11 +290,32 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         background: 'radial-gradient(ellipse at top right, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%)',
       }} />
 
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 1.9rem)', fontWeight: 300, color: 'var(--text)', lineHeight: 1, marginBottom: summaryParts.length > 0 ? '0.6rem' : '0.2rem' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 1.9rem)', fontWeight: 300, color: 'var(--text)', lineHeight: 1, marginBottom: '0.7rem' }}>
         {greeting}
       </div>
 
-      {summaryParts.length > 0 && (
+      {recovery ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.7rem', padding: '0.55rem 0.85rem', borderRadius: '10px', background: 'color-mix(in srgb, var(--emerald) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>Recovery mode. Just the essentials today — you&apos;re doing enough.</span>
+          <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.68rem', marginLeft: 'auto' }}>I&apos;m okay now</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
+          <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', opacity: 0.7, marginRight: '0.2rem' }}>Energy</span>
+          {(['low', 'normal', 'high'] as const).map(v => (
+            <button key={v} onClick={() => chooseEnergy(v)} style={{
+              fontSize: '0.66rem', padding: '0.2rem 0.65rem', borderRadius: '99px', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', textTransform: 'capitalize', transition: 'all var(--t-fast)',
+              border: `1px solid ${energy === v ? 'var(--gold)' : 'var(--border)'}`,
+              background: energy === v ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+              color: energy === v ? 'var(--gold)' : 'var(--muted)',
+            }}>{v}</button>
+          ))}
+          <button onClick={enterRecovery} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Overwhelmed?</button>
+        </div>
+      )}
+
+      {!lowDay && summaryParts.length > 0 && (
         <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>
           {summaryParts.slice(0, maxParts).join(' · ')}
         </div>
@@ -355,14 +394,16 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
     <FamilyTodayCard userId={userId} />
 
-    <div>
-      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-        Everything, at a glance
+    {!lowDay && (
+      <div>
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+          Everything, at a glance
+        </div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.4rem 1rem' }}>
+          {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
+        </div>
       </div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.4rem 1rem' }}>
-        {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
-      </div>
-    </div>
+    )}
     </div>
   )
 }
