@@ -46,9 +46,9 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   }, [])
 
   const itemStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+    display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', minHeight: 42,
     background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-    padding: '0.55rem 0.9rem', borderRadius: '8px', textDecoration: 'none',
+    padding: '0.45rem 0.9rem', borderRadius: '8px', textDecoration: 'none',
     color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.8rem',
   }
 
@@ -60,7 +60,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
         fontSize: '0.85rem', lineHeight: 1, fontFamily: 'var(--font-body)',
       }}>⋯</button>
       {open && (
-        <div style={{
+        <div className="header-menu" style={{
           position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 120,
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '14px', padding: '0.4rem', width: '220px',

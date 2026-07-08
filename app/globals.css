@@ -199,7 +199,6 @@ select, option {
   .bottom-nav { display: flex; }
   .section-nav { display: none; }
   .mobile-nav { bottom: 5rem !important; }
-  main { padding-bottom: 5.5rem !important; }
 }
 
 /* Council review — grid on desktop, one-card-at-a-time swipe on mobile */
@@ -231,10 +230,14 @@ select, option {
   .council-cards::-webkit-scrollbar { display: none; }
   .hide-mobile { display: none !important; }
   .tabs-wrap { flex-wrap: wrap !important; gap: 0.3rem !important; }
-  main { padding: 0 1rem 3rem !important; }
+  /* bottom padding clears the fixed bottom nav + safe area */
+  main { padding: 0 1rem 5.5rem !important; }
 
   header { padding: 1.25rem 1rem 0.5rem !important; flex-direction: column !important; gap: 0.75rem !important; }
   header > div:last-child { justify-content: flex-start !important; flex-wrap: wrap !important; }
+  /* Header dropdowns anchor right on desktop; on mobile the buttons sit
+     left, so flip the anchor or the panel exits the viewport. */
+  .header-menu { left: 0 !important; right: auto !important; max-width: calc(100vw - 2rem); }
 
   .card { border-radius: 10px !important; padding: 1rem !important; }
   .habit-days { overflow-x: auto; -webkit-overflow-scrolling: touch; }

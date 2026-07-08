@@ -85,7 +85,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
       >◐</button>
 
       {open && (
-        <div style={{
+        <div className="header-menu" style={{
           position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '14px', padding: '1rem', width: '300px', maxHeight: '80vh', overflowY: 'auto',
