@@ -93,11 +93,36 @@ html, body {
   font-family: var(--font-body);
   font-weight: 300;
   line-height: 1.55;
+  letter-spacing: 0.002em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display type — the serif carries the "premium journal" feel, so give it
+   proper optical tracking and ligatures wherever it's used. */
+.display, h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-feature-settings: 'liga' 1, 'kern' 1;
 }
 
 /* Placeholders — keep readable against dark surfaces instead of relying on browser default */
 ::placeholder { color: var(--muted); opacity: 0.85; }
+
+/* Accessible, on-brand focus ring — keyboard users get a clear indicator,
+   pointer users don't see it. */
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--gold) 60%, transparent); outline-offset: 2px; border-radius: 4px; }
+
+/* Text selection picks up the theme instead of the browser default blue. */
+::selection { background: var(--selection); color: var(--text); }
+
+/* Motion should feel like breathing — and honor those who ask for none. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
 
 /* Card hover polish — lift, brighten border, theme-accent glow. 150–250ms, no bounce. */
 .card-interactive {
