@@ -127,7 +127,7 @@ export default function QuickCapture() {
                 disabled={!text.trim()}
                 style={{
                   padding: '0.55rem 1.4rem', borderRadius: '10px', cursor: text.trim() ? 'pointer' : 'not-allowed',
-                  background: text.trim() ? 'var(--gold)' : 'rgba(255,255,255,0.06)',
+                  background: text.trim() ? 'var(--gold)' : 'var(--hover-bg)',
                   border: 'none', color: text.trim() ? 'var(--bg)' : 'var(--muted)',
                   fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 500,
                   transition: 'all 0.15s', whiteSpace: 'nowrap',

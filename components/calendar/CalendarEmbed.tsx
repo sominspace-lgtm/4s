@@ -13,7 +13,7 @@ function NativeCalendarCard() {
   const toggleBtn = (active: boolean): React.CSSProperties => ({
     fontSize: '0.66rem', padding: '0.3em 0.75em', borderRadius: '7px', cursor: 'pointer',
     border: 'none', fontFamily: 'var(--font-body)', letterSpacing: '0.04em',
-    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+    background: active ? 'var(--hover-bg)' : 'transparent',
     color: active ? 'var(--text)' : 'var(--muted)',
   })
 

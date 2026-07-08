@@ -38,7 +38,7 @@ export default function SnoozeMenu({ open, onClose, onSnooze }: SnoozeMenuProps)
           cursor: 'pointer', textAlign: 'left', padding: '0.25rem 0.4rem',
           borderRadius: '5px', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--muted)' }}
         >
           {o.label}

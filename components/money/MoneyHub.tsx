@@ -55,7 +55,7 @@ export default function MoneyHub({ userId }: { userId: string }) {
         {TABS.map(tb => (
           <button key={tb.id} onClick={() => setTab(tb.id)} className="btn" style={{
             fontSize: '0.7rem', padding: '0.35em 0.8em',
-            background: tab === tb.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+            background: tab === tb.id ? 'var(--hover-bg)' : 'transparent',
             color: tab === tb.id ? 'var(--text)' : 'var(--muted)', border: 'none',
           }}>{tb.label}</button>
         ))}

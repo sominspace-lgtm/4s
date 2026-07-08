@@ -218,7 +218,7 @@ function CommandRow({ command, active, onHover, onClick }: { command: Command; a
       style={{
         display: 'flex', alignItems: 'center', gap: '0.75rem',
         padding: '0.7rem 1.25rem', cursor: 'pointer',
-        background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+        background: active ? 'var(--hover-bg)' : 'transparent',
         transition: 'background 0.1s',
       }}
     >
@@ -238,7 +238,7 @@ function ResultRow({ result, active, onHover, onClick, lang }: { result: SearchR
       style={{
         display: 'flex', alignItems: 'center', gap: '0.75rem',
         padding: '0.7rem 1.25rem', cursor: 'pointer',
-        background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+        background: active ? 'var(--hover-bg)' : 'transparent',
         transition: 'background 0.1s',
       }}
     >

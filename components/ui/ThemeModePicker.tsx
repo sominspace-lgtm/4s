@@ -67,7 +67,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
     fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase',
     padding: '0.35em 0.9em', borderRadius: '6px', cursor: 'pointer', border: 'none',
     fontFamily: 'var(--font-body)',
-    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+    background: active ? 'var(--hover-bg)' : 'transparent',
     color: active ? 'var(--text)' : 'var(--muted)',
   })
 
@@ -109,7 +109,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
                     title={THEME_LABELS[id]}
                     style={{
                       borderRadius: '10px', cursor: 'pointer', padding: '0.4rem',
-                      border: active ? `2px solid ${p.accent}` : '2px solid rgba(255,255,255,0.04)',
+                      border: active ? `2px solid ${p.accent}` : '2px solid var(--border)',
                       background: p.bg, position: 'relative', overflow: 'hidden',
                       transition: 'all 0.15s', boxShadow: active ? `0 0 12px ${p.accent}40` : 'none',
                       display: 'flex', flexDirection: 'column', gap: '0.3rem',
@@ -147,7 +147,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
                     style={{
                       textAlign: 'left', padding: '0.55rem 0.7rem', borderRadius: '8px',
                       cursor: 'pointer', border: 'none', fontFamily: 'var(--font-body)',
-                      background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
+                      background: active ? 'var(--hover-bg)' : 'transparent',
                       transition: 'background 0.15s',
                     }}
                   >

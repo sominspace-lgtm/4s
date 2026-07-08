@@ -154,7 +154,7 @@ export default function WeekReview() {
 
 function Stat({ value, label, color }: { value: number; label: string; color: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: '0.6rem', borderRadius: '10px', background: 'rgba(255,255,255,0.025)' }}>
+    <div style={{ textAlign: 'center', padding: '0.6rem', borderRadius: '10px', background: 'var(--hover-bg)' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.78, marginTop: '0.2rem' }}>{label}</div>
     </div>

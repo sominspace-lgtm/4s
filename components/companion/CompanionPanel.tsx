@@ -237,7 +237,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
   const tabStyle = (t: Tab): React.CSSProperties => ({
     flex: 1, padding: '0.4rem', borderRadius: '7px', cursor: 'pointer', border: 'none',
     fontFamily: 'var(--font-body)', fontSize: '0.72rem',
-    background: tab === t ? 'rgba(255,255,255,0.07)' : 'transparent',
+    background: tab === t ? 'var(--hover-bg)' : 'transparent',
     color: tab === t ? 'var(--text)' : 'var(--muted)',
   })
 

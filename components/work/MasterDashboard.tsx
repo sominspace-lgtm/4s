@@ -331,7 +331,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const tabStyle = (active: boolean): React.CSSProperties => ({
     fontSize: '0.62rem', letterSpacing: '0.07em', textTransform: 'uppercase',
     padding: '0.2em 0.6em', borderRadius: '5px', cursor: 'pointer', border: 'none',
-    fontFamily: 'var(--font-body)', background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
+    fontFamily: 'var(--font-body)', background: active ? 'var(--hover-bg)' : 'transparent',
     color: active ? 'var(--text)' : 'var(--muted)',
   })
 
@@ -457,7 +457,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
               background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
             }}>{t('cancel', lang)}</button>
             <button onClick={submit} style={{
-              padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.12)',
+              padding: '0.35em 0.8em', borderRadius: '6px', border: '1px solid var(--border)',
               background: 'var(--hover-bg)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
             }}>{t('Add task', lang)}</button>
           </div>

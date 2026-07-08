@@ -107,7 +107,7 @@ export default function ArchivePanel({ open, onClose }: Props) {
               {monthItems.map(item => (
                 <div key={item.id} style={{
                   padding: '0.6rem 0.75rem', borderRadius: '9px',
-                  background: 'rgba(255,255,255,0.025)', border: '1px solid var(--border)',
+                  background: 'var(--hover-bg)', border: '1px solid var(--border)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ fontSize: '0.75rem', color: item.status === 'done' ? 'var(--text)' : 'var(--muted)', lineHeight: 1.4, textDecoration: item.status === 'cancelled' ? 'line-through' : 'none' }}>

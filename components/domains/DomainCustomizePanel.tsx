@@ -88,7 +88,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
           <div key={d.id} style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.55rem 0.7rem', borderRadius: '8px',
-            background: d.hidden ? 'transparent' : 'rgba(255,255,255,0.03)',
+            background: d.hidden ? 'transparent' : 'var(--hover-bg)',
             border: '1px solid var(--border)',
             opacity: d.hidden ? 0.4 : 1, transition: 'opacity 0.15s',
           }}>
@@ -152,7 +152,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
                 {PRESET_ICONS.map(ic => (
                   <button key={ic} onClick={() => setIcon(ic)} style={{
                     width: 28, height: 28, borderRadius: '6px', border: `1px solid ${ic === icon ? 'var(--gold)' : 'var(--border)'}`,
-                    background: ic === icon ? 'rgba(255,255,255,0.06)' : 'transparent',
+                    background: ic === icon ? 'var(--hover-bg)' : 'transparent',
                     cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)',
                   }}>{ic}</button>
                 ))}
@@ -187,7 +187,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
                 background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-body)', fontSize: '0.7rem', cursor: 'pointer',
               }}>cancel</button>
               <button onClick={handleAdd} disabled={!label.trim()} style={{
-                flex: 2, padding: '0.38em', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.12)',
+                flex: 2, padding: '0.38em', borderRadius: '7px', border: '1px solid var(--border)',
                 background: 'var(--hover-bg)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.7rem',
                 cursor: label.trim() ? 'pointer' : 'default', opacity: label.trim() ? 1 : 0.4,
               }}>add domain</button>

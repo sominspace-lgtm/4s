@@ -114,7 +114,7 @@ export default function CustomizePanel({ open, sections, focusConfig, simpleMode
           <div key={s.id} style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.6rem 0.7rem', borderRadius: '8px',
-            background: s.hidden ? 'transparent' : 'rgba(255,255,255,0.03)',
+            background: s.hidden ? 'transparent' : 'var(--hover-bg)',
             border: '1px solid var(--border)', opacity: s.hidden ? 0.4 : 1,
             transition: 'opacity 0.15s',
           }}>
