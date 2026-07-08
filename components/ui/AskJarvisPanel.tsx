@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { goToSection } from '@/lib/utils/navigate'
 import { useAppSnapshot } from '@/lib/hooks/useAppSnapshot'
+import type { Mode } from '@/lib/constants/modes'
 
 interface Props {
   open: boolean
   userId: string
+  mode?: Mode
   calendarConnected?: boolean
   onClose: () => void
 }
@@ -20,7 +22,7 @@ const PROMPTS = [
 // Free-text questions go to /api/ai with a compact snapshot of the dashboard
 // (counts, titles, dates — no note bodies). If the AI route is unavailable,
 // the canned prompts below still navigate to the right summaries.
-export default function AskJarvisPanel({ open, userId, calendarConnected = false, onClose }: Props) {
+export default function AskJarvisPanel({ open, userId, mode = 'peaceful', calendarConnected = false, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const buildSnapshot = useAppSnapshot(userId, calendarConnected)
@@ -48,7 +50,7 @@ export default function AskJarvisPanel({ open, userId, calendarConnected = false
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: 'jarvis', question: q, snapshot: buildSnapshot() }),
+        body: JSON.stringify({ task: 'jarvis', question: q, mode, snapshot: buildSnapshot() }),
       })
       if (res.status === 503) { setStatus('unavailable'); return }
       if (!res.ok) { setStatus('error'); return }

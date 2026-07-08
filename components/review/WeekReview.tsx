@@ -9,6 +9,8 @@ import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { DOMAINS } from '@/lib/constants/domains'
+import { guideReviewPrompt } from '@/lib/utils/guideVoice'
+import type { Mode } from '@/lib/constants/modes'
 
 interface WeekData {
   doneItems:       number
@@ -20,7 +22,7 @@ interface WeekData {
   streak:          number
 }
 
-export default function WeekReview() {
+export default function WeekReview({ mode = 'peaceful' }: { mode?: Mode }) {
   const lang = useLang()
   const supabase = createClient()
   const [data, setData] = useState<WeekData | null>(null)
@@ -146,7 +148,7 @@ export default function WeekReview() {
       )}
 
       <div style={{ marginTop: '1rem', paddingTop: '0.9rem', borderTop: '1px solid var(--faint)', fontSize: '0.78rem', color: 'var(--text)', fontStyle: 'italic', lineHeight: 1.6 }}>
-        What should next week feel like?
+        {lang === 'ko' ? '다음 주는 어떤 느낌이면 좋을까요?' : guideReviewPrompt(mode)}
       </div>
     </div>
   )

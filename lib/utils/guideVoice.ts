@@ -52,3 +52,19 @@ export function guideGreetingLine(mode: Mode, hour: number): string {
 export function proactivityOf(mode: Mode): Proactivity {
   return MODES[mode]?.proactivity ?? 'medium'
 }
+
+// The Weekly Review's closing reflection, in the active Guide's voice.
+export function guideReviewPrompt(mode: Mode): string {
+  switch (mode) {
+    case 'peaceful':   return 'What would make next week feel gentle?'
+    case 'monk':       return 'What is the one thing that matters next week?'
+    case 'friend':     return 'What do you want next week to feel like?'
+    case 'teacher':    return 'What did this week teach you?'
+    case 'therapist':  return 'What felt heavy this week — and what helped?'
+    case 'navigator':  return 'Where do you want to be by next week?'
+    case 'executive':  return "What are next week's top priorities?"
+    case 'butler':     return 'What shall I help you prepare for next week?'
+    case 'challenger': return 'What will you do differently next week?'
+    default:           return 'What should next week feel like?'
+  }
+}

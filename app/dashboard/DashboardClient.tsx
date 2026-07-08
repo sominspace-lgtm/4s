@@ -251,7 +251,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         />
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <AskJarvisPanel open={jarvisOpen} userId={userId} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
+      <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
       <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
@@ -260,7 +260,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
-        {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview /></div>}
+        {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {zenView
           ? visible.map((s, i) => (
               <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed, true)}</div>

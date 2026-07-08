@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { MODES, type Mode } from '@/lib/constants/modes'
 
 // One AI endpoint for the whole app: refill label/link extraction, Council
 // reviews, and Ask Jarvis. Haiku keeps per-call cost negligible for a
@@ -145,10 +146,12 @@ export async function POST(request: Request) {
       case 'jarvis': {
         const question: string = (body.question ?? '').slice(0, 500)
         if (!question.trim()) return NextResponse.json({ error: 'Missing question' }, { status: 400 })
+        const guide = MODES[body.mode as Mode] ? (body.mode as Mode) : 'peaceful'
+        const guideTone = MODES[guide]?.description ?? ''
         const response = await client.messages.create({
           model: MODEL,
           max_tokens: 600,
-          system: 'You are Jarvis, the assistant inside 4S Home, a calm personal life dashboard. Answer from the provided dashboard snapshot only — do not invent data that is not in it. Be brief (2-5 sentences), warm, and concrete. If the snapshot lacks the answer, say so and suggest where in the app to add it. Plain text, no markdown headers.',
+          system: `You are Jarvis, the assistant inside 4S Home, a calm personal life dashboard. Answer from the provided dashboard snapshot only — do not invent data that is not in it. Be brief (2-5 sentences), concrete, and never alarmist. Speak in the voice of the "${guide}" guide (${guideTone}). If the snapshot lacks the answer, say so and suggest where in the app to add it. Plain text, no markdown headers.`,
           messages: [{
             role: 'user',
             content: `Dashboard snapshot:\n${JSON.stringify(body.snapshot ?? {})}\n\nQuestion: ${question}`,

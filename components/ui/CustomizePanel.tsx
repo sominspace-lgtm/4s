@@ -12,12 +12,10 @@ export interface SectionConfig {
 
 export interface FocusConfig {
   sections: string[]
-  showTimer: boolean
 }
 
 export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
   sections: ['brief', 'work', 'habits', 'calendar'],
-  showTimer: false,
 }
 
 // Brief · Tasks · Habits · Life · Money · Calendar · Shared · Council

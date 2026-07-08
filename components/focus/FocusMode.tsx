@@ -120,13 +120,15 @@ export default function FocusMode({ open, onClose }: Props) {
       position: 'fixed', inset: 0, zIndex: 600,
       background: 'var(--bg)',
       backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: '2rem',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'safe center',
+      gap: '2rem', overflowY: 'auto',
+      padding: 'max(3.5rem, env(safe-area-inset-top)) 1.25rem max(3rem, env(safe-area-inset-bottom))',
     }}>
       {/* Close */}
       <button
         onClick={onClose}
-        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 }}
+        aria-label="Leave focus session"
+        style={{ position: 'fixed', top: 'max(1rem, env(safe-area-inset-top))', right: 'max(1rem, env(safe-area-inset-right))', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.6 }}
       >✕</button>
 
       <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Focus Session</div>
