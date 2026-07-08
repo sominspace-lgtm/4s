@@ -82,7 +82,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [focusOpen, setFocusOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [zenView, setZenView] = useState(false)
@@ -136,7 +135,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && (e.key === '/' || e.key.toLowerCase() === 'k')) { e.preventDefault(); setSearchOpen(s => !s) }
-      if (e.key === 'Escape') { setSearchOpen(false); setFocusOpen(false) }
+      if (e.key === 'Escape') setSearchOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -231,7 +230,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
         onCustomize={() => setCustomizeOpen(true)}
         onCompanions={() => setCompanionsOpen(true)}
         onSearch={() => setSearchOpen(true)}
-        onFocus={() => setFocusOpen(true)}
         onArchive={() => setArchiveOpen(true)}
         onHelp={() => setHelpOpen(true)}
         onJarvis={() => setJarvisOpen(true)}
@@ -252,7 +250,6 @@ export default function DashboardClient({ email, userId, initialName, initialThe
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
-      <FocusMode open={focusOpen} onClose={() => setFocusOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
@@ -261,6 +258,7 @@ export default function DashboardClient({ email, userId, initialName, initialThe
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
         {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
+        {zenView && <FocusMode />}
         {zenView
           ? visible.map((s, i) => (
               <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed, true)}</div>

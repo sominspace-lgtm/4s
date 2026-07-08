@@ -10,12 +10,10 @@ interface Habit    { id: string; name: string; category: string | null }
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
-interface Props {
-  open: boolean
-  onClose: () => void
-}
-
-export default function FocusMode({ open, onClose }: Props) {
+// The focus timer + session, rendered inline at the top of Focus view.
+// There is no separate "focus session" surface — entering Focus view is the
+// focus experience, and the timer lives here.
+export default function FocusMode() {
   const lang = useLang()
   const supabase = createClient()
 
@@ -36,20 +34,11 @@ export default function FocusMode({ open, onClose }: Props) {
   const interval = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (!open) return
     supabase.from('work_items').select('id, title, project').neq('status', 'done').limit(20)
       .then(({ data }) => setWorkItems(data ?? []))
     supabase.from('habits').select('id, name, category').limit(20)
       .then(({ data }) => setHabits(data ?? []))
-  }, [open])
-
-  // Esc leaves the session — an immersive surface needs an obvious exit.
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [])
 
   async function markWorkDone() {
     if (!selectedWork) return
@@ -113,25 +102,14 @@ export default function FocusMode({ open, onClose }: Props) {
   const selectedWorkItem  = workItems.find(w => w.id === selectedWork)
   const selectedHabitItem = habits.find(h => h.id === selectedHabit)
 
-  if (!open) return null
-
   return (
     <div className="fade-in" style={{
-      position: 'fixed', inset: 0, zIndex: 600,
-      background: 'var(--bg)',
-      backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'safe center',
-      gap: '2rem', overflowY: 'auto',
-      padding: 'max(3.5rem, env(safe-area-inset-top)) 1.25rem max(3rem, env(safe-area-inset-bottom))',
+      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      gap: '1.5rem', marginBottom: '1rem',
+      padding: '2rem 1.25rem',
     }}>
-      {/* Close */}
-      <button
-        onClick={onClose}
-        aria-label="Leave focus session"
-        style={{ position: 'fixed', top: 'max(1rem, env(safe-area-inset-top))', right: 'max(1rem, env(safe-area-inset-right))', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.6 }}
-      >✕</button>
-
-      <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Focus Session</div>
+      <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5 }}>Focus Timer</div>
 
       {/* Timer ring */}
       <div style={{ position: 'relative', width: 140, height: 140 }}>
