@@ -191,7 +191,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           border: `1px solid ${zenView ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
           borderRadius: '8px', padding: '0.4rem 0.7rem', cursor: 'pointer',
           color: zenView ? 'var(--gold)' : 'var(--muted)', fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>◐</button>
+        }}>⊙</button>
         <ThemeModePicker
           userId={userId}
           currentTheme={theme}

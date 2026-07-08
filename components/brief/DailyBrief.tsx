@@ -317,7 +317,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           <Breathing />
           <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.2rem' }}>
-            <button onClick={enterFocus} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>◎ Focus view</button>
+            <button onClick={enterFocus} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>⊙ Focus view</button>
             <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>I&apos;m okay now</button>
           </div>
         </div>
