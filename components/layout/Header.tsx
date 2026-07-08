@@ -196,7 +196,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
         />
         <MoreMenu items={[
           { icon: '✦', label: 'Ask Jarvis', onClick: onJarvis },
-          { icon: '◎', label: 'Focus timer', onClick: onFocus },
+          { icon: '◎', label: 'Focus session', onClick: onFocus },
           { icon: '◐', label: zenView ? 'Exit Focus view' : 'Focus view', onClick: onToggleZen },
           ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
           { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
