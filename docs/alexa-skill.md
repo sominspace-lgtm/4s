@@ -166,16 +166,12 @@ successful link, so there's no lingering code to guess.
         },
         {
           "name": "AddRefillIntent",
-          "slots": [
-            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
-            { "name": "Days", "type": "AMAZON.NUMBER" }
-          ],
+          "slots": [{ "name": "ItemName", "type": "AMAZON.SearchQuery" }],
           "samples": [
             "remind me to buy {ItemName}",
             "add a refill for {ItemName}",
             "buy again {ItemName}",
-            "restock {ItemName}",
-            "remind me to buy {ItemName} every {Days} days"
+            "restock {ItemName}"
           ]
         },
         {
