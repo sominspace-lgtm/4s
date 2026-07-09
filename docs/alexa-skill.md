@@ -20,14 +20,23 @@ Once set up you can say things like:
 | Piece | Where | Purpose |
 |---|---|---|
 | Skill webhook | `app/api/alexa/route.ts` | Handles Launch + Intent requests, writes tasks / captures / refills, speaks your brief |
-| Account linking | `app/api/alexa/authorize/route.ts` | OAuth implicit-grant endpoint that maps an Alexa user to a 4S user |
-| Link tokens | `supabase/migrations/alexa_account_linking.sql` | `alexa_links` table (run this migration once) |
+| Account linking | code-based — spoken 4-digit code, see step 5 below | Maps each Alexa account to a 4S user |
+| Link tables | `supabase/migrations/alexa_account_linking.sql` then `alexa_code_linking.sql` | `alexa_links` (+ `alexa_user_id` col) and `alexa_link_codes` (run both migrations once, in order) |
+
+> `app/api/alexa/authorize/route.ts` (OAuth implicit-grant) also exists in the
+> repo but is **dead code** — Amazon's Account Linking UI didn't work
+> reliably for this setup, so the app switched to the code-based flow below.
+> Do not configure Account Linking in the Alexa console; it writes a token the
+> webhook never reads, so linking would silently appear to work while the
+> skill still says you're not linked.
 
 ## One-time setup
 
-### 0. Run the migration
+### 0. Run the migrations
 
-In the Supabase SQL editor, run `supabase/migrations/alexa_account_linking.sql`.
+In the Supabase SQL editor, run **`alexa_account_linking.sql`, then
+`alexa_code_linking.sql`** — in that order (the second adds the
+`alexa_user_id` column and `alexa_link_codes` table onto what the first creates).
 
 ### 1. Create the skill
 
@@ -52,37 +61,49 @@ in the section below, then **Save Model** and **Build Model**.
 - Default region URL: `https://4s-coral.vercel.app/api/alexa`
 - SSL certificate type: **"My development endpoint is a sub-domain of a domain that has a wildcard certificate from a certificate authority"** (Vercel provides this).
 
-### 5. Account linking
-
-**Build → Account Linking** → enable it, with these values:
-
-| Field | Value |
-|---|---|
-| Auth Grant type | **Implicit Grant** |
-| Authorization URI | `https://4s-coral.vercel.app/api/alexa/authorize` |
-| Client ID | `4s-home` (any non-empty string — this flow ignores it) |
-| Scope | leave empty |
-
-Save. Alexa shows you one or more **Redirect URLs** (e.g.
-`https://layla.amazon.com/api/skill/link/...`) — you don't need to copy these
-anywhere; the authorize endpoint accepts any Amazon-owned redirect host.
-
-### 6. Set the environment variables in Vercel
+### 5. Set the environment variables in Vercel
 
 **Settings → Environment Variables** on the Vercel project:
 
 - `ALEXA_SKILL_ID` — copy from the Alexa console (**Build → Endpoint**, "Your
   Skill ID", starts with `amzn1.ask.skill.`). This locks the webhook to your
   skill.
+- `SUPABASE_SERVICE_ROLE_KEY` — required; the webhook, link-code issuing, and
+  the multi-user lookup all run through the admin client.
 - (`ANTHROPIC_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, etc. as already documented.)
 
-Redeploy so the vars take effect.
+Redeploy so the vars take effect. **Skip Account Linking entirely** — leave it
+disabled in the Alexa console. It is not part of this flow.
 
-### 7. Link your account
+### 6. Invite everyone who'll use it (required for anyone but you)
 
-On your phone: **Alexa app → More → Skills & Games → Your Skills → Dev →
-4S Home → Settings → Link Account**. Sign in to 4S when prompted. Done — Alexa
-now knows who you are on every request.
+An unpublished custom skill is invisible to everyone except your own Amazon
+developer account **unless you invite them as beta testers**:
+
+**Alexa Developer Console → your skill → Distribution → Beta Test** →
+**Create Beta Test** → add each person's email → **Send Invitation**.
+
+Each person opens the emailed invite link on the browser or phone they use
+for Alexa, taps **Accept and enable**, which turns the skill on for their
+Amazon account. Only after this step can they say *"Alexa, open four s"* on
+their own devices. Do this for every household/friend who'll use it — it is
+separate from and required in addition to the 4S account linking below.
+
+### 7. Each person links their own 4S account
+
+Every person does this once, on their own device, after accepting the beta
+invite above:
+
+1. Open **4S → Account → Connect Alexa** → tap **Get my code**. A 4-digit
+   code appears, tied to their 4S login.
+2. Say to their Echo/Alexa app: *"Alexa, ask four s to link"* then read the
+   4 digits when asked (or in one breath: *"Alexa, ask four s to link 4 2 9 1"*).
+3. Alexa confirms *"You're linked."* From then on, that Alexa account always
+   resolves to that person's 4S data — everyone's tasks, habits, and money
+   stay private to them even though they share one skill.
+
+Codes expire when a new one is generated and are deleted immediately after a
+successful link, so there's no lingering code to guess.
 
 ---
 
@@ -134,11 +155,16 @@ now knows who you are on every request.
           "name": "LinkAccountIntent",
           "slots": [{ "name": "Code", "type": "AMAZON.FOUR_DIGIT_NUMBER" }],
           "samples": [
+            "{Code}",
+            "it's {Code}",
+            "it is {Code}",
+            "the code is {Code}",
+            "my code is {Code}",
+            "code {Code}",
             "link {Code}",
             "to link {Code}",
             "link account {Code}",
-            "connect {Code}",
-            "my code is {Code}"
+            "connect {Code}"
           ]
         },
         {
@@ -172,13 +198,51 @@ now knows who you are on every request.
 
 ---
 
+## Troubleshooting "I can't connect"
+
+The backend was verified healthy on 2026-07-09 (prod webhook accepts the correct
+skill id, rejects others, and returns the right "not linked yet" prompt). So if
+linking fails, it's almost always one of these, in order of likelihood:
+
+1. **You spoke only the bare digits before rebuilding the model.** The webhook
+   says "just say the four digits," but that only works after the interaction
+   model above (with the `"{Code}"` sample) is pasted in **and Build Model is
+   run**. Until then, say the digits *with* a carrier word:
+   *"Alexa, ask four s to link four two nine one."*
+2. **The interaction model wasn't (re)built.** Any time the model changes,
+   **Build → Interaction Model → JSON Editor → Save Model → Build Model**.
+   Without a build, new/updated intents don't exist for Alexa's speech matching.
+3. **The skill isn't enabled for that person's Amazon account.** Your own dev
+   account has it automatically; everyone else needs a **Beta Test invite**
+   (step 6) accepted first, or Alexa won't recognize "four s" at all.
+4. **The endpoint isn't pointed at prod.** Build → Endpoint must be
+   `https://4s-coral.vercel.app/api/alexa` (HTTPS, wildcard-cert option).
+5. **No code came back in the app.** If Account → Connect Alexa → "Get my code"
+   errors, `SUPABASE_SERVICE_ROLE_KEY` is missing on Vercel (it isn't, as of the
+   audit) or the `alexa_link_codes` migration wasn't run.
+
+Quick self-test of the live webhook (replace the skill id if it changed):
+
+```bash
+curl -s https://4s-coral.vercel.app/api/alexa -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"version":"1.0","context":{"System":{"application":{"applicationId":"amzn1.ask.skill.0d40939a-9aad-4842-91fd-fbc88e770484"},"user":{"userId":"amzn1.ask.account.TEST"}}},"request":{"type":"LaunchRequest","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'"}}'
+```
+
+Expected: a 200 with *"You are not linked yet…"*. A 401 "Unexpected skill id"
+means `ALEXA_SKILL_ID` on Vercel doesn't match your skill.
+
 ## Security notes
 
 - The webhook is locked to your skill via `ALEXA_SKILL_ID`, rejects requests
-  older than 150 seconds, and requires a valid link token — so only your linked
-  Alexa can write to your account.
-- Account link tokens live in `alexa_links` and are only read server-side with
-  the service-role client. Delete your row to unlink.
+  older than 150 seconds, and requires a valid link (matched on Alexa's stable
+  anonymous `userId`, not a bearer token) — so only a linked Alexa account can
+  read or write that person's data.
+- Links live in `alexa_links`, keyed by `alexa_user_id` with a unique index —
+  one Alexa account maps to exactly one 4S user, and each 4S user can have at
+  most one linked Alexa account. Only read server-side with the service-role
+  client. Delete your row (or ask another linked person to delete theirs) to
+  unlink; generating a fresh code and re-linking overwrites the old row.
 - **Before submitting this skill for public certification**, add Alexa request
   **signature verification** (`Signature` / `SignatureCertChainUrl` headers) to
   `app/api/alexa/route.ts` — Amazon requires it for published skills. It's
