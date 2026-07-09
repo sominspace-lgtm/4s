@@ -133,6 +133,9 @@ successful link, so there's no lingering code to guess.
         {
           "name": "ListTasksIntent",
           "samples": [
+            "tasks",
+            "my tasks",
+            "task list",
             "what are my tasks",
             "list my tasks",
             "read my tasks",
@@ -186,10 +189,21 @@ successful link, so there's no lingering code to guess.
           ]
         },
         {
+          "name": "SnoozeRefillIntent",
+          "slots": [{ "name": "ItemName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "snooze {ItemName}",
+            "snooze the refill for {ItemName}",
+            "hold off on {ItemName}",
+            "not now on {ItemName}"
+          ]
+        },
+        {
           "name": "HabitsIntent",
           "samples": [
-            "what habits are due",
+            "habits",
             "my habits",
+            "what habits are due",
             "what habits do i have",
             "habit check",
             "what's due today"
@@ -218,8 +232,29 @@ successful link, so there's no lingering code to guess.
           ]
         },
         {
+          "name": "PauseHabitIntent",
+          "slots": [{ "name": "HabitName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "pause my {HabitName} habit",
+            "pause habit {HabitName}",
+            "pause {HabitName} habit"
+          ]
+        },
+        {
+          "name": "ResumeHabitIntent",
+          "slots": [{ "name": "HabitName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "resume my {HabitName} habit",
+            "resume habit {HabitName}",
+            "unpause {HabitName}",
+            "unpause habit {HabitName}"
+          ]
+        },
+        {
           "name": "MoneyIntent",
           "samples": [
+            "money",
+            "my money",
             "how's my money",
             "what am i spending",
             "my subscriptions",
@@ -230,6 +265,8 @@ successful link, so there's no lingering code to guess.
         {
           "name": "CalendarIntent",
           "samples": [
+            "calendar",
+            "schedule",
             "what's coming up",
             "my calendar",
             "what's on my calendar",

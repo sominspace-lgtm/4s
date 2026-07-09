@@ -263,6 +263,30 @@ export async function POST(request: Request) {
       return say(`Added the daily habit ${name}.`, { end: true })
     }
 
+    case 'PauseHabitIntent': {
+      const name = slot(body, 'HabitName')
+      if (!name) return say('Which habit should I pause?', { reprompt: 'Say the habit name.' })
+      const { data: habits } = await admin.from('habits').select('id, name, paused').eq('user_id', userId)
+      const match = bestMatch(habits ?? [], name, h => h.name)
+      if (!match) return say(`I couldn't find a habit matching ${name}.`, { end: true })
+      if (match.paused) return say(`${match.name} is already paused.`, { end: true })
+      const { error } = await admin.from('habits').update({ paused: true }).eq('id', match.id)
+      if (error) return say(`I couldn't pause that. ${error.message}`, { end: true })
+      return say(`Paused ${match.name}.`, { end: true })
+    }
+
+    case 'ResumeHabitIntent': {
+      const name = slot(body, 'HabitName')
+      if (!name) return say('Which habit should I resume?', { reprompt: 'Say the habit name.' })
+      const { data: habits } = await admin.from('habits').select('id, name, paused').eq('user_id', userId)
+      const match = bestMatch(habits ?? [], name, h => h.name)
+      if (!match) return say(`I couldn't find a habit matching ${name}.`, { end: true })
+      if (!match.paused) return say(`${match.name} isn't paused.`, { end: true })
+      const { error } = await admin.from('habits').update({ paused: false }).eq('id', match.id)
+      if (error) return say(`I couldn't resume that. ${error.message}`, { end: true })
+      return say(`Resumed ${match.name}.`, { end: true })
+    }
+
     case 'MoneyIntent': {
       const { data: subs } = await admin.from('subscriptions').select('name, cost_monthly, renewal_date').eq('user_id', userId)
       const { data: buys } = await admin.from('buy_items').select('name, last_bought, cadence_days, status').eq('user_id', userId)
@@ -288,6 +312,18 @@ export async function POST(request: Request) {
       return say(`Marked ${match.name} as bought. I'll remind you next time.`, { end: true })
     }
 
+    case 'SnoozeRefillIntent': {
+      const name = slot(body, 'ItemName')
+      if (!name) return say('Which item should I snooze?', { reprompt: 'Say the item name.' })
+      const { data: buys } = await admin.from('buy_items').select('id, name').eq('user_id', userId)
+      const match = bestMatch(buys ?? [], name, b => b.name)
+      if (!match) return say(`I couldn't find a refill item matching ${name}.`, { end: true })
+      const until = format(addDays(new Date(), 7), 'yyyy-MM-dd')
+      const { error } = await admin.from('buy_items').update({ snoozed_until: until, status: 'snoozed' }).eq('id', match.id)
+      if (error) return say(`I couldn't snooze that. ${error.message}`, { end: true })
+      return say(`Snoozed ${match.name} for a week.`, { end: true })
+    }
+
     case 'CalendarIntent': {
       const now = new Date()
       const within = (iso: string | null) => iso ? differenceInCalendarDays(parseISO(iso), now) : 999
@@ -305,7 +341,7 @@ export async function POST(request: Request) {
       return say("You're already linked. Say: ask four s what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
-      return say('You can add a task, capture a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, or say you bought something. Or ask about your money or what is coming up. What would you like?', {
+      return say('You can add a task, capture a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, pause or resume a habit, snooze a refill, or say you bought something. Or ask about your money or what is coming up. What would you like?', {
         reprompt: 'What would you like to do?',
       })
 
