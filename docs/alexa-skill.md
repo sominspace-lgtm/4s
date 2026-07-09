@@ -131,6 +131,29 @@ successful link, so there's no lingering code to guess.
           ]
         },
         {
+          "name": "ListTasksIntent",
+          "samples": [
+            "what are my tasks",
+            "list my tasks",
+            "read my tasks",
+            "what's on my list",
+            "what tasks do i have",
+            "read my task list"
+          ]
+        },
+        {
+          "name": "CompleteTaskIntent",
+          "slots": [{ "name": "TaskText", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "mark task {TaskText} done",
+            "complete task {TaskText}",
+            "finish task {TaskText}",
+            "i finished the task {TaskText}",
+            "check off task {TaskText}",
+            "i finished {TaskText}"
+          ]
+        },
+        {
           "name": "CaptureIntent",
           "slots": [{ "name": "NoteText", "type": "AMAZON.SearchQuery" }],
           "samples": [
@@ -143,12 +166,79 @@ successful link, so there's no lingering code to guess.
         },
         {
           "name": "AddRefillIntent",
-          "slots": [{ "name": "ItemName", "type": "AMAZON.SearchQuery" }],
+          "slots": [
+            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
+            { "name": "Days", "type": "AMAZON.NUMBER" }
+          ],
           "samples": [
             "remind me to buy {ItemName}",
             "add a refill for {ItemName}",
             "buy again {ItemName}",
-            "restock {ItemName}"
+            "restock {ItemName}",
+            "remind me to buy {ItemName} every {Days} days"
+          ]
+        },
+        {
+          "name": "MarkBoughtIntent",
+          "slots": [{ "name": "ItemName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "i bought {ItemName}",
+            "mark {ItemName} as bought",
+            "i got more {ItemName}",
+            "i restocked {ItemName}",
+            "bought {ItemName}"
+          ]
+        },
+        {
+          "name": "HabitsIntent",
+          "samples": [
+            "what habits are due",
+            "my habits",
+            "what habits do i have",
+            "habit check",
+            "what's due today"
+          ]
+        },
+        {
+          "name": "CompleteHabitIntent",
+          "slots": [{ "name": "HabitName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "i did my {HabitName} habit",
+            "log habit {HabitName}",
+            "complete habit {HabitName}",
+            "check off habit {HabitName}",
+            "mark habit {HabitName} done"
+          ]
+        },
+        {
+          "name": "AddHabitIntent",
+          "slots": [{ "name": "HabitName", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "add a habit {HabitName}",
+            "new habit {HabitName}",
+            "add habit {HabitName}",
+            "start tracking {HabitName}",
+            "track a habit called {HabitName}"
+          ]
+        },
+        {
+          "name": "MoneyIntent",
+          "samples": [
+            "how's my money",
+            "what am i spending",
+            "my subscriptions",
+            "money update",
+            "what's my spending"
+          ]
+        },
+        {
+          "name": "CalendarIntent",
+          "samples": [
+            "what's coming up",
+            "my calendar",
+            "what's on my calendar",
+            "what's next this week",
+            "upcoming events"
           ]
         },
         {
