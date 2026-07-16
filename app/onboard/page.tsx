@@ -149,7 +149,7 @@ export default function OnboardPage() {
           {/* Progress — a leading "Account" segment is always lit, since
               creating the account (to reach this page at all) already counts
               as real progress. Nobody starts onboarding at 0%. */}
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
             <div style={{ height: '2px', flex: 1, borderRadius: '2px', background: 'var(--gold)' }} />
             {STEPS.map((_, i) => (
               <div key={i} style={{
@@ -158,6 +158,19 @@ export default function OnboardPage() {
                 transition: 'background 0.3s',
               }} />
             ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2.2rem' }}>
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.75 }}>
+              Step {step + 1} of {STEPS.length} · {STEPS[step]}
+            </span>
+            {step < STEPS.length - 1 && (
+              <button onClick={finish} disabled={saving} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.8,
+              }}>
+                {saving ? 'Setting up…' : 'Skip setup — use recommended →'}
+              </button>
+            )}
           </div>
 
           {/* Step 0 — Name */}

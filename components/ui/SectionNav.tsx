@@ -11,6 +11,13 @@ const NAV_LABELS: Record<string, string> = {
   calendar: 'Calendar', council: 'Council', shared: 'Shared',
 }
 
+// Same icons as the mobile BottomNav, so a section looks identical on both
+// surfaces — recognition carries across devices.
+const NAV_ICONS: Record<string, string> = {
+  brief: '◒', work: '◈', habits: '◉', domains: '◇',
+  money: '✦', calendar: '◎', council: '⌂', shared: '⇆',
+}
+
 interface Props {
   sections: Section[]
   activeId: string
@@ -44,16 +51,21 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
             <button
               key={s.id}
               onClick={() => onSelect(s.id)}
+              aria-current={isActive ? 'page' : undefined}
               style={{
-                padding: '0.65rem 0.95rem', flexShrink: 0, minHeight: '42px',
+                padding: '0.7rem 1rem', flexShrink: 0, minHeight: '44px',
+                display: 'flex', alignItems: 'center', gap: '0.45rem',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-body)', fontSize: '0.68rem',
-                letterSpacing: '0.06em', textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)', fontSize: '0.78rem',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
                 color: isActive ? 'var(--text)' : 'var(--muted)',
                 borderBottom: isActive ? '1.5px solid var(--gold)' : '1.5px solid transparent',
                 transition: 'color 0.15s, border-color 0.15s',
               }}
             >
+              <span aria-hidden style={{ fontSize: '0.9rem', opacity: isActive ? 1 : 0.7, color: isActive ? 'var(--gold)' : 'inherit' }}>
+                {NAV_ICONS[s.id] ?? '•'}
+              </span>
               {label}
             </button>
           )

@@ -49,10 +49,10 @@
 
   /* Typography scale */
   --text-display: clamp(2.4rem, 5vw, 3.4rem);  /* greeting */
-  --text-section: clamp(1.1rem, 1.6vw, 1.3rem); /* section titles */
-  --text-card:    1.05rem;                      /* card titles */
-  --text-label:   0.66rem;                      /* uppercase / letter-spaced labels */
-  --text-meta:    0.68rem;                      /* metadata, muted */
+  --text-section: clamp(1.15rem, 1.7vw, 1.35rem); /* section titles */
+  --text-card:    1.1rem;                       /* card titles */
+  --text-label:   0.72rem;                      /* uppercase / letter-spaced labels */
+  --text-meta:    0.74rem;                      /* metadata, muted */
 
   /* Semantic role aliases — reuse each theme's already-tuned per-theme hues
      so status colors, inputs, and badges stay theme-reactive without every
@@ -79,6 +79,11 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Everything in the app is sized in rem, so this single value scales the
+   whole type system on every device. 17px ≈ a 6% bump over browser default —
+   noticeably more readable without re-tuning any component. */
+html { font-size: 17px; }
 
 html, body {
   min-height: 100vh;

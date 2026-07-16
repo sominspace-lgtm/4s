@@ -42,8 +42,8 @@ export default function BottomNav({ sections, activeId, onSelect }: { sections: 
               transition: 'color var(--t-fast)',
             }}
           >
-            <span style={{ fontSize: '1.05rem', lineHeight: 1, opacity: active ? 1 : 0.8 }}>{ICONS[s.id] ?? '•'}</span>
-            <span style={{ fontSize: '0.58rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{NAV_LABELS[s.id] ?? s.label ?? s.id}</span>
+            <span style={{ fontSize: '1.15rem', lineHeight: 1, opacity: active ? 1 : 0.8 }}>{ICONS[s.id] ?? '•'}</span>
+            <span style={{ fontSize: '0.64rem', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{NAV_LABELS[s.id] ?? s.label ?? s.id}</span>
           </button>
         )
       })}
