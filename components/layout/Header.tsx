@@ -87,7 +87,8 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
 
 export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
-  const fallback = email.split('@')[0]
+  // Guests have no email — greet them warmly instead of with an empty string.
+  const fallback = email.split('@')[0] || 'friend'
 
   // Computed client-side to respect user's local timezone
   const [now, setNow] = useState(() => new Date())

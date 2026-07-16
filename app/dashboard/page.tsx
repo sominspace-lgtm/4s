@@ -25,6 +25,7 @@ export default async function DashboardPage() {
     <DashboardClient
       email={user.email ?? ''}
       userId={user.id}
+      isAnonymous={Boolean(user.is_anonymous)}
       initialName={prefs?.display_name ?? null}
       initialTheme={prefs?.theme ?? 'sunset'}
       initialMode={prefs?.mode ?? 'peaceful'}

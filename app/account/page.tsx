@@ -27,6 +27,7 @@ export default async function AccountPage() {
         email={user.email ?? ''}
         userId={user.id}
         displayName={prefs?.display_name ?? null}
+        isAnonymous={Boolean(user.is_anonymous)}
       />
     </ThemeProvider>
   )

@@ -18,6 +18,8 @@ function humanError(msg: string): string {
     return 'That email already has an account. Try signing in instead.'
   if (m.includes('email not confirmed'))
     return 'Please confirm your email first, or use a magic link to sign in.'
+  if (m.includes('anonymous sign-ins are disabled') || m.includes('anonymous'))
+    return 'Guest mode is not enabled right now. Create an account instead — it takes ten seconds.'
   return msg
 }
 
@@ -59,6 +61,18 @@ export default function LoginPage() {
 
   function switchMode(m: Mode) {
     setMode(m); setError(null); setSent(false); setPassword(''); setConfirmPassword('')
+  }
+
+  // Guest mode — a real (anonymous) Supabase user, so RLS and every feature
+  // work normally. The space becomes permanent later by adding an email +
+  // password in Account → Keep your space; nothing is migrated or lost.
+  async function tryAsGuest() {
+    setLoading(true)
+    setError(null)
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInAnonymously()
+    if (error) { setError(humanError(error.message)); setLoading(false); return }
+    router.push('/onboard')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -252,6 +266,16 @@ export default function LoginPage() {
                 {mode === 'signup' && (
                   <button onClick={() => switchMode('signin')} style={quietBtn}>Already have an account? Sign in</button>
                 )}
+
+                {/* Guest entry — value before commitment. A divider keeps it
+                    clearly separate from the credential flows above. */}
+                <div aria-hidden style={{ width: '100%', height: 1, background: 'var(--faint)', margin: '0.7rem 0 0.45rem' }} />
+                <button onClick={tryAsGuest} disabled={loading} style={{ ...quietBtn, color: 'var(--gold)' }}>
+                  Just exploring? Try 4S without an account →
+                </button>
+                <span style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.7, fontFamily: 'var(--font-body)', textAlign: 'center' }}>
+                  Your space starts on this device. Add an email later to keep it.
+                </span>
               </div>
             </>
           )}

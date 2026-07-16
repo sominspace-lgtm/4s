@@ -8,6 +8,7 @@ interface Props {
   email: string
   userId: string
   displayName: string | null
+  isAnonymous: boolean
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -33,12 +34,38 @@ function Btn({ onClick, children, danger, disabled }: { onClick: () => void; chi
   )
 }
 
-export default function AccountClient({ email, userId, displayName }: Props) {
+export default function AccountClient({ email, userId, displayName, isAnonymous }: Props) {
   const supabase = createClient()
   const router = useRouter()
 
   const [name, setName] = useState(displayName ?? '')
   const [nameSaved, setNameSaved] = useState(false)
+
+  // Guest → permanent account upgrade. updateUser on an anonymous session
+  // attaches credentials to the SAME user id, so everything they've built
+  // (habits, tasks, prefs, shares) is already theirs — nothing migrates.
+  const [keepEmail, setKeepEmail] = useState('')
+  const [keepPassword, setKeepPassword] = useState('')
+  const [keepMsg, setKeepMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [keeping, setKeeping] = useState(false)
+
+  async function keepSpace() {
+    setKeepMsg(null)
+    if (!keepEmail.includes('@')) { setKeepMsg({ text: 'Enter a valid email address.', ok: false }); return }
+    if (keepPassword.length < 8) { setKeepMsg({ text: 'Use at least 8 characters for your password.', ok: false }); return }
+    setKeeping(true)
+    const { data, error } = await supabase.auth.updateUser({ email: keepEmail.trim(), password: keepPassword })
+    setKeeping(false)
+    if (error) { setKeepMsg({ text: error.message, ok: false }); return }
+    // If email confirmation is on, Supabase parks the address in new_email
+    // until the link is clicked; otherwise it applies immediately.
+    if (data.user?.new_email) {
+      setKeepMsg({ text: `Almost done — confirm via the link we sent to ${keepEmail.trim()}.`, ok: true })
+    } else {
+      setKeepMsg({ text: 'Your space is saved. You can now sign in from any device.', ok: true })
+      setTimeout(() => router.refresh(), 1200)
+    }
+  }
 
   const [pwCurrent, setPwCurrent] = useState('')
   const [pwNew, setPwNew] = useState('')
@@ -154,7 +181,29 @@ export default function AccountClient({ email, userId, displayName }: Props) {
       >← dashboard</button>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: '2rem', marginBottom: '0.4rem' }}>Account</h1>
-      <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>{email}</p>
+      <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>{isAnonymous ? 'Guest space — not saved to an email yet' : email}</p>
+
+      {/* Keep your space — guest → permanent upgrade */}
+      {isAnonymous && (
+        <div style={{
+          background: 'var(--surface)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem',
+          border: '1px solid color-mix(in srgb, var(--gold) 35%, var(--border))',
+        }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold)', opacity: 0.8, padding: '0.75rem 0 0.25rem' }}>Keep your space</div>
+          <Row label="Save it">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                Everything you&apos;ve set up lives only in this browser for now. Add an email and
+                password to keep it — same space, reachable from any device.
+              </span>
+              <input value={keepEmail} onChange={e => setKeepEmail(e.target.value)} placeholder="you@email.com" type="email" autoComplete="email" style={inputStyle} />
+              <input value={keepPassword} onChange={e => setKeepPassword(e.target.value)} placeholder="Password (min 8 chars)" type="password" autoComplete="new-password" style={inputStyle} />
+              {keepMsg && <div style={{ fontSize: '0.68rem', color: keepMsg.ok ? 'var(--emerald)' : 'var(--rose)' }}>{keepMsg.text}</div>}
+              <Btn onClick={keepSpace} disabled={keeping}>{keeping ? 'saving…' : 'Keep my space'}</Btn>
+            </div>
+          </Row>
+        </div>
+      )}
 
       {/* Profile */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
@@ -166,19 +215,21 @@ export default function AccountClient({ email, userId, displayName }: Props) {
           </div>
         </Row>
         <Row label="Email">
-          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{email}</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{isAnonymous ? 'None yet — add one above to keep your space' : email}</span>
         </Row>
       </div>
 
-      {/* Security */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
-        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Security</div>
-        <Row label="Password">
-          <input value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="New password (min 8 chars)" type="password" style={inputStyle} />
-          <Btn onClick={changePassword}>Update password</Btn>
-          {pwMsg && <div style={{ fontSize: '0.68rem', color: pwMsg.ok ? 'var(--emerald)' : 'var(--rose)' }}>{pwMsg.text}</div>}
-        </Row>
-      </div>
+      {/* Security — guests set their first password via Keep your space */}
+      {!isAnonymous && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Security</div>
+          <Row label="Password">
+            <input value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="New password (min 8 chars)" type="password" style={inputStyle} />
+            <Btn onClick={changePassword}>Update password</Btn>
+            {pwMsg && <div style={{ fontSize: '0.68rem', color: pwMsg.ok ? 'var(--emerald)' : 'var(--rose)' }}>{pwMsg.text}</div>}
+          </Row>
+        </div>
+      )}
 
       {/* Notifications */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>

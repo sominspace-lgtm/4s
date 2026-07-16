@@ -35,6 +35,7 @@ import { LangContext } from '@/lib/LangContext'
 interface Props {
   email: string
   userId: string
+  isAnonymous: boolean
   initialName: string | null
   initialTheme: string
   initialMode: string
@@ -70,7 +71,7 @@ const SECTION_GROUPS: Record<string, string> = {
   shared:   'companions',
 }
 
-export default function DashboardClient({ email, userId, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -230,6 +231,19 @@ export default function DashboardClient({ email, userId, initialName, initialThe
   return (
     <LangContext.Provider value={lang}>
     <ThemeProvider theme={theme}>
+      {/* Guest space notice — honest, quiet, dismissed by saving the space.
+          Sits above the header so it reads as environment, not content. */}
+      {isAnonymous && (
+        <a href="/account" style={{
+          display: 'block', textAlign: 'center', textDecoration: 'none',
+          fontSize: '0.7rem', fontFamily: 'var(--font-body)', color: 'var(--muted)',
+          padding: '0.45rem 1rem', borderBottom: '1px solid var(--border)',
+          background: 'color-mix(in srgb, var(--gold) 6%, transparent)',
+        }}>
+          You&apos;re exploring as a guest — your space lives only in this browser.{' '}
+          <span style={{ color: 'var(--gold)' }}>Keep it →</span>
+        </a>
+      )}
       <Header
         email={email} userId={userId} initialName={initialName}
         initialTheme={theme} initialMode={mode}
