@@ -42,12 +42,13 @@ interface CustomizePanelProps {
   sections: SectionConfig[]
   focusConfig: FocusConfig
   simpleMode: boolean
+  unlockAll: boolean
   userId: string
   onChange: (sections: SectionConfig[]) => void
   onClose: () => void
 }
 
-export default function CustomizePanel({ open, sections, focusConfig, simpleMode, userId, onChange, onClose }: CustomizePanelProps) {
+export default function CustomizePanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: CustomizePanelProps) {
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -61,7 +62,7 @@ export default function CustomizePanel({ open, sections, focusConfig, simpleMode
 
   async function update(next: SectionConfig[]) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode, unlockAll } })
   }
 
   function toggle(id: string) {

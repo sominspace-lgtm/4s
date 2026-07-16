@@ -17,6 +17,7 @@ import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
 import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
+import { useProgression } from '@/lib/hooks/useProgression'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
 import LifeHub from '@/components/life/LifeHub'
@@ -36,6 +37,7 @@ interface Props {
   email: string
   userId: string
   isAnonymous: boolean
+  initialUnlockAll: boolean
   initialName: string | null
   initialTheme: string
   initialMode: string
@@ -71,7 +73,7 @@ const SECTION_GROUPS: Record<string, string> = {
   shared:   'companions',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -93,14 +95,24 @@ export default function DashboardClient({ email, userId, isAnonymous, initialNam
     const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
     setSections(next)
     const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode, unlockAll } })
   }
 
   async function toggleSimpleMode() {
     const next = !simpleMode
     setSimpleMode(next)
     const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode: next } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode: next, unlockAll } })
+  }
+
+  // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
+  // now" is a one-way choice, persisted in the layout JSON.
+  const [unlockAll, setUnlockAll] = useState(initialUnlockAll)
+  const prog = useProgression(unlockAll)
+  async function openEverything() {
+    setUnlockAll(true)
+    const supabase = createClient()
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode, unlockAll: true } })
   }
 
   // Tab navigation from anywhere (Brief summary cards, search, Jarvis).
@@ -171,6 +183,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialNam
 
   const visible = sections.filter(s =>
     !s.hidden
+    && prog.isUnlocked(s.id)
     && (!zenView || focusConfig.sections.includes(s.id))
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
   )
@@ -269,12 +282,50 @@ export default function DashboardClient({ email, userId, isAnonymous, initialNam
           onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
         />
       )}
+
+      {/* Journey bar — how much of the OS has awakened. Quiet, disappears
+          forever once everything is open. Not XP: no levels, no streaks,
+          just "your OS grows as you use it" plus an unlock-now choice. */}
+      {!zenView && !prog.loading && !prog.done && (
+        <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0.9rem auto 0', padding: '0 2rem' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap',
+            padding: '0.6rem 0.9rem', borderRadius: '12px',
+            border: '1px solid var(--border)', background: 'var(--hover-bg)',
+          }}>
+            <div style={{ flex: '1 1 160px', minWidth: '140px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                <span style={{ fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                  Your OS · {prog.unlockedCount} of {prog.total} areas awake
+                </span>
+                <span style={{ fontSize: '0.66rem', color: 'var(--gold)' }}>{prog.percent}%</span>
+              </div>
+              <div style={{ height: '3px', borderRadius: '3px', background: 'var(--faint)', overflow: 'hidden' }}>
+                <div style={{ width: `${prog.percent}%`, height: '100%', background: 'var(--gold)', borderRadius: '3px', transition: 'width 0.6s ease' }} />
+              </div>
+            </div>
+            {prog.next && (
+              <span style={{ fontSize: '0.68rem', color: 'var(--muted)', flex: '2 1 220px' }}>
+                Next: <span style={{ color: 'var(--text)' }}>{prog.next.label}</span>
+                {' — '}{prog.next.hint} ({prog.remaining} to go)
+              </span>
+            )}
+            <button onClick={openEverything} style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem 0',
+              fontFamily: 'var(--font-body)', fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.8,
+              textDecoration: 'underline', textUnderlineOffset: '3px', flexShrink: 0,
+            }}>
+              open everything now
+            </button>
+          </div>
+        </div>
+      )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
-      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
-      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
+      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>

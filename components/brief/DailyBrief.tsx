@@ -236,7 +236,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   function suggestGuide(): { guide: Mode; reason: string } | null {
     if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue — Executive keeps things to the essentials.' }
     const maintenance = (lifeReviewedOnce ? domainsNeedingReview.length : 0) + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
-    if (maintenance >= 3) return { guide: 'butler', reason: 'A few quiet tasks are piling up — Butler keeps them handled.' }
+    if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up — Friend keeps an eye on them with you.' }
     if (overdue === 0 && dueToday === 0 && habitsDueCount === 0 && inboxCount <= 2) return { guide: 'peaceful', reason: 'Things look calm — Peaceful keeps it light.' }
     return null
   }

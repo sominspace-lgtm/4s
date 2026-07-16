@@ -18,13 +18,9 @@ export function guideGreeting(mode: Mode, hour: number): { prefix: string; suffi
 
   switch (mode) {
     case 'peaceful':   return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
-    case 'monk':       return { prefix: isNight ? 'Rest now,' : 'Be present,' }
     case 'friend':     return { prefix: time === 'morning' ? 'Morning,' : time === 'afternoon' ? 'Hey,' : time === 'evening' ? 'Evening,' : 'Still up,' }
-    case 'teacher':    return { prefix: `Good ${time},`, suffix: '— ready to reflect?' }
     case 'therapist':  return { prefix: isNight ? 'Still with you,' : `Good ${time},`, suffix: '— how are you, really?' }
-    case 'navigator':  return { prefix: `Good ${time},`, suffix: '— let\'s look ahead.' }
     case 'executive':  return { prefix: '' }
-    case 'butler':     return { prefix: isNight ? 'Good evening,' : `Good ${time},` }
     case 'challenger': return { prefix: time === 'morning' ? "Let's move," : time === 'afternoon' ? 'Still going,' : time === 'evening' ? 'Finish it,' : 'Late one,' }
     default:           return { prefix: `Good ${time},` }
   }
@@ -37,13 +33,9 @@ export function guideGreetingLine(mode: Mode, hour: number): string {
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
   switch (mode) {
     case 'peaceful':   return time === 'night' ? 'Rest easy' : 'Welcome back'
-    case 'monk':       return 'Be present'
     case 'friend':     return time === 'morning' ? 'Morning' : time === 'night' ? 'Still up' : 'Hey there'
-    case 'teacher':    return `Good ${time} — ready to reflect?`
     case 'therapist':  return `Good ${time} — how are you, really?`
-    case 'navigator':  return `Good ${time} — let's look ahead`
     case 'executive':  return time === 'morning' ? "Today's priorities" : 'Where things stand'
-    case 'butler':     return `Good ${time}`
     case 'challenger': return time === 'morning' ? "Let's move" : time === 'night' ? 'Late one' : 'Still going'
     default:           return `Good ${cap(time)}`
   }
@@ -57,13 +49,9 @@ export function proactivityOf(mode: Mode): Proactivity {
 export function guideReviewPrompt(mode: Mode): string {
   switch (mode) {
     case 'peaceful':   return 'What would make next week feel gentle?'
-    case 'monk':       return 'What is the one thing that matters next week?'
     case 'friend':     return 'What do you want next week to feel like?'
-    case 'teacher':    return 'What did this week teach you?'
     case 'therapist':  return 'What felt heavy this week — and what helped?'
-    case 'navigator':  return 'Where do you want to be by next week?'
     case 'executive':  return "What are next week's top priorities?"
-    case 'butler':     return 'What shall I help you prepare for next week?'
     case 'challenger': return 'What will you do differently next week?'
     default:           return 'What should next week feel like?'
   }

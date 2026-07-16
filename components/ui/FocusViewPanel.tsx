@@ -9,12 +9,13 @@ interface FocusViewPanelProps {
   sections: SectionConfig[]
   focusConfig: FocusConfig
   simpleMode: boolean
+  unlockAll: boolean
   userId: string
   onChange: (config: FocusConfig) => void
   onClose: () => void
 }
 
-export default function FocusViewPanel({ open, sections, focusConfig, simpleMode, userId, onChange, onClose }: FocusViewPanelProps) {
+export default function FocusViewPanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: FocusViewPanelProps) {
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -28,7 +29,7 @@ export default function FocusViewPanel({ open, sections, focusConfig, simpleMode
 
   async function update(next: FocusConfig) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: next, simpleMode } })
+    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: next, simpleMode, unlockAll } })
   }
 
   function toggleSection(id: string) {

@@ -124,7 +124,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
   const displayName = name
 
   const accentStyle: React.CSSProperties = {
-    fontStyle: ['peaceful', 'monk', 'friend', 'teacher', 'therapist'].includes(mode) ? 'italic' : 'normal',
+    fontStyle: ['peaceful', 'friend', 'therapist'].includes(mode) ? 'italic' : 'normal',
     background: 'linear-gradient(90deg, var(--gold), var(--rose))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',

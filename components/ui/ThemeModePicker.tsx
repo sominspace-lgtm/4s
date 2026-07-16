@@ -8,8 +8,7 @@ import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
 const MODE_ICONS: Partial<Record<Mode, string>> = {
-  peaceful: '🌿', monk: '☯', friend: '🤝', teacher: '📖', therapist: '🫧',
-  navigator: '🧭', executive: '▲', butler: '🎩', challenger: '⚡',
+  peaceful: '🌿', friend: '🤝', therapist: '🫧', executive: '▲', challenger: '⚡',
 }
 
 // Read straight from the real theme tokens instead of maintaining a second
