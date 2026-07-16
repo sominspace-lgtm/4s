@@ -18,6 +18,7 @@ import MobileNav from '@/components/ui/MobileNav'
 import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
 import { useProgression } from '@/lib/hooks/useProgression'
+import JourneyBar from '@/components/ui/JourneyBar'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
 import LifeHub from '@/components/life/LifeHub'
@@ -283,42 +284,20 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         />
       )}
 
-      {/* Journey bar — how much of the OS has awakened. Quiet, disappears
+      {/* Journey bar — progress + a one-click tutorial. Quiet, disappears
           forever once everything is open. Not XP: no levels, no streaks,
           just "your OS grows as you use it" plus an unlock-now choice. */}
       {!zenView && !prog.loading && !prog.done && (
-        <div style={{ maxWidth: 'min(1080px, 94vw)', margin: '0.9rem auto 0', padding: '0 2rem' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap',
-            padding: '0.6rem 0.9rem', borderRadius: '12px',
-            border: '1px solid var(--border)', background: 'var(--hover-bg)',
-          }}>
-            <div style={{ flex: '1 1 160px', minWidth: '140px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                <span style={{ fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-                  Your OS · {prog.unlockedCount} of {prog.total} areas awake
-                </span>
-                <span style={{ fontSize: '0.66rem', color: 'var(--gold)' }}>{prog.percent}%</span>
-              </div>
-              <div style={{ height: '3px', borderRadius: '3px', background: 'var(--faint)', overflow: 'hidden' }}>
-                <div style={{ width: `${prog.percent}%`, height: '100%', background: 'var(--gold)', borderRadius: '3px', transition: 'width 0.6s ease' }} />
-              </div>
-            </div>
-            {prog.next && (
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted)', flex: '2 1 220px' }}>
-                Next: <span style={{ color: 'var(--text)' }}>{prog.next.label}</span>
-                {' — '}{prog.next.hint} ({prog.remaining} to go)
-              </span>
-            )}
-            <button onClick={openEverything} style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem 0',
-              fontFamily: 'var(--font-body)', fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.8,
-              textDecoration: 'underline', textUnderlineOffset: '3px', flexShrink: 0,
-            }}>
-              open everything now
-            </button>
-          </div>
-        </div>
+        <JourneyBar
+          unlockedCount={prog.unlockedCount}
+          total={prog.total}
+          percent={prog.percent}
+          nextLabel={prog.next?.label ?? null}
+          nextHint={prog.next?.hint ?? ''}
+          remaining={prog.remaining}
+          habitsUnlocked={prog.isUnlocked('habits')}
+          onOpenEverything={openEverything}
+        />
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
