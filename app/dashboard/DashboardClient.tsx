@@ -292,10 +292,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
           unlockedCount={prog.unlockedCount}
           total={prog.total}
           percent={prog.percent}
-          nextLabel={prog.next?.label ?? null}
-          nextHint={prog.next?.hint ?? ''}
-          remaining={prog.remaining}
-          habitsUnlocked={prog.isUnlocked('habits')}
+          stages={prog.stages}
+          next={prog.next}
           onOpenEverything={openEverything}
         />
       )}

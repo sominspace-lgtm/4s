@@ -4,59 +4,105 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 // Progressive unlocking — a new account starts with just Brief + Tasks and
-// grows the rest of the OS through real use, so the first session never
-// overwhelms. "Points" are simply how much the user has ever done, derived
-// live from row counts (tasks, captures, habit checks, refills, subs). No
-// stored unlock state, no migration: anyone with history — every existing
-// user — computes past the last threshold and sees everything, exactly as
-// before. Framed as a quiet journey ("areas awakened"), not arcade XP — the
-// old gamer XP system was removed deliberately and this is not its return.
+// grows the rest of the OS by DOING specific things, not by racking up raw
+// activity. Each stage is one concrete milestone ("track a habit", "capture
+// a thought"...), so the same actions onboarding already asks for (add a
+// habit, jot a first thought) show up done on the very first dashboard load
+// — nobody is asked to redo what they just did. Council is the one compound
+// stage: it opens once every other milestone is true, framed as "you've
+// tried the whole OS, the advisors are ready."
+//
+// No stored unlock state, no migration: unlock status is derived live from
+// real row counts, so every existing account computes past every milestone
+// instantly and sees the full app exactly as before.
+
+export type ActionKey = 'task' | 'capture' | 'habit' | 'checkHabit' | 'completeTask'
+
+export interface Counts {
+  habits: number
+  captures: number
+  workItems: number
+  workItemsDone: number
+  habitCompletions: number
+}
 
 export interface UnlockStage {
   id: string          // section id (matches DEFAULT_SECTIONS / nav ids)
   label: string
-  at: number          // points needed
-  hint: string        // what to do to get there — shown as "next up"
+  icon: string         // matches NAV_ICONS in SectionNav/BottomNav
+  teaser: string        // the "why you want this" line
+  milestone: string     // the action that unlocks it, in imperative voice
+  action: ActionKey | null // null = compound (Council)
+  isDone: (c: Counts) => boolean
 }
 
-// Brief and Tasks are the seed pair: see today, act today. Everything else
-// arrives in the order a life OS naturally deepens.
 export const UNLOCK_STAGES: UnlockStage[] = [
-  { id: 'brief',    label: 'Brief',    at: 0,  hint: '' },
-  { id: 'work',     label: 'Tasks',    at: 0,  hint: '' },
-  // at:1 so the habit created during onboarding is visible immediately —
-  // never give someone a habit they can't see.
-  { id: 'habits',   label: 'Habits',   at: 1,  hint: 'add a task or a habit' },
-  { id: 'domains',  label: 'Life',     at: 4,  hint: 'keep going — tasks, captures, habit checks all count' },
-  { id: 'calendar', label: 'Calendar', at: 7,  hint: 'a few more actions' },
-  { id: 'money',    label: 'Money',    at: 10, hint: 'keep building the routine' },
-  { id: 'shared',   label: 'Shared',   at: 14, hint: 'almost — a handful more actions' },
-  { id: 'council',  label: 'Council',  at: 18, hint: 'the last door — it opens soon' },
+  {
+    id: 'habits', label: 'Habits', icon: '◉',
+    teaser: 'Build routines that actually stick.',
+    milestone: 'Track your first habit',
+    action: 'habit',
+    isDone: c => c.habits >= 1,
+  },
+  {
+    id: 'domains', label: 'Life', icon: '◇',
+    teaser: 'See your whole life, one glance, 8 areas.',
+    milestone: 'Capture a thought',
+    action: 'capture',
+    isDone: c => c.captures >= 1,
+  },
+  {
+    id: 'calendar', label: 'Calendar', icon: '◎',
+    teaser: 'Every deadline and event, laid out by day.',
+    milestone: 'Add your first task',
+    action: 'task',
+    isDone: c => c.workItems >= 1,
+  },
+  {
+    id: 'money', label: 'Money', icon: '✦',
+    teaser: 'Subscriptions and refills — no surprises.',
+    milestone: 'Check off a habit',
+    action: 'checkHabit',
+    isDone: c => c.habitCompletions >= 1,
+  },
+  {
+    id: 'shared', label: 'Shared', icon: '⇆',
+    teaser: 'Bring people you trust into parts of your life.',
+    milestone: 'Complete a task',
+    action: 'completeTask',
+    isDone: c => c.workItemsDone >= 1,
+  },
+  {
+    id: 'council', label: 'Council', icon: '⌂',
+    teaser: '6 advisors, reviewing your life on demand.',
+    milestone: "Try everything above — Council opens last",
+    action: null,
+    isDone: c => c.habits >= 1 && c.captures >= 1 && c.workItems >= 1 && c.habitCompletions >= 1 && c.workItemsDone >= 1,
+  },
 ]
 
-const MAX_AT = UNLOCK_STAGES[UNLOCK_STAGES.length - 1].at
-
-// Every mutation event that should bump the counters live.
 const REFRESH_EVENTS = [
   '4s:work-items-changed', '4s:captures-changed', '4s:habits-changed',
-  '4s:buy-items-changed', '4s:subscriptions-changed',
 ]
 
 export function useProgression(unlockAll: boolean) {
   const supabase = createClient()
   // Start as "everything unlocked" until the first count lands — a returning
   // user must never watch their tabs vanish for a loading beat.
-  const [points, setPoints] = useState<number | null>(null)
+  const [counts, setCounts] = useState<Counts | null>(null)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const load = useCallback(async () => {
     const count = (table: string) =>
       supabase.from(table).select('id', { count: 'exact', head: true }).then(r => r.count ?? 0)
-    const [work, captures, habits, checks, buys, subs] = await Promise.all([
-      count('work_items'), count('captures'), count('habits'), count('habit_completions'),
-      count('buy_items'), count('subscriptions'),
+    const [habits, captures, workItems, workItemsDone, habitCompletions] = await Promise.all([
+      count('habits'),
+      count('captures'),
+      count('work_items'),
+      supabase.from('work_items').select('id', { count: 'exact', head: true }).eq('status', 'done').then(r => r.count ?? 0),
+      count('habit_completions'),
     ])
-    setPoints(work + captures + habits + checks + buys + subs)
+    setCounts({ habits, captures, workItems, workItemsDone, habitCompletions })
   }, [supabase])
 
   useEffect(() => { load() }, [load])
@@ -73,26 +119,30 @@ export function useProgression(unlockAll: boolean) {
     }
   }, [load])
 
-  const done = unlockAll || points === null || points >= MAX_AT
+  const loading = counts === null
+  const safeCounts: Counts = counts ?? { habits: 1, captures: 1, workItems: 1, workItemsDone: 1, habitCompletions: 1 }
+  const done = unlockAll || (!loading && UNLOCK_STAGES.every(s => s.isDone(safeCounts)))
+
   const isUnlocked = (sectionId: string): boolean => {
-    if (done) return true
+    if (unlockAll || loading) return true
     const stage = UNLOCK_STAGES.find(s => s.id === sectionId)
     if (!stage) return true // unknown/new sections never get locked by accident
-    return (points ?? MAX_AT) >= stage.at
+    return stage.isDone(safeCounts)
   }
 
-  const unlockedCount = UNLOCK_STAGES.filter(s => isUnlocked(s.id)).length
-  const next = done ? null : UNLOCK_STAGES.find(s => !isUnlocked(s.id)) ?? null
+  const stagesWithStatus = UNLOCK_STAGES.map(s => ({ ...s, done: s.isDone(safeCounts) }))
+  const unlockedCount = 2 + stagesWithStatus.filter(s => s.done).length // + Brief, Tasks
+  const total = 2 + UNLOCK_STAGES.length
+  const next = stagesWithStatus.find(s => !s.done) ?? null
 
   return {
-    loading: points === null,
-    points: points ?? 0,
+    loading,
     done,
     isUnlocked,
+    stages: stagesWithStatus,
     unlockedCount,
-    total: UNLOCK_STAGES.length,
-    percent: Math.round((unlockedCount / UNLOCK_STAGES.length) * 100),
+    total,
+    percent: Math.round((unlockedCount / total) * 100),
     next,
-    remaining: next ? Math.max(0, next.at - (points ?? 0)) : 0,
   }
 }
