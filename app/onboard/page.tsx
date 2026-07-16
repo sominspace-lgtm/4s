@@ -72,20 +72,35 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   )
 }
 
+function RecapChip({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: '0.68rem', color: 'var(--text)', padding: '0.25rem 0.6rem',
+      borderRadius: '99px', border: '1px solid color-mix(in srgb, var(--gold) 30%, var(--border))',
+      background: 'color-mix(in srgb, var(--gold) 8%, transparent)',
+    }}>{label}</span>
+  )
+}
+
 export default function OnboardPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  // Smart default: start pre-loaded with the most common template (Personal)
+  // instead of a blank grid — most people keep the default, and it turns
+  // step 1 into a quick confirm-or-adjust instead of a cold decision.
+  const defaultTemplate = TEMPLATES.find(t => t.id === 'personal')!
+
   const [step, setStep] = useState(0)
   const [displayName, setDisplayName] = useState('')
-  const [focusDomains, setFocusDomains] = useState<string[]>([])
+  const [focusDomains, setFocusDomains] = useState<string[]>(defaultTemplate.domains)
   const [selectedTheme, setSelectedTheme] = useState('sunset')
   const [selectedMode, setSelectedMode] = useState('peaceful')
-  const [habitName, setHabitName] = useState('')
-  const [habitCategory, setHabitCategory] = useState('health')
+  const [habitName, setHabitName] = useState(defaultTemplate.habit.name)
+  const [habitCategory, setHabitCategory] = useState(defaultTemplate.habit.category)
   const [captureText, setCaptureText] = useState('')
   const [saving, setSaving] = useState(false)
-  const [template, setTemplate] = useState<string | null>(null)
+  const [template, setTemplate] = useState<string | null>(defaultTemplate.id)
 
   function toggleDomain(id: string) {
     setFocusDomains(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id])
@@ -131,8 +146,11 @@ export default function OnboardPage() {
       }}>
         <div style={{ maxWidth: '560px', width: '100%' }}>
 
-          {/* Progress */}
+          {/* Progress — a leading "Account" segment is always lit, since
+              creating the account (to reach this page at all) already counts
+              as real progress. Nobody starts onboarding at 0%. */}
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '2.5rem' }}>
+            <div style={{ height: '2px', flex: 1, borderRadius: '2px', background: 'var(--gold)' }} />
             {STEPS.map((_, i) => (
               <div key={i} style={{
                 height: '2px', flex: 1, borderRadius: '2px',
@@ -243,7 +261,7 @@ export default function OnboardPage() {
               <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.85, marginBottom: '0.75rem', lineHeight: 1.5 }}>
                 Themes change colors, fonts, and spacing. They never change how 4S talks to you.
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.6rem' }}>
+              <div className="onboard-theme-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.6rem' }}>
                 {THEMES.map(t => {
                   const active = selectedTheme === t.id
                   return (
@@ -339,8 +357,29 @@ export default function OnboardPage() {
               <textarea
                 value={captureText} onChange={e => setCaptureText(e.target.value)}
                 placeholder="What's on your mind?" rows={3} autoFocus
-                style={{ ...inputStyle, resize: 'none', marginBottom: '2rem' }}
+                style={{ ...inputStyle, resize: 'none', marginBottom: '1.4rem' }}
               />
+
+              {/* What you've built so far — a quick recap right before the
+                  commit. Naming the choices back reinforces that this OS is
+                  already theirs, not a blank template waiting to be theirs. */}
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '2rem',
+                padding: '0.75rem 0.9rem', borderRadius: 'var(--radius-sm, 10px)',
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+              }}>
+                <span style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, width: '100%', marginBottom: '0.15rem' }}>
+                  Your OS so far
+                </span>
+                {displayName.trim() && <RecapChip label={displayName.trim()} />}
+                {focusDomains.length > 0 && (
+                  <RecapChip label={`${focusDomains.length} domain${focusDomains.length > 1 ? 's' : ''}`} />
+                )}
+                <RecapChip label={THEMES.find(t => t.id === selectedTheme)?.label ?? selectedTheme} />
+                <RecapChip label={MODE_LIST.find(m => m.id === selectedMode)?.label ?? selectedMode} />
+                {habitName.trim() && <RecapChip label={habitName.trim()} />}
+              </div>
+
               <div style={{ display: 'flex', gap: '0.6rem' }}>
                 <BackBtn onClick={() => setStep(3)} />
                 <button onClick={finish} disabled={saving} className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.05em' }}>

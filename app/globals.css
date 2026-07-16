@@ -236,6 +236,7 @@ select, option {
 /* Mobile responsive */
 @media (max-width: 600px) {
   .grid-auto { grid-template-columns: 1fr !important; }
+  .onboard-theme-grid { grid-template-columns: repeat(4, 1fr) !important; }
 
   /* Council: horizontal swipe, one advisor card per view */
   .council-cards {
