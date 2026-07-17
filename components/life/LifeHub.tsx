@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import DomainGrid from '@/components/domains/DomainGrid'
+import CompanionSync from '@/components/relationships/CompanionSync'
 import RelationshipLinks from '@/components/relationships/RelationshipLinks'
 import HomeBrain from '@/components/home/HomeBrain'
 
@@ -30,9 +31,14 @@ export default function LifeHub() {
         ))}
       </div>
 
-      {tab === 'domains'      && <DomainGrid />}
-      {tab === 'relationship' && <RelationshipLinks />}
-      {tab === 'home'         && <HomeBrain />}
+      {tab === 'domains' && <DomainGrid />}
+      {tab === 'relationship' && (
+        <>
+          <CompanionSync />
+          <RelationshipLinks />
+        </>
+      )}
+      {tab === 'home' && <HomeBrain />}
     </div>
   )
 }
