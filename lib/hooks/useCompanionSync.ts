@@ -18,6 +18,8 @@ export type ConfirmableType = 'checkin' | 'tracked_item' | 'date_night' | 'on_th
 interface SummaryResponse {
   mocked?: boolean
   degraded?: boolean
+  needsPair?: boolean
+  needsConnection?: boolean
   partner: { id: string; email: string } | null
   checkins: Checkin[]
   trackedItems: TrackedItem[]
@@ -72,5 +74,17 @@ export function useCompanionSync() {
     }
   }
 
-  return { ...data, loading, confirming, confirm, reload: load }
+  async function saveConnection(apiUrl: string, apiKey: string): Promise<string | null> {
+    const res = await fetch('/api/companion/connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiUrl, apiKey }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) return body.error ?? `Couldn't save (status ${res.status}).`
+    await load()
+    return null
+  }
+
+  return { ...data, loading, confirming, confirm, saveConnection, reload: load }
 }

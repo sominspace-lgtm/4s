@@ -22,6 +22,7 @@ import JourneyBar from '@/components/ui/JourneyBar'
 import DailyBrief from '@/components/brief/DailyBrief'
 import HabitTracker from '@/components/habits/HabitTracker'
 import LifeHub from '@/components/life/LifeHub'
+import RelationshipHub from '@/components/relationships/RelationshipHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import CouncilSection from '@/components/council/CouncilSection'
 import SharedHub from '@/components/companion/SharedHub'
@@ -68,6 +69,7 @@ const SECTION_GROUPS: Record<string, string> = {
   work:     'focus',
   habits:   'focus',
   domains:  'life',
+  relationship: 'life',
   money:    'money',
   calendar: 'review',
   council:  'review',
@@ -199,7 +201,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
 
     const LABELS: Record<string, string> = {
       brief: t('Brief', lang), work: t('Tasks', lang), habits: t('Habits', lang),
-      domains: t('Life', lang),
+      domains: t('Life', lang), relationship: t('Relationship', lang),
       money: t('Money', lang), calendar: t('Calendar', lang),
       council: t('Council', lang), shared: t('Shared', lang),
     }
@@ -231,6 +233,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'habits':   return <HabitTracker key="habits" />
         case 'domains':  return <LifeHub key="domains" />
+        case 'relationship': return <RelationshipHub key="relationship" userId={userId} userEmail={email} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
         case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />

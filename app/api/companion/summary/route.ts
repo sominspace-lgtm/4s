@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 // Proxies the separate Companion Discord-bot backend (private Oracle VM,
 // repo sominspace-lgtm/companion) so its API key never reaches the browser.
-// Two distinct "not the real thing" states, handled differently on purpose:
 //
-//   - COMPANION_API_URL/KEY unset  -> return realistic MOCK data (`mocked:
-//     true`). Lets the Relationship UI be built and reviewed before the VM
-//     is live, same spirit as the AI route's graceful-fallback pattern.
-//   - Configured but unreachable (VM down, network error, non-2xx) -> return
-//     a DEGRADED empty response (`degraded: true`), never throw. The client
-//     renders "not reviewed yet" / "quiet for now", the existing status-
-//     language rule for unset/error states — never alarm colors for this.
+// SECURITY: the connection (api_url + api_key) is looked up per CONFIRMED
+// relationship_pairs row, never from a global env var. A global key would
+// mean every 4S user hitting this route sees the same couple's Discord bot
+// data — fine for a single developer, broken the moment a second couple
+// signs up. Each pair gets its own row in companion_connections, gated by
+// RLS to only the two confirmed people in that pair (see
+// companion_connections.sql). If there's no confirmed pair, or the pair
+// hasn't set up a connection yet, this returns mock data instead of ever
+// falling back to someone else's real credentials.
+//
+// Three non-live states, handled differently:
+//   - no confirmed relationship_pairs row  -> needsPair: true, mock data
+//   - confirmed pair, no connection saved  -> needsConnection: true, mock data
+//   - connection saved but unreachable     -> degraded: true, empty arrays
 
 export interface CompanionCheckin {
   id: string; weekOf: string; status: 'completed' | 'pending'
@@ -61,42 +66,11 @@ const MOCK_SUMMARY: CompanionSummary = {
   ],
 }
 
-async function fetchConfirmations(userId: string) {
-  const supabase = await createClient()
-  // RLS on relationship_sync_confirmations already scopes this to the caller's
-  // own rows plus a mutually-accepted companion's — no admin client needed.
-  const { data } = await supabase
-    .from('relationship_sync_confirmations')
-    .select('item_type, item_id, user_id, confirmed_at')
-  return data ?? []
-}
-
-async function partnerInfo(userId: string): Promise<{ id: string; email: string } | null> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('companions')
-    .select('inviter_id, invitee_id, invitee_email')
-    .eq('status', 'accepted')
-    .or(`inviter_id.eq.${userId},invitee_id.eq.${userId}`)
-    .limit(1)
-    .maybeSingle()
-  if (!data) return null
-  const partnerId = data.inviter_id === userId ? data.invitee_id : data.inviter_id
-  if (!partnerId) return null
-  // invitee_email is stored at invite time; if the current user IS the
-  // invitee, that field is the inviter's own address, not theirs — resolve
-  // via admin lookup in that direction instead.
-  if (data.inviter_id === userId) return { id: partnerId, email: data.invitee_email }
-  const admin = createAdminClient()
-  const { data: u } = await admin.auth.admin.getUserById(partnerId)
-  return { id: partnerId, email: u?.user?.email ?? 'your partner' }
-}
-
 function withConfirmations(
   summary: CompanionSummary,
   confirmations: { item_type: string; item_id: string; user_id: string }[],
   userId: string,
-  partner: { id: string; email: string } | null,
+  partnerId: string | null,
 ) {
   const byKey = new Map<string, string[]>()
   for (const c of confirmations) {
@@ -109,7 +83,7 @@ function withConfirmations(
       return {
         ...item,
         youConfirmed: confirmedUserIds.includes(userId),
-        partnerConfirmed: !!partner && confirmedUserIds.includes(partner.id),
+        partnerConfirmed: !!partnerId && confirmedUserIds.includes(partnerId),
       }
     })
   }
@@ -127,39 +101,63 @@ export async function GET() {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const apiUrl = process.env.COMPANION_API_URL
-  const apiKey = process.env.COMPANION_API_KEY
+  // RLS on relationship_pairs already scopes this to rows the caller is
+  // requester or (confirmed) partner on.
+  const { data: pair } = await supabase
+    .from('relationship_pairs')
+    .select('id, requester_id, partner_id, partner_email')
+    .eq('status', 'confirmed')
+    .or(`requester_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .limit(1)
+    .maybeSingle()
 
-  const partner = await partnerInfo(user.id)
-  const confirmations = await fetchConfirmations(user.id)
-
-  if (!apiUrl || !apiKey) {
+  if (!pair) {
     return NextResponse.json({
-      mocked: true,
-      partner,
-      ...withConfirmations(MOCK_SUMMARY, confirmations, user.id, partner),
+      needsPair: true, mocked: true, partner: null,
+      ...withConfirmations(MOCK_SUMMARY, [], user.id, null),
+    })
+  }
+
+  const partnerId = pair.requester_id === user.id ? pair.partner_id : pair.requester_id
+  const partner = partnerId ? { id: partnerId, email: pair.partner_email } : null
+
+  // RLS on relationship_sync_confirmations scopes this to the caller's own
+  // rows plus their confirmed partner's — no admin client needed.
+  const { data: confirmations } = await supabase
+    .from('relationship_sync_confirmations')
+    .select('item_type, item_id, user_id')
+  const confirmationRows = confirmations ?? []
+
+  // RLS on companion_connections scopes this to confirmed pair members only.
+  const { data: connection } = await supabase
+    .from('companion_connections')
+    .select('api_url, api_key')
+    .eq('pair_id', pair.id)
+    .maybeSingle()
+
+  if (!connection) {
+    return NextResponse.json({
+      needsConnection: true, mocked: true, partner,
+      ...withConfirmations(MOCK_SUMMARY, confirmationRows, user.id, partnerId),
     })
   }
 
   try {
-    const res = await fetch(`${apiUrl.replace(/\/$/, '')}/api/summary`, {
-      headers: { 'x-api-key': apiKey },
+    const res = await fetch(`${connection.api_url.replace(/\/$/, '')}/api/summary`, {
+      headers: { 'x-api-key': connection.api_key },
       signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) throw new Error(`Companion responded ${res.status}`)
     const data = (await res.json()) as CompanionSummary
     return NextResponse.json({
-      degraded: false,
-      partner,
-      ...withConfirmations(data, confirmations, user.id, partner),
+      degraded: false, partner,
+      ...withConfirmations(data, confirmationRows, user.id, partnerId),
     })
   } catch {
-    // VM down, network error, bad response shape — never throw. Same empty
-    // arrays, degraded:true tells the client to use quiet-state language
-    // instead of treating this like "reviewed, nothing here."
+    // VM down, network error, bad response shape — never throw. The client
+    // renders "quiet for now" language, never alarm colors, for this state.
     return NextResponse.json({
-      degraded: true,
-      partner,
+      degraded: true, partner,
       checkins: [], trackedItems: [], dateNightIdeas: [], onThisDay: [], photos: [],
     })
   }

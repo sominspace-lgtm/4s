@@ -1,10 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { useCompanionSync, type Checkin, type TrackedItem, type DateNightIdea, type OnThisDay, type ConfirmableType } from '@/lib/hooks/useCompanionSync'
+import { useRelationshipPair } from '@/lib/hooks/useRelationshipPair'
 
 function fmt(iso: string) {
   const d = new Date(iso)
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px',
+  padding: '0.6rem 0.75rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none',
 }
 
 // The verification control shared by every confirmable list — the whole
@@ -45,7 +52,101 @@ const sectionLabel: React.CSSProperties = {
 }
 const emptyStyle: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }
 
-export default function CompanionSync() {
+// Step 1 of the gate: nobody sees Companion data — not even mock previews
+// with a real partner's name — until a relationship_pairs row is CONFIRMED
+// by the invited side. This is the dual-consent UI for that.
+function PairGate({ userId, userEmail }: { userId: string; userEmail: string }) {
+  const { sentPending, receivedPending, loading, invite, confirm, remove } = useRelationshipPair(userId, userEmail)
+  const [email, setEmail] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+
+  async function send() {
+    if (!email.trim()) return
+    setSending(true); setErr(null)
+    const e = await invite(email)
+    setSending(false)
+    if (e) setErr(e); else setEmail('')
+  }
+
+  if (loading) return null
+
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.4rem' }}>Confirm your relationship partner</div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
+        Companion sync (check-ins, photos) only unlocks once the other person confirms too —
+        this is a separate, stricter step from a regular Friends invite.
+      </div>
+
+      {receivedPending.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+          {receivedPending.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--gold) 35%, var(--border))', background: 'color-mix(in srgb, var(--gold) 8%, transparent)' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1 }}>Invitation from a 4S user pending your confirmation</span>
+              <button onClick={() => confirm(p.id)} className="btn btn-primary" style={{ fontSize: '0.68rem' }}>Confirm</button>
+              <button onClick={() => remove(p.id)} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Decline</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sentPending.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem' }}>
+          {sentPending.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)' }}>
+              <span style={{ flex: 1 }}>Waiting on {p.partner_email} to confirm</span>
+              <button onClick={() => remove(p.id)} className="btn btn-ghost" style={{ fontSize: '0.64rem', opacity: 0.7 }}>Cancel</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input style={inputStyle} placeholder="partner@email.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send() }} />
+        <button onClick={send} disabled={sending || !email.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem', flexShrink: 0 }}>Invite</button>
+      </div>
+      {err && <div style={{ fontSize: '0.68rem', color: 'var(--rose)', marginTop: '0.5rem' }}>{err}</div>}
+    </div>
+  )
+}
+
+// Step 2 of the gate: a confirmed pair still needs to point at their own
+// Companion bot — saved once, shared by both (companion_connections is
+// scoped to the pair, not either individual).
+function ConnectionSetup({ onSave }: { onSave: (url: string, key: string) => Promise<string | null> }) {
+  const [apiUrl, setApiUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true); setErr(null)
+    const e = await onSave(apiUrl.trim(), apiKey.trim())
+    setSaving(false)
+    if (e) setErr(e)
+  }
+
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+      <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.4rem' }}>Connect your Companion bot</div>
+      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
+        Partner confirmed. Paste the tunnel URL and API key from your own Companion backend — this is
+        saved just for the two of you, never shared with any other 4S account.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <input style={inputStyle} placeholder="https://your-tunnel-url" value={apiUrl} onChange={e => setApiUrl(e.target.value)} />
+        <input style={inputStyle} placeholder="API key" type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') save() }} />
+        <button onClick={save} disabled={saving || !apiUrl.trim() || !apiKey.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem', alignSelf: 'flex-start' }}>
+          {saving ? 'Saving…' : 'Save connection'}
+        </button>
+      </div>
+      {err && <div style={{ fontSize: '0.68rem', color: 'var(--rose)', marginTop: '0.5rem' }}>{err}</div>}
+    </div>
+  )
+}
+
+export default function CompanionSync({ userId, userEmail }: { userId: string; userEmail: string }) {
   const sync = useCompanionSync()
   const partnerEmail = sync.partner?.email ?? null
 
@@ -63,25 +164,14 @@ export default function CompanionSync() {
   }
 
   if (sync.loading) return null
+  if (sync.needsPair) return <PairGate userId={userId} userEmail={userEmail} />
+  if (sync.needsConnection) return <ConnectionSetup onSave={sync.saveConnection} />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '1.4rem' }}>
-      {sync.mocked && (
-        <div style={{
-          fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.85, padding: '0.5rem 0.75rem',
-          borderRadius: '10px', border: '1px dashed var(--border)', background: 'var(--hover-bg)',
-        }}>
-          Preview data — connect Companion (COMPANION_API_URL / COMPANION_API_KEY) to go live.
-        </div>
-      )}
-      {sync.degraded && !sync.mocked && (
+      {sync.degraded && (
         <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
           Companion sync is quiet for now — check back soon.
-        </div>
-      )}
-      {!sync.partner && (
-        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75 }}>
-          Invite a partner from Shared → Friends to enable dual confirmation.
         </div>
       )}
 

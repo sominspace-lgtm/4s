@@ -18,18 +18,20 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
   sections: ['brief', 'work', 'habits', 'calendar'],
 }
 
-// Brief · Tasks · Habits · Life · Money · Calendar · Shared · Council
+// Brief · Tasks · Habits · Life · Relationship · Money · Calendar · Shared · Council
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // At a glance — Needs Attention (Pulse) and Quick Add/Inbox (Capture) live inside Brief
   { id: 'brief',    label: 'Brief',    hidden: false },
   // Companions — surfaced early so shared items aren't an afterthought
-  // (Relationship Memory / People lives inside the Shared hub)
   { id: 'shared',   label: 'Shared',   hidden: false },
   // Focus
   { id: 'work',     label: 'Tasks',    hidden: false },
   { id: 'habits',   label: 'Habits',   hidden: false },
   // Life
   { id: 'domains',  label: 'Life',     hidden: false },
+  // Relationship — Companion sync (dual-consent gated), People, Links.
+  // A first-class tab, not buried inside Life or Shared anymore.
+  { id: 'relationship', label: 'Relationship', hidden: false },
   // Money — Wishlist, Gifts, Renewals, Buy Again all live here now
   { id: 'money',    label: 'Money',    hidden: false },
   // Review

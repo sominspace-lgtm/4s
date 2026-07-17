@@ -3,11 +3,11 @@
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
-  brief: 'Brief', work: 'Tasks', habits: 'Habits', domains: 'Life',
+  brief: 'Brief', work: 'Tasks', habits: 'Habits', domains: 'Life', relationship: 'Relationship',
   money: 'Money', calendar: 'Calendar', council: 'Council', shared: 'Shared',
 }
 const ICONS: Record<string, string> = {
-  brief: '◒', work: '◈', habits: '◉', domains: '◇',
+  brief: '◒', work: '◈', habits: '◉', domains: '◇', relationship: '♡',
   money: '✦', calendar: '◎', council: '⌂', shared: '⇆',
 }
 
