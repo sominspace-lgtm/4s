@@ -2,19 +2,19 @@
 
 import { useState } from 'react'
 import DomainGrid from '@/components/domains/DomainGrid'
-import DecisionMemory from '@/components/decisions/DecisionMemory'
+import RelationshipLinks from '@/components/relationships/RelationshipLinks'
 import HomeBrain from '@/components/home/HomeBrain'
 
-type LifeTab = 'domains' | 'decisions' | 'home'
+type LifeTab = 'domains' | 'relationship' | 'home'
 
 const TABS: { id: LifeTab; label: string }[] = [
-  { id: 'domains',   label: 'Domains' },
-  { id: 'decisions', label: 'Decisions' },
-  { id: 'home',      label: 'Home Brain' },
+  { id: 'domains',      label: 'Domains' },
+  { id: 'relationship', label: 'Relationship' },
+  { id: 'home',         label: 'Home Brain' },
 ]
 
 // Life = the long-term care of every important area. Domains are the map;
-// Decisions and Home Brain are the memory that keeps life from repeating work.
+// Relationship and Home Brain are the memory that keeps life from repeating work.
 export default function LifeHub() {
   const [tab, setTab] = useState<LifeTab>('domains')
 
@@ -30,9 +30,9 @@ export default function LifeHub() {
         ))}
       </div>
 
-      {tab === 'domains'   && <DomainGrid />}
-      {tab === 'decisions' && <DecisionMemory />}
-      {tab === 'home'      && <HomeBrain />}
+      {tab === 'domains'      && <DomainGrid />}
+      {tab === 'relationship' && <RelationshipLinks />}
+      {tab === 'home'         && <HomeBrain />}
     </div>
   )
 }
