@@ -18,6 +18,7 @@ import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
+import AttentionBudget from '@/components/brief/AttentionBudget'
 import CaptureSection from '@/components/capture/CaptureSection'
 import DailyReflection from '@/components/brief/DailyReflection'
 import Breathing from '@/components/focus/Breathing'
@@ -368,6 +369,12 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           {lang === 'ko' ? fmtDate(new Date(), 'ko') : format(new Date(), 'EEEE, MMM d')}
         </div>
       </div>
+
+      {!recovery && lang !== 'ko' && (
+        <div style={{ marginTop: '0.8rem' }}>
+          <AttentionBudget items={items} />
+        </div>
+      )}
 
       <div style={{ marginTop: '0.9rem', fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.6, fontStyle: 'italic', paddingTop: '0.7rem', borderTop: '1px solid var(--faint)' }}>
         {lang !== 'ko' && <strong style={{ color: 'var(--text)', fontStyle: 'normal' }}>Suggested next action: </strong>}
