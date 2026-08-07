@@ -3,12 +3,12 @@
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
-  brief: 'Brief', work: 'Tasks', habits: 'Habits', domains: 'Life', relationship: 'Relationship',
-  money: 'Money', calendar: 'Calendar', council: 'Council', shared: 'Shared',
+  brief: 'Brief', work: 'Tasks', growth: 'Growth',
+  money: 'Money', calendar: 'Calendar', people: 'People',
 }
 const ICONS: Record<string, string> = {
-  brief: '◒', work: '◈', habits: '◉', domains: '◇', relationship: '♡',
-  money: '✦', calendar: '◎', council: '⌂', shared: '⇆',
+  brief: '◒', work: '◈', growth: '◉',
+  money: '✦', calendar: '◎', people: '♡',
 }
 
 // Thumb-first bottom navigation for mobile. Shows the first few core tabs and

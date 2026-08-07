@@ -31,21 +31,40 @@ export function useKnowledgeStore<T extends { id: string }>(
 
   async function add(fields: Record<string, unknown>) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from(table).insert({ user_id: user.id, ...fields })
+    if (!user) return { error: new Error('Not signed in') }
+    const { error } = await supabase.from(table).insert({ user_id: user.id, ...fields })
+    if (error) {
+      console.error(`Failed to add to ${table}:`, error.message)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent(event))
+    return { error: null }
   }
 
   async function update(id: string, patch: Record<string, unknown>) {
-    setItems(prev => prev.map(i => (i.id === id ? { ...i, ...patch } as T : i)))
-    await supabase.from(table).update(patch).eq('id', id)
+    const prev = items
+    setItems(p => p.map(i => (i.id === id ? { ...i, ...patch } as T : i)))
+    const { error } = await supabase.from(table).update(patch).eq('id', id)
+    if (error) {
+      setItems(prev)
+      console.error(`Failed to update ${table}:`, error.message)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent(event))
+    return { error: null }
   }
 
   async function remove(id: string) {
-    setItems(prev => prev.filter(i => i.id !== id))
-    await supabase.from(table).delete().eq('id', id)
+    const prev = items
+    setItems(p => p.filter(i => i.id !== id))
+    const { error } = await supabase.from(table).delete().eq('id', id)
+    if (error) {
+      setItems(prev)
+      console.error(`Failed to delete from ${table}:`, error.message)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent(event))
+    return { error: null }
   }
 
   return { items, loading, add, update, remove }

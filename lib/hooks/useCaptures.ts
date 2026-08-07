@@ -36,22 +36,28 @@ export function useCaptures() {
 
   async function add(text: string, domain?: string) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('captures').insert({ text, user_id: user.id, domain: domain || null }).select().single()
+    if (!user) return { error: new Error('Not signed in') }
+    const { data, error } = await supabase.from('captures').insert({ text, user_id: user.id, domain: domain || null }).select().single()
+    if (error) return { error }
     if (data && !data.domain) setCaptures(prev => [data, ...prev])
     window.dispatchEvent(new CustomEvent('4s:captures-changed'))
+    return { error: null }
   }
 
   async function remove(id: string) {
-    await supabase.from('captures').delete().eq('id', id)
+    const { error } = await supabase.from('captures').delete().eq('id', id)
+    if (error) return { error }
     setCaptures(prev => prev.filter(c => c.id !== id))
     window.dispatchEvent(new CustomEvent('4s:captures-changed'))
+    return { error: null }
   }
 
   async function assign(id: string, domain: string) {
-    await supabase.from('captures').update({ domain }).eq('id', id)
+    const { error } = await supabase.from('captures').update({ domain }).eq('id', id)
+    if (error) return { error }
     setCaptures(prev => prev.filter(c => c.id !== id))
     window.dispatchEvent(new CustomEvent('4s:captures-changed'))
+    return { error: null }
   }
 
   return { captures, add, remove, assign }

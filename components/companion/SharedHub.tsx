@@ -3,17 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useCompanions, SHAREABLE_SECTIONS } from '@/lib/hooks/useCompanions'
-import PeopleList, { Avatar } from './PeopleList'
-import { SpacesTab } from './CompanionPanel'
-
-type SharedTab = 'with-me' | 'by-me' | 'spaces' | 'friends'
-
-const TABS: { id: SharedTab; label: string }[] = [
-  { id: 'with-me', label: 'Shared With Me' },
-  { id: 'by-me',   label: 'Shared By Me' },
-  { id: 'spaces',  label: 'Spaces' },
-  { id: 'friends', label: 'Friends' },
-]
+import { Avatar } from './PeopleList'
 
 interface SharedItem {
   id: string
@@ -37,7 +27,11 @@ interface SharedThing {
 
 const sectionLabel = (id: string) => SHAREABLE_SECTIONS.find(s => s.id === id)?.label ?? id
 
-function WithMeTab({ onOpenPeople }: { onOpenPeople: () => void }) {
+// Tab bodies for the merged People hub (components/people/PeopleHub.tsx) —
+// the "Shared With Me" and "Shared By Me" lenses. Formerly the whole of a
+// standalone SharedHub component; that default export is gone, folded into
+// PeopleHub, but these two pieces are still exactly the item-sharing logic.
+export function WithMeTab({ onOpenPeople }: { onOpenPeople: () => void }) {
   const [items, setItems] = useState<SharedItem[]>([])
   const [things, setThings] = useState<SharedThing[]>([])
   const [loading, setLoading] = useState(true)
@@ -134,7 +128,7 @@ function WithMeTab({ onOpenPeople }: { onOpenPeople: () => void }) {
   )
 }
 
-function ByMeTab({ userId, onManageSharing }: { userId: string; onManageSharing: () => void }) {
+export function ByMeTab({ userId, onManageSharing }: { userId: string; onManageSharing: () => void }) {
   const { active, loading } = useCompanions(userId)
   const sharing = active.filter(c => (c.shared_sections ?? []).length > 0)
 
@@ -182,41 +176,3 @@ function ByMeTab({ userId, onManageSharing }: { userId: string; onManageSharing:
   )
 }
 
-// The Shared tab: who shares with you, what you share, group spaces, and
-// the people list itself. Private by default — only accepted friends and
-// space members ever see anything, and invitees are addressed by email only.
-export default function SharedHub({ userId, userEmail, onOpenCompanions }: {
-  userId: string
-  userEmail: string
-  onOpenCompanions: () => void
-}) {
-  const [tab, setTab] = useState<SharedTab>('with-me')
-
-  return (
-    <div className="card-interactive" style={{
-      background: 'var(--surface2)', border: '1px solid var(--border)',
-      borderTop: '2px solid color-mix(in srgb, var(--blush) 45%, var(--border))',
-      borderRadius: '16px', padding: '1.3rem 1.5rem', boxShadow: '0 12px 32px var(--shadow)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>Shared</div>
-        <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.8, letterSpacing: '0.02em' }}>Everything is private unless you share it.</div>
-      </div>
-
-      <div className="tabs-wrap" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '1rem', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-        {TABS.map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className="btn" style={{
-            fontSize: '0.7rem', padding: '0.35em 0.8em',
-            background: tab === tb.id ? 'var(--hover-bg)' : 'transparent',
-            color: tab === tb.id ? 'var(--text)' : 'var(--muted)', border: 'none',
-          }}>{tb.label}</button>
-        ))}
-      </div>
-
-      {tab === 'with-me' && <WithMeTab onOpenPeople={() => setTab('friends')} />}
-      {tab === 'by-me'   && <ByMeTab userId={userId} onManageSharing={onOpenCompanions} />}
-      {tab === 'spaces'  && <SpacesTab userId={userId} />}
-      {tab === 'friends' && <PeopleList userId={userId} userEmail={userEmail} />}
-    </div>
-  )
-}

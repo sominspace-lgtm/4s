@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
 
+export type Energy = 'light' | 'medium' | 'deep'
+
 export interface WorkItem {
   id: string
   title: string
   notes: string | null
   due_date: string | null
-  priority: number
+  energy: Energy | null
   domain: string | null
   status: 'todo' | 'in-progress' | 'done'
   recur_days: number | null
@@ -34,7 +36,11 @@ export function sortWorkItems(items: WorkItem[]): WorkItem[] {
     const uA = urgencyScore[dueUrgency(a.due_date)]
     const uB = urgencyScore[dueUrgency(b.due_date)]
     if (uA !== uB) return uA - uB
-    return a.priority - b.priority
+    // No priority tiebreaker anymore — priority was a guilt field (section 10
+    // of the brief: "everything the user cares about becomes 'high' and then
+    // the field carries no information"). Within the same urgency, oldest
+    // first is a neutral, predictable order with no ranking judgment in it.
+    return a.created_at.localeCompare(b.created_at)
   })
 }
 
@@ -49,7 +55,7 @@ export function useWorkItems() {
       .from('work_items')
       .select('*')
       .neq('status', 'done')
-      .order('priority')
+      .order('created_at')
     if (error) { setLoading(false); return }
     setItems(data as WorkItem[])
     setLoading(false)
@@ -70,7 +76,7 @@ export function useWorkItems() {
 
   function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:work-items-changed')) }
 
-  async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'priority' | 'domain' | 'recur_days'>): Promise<string | null> {
+  async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'energy' | 'domain' | 'recur_days'>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('work_items')
@@ -102,7 +108,7 @@ export function useWorkItems() {
           const { data: newItem } = await supabase.from('work_items')
             .insert({
               user_id: user.id, title: item.title, notes: item.notes,
-              due_date: nextDue, priority: item.priority, domain: item.domain,
+              due_date: nextDue, energy: item.energy, domain: item.domain,
               recur_days: item.recur_days, status: 'todo', shared: item.shared,
             })
             .select().single()

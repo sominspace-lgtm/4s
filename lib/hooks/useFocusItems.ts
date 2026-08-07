@@ -32,8 +32,13 @@ export function useFocusItems() {
 
   async function snooze(id: string, days: number) {
     const snoozed_until = formatISO(addDays(new Date(), days))
-    await supabase.from('focus_items').update({ snoozed_until }).eq('id', id)
+    const { error } = await supabase.from('focus_items').update({ snoozed_until }).eq('id', id)
+    if (error) {
+      console.error('Failed to snooze focus item:', error.message)
+      return { error }
+    }
     setItems(prev => prev.filter(i => i.id !== id))
+    return { error: null }
   }
 
   return { items, snooze }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import SectionLabel from '@/components/ui/SectionLabel'
@@ -20,16 +20,14 @@ import SectionNav from '@/components/ui/SectionNav'
 import { useProgression } from '@/lib/hooks/useProgression'
 import JourneyBar from '@/components/ui/JourneyBar'
 import DailyBrief from '@/components/brief/DailyBrief'
-import HabitTracker from '@/components/habits/HabitTracker'
-import LifeHub from '@/components/life/LifeHub'
-import RelationshipHub from '@/components/relationships/RelationshipHub'
+import GrowthHub from '@/components/growth/GrowthHub'
+import PeopleHub from '@/components/people/PeopleHub'
 import MoneyHub from '@/components/money/MoneyHub'
-import CouncilSection from '@/components/council/CouncilSection'
-import SharedHub from '@/components/companion/SharedHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
+import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
@@ -49,12 +47,25 @@ interface Props {
   initialSimpleMode: boolean
 }
 
-// Simple mode: Today (Brief) · Quick Add (inside Brief) · Tasks · Calendar · Shared
-const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'calendar', 'shared'])
+// Simple mode: Today (Brief) · Quick Add (inside Brief) · Tasks · Growth (Habits) · Calendar
+// Habits belongs here — it's the heart of the product, not an advanced feature.
+// Collaboration does not: it's the opposite of a simplified solo view. Growth
+// (Habits/Life/Council) shows in simple mode too — its Habits sub-tab is the
+// one that matters here, and hiding the whole merged tab to keep out Life and
+// Council would take Habits down with them.
+const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'growth', 'calendar'])
 
-// Folded into Money hub / Brief — strip from any saved layout so returning
-// users don't see dangling, unrenderable section headings.
-const DEPRECATED_SECTION_IDS = new Set(['pulse', 'wishlist', 'spending', 'capture', 'people'])
+// Folded into Money hub / Brief / the merged People and Growth tabs — strip
+// from any saved layout so returning users don't see dangling, unrenderable
+// section headings. NOTE: 'people' used to be deprecated (folded into Shared)
+// but is now a LIVE id again — it's the merged Relationship+Shared
+// destination — so it must not appear here, or every returning user's
+// customization of the new People tab would be silently wiped on next load.
+const DEPRECATED_SECTION_IDS = new Set([
+  'pulse', 'wishlist', 'spending', 'capture',
+  'relationship', 'shared',           // → people
+  'habits', 'domains', 'council',     // → growth
+])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_SECTIONS
@@ -67,13 +78,10 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 const SECTION_GROUPS: Record<string, string> = {
   brief:    'at a glance',
   work:     'focus',
-  habits:   'focus',
-  domains:  'life',
-  relationship: 'life',
+  growth:   'life',
   money:    'money',
   calendar: 'review',
-  council:  'review',
-  shared:   'companions',
+  people:   'companions',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
@@ -94,36 +102,63 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   const [focusPanelOpen, setFocusPanelOpen] = useState(false)
   const [jarvisOpen, setJarvisOpen] = useState(false)
 
+  // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
+  // now" is a one-way choice, persisted in the layout JSON.
+  const [unlockAll, setUnlockAll] = useState(initialUnlockAll)
+
+  // All layout writes go through saveLayout(). See lib/persistence/saveLayout.ts:
+  // the layout column is one JSON blob, so a hand-built object that omits a key
+  // silently wipes that setting. Built fresh in each handler so every value is
+  // current at write time.
+  function layoutState(): LayoutState {
+    return { sections, focus: focusConfig, simpleMode, unlockAll }
+  }
+
   async function toggleCollapsed(id: string) {
     const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
     setSections(next)
-    const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode, unlockAll } })
+    await saveLayout(userId, layoutState(), { sections: next })
   }
 
   async function toggleSimpleMode() {
     const next = !simpleMode
     setSimpleMode(next)
-    const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode: next, unlockAll } })
+    await saveLayout(userId, layoutState(), { simpleMode: next })
   }
 
-  // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
-  // now" is a one-way choice, persisted in the layout JSON.
-  const [unlockAll, setUnlockAll] = useState(initialUnlockAll)
-  const prog = useProgression(unlockAll)
+  // Guest mode's entire point is "experience the product before committing to
+  // an account" — gating sections behind a progress bar asks a guest to prove
+  // themselves before they've agreed to anything. Anonymous sessions always
+  // see the full app; unlockAll itself stays untouched so if they later keep
+  // their space (see the guest banner below), it starts fresh with real
+  // progression rather than permanently unlocked by a guest-mode side effect.
+  const prog = useProgression(unlockAll || isAnonymous)
   async function openEverything() {
     setUnlockAll(true)
-    const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: focusConfig, simpleMode, unlockAll: true } })
+    await saveLayout(userId, layoutState(), { unlockAll: true })
   }
+
+  // Kept current via refs so the nav listener below (mounted once) always
+  // sees live unlock state and the current openEverything closure without
+  // re-subscribing on every render. Written in an effect, not during render
+  // — mutating a ref while rendering is a React footgun even though it
+  // "works" in practice.
+  const progRef = useRef(prog)
+  const openEverythingRef = useRef(openEverything)
+  useEffect(() => { progRef.current = prog; openEverythingRef.current = openEverything })
 
   // Tab navigation from anywhere (Brief summary cards, search, Jarvis).
   // 'week-review' and 'brief-inbox' are anchors inside the Brief tab.
+  // A direct request for a still-gated section (from search or Jarvis, say)
+  // must never silently fail to appear — progression is a suggested order,
+  // not a wall. Honoring it by opening everything, same as the journey bar's
+  // own "open everything now" — there's no reason to invent a second,
+  // narrower unlock path for the same choice.
   useEffect(() => {
     function onNav(e: Event) {
       const id = (e as CustomEvent<string>).detail
       const anchor = id === 'week-review' || id === 'brief-inbox' ? id : null
+      if (!anchor && !progRef.current.isUnlocked(id)) openEverythingRef.current()
       setActiveTab(anchor ? 'brief' : id)
       requestAnimationFrame(() => {
         if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -164,23 +199,32 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Notify about overdue items on load (if permission granted)
+  // A quiet reminder of what's waiting — at most once a day, and never a count
+  // of failures. This used to fire on EVERY dashboard load with "3 items are
+  // overdue", which is a system-level guilt notification following the user out
+  // of the app. The product's whole premise is that it reduces guilt, so: once
+  // per day, named not counted, and phrased as something waiting rather than
+  // something missed.
   useEffect(() => {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const today = new Date().toISOString().slice(0, 10)
+    const key = '4s-waiting-notice'
+    if (localStorage.getItem(key) === today) return
+
     const supabase = createClient()
     supabase.from('work_items')
       .select('title, due_date, status')
       .neq('status', 'done')
       .then(({ data }) => {
-        const overdue = (data ?? []).filter(i => dueUrgency(i.due_date) === 'overdue')
-        if (overdue.length > 0) {
-          new Notification('4S — overdue items', {
-            body: overdue.length === 1
-              ? `"${overdue[0].title}" is overdue`
-              : `${overdue.length} items are overdue`,
-            icon: '/icons/192.png',
-          })
-        }
+        const waiting = (data ?? []).filter(i => dueUrgency(i.due_date) === 'overdue')
+        if (waiting.length === 0) return
+        localStorage.setItem(key, today)
+        new Notification('4S', {
+          body: waiting.length === 1
+            ? `"${waiting[0].title}" is still waiting for you.`
+            : `"${waiting[0].title}" and a few others are still waiting for you.`,
+          icon: '/icons/192.png',
+        })
       })
   }, [])
 
@@ -200,10 +244,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      brief: t('Brief', lang), work: t('Tasks', lang), habits: t('Habits', lang),
-      domains: t('Life', lang), relationship: t('Relationship', lang),
-      money: t('Money', lang), calendar: t('Calendar', lang),
-      council: t('Council', lang), shared: t('Shared', lang),
+      brief: t('Brief', lang), work: t('Tasks', lang), growth: t('Growth', lang),
+      money: t('Money', lang), calendar: t('Calendar', lang), people: t('People', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -231,13 +273,10 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'habits':   return <HabitTracker key="habits" />
-        case 'domains':  return <LifeHub key="domains" />
-        case 'relationship': return <RelationshipHub key="relationship" userId={userId} userEmail={email} />
+        case 'growth':   return <GrowthHub key="growth" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
-        case 'council':  return <CouncilSection key="council" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />
-        case 'shared':   return <SharedHub key="shared" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'people':   return <PeopleHub key="people" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
         default: return null
       }
     })()

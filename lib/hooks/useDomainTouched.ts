@@ -21,10 +21,15 @@ export function useDomainTouched() {
 
   async function touch(domainId: string) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) return { error: new Error('Not signed in') }
     const today = format(new Date(), 'yyyy-MM-dd')
-    await supabase.from('domain_touched').upsert({ user_id: user.id, domain_id: domainId, last_touched: today })
+    const { error } = await supabase.from('domain_touched').upsert({ user_id: user.id, domain_id: domainId, last_touched: today })
+    if (error) {
+      console.error('Failed to record domain touch:', error.message)
+      return { error }
+    }
     setTouched(prev => ({ ...prev, [domainId]: today }))
+    return { error: null }
   }
 
   return { touched, touch }

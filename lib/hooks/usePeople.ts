@@ -59,8 +59,8 @@ export function usePeople() {
 
   async function add(p: Partial<NewPerson> & { name: string }) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('people').insert({
+    if (!user) return { error: new Error('Not signed in') }
+    const { error } = await supabase.from('people').insert({
       user_id: user.id,
       name: p.name,
       relationship: p.relationship ?? null,
@@ -69,19 +69,33 @@ export function usePeople() {
       notes: p.notes ?? null,
       gift_ideas: p.gift_ideas ?? null,
     })
+    if (error) return { error }
     window.dispatchEvent(new CustomEvent('4s:people-changed'))
+    return { error: null }
   }
 
   async function update(id: string, patch: Partial<Person>) {
-    setPeople(prev => prev.map(p => (p.id === id ? { ...p, ...patch } : p)))
-    await supabase.from('people').update(patch).eq('id', id)
+    const prev = people
+    setPeople(p => p.map(person => (person.id === id ? { ...person, ...patch } : person)))
+    const { error } = await supabase.from('people').update(patch).eq('id', id)
+    if (error) {
+      setPeople(prev)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent('4s:people-changed'))
+    return { error: null }
   }
 
   async function remove(id: string) {
-    setPeople(prev => prev.filter(p => p.id !== id))
-    await supabase.from('people').delete().eq('id', id)
+    const prev = people
+    setPeople(p => p.filter(person => person.id !== id))
+    const { error } = await supabase.from('people').delete().eq('id', id)
+    if (error) {
+      setPeople(prev)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent('4s:people-changed'))
+    return { error: null }
   }
 
   function markContacted(id: string) {

@@ -106,10 +106,15 @@ export default function Header({ email, userId, initialName, initialTheme, initi
 
   async function saveName() {
     const trimmed = draft.trim() || fallback
+    const prev = name
     setName(trimmed)
     setEditing(false)
     const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, display_name: trimmed })
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, display_name: trimmed })
+    if (error) {
+      console.error('Failed to save name:', error.message)
+      setName(prev)
+    }
   }
 
   async function signOut() {

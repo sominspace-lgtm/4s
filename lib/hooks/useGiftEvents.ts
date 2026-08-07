@@ -63,25 +63,32 @@ export function useGiftEvents() {
   }, [load])
 
   async function save(next: GiftEvent[]) {
+    const prev = items
     setItems(next)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setItems(prev); return { error: new Error('Not signed in') } }
     const { data: row } = await supabase.from('user_prefs').select('layout').eq('user_id', user.id).single()
     const nextLayout = { ...(row?.layout ?? {}), giftEvents: next }
-    await supabase.from('user_prefs').upsert({ user_id: user.id, layout: nextLayout })
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: user.id, layout: nextLayout })
+    if (error) {
+      setItems(prev)
+      console.error('Failed to save gift events:', error.message)
+      return { error }
+    }
     window.dispatchEvent(new CustomEvent('4s:gift-events-changed'))
+    return { error: null }
   }
 
   function add(event: Omit<GiftEvent, 'id'>) {
-    save([...items, { ...event, id: makeId() }])
+    return save([...items, { ...event, id: makeId() }])
   }
 
   function update(id: string, patch: Partial<GiftEvent>) {
-    save(items.map(i => i.id === id ? { ...i, ...patch } : i))
+    return save(items.map(i => i.id === id ? { ...i, ...patch } : i))
   }
 
   function remove(id: string) {
-    save(items.filter(i => i.id !== id))
+    return save(items.filter(i => i.id !== id))
   }
 
   const sorted = [...items].sort((a, b) => daysUntil(a) - daysUntil(b))

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeMode } from '@/lib/constants/modes'
+import { normalizeTheme } from '@/components/ui/ThemeProvider'
 import DashboardClient from './DashboardClient'
 import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
 
@@ -29,7 +30,7 @@ export default async function DashboardPage() {
       isAnonymous={Boolean(user.is_anonymous)}
       initialUnlockAll={Boolean(prefs?.layout?.unlockAll)}
       initialName={prefs?.display_name ?? null}
-      initialTheme={prefs?.theme ?? 'sunset'}
+      initialTheme={normalizeTheme(prefs?.theme)}
       initialMode={normalizeMode(prefs?.mode)}
       initialCalendarUrl={prefs?.calendar_url ?? null}
       initialLayout={layout ?? null}

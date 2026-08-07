@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { saveLayout } from '@/lib/persistence/saveLayout'
 import type { SectionConfig, FocusConfig } from './CustomizePanel'
 
 interface FocusViewPanelProps {
@@ -16,7 +16,6 @@ interface FocusViewPanelProps {
 }
 
 export default function FocusViewPanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: FocusViewPanelProps) {
-  const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,7 +28,7 @@ export default function FocusViewPanel({ open, sections, focusConfig, simpleMode
 
   async function update(next: FocusConfig) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections, focus: next, simpleMode, unlockAll } })
+    await saveLayout(userId, { sections, focus: focusConfig, simpleMode, unlockAll }, { focus: next })
   }
 
   function toggleSection(id: string) {

@@ -30,10 +30,17 @@ export function useDomains() {
   useEffect(() => { load() }, [load])
 
   async function save(next: (Domain & { hidden?: boolean })[]) {
+    const prev = domains
     setDomains(next)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('user_prefs').upsert({ user_id: user.id, domains: next })
+    if (!user) { setDomains(prev); return { error: new Error('Not signed in') } }
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: user.id, domains: next })
+    if (error) {
+      setDomains(prev)
+      console.error('Failed to save domains:', error.message)
+      return { error }
+    }
+    return { error: null }
   }
 
   function move(id: string, dir: -1 | 1) {
@@ -41,27 +48,27 @@ export function useDomains() {
     if (idx + dir < 0 || idx + dir >= domains.length) return
     const next = [...domains]
     ;[next[idx], next[idx + dir]] = [next[idx + dir], next[idx]]
-    save(next)
+    return save(next)
   }
 
   function toggle(id: string) {
-    save(domains.map(d => d.id === id ? { ...d, hidden: !d.hidden } : d))
+    return save(domains.map(d => d.id === id ? { ...d, hidden: !d.hidden } : d))
   }
 
   function addDomain(d: Domain) {
-    save([...domains, d])
+    return save([...domains, d])
   }
 
   function removeDomain(id: string) {
-    save(domains.filter(d => d.id !== id))
+    return save(domains.filter(d => d.id !== id))
   }
 
   function resetToDefault() {
-    save(DEFAULT_DOMAINS)
+    return save(DEFAULT_DOMAINS)
   }
 
   function toggleShared(id: string) {
-    save(domains.map(d => d.id === id ? { ...d, shared: !d.shared } : d))
+    return save(domains.map(d => d.id === id ? { ...d, shared: !d.shared } : d))
   }
 
   return {

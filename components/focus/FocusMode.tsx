@@ -31,6 +31,7 @@ export default function FocusMode() {
   // Session outcome — completing the work belongs to the session itself.
   const [loggedWork,  setLoggedWork]  = useState(false)
   const [loggedHabit, setLoggedHabit] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
   const interval = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -42,18 +43,31 @@ export default function FocusMode() {
 
   async function markWorkDone() {
     if (!selectedWork) return
+    setSessionError(null)
+    const { error } = await supabase.from('work_items').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', selectedWork)
+    if (error) {
+      setSessionError(`Couldn't mark task done: ${error.message}`)
+      return
+    }
     setLoggedWork(true)
-    await supabase.from('work_items').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', selectedWork)
     window.dispatchEvent(new CustomEvent('4s:work-items-changed'))
   }
 
   async function logHabit() {
     if (!selectedHabit) return
-    setLoggedHabit(true)
+    setSessionError(null)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setSessionError("Couldn't confirm your session — try again.")
+      return
+    }
     const today = new Date().toISOString().slice(0, 10)
-    await supabase.from('habit_completions').insert({ habit_id: selectedHabit, completed_date: today, user_id: user.id })
+    const { error } = await supabase.from('habit_completions').insert({ habit_id: selectedHabit, completed_date: today, user_id: user.id })
+    if (error) {
+      setSessionError(`Couldn't log habit: ${error.message}`)
+      return
+    }
+    setLoggedHabit(true)
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
   }
 
@@ -78,6 +92,7 @@ export default function FocusMode() {
     setFinished(false)
     setLoggedWork(false)
     setLoggedHabit(false)
+    setSessionError(null)
     setRunning(true)
   }
 
@@ -211,6 +226,9 @@ export default function FocusMode() {
               </button>
             )}
           </div>
+          {sessionError && (
+            <div role="alert" style={{ fontSize: '0.72rem', color: 'var(--danger, #c0554d)' }}>{sessionError}</div>
+          )}
           <button onClick={startTimer} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>{t('go again', lang)}</button>
         </div>
       )}

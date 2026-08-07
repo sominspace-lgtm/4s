@@ -13,7 +13,7 @@ const TABS: { id: LifeTab; label: string }[] = [
 
 // Life = the long-term care of every important area. Home Brain is the
 // memory that keeps life from repeating work. Relationship (Companion sync,
-// People, Links) moved out to its own top-level tab — see RelationshipHub.
+// People, Links) lives in the top-level People tab — see PeopleHub.
 export default function LifeHub() {
   const [tab, setTab] = useState<LifeTab>('domains')
 

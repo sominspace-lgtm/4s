@@ -42,7 +42,7 @@ export default function CaptureSection({ userId }: { userId: string }) {
   }
 
   async function makeTask(captureId: string, text: string) {
-    await addTask({ title: text, notes: null, due_date: null, priority: 2, domain: null, recur_days: null })
+    await addTask({ title: text, notes: null, due_date: null, energy: null, domain: null, recur_days: null })
     await remove(captureId)
   }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { saveLayout } from '@/lib/persistence/saveLayout'
 
 export interface SectionConfig {
   id: string
@@ -15,28 +15,32 @@ export interface FocusConfig {
 }
 
 export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
-  sections: ['brief', 'work', 'habits', 'calendar'],
+  sections: ['brief', 'work', 'growth', 'calendar'],
 }
 
-// Brief · Tasks · Habits · Life · Relationship · Money · Calendar · Shared · Council
+// Brief · People · Tasks · Growth · Money · Calendar
+// Nine tabs down to six (2026-08-07): Habits/Life/Council merged into Growth
+// (components/growth/GrowthHub.tsx — same "one destination, no obvious rule
+// for which of three tabs" problem the People merge solved) and
+// Relationship/Shared merged into People. No components were rebuilt, just
+// regrouped — see GrowthHub and PeopleHub for what's still separate underneath.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // At a glance — Needs Attention (Pulse) and Quick Add/Inbox (Capture) live inside Brief
   { id: 'brief',    label: 'Brief',    hidden: false },
-  // Companions — surfaced early so shared items aren't an afterthought
-  { id: 'shared',   label: 'Shared',   hidden: false },
+  // People — merged from Relationship + Shared (2026-08-07): same question
+  // ("who's in this?") asked in two places was a seam, not a real distinction.
+  // Surfaced early so shared items aren't an afterthought.
+  { id: 'people',   label: 'People',   hidden: false },
   // Focus
   { id: 'work',     label: 'Tasks',    hidden: false },
-  { id: 'habits',   label: 'Habits',   hidden: false },
-  // Life
-  { id: 'domains',  label: 'Life',     hidden: false },
-  // Relationship — Companion sync (dual-consent gated), People, Links.
-  // A first-class tab, not buried inside Life or Shared anymore.
-  { id: 'relationship', label: 'Relationship', hidden: false },
+  // Growth — Habits, Life, and Council merged (2026-08-07): all three answer
+  // "how am I doing," and Council is a lens on the other two's data, not a
+  // separate place.
+  { id: 'growth',   label: 'Growth',   hidden: false },
   // Money — Wishlist, Gifts, Renewals, Buy Again all live here now
   { id: 'money',    label: 'Money',    hidden: false },
   // Review
   { id: 'calendar', label: 'Calendar', hidden: false },
-  { id: 'council',  label: 'Council',  hidden: false },
 ]
 
 interface CustomizePanelProps {
@@ -51,7 +55,6 @@ interface CustomizePanelProps {
 }
 
 export default function CustomizePanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: CustomizePanelProps) {
-  const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export default function CustomizePanel({ open, sections, focusConfig, simpleMode
 
   async function update(next: SectionConfig[]) {
     onChange(next)
-    await supabase.from('user_prefs').upsert({ user_id: userId, layout: { sections: next, focus: focusConfig, simpleMode, unlockAll } })
+    await saveLayout(userId, { sections, focus: focusConfig, simpleMode, unlockAll }, { sections: next })
   }
 
   function toggle(id: string) {

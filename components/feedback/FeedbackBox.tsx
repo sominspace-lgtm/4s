@@ -11,15 +11,26 @@ export default function FeedbackBox() {
   const [text, setText] = useState('')
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function submit() {
     if (!text.trim()) return
     setSending(true)
+    setError(null)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setSending(false); return }
-    await supabase.from('feedback').insert({ user_id: user.id, text: text.trim() })
-    setText(''); setSent(true); setSending(false)
+    if (!user) {
+      setSending(false)
+      setError("Couldn't confirm your session — your message is still here, try again.")
+      return
+    }
+    const { error: insertError } = await supabase.from('feedback').insert({ user_id: user.id, text: text.trim() })
+    setSending(false)
+    if (insertError) {
+      setError(`Couldn't send: ${insertError.message}`)
+      return
+    }
+    setText(''); setSent(true)
     setTimeout(() => { setSent(false); setOpen(false) }, 2500)
   }
 
@@ -67,6 +78,9 @@ export default function FeedbackBox() {
               resize: 'none', lineHeight: 1.6,
             }}
           />
+          {error && (
+            <div role="alert" style={{ fontSize: '0.72rem', color: 'var(--danger, #c0554d)' }}>{error}</div>
+          )}
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
             <button onClick={() => { setOpen(false); setText('') }} style={{
               background: 'none', border: '1px solid var(--border)', borderRadius: '8px',

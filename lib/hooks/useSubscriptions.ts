@@ -43,16 +43,20 @@ export function useSubscriptions() {
 
   async function add(name: string, cost: number, renewal_date: string) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('subscriptions').insert({ name, cost_monthly: cost, renewal_date, user_id: user.id }).select().single()
-    if (data) setSubs(prev => [...prev, data].sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? '')))
+    if (!user) return { error: new Error('Not signed in') }
+    const { data, error } = await supabase.from('subscriptions').insert({ name, cost_monthly: cost, renewal_date, user_id: user.id }).select().single()
+    if (error) return { error }
+    setSubs(prev => [...prev, data].sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? '')))
     window.dispatchEvent(new CustomEvent('4s:subscriptions-changed'))
+    return { error: null }
   }
 
   async function remove(id: string) {
-    await supabase.from('subscriptions').delete().eq('id', id)
+    const { error } = await supabase.from('subscriptions').delete().eq('id', id)
+    if (error) return { error }
     setSubs(prev => prev.filter(s => s.id !== id))
     window.dispatchEvent(new CustomEvent('4s:subscriptions-changed'))
+    return { error: null }
   }
 
   const total = subs.reduce((sum, s) => sum + Number(s.cost_monthly), 0)

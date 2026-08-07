@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       const title = parsed?.title || text
       const { error } = await admin.from('work_items').insert({
         user_id: userId, title, status: 'todo', shared: false,
-        due_date: parsed?.dueDate ?? null, priority: parsed?.priority ?? 2,
+        due_date: parsed?.dueDate ?? null, energy: parsed?.energy ?? null,
         notes: null, domain: null, recur_days: null,
       })
       if (error) return say(`I could not save that task. ${error.message}`, { end: true })
@@ -200,11 +200,11 @@ export async function POST(request: Request) {
 
     case 'ListTasksIntent': {
       const { data } = await admin.from('work_items')
-        .select('title, due_date, priority').eq('user_id', userId).neq('status', 'done')
+        .select('title, due_date').eq('user_id', userId).neq('status', 'done')
       const open = data ?? []
       if (open.length === 0) return say('You have no open tasks. Clear runway.', { end: true })
       const sorted = [...open].sort((a, b) =>
-        (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || (a.priority - b.priority)).slice(0, 5)
+        (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')).slice(0, 5)
       const list = sorted.map(t => t.due_date ? `${t.title}, ${spokenDate(t.due_date)}` : t.title).join('; ')
       const more = open.length > 5 ? ` And ${open.length - 5} more.` : ''
       return say(`You have ${open.length} open task${open.length > 1 ? 's' : ''}. ${list}.${more}`, { end: true })

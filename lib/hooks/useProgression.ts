@@ -15,7 +15,18 @@ import { createClient } from '@/lib/supabase/client'
 // No stored unlock state, no migration: unlock status is derived live from
 // real row counts, so every existing account computes past every milestone
 // instantly and sees the full app exactly as before.
-
+//
+// UNLOCK BY RELEVANCE, NOT BY QUOTA (2026-08-07 rework): the original list
+// gated Money behind "check off a habit" and Shared behind "complete a task"
+// — no causal story a user could construct, just quota-filling. Money and
+// Calendar are utilities people may need on day one (a subscription renews,
+// a deadline exists) and must never be gated. Shared already carried a
+// comment saying it was "surfaced early so shared items aren't an
+// afterthought" while simultaneously being locked behind a milestone — that
+// contradiction is gone now too. What's left only gates the one section
+// where the milestone genuinely produces the content that section exists to
+// show: Growth (Habits/Life/Council merged, see components/growth/GrowthHub)
+// needs either a habit or a capture to have anything to show at all.
 export type ActionKey = 'task' | 'capture' | 'habit' | 'checkHabit' | 'completeTask'
 
 export interface Counts {
@@ -36,48 +47,17 @@ export interface UnlockStage {
   isDone: (c: Counts) => boolean
 }
 
+// Sections that are never gated — utilities someone may need from minute one,
+// or (People) a place incoming shared items must always be reachable.
+export const NEVER_GATED = new Set(['calendar', 'money', 'people'])
+
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
-    id: 'habits', label: 'Habits', icon: '◉',
-    teaser: 'Build routines that actually stick.',
-    milestone: 'Track your first habit',
+    id: 'growth', label: 'Growth', icon: '◉',
+    teaser: 'Habits, Life, and the Council — grow at your pace.',
+    milestone: 'Track a habit or capture a thought',
     action: 'habit',
-    isDone: c => c.habits >= 1,
-  },
-  {
-    id: 'domains', label: 'Life', icon: '◇',
-    teaser: 'See your whole life, one glance, 8 areas.',
-    milestone: 'Capture a thought',
-    action: 'capture',
-    isDone: c => c.captures >= 1,
-  },
-  {
-    id: 'calendar', label: 'Calendar', icon: '◎',
-    teaser: 'Every deadline and event, laid out by day.',
-    milestone: 'Add your first task',
-    action: 'task',
-    isDone: c => c.workItems >= 1,
-  },
-  {
-    id: 'money', label: 'Money', icon: '✦',
-    teaser: 'Subscriptions and refills — no surprises.',
-    milestone: 'Check off a habit',
-    action: 'checkHabit',
-    isDone: c => c.habitCompletions >= 1,
-  },
-  {
-    id: 'shared', label: 'Shared', icon: '⇆',
-    teaser: 'Bring people you trust into parts of your life.',
-    milestone: 'Complete a task',
-    action: 'completeTask',
-    isDone: c => c.workItemsDone >= 1,
-  },
-  {
-    id: 'council', label: 'Council', icon: '⌂',
-    teaser: '6 advisors, reviewing your life on demand.',
-    milestone: "Try everything above — Council opens last",
-    action: null,
-    isDone: c => c.habits >= 1 && c.captures >= 1 && c.workItems >= 1 && c.habitCompletions >= 1 && c.workItemsDone >= 1,
+    isDone: c => c.habits >= 1 || c.captures >= 1,
   },
 ]
 
@@ -124,15 +104,16 @@ export function useProgression(unlockAll: boolean) {
   const done = unlockAll || (!loading && UNLOCK_STAGES.every(s => s.isDone(safeCounts)))
 
   const isUnlocked = (sectionId: string): boolean => {
-    if (unlockAll || loading) return true
+    if (unlockAll || loading || NEVER_GATED.has(sectionId)) return true
     const stage = UNLOCK_STAGES.find(s => s.id === sectionId)
     if (!stage) return true // unknown/new sections never get locked by accident
     return stage.isDone(safeCounts)
   }
 
   const stagesWithStatus = UNLOCK_STAGES.map(s => ({ ...s, done: s.isDone(safeCounts) }))
-  const unlockedCount = 2 + stagesWithStatus.filter(s => s.done).length // + Brief, Tasks
-  const total = 2 + UNLOCK_STAGES.length
+  // + Brief, Tasks, Calendar, Money, People — always open, never counted as "to unlock"
+  const unlockedCount = 5 + stagesWithStatus.filter(s => s.done).length
+  const total = 5 + UNLOCK_STAGES.length
   const next = stagesWithStatus.find(s => !s.done) ?? null
 
   return {

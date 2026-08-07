@@ -2,15 +2,18 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
-import { useWorkItems, dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItems'
+import { useWorkItems, dueUrgency, type WorkItem, type Energy } from '@/lib/hooks/useWorkItems'
 import { parseTaskInput, type ParsedTask } from '@/lib/utils/parseTask'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
 import ShareMenu from '@/components/ui/ShareMenu'
 
-const P_COLOR: Record<number, string> = { 1: 'var(--rose)', 2: 'var(--gold)', 3: 'var(--muted)' }
-const P_DOT:   Record<number, string> = { 1: '●', 2: '●', 3: '○' }
+// Energy, not priority — how much of a person a task takes, not a ranking of
+// what matters. No color implies urgency; the dot count is the only signal.
+const E_COLOR: Record<Energy, string> = { light: 'var(--muted)', medium: 'var(--gold)', deep: 'var(--purple)' }
+const E_LABEL: Record<Energy, string> = { light: 'Light', medium: 'Medium', deep: 'Deep' }
+const ENERGY_CYCLE: Record<Energy, Energy> = { light: 'medium', medium: 'deep', deep: 'light' }
 const DUE_COLOR: Record<string, string> = {
   overdue: 'var(--rose)', today: 'var(--amber)', soon: 'var(--gold)',
   fine: 'var(--muted)', none: 'var(--muted)',
@@ -35,8 +38,6 @@ const RECUR_OPTIONS = [
 ]
 
 type Filter = 'all' | 'today' | 'overdue' | 'done'
-
-const P_LABEL: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'P3' }
 
 function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
@@ -90,8 +91,8 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
     if (notesDraft !== (item.notes ?? '')) onUpdate(item.id, { notes: notesDraft || null })
   }
 
-  function cyclePriority() {
-    onUpdate(item.id, { priority: item.priority >= 3 ? 1 : item.priority + 1 })
+  function cycleEnergy() {
+    onUpdate(item.id, { energy: item.energy === null ? 'light' : ENERGY_CYCLE[item.energy] })
   }
 
   return (
@@ -121,18 +122,20 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
           marginTop: '0.05rem',
         }}>{S_ICON[item.status]}</button>
 
-        {/* Priority badge — click to cycle */}
+        {/* Energy badge — click to cycle light → medium → deep. Never a rank:
+            no color implies "more important", just how much focus it takes. */}
         <button
-          onClick={cyclePriority}
-          title="Click to change priority"
+          onClick={cycleEnergy}
+          title="Click to set energy"
           style={{
-            background: 'none', border: `1px solid ${P_COLOR[item.priority]}`,
+            background: 'none', border: `1px solid ${item.energy ? E_COLOR[item.energy] : 'var(--faint)'}`,
             borderRadius: '4px', cursor: 'pointer', padding: '0.05em 0.35em',
-            fontSize: '0.52rem', color: P_COLOR[item.priority], fontFamily: 'var(--font-body)',
+            fontSize: '0.52rem', color: item.energy ? E_COLOR[item.energy] : 'var(--faint)',
+            fontFamily: 'var(--font-body)',
             fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.6, flexShrink: 0,
-            transition: 'all 0.15s', opacity: item.priority === 3 ? 0.5 : 1,
+            transition: 'all 0.15s', opacity: item.energy ? 1 : 0.55,
           }}
-        >{P_LABEL[item.priority]}</button>
+        >{item.energy ? E_LABEL[item.energy] : '+ energy'}</button>
 
         <span style={{
           flex: 1, fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.4,
@@ -260,7 +263,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [due, setDue] = useState('')
-  const [priority, setPriority] = useState(2)
+  const [energy, setEnergy] = useState<Energy | ''>('')
   const [domain, setDomain] = useState('')
   const [recurDays, setRecurDays] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
@@ -274,7 +277,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   function applySuggestion(s: ParsedTask) {
     setTitle(s.title)
     if (s.dueDate) setDue(s.dueDate)
-    if (s.priority) setPriority(s.priority)
+    if (s.energy) setEnergy(s.energy)
     setDismissedFor(s.title) // don't re-suggest on the cleaned title
     titleRef.current?.focus()
   }
@@ -284,12 +287,12 @@ export default function MasterDashboard({ userId }: { userId: string }) {
     const error = await add({
       title: s.title, notes: notes.trim() || null,
       due_date: s.dueDate ?? (due || null),
-      priority: s.priority ?? priority,
+      energy: s.energy ?? (energy || null),
       domain: domain || null,
       recur_days: recurDays ? parseInt(recurDays) : null,
     })
     if (error) { setAddError(error); return }
-    setTitle(''); setNotes(''); setDue(''); setPriority(2); setDomain('')
+    setTitle(''); setNotes(''); setDue(''); setEnergy(''); setDomain('')
     setRecurDays(''); setShowAdd(false); setDismissedFor('')
   }
 
@@ -304,13 +307,13 @@ export default function MasterDashboard({ userId }: { userId: string }) {
     setAddError(null)
     const error = await add({
       title: title.trim(), notes: notes.trim() || null,
-      due_date: due || null, priority, domain: domain || null,
+      due_date: due || null, energy: energy || null, domain: domain || null,
       recur_days: recurDays ? parseInt(recurDays) : null,
     })
     if (error) { setAddError(error); return }
-    setTitle(''); setNotes(''); setDue(''); setPriority(2); setDomain('')
+    setTitle(''); setNotes(''); setDue(''); setEnergy(''); setDomain('')
     setRecurDays(''); setShowAdd(false)
-  }, [title, notes, due, priority, domain, recurDays, add])
+  }, [title, notes, due, energy, domain, recurDays, add])
 
   const overdueCount = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
   const todayCount   = items.filter(i => dueUrgency(i.due_date) === 'today'   && i.status !== 'done').length
@@ -430,10 +433,11 @@ export default function MasterDashboard({ userId }: { userId: string }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.4rem' }}>
             <input type="date" value={due} onChange={e => setDue(e.target.value)} style={inputStyle} title="Due date" />
-            <select value={priority} onChange={e => setPriority(Number(e.target.value))} style={{ ...inputStyle, appearance: 'none' }}>
-              <option value={1}>● Urgent</option>
-              <option value={2}>● Normal</option>
-              <option value={3}>○ Low</option>
+            <select value={energy} onChange={e => setEnergy(e.target.value as Energy | '')} style={{ ...inputStyle, appearance: 'none' }}>
+              <option value="">No energy set</option>
+              <option value="light">○ Light</option>
+              <option value="medium">◐ Medium</option>
+              <option value="deep">● Deep focus</option>
             </select>
             <select value={domain} onChange={e => setDomain(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
               <option value="">No domain</option>
@@ -465,7 +469,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
       )}
 
       <div style={{ marginTop: '1rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.58, letterSpacing: '0.04em' }}>
-        ai prioritization + smart deadlines coming soon · ↻ = recurring · ⇆ = shared with companions
+        smart deadlines coming soon · ↻ = recurring · ⇆ = shared with companions
       </div>
     </div>
   )

@@ -40,11 +40,17 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
   const [url, setUrl] = useState(initialUrl ?? '')
   const [input, setInput] = useState('')
   const [showInput, setShowInput] = useState(!initialUrl)
+  const [error, setError] = useState<string | null>(null)
 
   async function apply() {
     if (!input.trim()) return
+    setError(null)
     const supabase = createClient()
-    await supabase.from('user_prefs').upsert({ user_id: userId, calendar_url: input.trim() })
+    const { error: upsertError } = await supabase.from('user_prefs').upsert({ user_id: userId, calendar_url: input.trim() })
+    if (upsertError) {
+      setError(`Couldn't save: ${upsertError.message}`)
+      return
+    }
     setUrl(input.trim())
     setShowInput(false)
     setInput('')
@@ -84,6 +90,9 @@ export default function CalendarEmbed({ userId, initialUrl }: { userId: string; 
               fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap',
             }}>Apply</button>
           </div>
+          {error && (
+            <div role="alert" style={{ fontSize: '0.72rem', color: 'var(--danger, #c0554d)', marginTop: '0.7rem' }}>{error}</div>
+          )}
         </div>
       ) : (
         <>

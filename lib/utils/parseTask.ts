@@ -1,15 +1,17 @@
 import { addDays, format } from 'date-fns'
 
 // Natural-language task parsing — "hw due today", "essay due friday",
-// "p1 pay rent tomorrow", "renew passport due in 2 weeks", "dentist due 7/15".
+// "write the deck tomorrow", "renew passport due in 2 weeks", "dentist due 7/15".
 // Pure string rules, no AI. The caller must show the result for confirmation
 // before saving; this only suggests.
+
+export type Energy = 'light' | 'medium' | 'deep'
 
 export interface ParsedTask {
   title: string
   dueDate: string | null // yyyy-MM-dd
-  priority: number | null // 1..3
-  summary: string[] // human-readable, e.g. ['due today', 'P1']
+  energy: Energy | null
+  summary: string[] // human-readable, e.g. ['due today', 'deep focus']
 }
 
 const WEEKDAYS: Record<string, number> = {
@@ -109,16 +111,24 @@ const DATE_RULES: DateRule[] = [
   },
 ]
 
-const PRIORITY_RULES: { re: RegExp; priority: number; label: string }[] = [
-  { re: /(?:^|\s)(p1|urgent|asap)\b/i, priority: 1, label: 'P1 urgent' },
-  { re: /(?:^|\s)p2\b/i, priority: 2, label: 'P2' },
-  { re: /(?:^|\s)(p3|low\s+prio(?:rity)?)\b/i, priority: 3, label: 'P3 low' },
+// Energy, not priority — how much of you a task takes, not how important it
+// is. Explicit tags first (most specific), then a small set of common verbs
+// that reliably signal one register or another. This is a suggestion the
+// user confirms, never an auto-classification, so a modest keyword list is
+// fine — it doesn't need to be exhaustive to be useful.
+const ENERGY_RULES: { re: RegExp; energy: Energy; label: string }[] = [
+  { re: /(?:^|\s)(deep|focus)\b/i, energy: 'deep', label: 'deep focus' },
+  { re: /(?:^|\s)(light|quick)\b/i, energy: 'light', label: 'light' },
+  { re: /(?:^|\s)(medium)\b/i, energy: 'medium', label: 'medium' },
+  { re: /(?:^|\s)(write|writing|code|coding|design|designing)\b/i, energy: 'deep', label: 'deep focus' },
+  { re: /(?:^|\s)(email|emails|admin|chores?)\b/i, energy: 'light', label: 'light' },
+  { re: /(?:^|\s)(plan|planning|meeting)\b/i, energy: 'medium', label: 'medium' },
 ]
 
 export function parseTaskInput(raw: string, now = new Date()): ParsedTask | null {
   let rest = raw
   let dueDate: string | null = null
-  let priority: number | null = null
+  let energy: Energy | null = null
   const summary: string[] = []
 
   for (const rule of DATE_RULES) {
@@ -132,16 +142,16 @@ export function parseTaskInput(raw: string, now = new Date()): ParsedTask | null
     break
   }
 
-  for (const rule of PRIORITY_RULES) {
+  for (const rule of ENERGY_RULES) {
     const m = rest.match(rule.re)
     if (!m) continue
-    priority = rule.priority
+    energy = rule.energy
     summary.push(rule.label)
     rest = rest.replace(rule.re, ' ')
     break
   }
 
-  if (dueDate === null && priority === null) return null
+  if (dueDate === null && energy === null) return null
 
   const title = rest
     .replace(/\s{2,}/g, ' ')
@@ -151,5 +161,5 @@ export function parseTaskInput(raw: string, now = new Date()): ParsedTask | null
 
   if (!title) return null
 
-  return { title, dueDate, priority, summary }
+  return { title, dueDate, energy, summary }
 }

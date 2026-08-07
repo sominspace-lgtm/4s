@@ -24,7 +24,7 @@ function runAction(action: ActionKey) {
       return
     case 'habit':
     case 'checkHabit':
-      goToSection('habits')
+      goToSection('growth')
       return
     case 'completeTask':
       goToSection('work')

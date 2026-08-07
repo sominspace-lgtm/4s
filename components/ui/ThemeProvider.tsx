@@ -33,66 +33,6 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '14px', '--radius-sm': '8px',
   },
 
-  // 🌸 Rose — soft plum and pink, elegant
-  rose: {
-    '--bg': '#140b12', '--surface': '#1f1220', '--surface2': '#2b1a2b',
-    '--border': 'rgba(224,120,176,0.11)', '--text': '#f7e9f4',
-    '--muted': 'rgba(247,233,244,0.70)', '--faint': 'rgba(247,233,244,0.06)',
-    '--gold': '#e592c8', '--purple': '#cf74c0', '--emerald': '#a4d6a4',
-    '--rose': '#ef6f96', '--blush': '#f0b4d8', '--amber': '#e8a684',
-    '--slate': '#b88cbc', '--lavender': '#e29ad2',
-    '--accent-2': '#bf7cd2', '--shadow': 'rgba(16,6,14,0.55)',
-    '--glow': 'rgba(229,146,200,0.20)', '--selection': 'rgba(229,146,200,0.16)',
-    '--hover-bg': 'rgba(224,120,176,0.055)',
-    '--font-display': "var(--font-cormorant),'Cormorant Garamond',serif",
-    '--font-body':    "var(--font-instrument),'Instrument Sans',sans-serif",
-    '--font-mono':    "var(--font-fira),'Fira Code',monospace",
-    '--aurora-1': 'rgba(220,80,160,0.10)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(160,50,130,0.06)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(240,100,180,0.04)', '--aurora-pos-3': '50% 20%',
-    '--radius': '16px', '--radius-sm': '9px',
-  },
-
-  // 🌿 Forest — evergreen, calm and grounded
-  forest: {
-    '--bg': '#07110a', '--surface': '#0d1912', '--surface2': '#14231a',
-    '--border': 'rgba(80,190,120,0.10)', '--text': '#e2f3ea',
-    '--muted': 'rgba(226,243,234,0.70)', '--faint': 'rgba(226,243,234,0.06)',
-    '--gold': '#63cc8a', '--purple': '#78bd96', '--emerald': '#4bcc80',
-    '--rose': '#d4917a', '--blush': '#8ad6a8', '--amber': '#ccb468',
-    '--slate': '#58ac78', '--lavender': '#98cca8',
-    '--accent-2': '#96cc4e', '--shadow': 'rgba(3,12,7,0.55)',
-    '--glow': 'rgba(99,204,138,0.18)', '--selection': 'rgba(99,204,138,0.15)',
-    '--hover-bg': 'rgba(80,190,120,0.05)',
-    '--font-display': "var(--font-lora),'Lora',serif",
-    '--font-body':    "var(--font-source-sans),'Source Sans 3',sans-serif",
-    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
-    '--aurora-1': 'rgba(30,160,70,0.09)', '--aurora-pos-1': 'bottom left',
-    '--aurora-2': 'rgba(60,120,40,0.06)', '--aurora-pos-2': 'top right',
-    '--aurora-3': 'rgba(100,200,80,0.035)', '--aurora-pos-3': '20% 80%',
-    '--radius': '13px', '--radius-sm': '7px',
-  },
-
-  // 🌊 Ocean — slate blue, clean and flowing
-  ocean: {
-    '--bg': '#050f19', '--surface': '#0a1826', '--surface2': '#102234',
-    '--border': 'rgba(80,175,225,0.11)', '--text': '#e2f1f9',
-    '--muted': 'rgba(226,241,249,0.70)', '--faint': 'rgba(226,241,249,0.06)',
-    '--gold': '#56cae8', '--purple': '#76a4da', '--emerald': '#48d2b2',
-    '--rose': '#e28d95', '--blush': '#86daf0', '--amber': '#d2c268',
-    '--slate': '#5684bc', '--lavender': '#94b4e2',
-    '--accent-2': '#6494d2', '--shadow': 'rgba(3,10,18,0.55)',
-    '--glow': 'rgba(86,202,232,0.18)', '--selection': 'rgba(86,202,232,0.15)',
-    '--hover-bg': 'rgba(80,175,225,0.055)',
-    '--font-display': "var(--font-fraunces),'Fraunces',serif",
-    '--font-body':    "var(--font-ibm-plex-sans),'IBM Plex Sans',sans-serif",
-    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
-    '--aurora-1': 'rgba(30,140,220,0.12)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(20,100,200,0.08)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(50,180,240,0.045)', '--aurora-pos-3': '80% top',
-    '--radius': '12px', '--radius-sm': '7px',
-  },
-
   // 🔥 Ember — charcoal with warm amber-orange
   ember: {
     '--bg': '#100c09', '--surface': '#1b1611', '--surface2': '#26201a',
@@ -132,26 +72,6 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--aurora-2': 'rgba(120,60,20,0.035)', '--aurora-pos-2': 'bottom left',
     '--aurora-3': 'rgba(180,110,40,0.025)', '--aurora-pos-3': 'center top',
     '--radius': '18px', '--radius-sm': '10px',
-  },
-
-  // ☕ Sand — muted beige, coffee-shop warmth
-  sand: {
-    '--bg': '#14110c', '--surface': '#1e1a14', '--surface2': '#29251d',
-    '--border': 'rgba(210,185,140,0.10)', '--text': '#f2ede4',
-    '--muted': 'rgba(242,237,228,0.70)', '--faint': 'rgba(242,237,228,0.06)',
-    '--gold': '#c8a563', '--purple': '#ac8cb4', '--emerald': '#84ac74',
-    '--rose': '#c4847a', '--blush': '#dcbc84', '--amber': '#c4a448',
-    '--slate': '#9c9cac', '--lavender': '#c4acbc',
-    '--accent-2': '#8e6c44', '--shadow': 'rgba(14,11,7,0.55)',
-    '--glow': 'rgba(200,165,99,0.18)', '--selection': 'rgba(200,165,99,0.15)',
-    '--hover-bg': 'rgba(210,185,140,0.055)',
-    '--font-display': "var(--font-spectral),'Spectral',serif",
-    '--font-body':    "var(--font-work-sans),'Work Sans',sans-serif",
-    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
-    '--aurora-1': 'rgba(200,165,90,0.07)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(160,125,60,0.05)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(220,190,120,0.035)', '--aurora-pos-3': 'center top',
-    '--radius': '17px', '--radius-sm': '9px',
   },
 
   // 🍇 Plum — dark violet, creative and expressive
@@ -194,67 +114,6 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '10px', '--radius-sm': '6px',
   },
 
-  // 🪻 Lavender — soft purple-gray, relaxed and dreamy
-  lavender: {
-    '--bg': '#0e0c15', '--surface': '#17131f', '--surface2': '#201a2b',
-    '--border': 'rgba(168,148,224,0.10)', '--text': '#ece8f8',
-    '--muted': 'rgba(236,232,248,0.70)', '--faint': 'rgba(236,232,248,0.06)',
-    '--gold': '#b4a4e2', '--purple': '#a494d2', '--emerald': '#8ccaa4',
-    '--rose': '#e294b4', '--blush': '#d4bcea', '--amber': '#d2bc84',
-    '--slate': '#8c84bc', '--lavender': '#c4b4e2',
-    '--accent-2': '#e2a4d2', '--shadow': 'rgba(10,8,18,0.55)',
-    '--glow': 'rgba(180,164,226,0.18)', '--selection': 'rgba(180,164,226,0.15)',
-    '--hover-bg': 'rgba(168,148,224,0.05)',
-    '--font-display': "var(--font-newsreader),'Newsreader',serif",
-    '--font-body':    "var(--font-nunito),'Nunito Sans',sans-serif",
-    '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
-    '--aurora-1': 'rgba(140,100,240,0.09)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(200,120,200,0.06)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(160,120,255,0.045)', '--aurora-pos-3': '60% 10%',
-    '--radius': '15px', '--radius-sm': '8px',
-  },
-
-  // 🌌 Aurora — deep teal/navy with northern-lights accents
-  aurora: {
-    '--bg': '#061013', '--surface': '#0a1a22', '--surface2': '#10262f',
-    '--border': 'rgba(92,224,184,0.11)', '--text': '#e6faf4',
-    '--muted': 'rgba(230,250,244,0.70)', '--faint': 'rgba(230,250,244,0.06)',
-    '--gold': '#62e6b4', '--purple': '#9c7ce8', '--emerald': '#54e2a4',
-    '--rose': '#e28d95', '--blush': '#84e2d2', '--amber': '#e2c264',
-    '--slate': '#54acc4', '--lavender': '#a494e8',
-    '--accent-2': '#4ccae2', '--shadow': 'rgba(3,10,14,0.55)',
-    '--glow': 'rgba(98,230,180,0.20)', '--selection': 'rgba(98,230,180,0.16)',
-    '--hover-bg': 'rgba(92,224,184,0.055)',
-    '--font-display': "var(--font-newsreader),'Newsreader',serif",
-    '--font-body':    "var(--font-inter),'Inter',sans-serif",
-    '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
-    '--aurora-1': 'rgba(60,220,150,0.13)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(60,160,220,0.09)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(140,90,230,0.07)', '--aurora-pos-3': '50% 30%',
-    '--radius': '14px', '--radius-sm': '8px',
-  },
-
-  // 🌸 Sakura — soft pink light theme, warm and gentle
-  sakura: {
-    '--scheme': 'light',
-    '--bg': '#fdf3f5', '--surface': '#fffafb', '--surface2': '#f8ebee',
-    '--border': 'rgba(200,90,130,0.13)', '--text': '#38202a',
-    '--muted': 'rgba(56,32,42,0.66)', '--faint': 'rgba(56,32,42,0.06)',
-    '--gold': '#a83060', '--purple': '#88588e', '--emerald': '#367048',
-    '--rose': '#c8406c', '--blush': '#b23e6a', '--amber': '#9c5628',
-    '--slate': '#56487c', '--lavender': '#78588e',
-    '--accent-2': '#88588e', '--shadow': 'rgba(170,90,120,0.14)',
-    '--glow': 'rgba(168,48,96,0.16)', '--selection': 'rgba(168,48,96,0.12)',
-    '--hover-bg': 'rgba(200,90,130,0.045)',
-    '--font-display': "var(--font-newsreader),'Newsreader',serif",
-    '--font-body':    "var(--font-nunito),'Nunito Sans',sans-serif",
-    '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
-    '--aurora-1': 'rgba(220,120,160,0.07)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(200,100,140,0.045)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(240,160,190,0.035)', '--aurora-pos-3': 'center top',
-    '--radius': '18px', '--radius-sm': '10px',
-  },
-
   // ☀️ Solar — bright premium light theme, sunlit cream and sky
   solar: {
     '--scheme': 'light',
@@ -278,10 +137,31 @@ export const THEMES: Record<string, Record<string, string>> = {
 }
 
 export const THEME_LABELS: Record<string, string> = {
-  sunset: 'Moonlight', rose: 'Rose', forest: 'Forest', ocean: 'Ocean',
-  ember: 'Ember', ash: 'Linen', sand: 'Sand', plum: 'Plum',
-  noir: 'Obsidian', lavender: 'Lavender',
-  aurora: 'Aurora', sakura: 'Sakura', solar: 'Solar',
+  sunset: 'Moonlight', ember: 'Ember', plum: 'Plum',
+  noir: 'Obsidian', ash: 'Linen', solar: 'Solar',
+}
+
+// Cut from 13 to 6 (2026-08-07): two dark neutral (Moonlight, Obsidian), two
+// dark warm (Ember, Plum), two light (Linen, Solar) — enough range for every
+// mood without asking a new user to compare thirteen near-identical dark
+// palettes at the one moment they should be experiencing the product, not
+// deciding about it. Retired themes remap to their nearest surviving
+// relative below, same pattern as the Guides 9→5 consolidation — applied at
+// read time via normalizeTheme(), so nobody's saved preference breaks.
+export const LEGACY_THEME_MAP: Record<string, string> = {
+  rose: 'plum',       // dark warm jewel-tone family
+  lavender: 'plum',   // dark purple family
+  forest: 'sunset',   // dark neutral calm
+  ocean: 'sunset',    // dark neutral blue
+  aurora: 'sunset',   // dark neutral premium multi-tone
+  sand: 'ember',       // dark warm coffee/amber family
+  sakura: 'ash',      // light warm/gentle
+}
+
+export function normalizeTheme(raw: string | null | undefined): string {
+  if (raw && raw in THEMES) return raw
+  if (raw && raw in LEGACY_THEME_MAP) return LEGACY_THEME_MAP[raw]
+  return 'sunset'
 }
 
 const ALL_VARS = [
@@ -296,7 +176,7 @@ const ALL_VARS = [
 
 export default function ThemeProvider({ theme = 'sunset', children }: { theme?: string; children: React.ReactNode }) {
   useEffect(() => {
-    const vars = THEMES[theme] ?? THEMES.sunset
+    const vars = THEMES[normalizeTheme(theme)]
     const root = document.documentElement
     ALL_VARS.forEach(k => root.style.removeProperty(k))
     Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v))

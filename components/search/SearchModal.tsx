@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
-import { goToSection } from '@/lib/utils/navigate'
+import { goToSection, goToGrowth } from '@/lib/utils/navigate'
 import { DOMAINS } from '@/lib/constants/domains'
 
 const TYPE_ICON: Record<string, string> = {
@@ -52,8 +52,10 @@ function goTo(sectionId: string) {
 }
 
 // Where each search result lives, so activating one jumps to the right tab.
+// 'habit' is handled separately below — it needs Growth's Habits sub-tab,
+// not just the Growth tab itself.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
-  capture: 'brief', work: 'work', wishlist: 'money', habit: 'habits', note: 'brief',
+  capture: 'brief', work: 'work', wishlist: 'money', habit: 'growth', note: 'brief',
 }
 
 interface Props {
@@ -73,14 +75,14 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'what-attention', label: 'What needs attention', hint: 'Brief', icon: '◒', keywords: ['attention', 'urgent', 'important', 'priorities', 'what matters', 'today', 'now', 'focus'], run: () => goTo('brief') },
     { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
     { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goTo('work') },
-    { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goTo('habits') },
-    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions', 'home brain', 'wifi', 'password', 'serial', 'manual', 'household'], run: () => goTo('domains') },
+    { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goToGrowth('habits') },
+    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions', 'home brain', 'wifi', 'password', 'serial', 'manual', 'household'], run: () => goToGrowth('life') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goTo('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('calendar') },
-    { id: 'go-shared',   label: 'Go to Shared',      icon: '⇆', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space'], run: () => goTo('shared') },
-    { id: 'go-council',  label: 'Go to Council',     icon: '⌂', keywords: ['council', 'advice', 'advisor', 'reflect', 'decision', 'guidance'], run: () => goTo('council') },
+    { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goTo('people') },
+    { id: 'go-council',  label: 'Go to Council',     icon: '⌂', keywords: ['council', 'advice', 'advisor', 'reflect', 'decision', 'guidance'], run: () => goToGrowth('council') },
     { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
-    { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goTo('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
+    { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToGrowth('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
     { id: 'capture-thought', label: 'Capture a thought', hint: 'Brief', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'inbox', 'quick add'], run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
     { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
     { id: 'switch-mode',  label: 'Switch mode',      icon: '◐', keywords: ['mode', 'personality', 'tone', 'guide', 'voice'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
@@ -95,7 +97,7 @@ export default function SearchModal({ open, onClose }: Props) {
     hint: d.sublabel,
     icon: d.icon,
     keywords: ['review', 'check', d.label.toLowerCase(), d.sublabel.toLowerCase()],
-    run: () => goTo('domains'),
+    run: () => goToGrowth('life'),
   }))
 
   const allCommands = [...baseCommands, ...domainCommands]
@@ -127,7 +129,11 @@ export default function SearchModal({ open, onClose }: Props) {
   function runAt(i: number) {
     if (i < matchedCommands.length) { matchedCommands[i].run(); onClose(); return }
     const r = results[i - matchedCommands.length]
-    if (r) { goTo(RESULT_SECTION[r.type] ?? 'brief'); onClose() }
+    if (r) {
+      if (r.type === 'habit') goToGrowth('habits')
+      else goTo(RESULT_SECTION[r.type] ?? 'brief')
+      onClose()
+    }
   }
 
   function handleKey(e: React.KeyboardEvent) {

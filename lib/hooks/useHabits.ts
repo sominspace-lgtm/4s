@@ -102,18 +102,27 @@ export function useHabits() {
     const done = dates.includes(dateStr)
 
     if (done) {
-      await supabase.from('habit_completions')
+      const { error } = await supabase.from('habit_completions')
         .delete()
         .eq('habit_id', habitId)
         .eq('completed_date', dateStr)
+      if (error) {
+        console.error('Failed to remove habit completion:', error.message)
+        return { error }
+      }
       setCompletions(prev => ({ ...prev, [habitId]: prev[habitId].filter(d => d !== dateStr) }))
     } else {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      await supabase.from('habit_completions').insert({ habit_id: habitId, completed_date: dateStr, user_id: user.id })
+      if (!user) return { error: new Error('Not signed in') }
+      const { error } = await supabase.from('habit_completions').insert({ habit_id: habitId, completed_date: dateStr, user_id: user.id })
+      if (error) {
+        console.error('Failed to record habit completion:', error.message)
+        return { error }
+      }
       setCompletions(prev => ({ ...prev, [habitId]: [...(prev[habitId] || []), dateStr] }))
     }
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+    return { error: null }
   }
 
   interface ScheduleInput {
@@ -124,37 +133,45 @@ export function useHabits() {
 
   async function addHabit(name: string, category: string, schedule?: ScheduleInput) {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('habits').insert({
+    if (!user) return { error: new Error('Not signed in') }
+    const { data, error } = await supabase.from('habits').insert({
       name, category: category || null, user_id: user.id,
       schedule_type: schedule?.schedule_type ?? 'daily',
       interval_days: schedule?.interval_days ?? null,
       days_of_week: schedule?.days_of_week ?? null,
     }).select().single()
-    if (data) setHabits(prev => [...prev, data])
+    if (error) return { error }
+    setHabits(prev => [...prev, data])
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+    return { error: null }
   }
 
   async function updateSchedule(id: string, schedule: ScheduleInput) {
-    await supabase.from('habits').update(schedule).eq('id', id)
+    const { error } = await supabase.from('habits').update(schedule).eq('id', id)
+    if (error) return { error }
     setHabits(prev => prev.map(h => h.id === id ? { ...h, ...schedule } as Habit : h))
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+    return { error: null }
   }
 
   async function togglePaused(id: string) {
     const habit = habits.find(h => h.id === id)
-    if (!habit) return
+    if (!habit) return { error: null }
     const paused = !habit.paused
-    await supabase.from('habits').update({ paused }).eq('id', id)
+    const { error } = await supabase.from('habits').update({ paused }).eq('id', id)
+    if (error) return { error }
     setHabits(prev => prev.map(h => h.id === id ? { ...h, paused } : h))
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+    return { error: null }
   }
 
   async function deleteHabit(id: string) {
-    await supabase.from('habits').delete().eq('id', id)
+    const { error } = await supabase.from('habits').delete().eq('id', id)
+    if (error) return { error }
     setHabits(prev => prev.filter(h => h.id !== id))
     setCompletions(prev => { const n = { ...prev }; delete n[id]; return n })
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
+    return { error: null }
   }
 
   return { habits, completions, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit }

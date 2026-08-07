@@ -54,12 +54,14 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, onT
 
   async function setTheme(t: string) {
     onThemeChange(t)
-    await supabase.from('user_prefs').upsert({ user_id: userId, theme: t })
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, theme: t })
+    if (error) console.error('Failed to save theme:', error.message)
   }
 
   async function setMode(m: Mode) {
     onModeChange(m)
-    await supabase.from('user_prefs').upsert({ user_id: userId, mode: m })
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, mode: m })
+    if (error) console.error('Failed to save mode:', error.message)
   }
 
   const tabStyle = (active: boolean): React.CSSProperties => ({

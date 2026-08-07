@@ -19,24 +19,23 @@ const DOMAIN_OPTIONS = [
   { id: 'self', label: 'Self', icon: '◎' },
 ]
 
+// Cut from 7 to 3 (2026-08-07): Family/Couple/Household/Trip were the same
+// choice — "life shared with people close to you" — at different scales, a
+// distinction invisible to someone who doesn't know what a domain is yet.
+// Student/Creator were likewise both "building something of your own."
+// Fewer, clearer choices at the one moment a new user is asked to decide
+// anything before they've seen the product work.
 const TEMPLATES = [
-  { id: 'personal', label: 'Personal', icon: '◎', domains: ['self', 'health', 'home'],          habit: { name: 'Journal',                category: 'self' } },
-  { id: 'family',   label: 'Family',   icon: '⌂', domains: ['relationship', 'home', 'money'],    habit: { name: 'Family check-in',        category: 'relationship' } },
-  { id: 'couple',   label: 'Couple',   icon: '♡', domains: ['relationship', 'self', 'home'],     habit: { name: 'Plan a date',             category: 'relationship' } },
-  { id: 'student',  label: 'Student',  icon: '✦', domains: ['self', 'biz-future', 'money'],      habit: { name: 'Study session',          category: 'self' } },
-  { id: 'creator',  label: 'Creator',  icon: '◈', domains: ['creative', 'biz-active', 'money'],  habit: { name: 'Create something',       category: 'creative' } },
-  { id: 'household', label: 'Household', icon: '⌂', domains: ['home', 'money', 'relationship'],  habit: { name: 'Household check-in',     category: 'home' } },
-  { id: 'trip',      label: 'Trip',      icon: '◎', domains: ['home', 'money', 'self'],          habit: { name: 'Pack / plan for trip',   category: 'home' } },
+  { id: 'personal', label: 'Personal', icon: '◎', domains: ['self', 'health', 'home'],           habit: { name: 'Journal',              category: 'self' } },
+  { id: 'together', label: 'Together', icon: '♡', domains: ['relationship', 'home', 'money'],     habit: { name: 'Plan time together',   category: 'relationship' } },
+  { id: 'building', label: 'Building', icon: '◈', domains: ['creative', 'biz-active', 'money'],   habit: { name: 'Work on your thing',   category: 'creative' } },
 ]
 
 // Notes are the only thing hand-written here — bg/accent come straight from
 // the real theme tokens so this can never drift out of sync with them again.
 const THEME_NOTES: Record<string, string> = {
-  sunset: 'deep indigo · premium', rose: 'soft plum · elegant', forest: 'evergreen · calm',
-  ocean: 'slate blue · clean', ember: 'charcoal · warm', ash: 'warm paper · light',
-  sand: 'coffee · cozy', plum: 'dark violet · creative', noir: 'near-mono · stark',
-  lavender: 'purple-gray · relaxed', aurora: 'northern lights · multi-accent',
-  sakura: 'soft pink · gentle', solar: 'sunlit cream · bright',
+  sunset: 'deep indigo · premium', ember: 'charcoal · warm', ash: 'warm paper · light',
+  plum: 'dark violet · creative', noir: 'near-mono · stark', solar: 'sunlit cream · bright',
 }
 const THEMES = Object.keys(THEME_TOKENS).map(id => ({
   id, label: THEME_LABELS[id], bg: THEME_TOKENS[id]['--bg'], accent: THEME_TOKENS[id]['--gold'],
@@ -72,6 +71,19 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   )
 }
 
+function ErrorNote({ message }: { message: string | null }) {
+  if (!message) return null
+  return (
+    <div role="alert" style={{
+      fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--text)',
+      padding: '0.6rem 0.8rem', marginBottom: '0.8rem',
+      borderRadius: 'var(--radius-sm, 10px)',
+      border: '1px solid color-mix(in srgb, var(--danger, #c0554d) 45%, var(--border))',
+      background: 'color-mix(in srgb, var(--danger, #c0554d) 10%, transparent)',
+    }}>{message}</div>
+  )
+}
+
 function RecapChip({ label }: { label: string }) {
   return (
     <span style={{
@@ -100,6 +112,7 @@ export default function OnboardPage() {
   const [habitCategory, setHabitCategory] = useState(defaultTemplate.habit.category)
   const [captureText, setCaptureText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [template, setTemplate] = useState<string | null>(defaultTemplate.id)
 
   function toggleDomain(id: string) {
@@ -113,26 +126,60 @@ export default function OnboardPage() {
     setHabitCategory(tpl.habit.category)
   }
 
+  // Every exit from here must either land the user on the dashboard or tell
+  // them what went wrong and let them try again. This used to `return` on a
+  // missing session while `saving` stayed true, which left a permanently
+  // disabled button, no message and no retry — at the one moment the user has
+  // already invested five steps. Never fail silently here.
   async function finish() {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    setError(null)
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setError("We couldn't confirm your session. Your answers are still here — try again.")
+        return
+      }
 
-    if (habitName.trim()) {
-      await supabase.from('habits').insert({ user_id: user.id, name: habitName.trim(), category: habitCategory })
-    }
-    if (captureText.trim()) {
-      await supabase.from('captures').insert({ user_id: user.id, text: captureText.trim() })
-    }
-    await supabase.from('user_prefs').upsert({
-      user_id: user.id,
-      onboarded: true,
-      theme: selectedTheme,
-      mode: selectedMode,
-      ...(displayName.trim() ? { display_name: displayName.trim() } : {}),
-    })
+      // The habit and the first thought are a nice-to-have; the prefs write is
+      // what actually completes onboarding. So a failure on either is reported
+      // but never blocks someone from reaching their dashboard.
+      const optional: string[] = []
+      if (habitName.trim()) {
+        const { error } = await supabase.from('habits')
+          .insert({ user_id: user.id, name: habitName.trim(), category: habitCategory })
+        if (error) optional.push('your first habit')
+      }
+      if (captureText.trim()) {
+        const { error } = await supabase.from('captures')
+          .insert({ user_id: user.id, text: captureText.trim() })
+        if (error) optional.push('your first thought')
+      }
 
-    router.push('/dashboard')
+      const { error: prefsError } = await supabase.from('user_prefs').upsert({
+        user_id: user.id,
+        onboarded: true,
+        theme: selectedTheme,
+        mode: selectedMode,
+        ...(displayName.trim() ? { display_name: displayName.trim() } : {}),
+      })
+      if (prefsError) {
+        setError(`We couldn't save your setup: ${prefsError.message}`)
+        return
+      }
+
+      if (optional.length > 0) {
+        // Onboarding succeeded, so go — but don't pretend everything landed.
+        sessionStorage.setItem('4s-onboard-partial', optional.join(' and '))
+      }
+      router.push('/dashboard')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Try again.')
+    } finally {
+      // Runs on every path, including the successful push — the button can
+      // never be left stuck.
+      setSaving(false)
+    }
   }
 
   return (
@@ -172,6 +219,7 @@ export default function OnboardPage() {
               </button>
             )}
           </div>
+          <ErrorNote message={error} />
 
           {/* Step 0 — Name */}
           {step === 0 && (

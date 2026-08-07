@@ -13,7 +13,7 @@ import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { DOMAINS } from '@/lib/constants/domains'
-import { goToSection } from '@/lib/utils/navigate'
+import { goToSection, goToGrowth } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -249,11 +249,11 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       line: overdue + dueToday > 0 ? `${overdue} overdue · ${dueToday} due today` : 'Queue clear',
     },
     {
-      label: 'Habits', action: 'Open Habits', onAction: () => goToSection('habits'),
+      label: 'Habits', action: 'Open Habits', onAction: () => goToGrowth('habits'),
       line: habitsTotal > 0 ? `${habitsDoneToday}/${habitsTotal} done today` : habits.length > 0 ? 'No habits due today' : 'No habits yet',
     },
     {
-      label: 'Life', action: 'Open Life', onAction: () => goToSection('domains'),
+      label: 'Life', action: 'Open Life', onAction: () => goToGrowth('life'),
       line: !lifeReviewedOnce
         ? `${DOMAINS.length} domains · not reviewed yet`
         : domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} · review due` : `${DOMAINS.length} domains · all steady`,
@@ -263,7 +263,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       line: calendarConnected ? 'View your schedule' : 'Not connected yet',
     },
     {
-      label: 'Council', action: 'Ask Council', onAction: () => goToSection('council'),
+      label: 'Council', action: 'Ask Council', onAction: () => goToGrowth('council'),
       line: '6 advisors ready',
     },
     {
@@ -275,7 +275,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           : `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
     },
     {
-      label: 'Shared', action: 'Open Shared', onAction: () => goToSection('shared'),
+      label: 'People', action: 'Open People', onAction: () => goToSection('people'),
       line: sharedWithMeCount > 0 ? `${sharedWithMeCount} shared with you` : 'Nothing shared yet',
     },
   ]

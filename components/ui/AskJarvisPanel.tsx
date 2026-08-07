@@ -15,7 +15,7 @@ interface Props {
 
 const PROMPTS = [
   { label: 'What needs attention?',    run: () => goToSection('brief') },
-  { label: 'What was shared with me?', run: () => goToSection('shared') },
+  { label: 'What was shared with me?', run: () => goToSection('people') },
   { label: 'Summarize my week',        run: () => goToSection('week-review') },
 ]
 

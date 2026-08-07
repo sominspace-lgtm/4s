@@ -25,6 +25,7 @@ export default function QuickCapture() {
   const [text, setText] = useState('')
   const [domain, setDomain] = useState('')
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const supabase = createClient()
 
@@ -34,6 +35,7 @@ export default function QuickCapture() {
         e.preventDefault()
         setOpen(o => !o)
         setSaved(false)
+        setError(null)
         setText('')
         setDomain('')
       }
@@ -47,12 +49,27 @@ export default function QuickCapture() {
     if (open) setTimeout(() => inputRef.current?.focus(), 30)
   }, [open])
 
+  // This is the app's single most-used entry point — losing a thought here
+  // silently is the worst place for it to happen. It used to show "captured
+  // ✓" regardless of whether the insert actually succeeded, and cleared the
+  // text either way. Now: only claim success on real success, and never wipe
+  // what someone typed if it didn't save.
   async function submit() {
     const trimmed = text.trim()
     if (!trimmed) return
+    setError(null)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('captures').insert({ text: trimmed, user_id: user.id, domain: domain || null })
+    if (!user) {
+      setError("Couldn't confirm your session — your text is still here, try again.")
+      return
+    }
+    const { error: insertError } = await supabase
+      .from('captures')
+      .insert({ text: trimmed, user_id: user.id, domain: domain || null })
+    if (insertError) {
+      setError(`Couldn't save: ${insertError.message}`)
+      return
+    }
     setSaved(true)
     setText('')
     setDomain('')
@@ -108,6 +125,12 @@ export default function QuickCapture() {
               />
             </div>
 
+            {error && (
+              <div role="alert" style={{
+                fontSize: '0.72rem', color: 'var(--danger, #c0554d)',
+                padding: '0 1.4rem 0.6rem',
+              }}>{error}</div>
+            )}
             <div style={{ padding: '0.75rem 1.4rem', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <select
                 value={domain}
