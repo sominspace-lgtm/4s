@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem, type Energy } from '@/lib/hooks/useWorkItems'
 import { parseTaskInput, type ParsedTask } from '@/lib/utils/parseTask'
+import { taskStage } from '@/lib/utils/taskStage'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
@@ -52,6 +53,7 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
   const urgency = dueUrgency(item.due_date)
+  const stage = taskStage(item)
 
   // Swipe right to complete — the primary mobile gesture. Only engages on a
   // clearly horizontal drag so vertical scrolling and tapping controls still
@@ -163,6 +165,25 @@ function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }:
         <div style={{ opacity: hovered ? 1 : 0.6, flexShrink: 0 }}>
           <ShareMenu itemType="work_item" itemId={item.id} userId={userId} />
         </div>
+
+        {/* Landmark — earned, not automatic on every completion, or every
+            grocery run would become a monument. Ran 14+ days: automatic, see
+            lib/utils/taskStage.ts. Otherwise: a manual pin, one-way — once
+            earned, never taken away by a toggle. */}
+        {item.status === 'done' && stage === 'landmark' && (
+          <span title="Landmark — this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.68rem', flexShrink: 0, lineHeight: 1 }}>◆</span>
+        )}
+        {item.status === 'done' && stage === 'completed' && (
+          <button
+            onClick={() => onUpdate(item.id, { landmark: true })}
+            title="Mark as a landmark — keep this one in the skyline"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+              fontSize: '0.58rem', color: 'var(--muted)', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >◇ landmark</button>
+        )}
 
         <button onClick={() => onRemove(item.id)} style={{
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,

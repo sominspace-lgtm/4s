@@ -17,6 +17,8 @@ export interface WorkItem {
   recur_days: number | null
   shared: boolean
   created_at: string
+  completed_at: string | null
+  landmark: boolean
 }
 
 export function dueUrgency(due: string | null): 'overdue' | 'today' | 'soon' | 'fine' | 'none' {
