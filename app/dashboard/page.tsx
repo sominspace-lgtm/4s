@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeMode } from '@/lib/constants/modes'
-import { normalizeTheme } from '@/components/ui/ThemeProvider'
+import { normalizeTheme } from '@/lib/constants/themes'
 import DashboardClient from './DashboardClient'
 import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
 
