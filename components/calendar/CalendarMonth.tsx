@@ -6,6 +6,7 @@ import {
   addDays, isSameMonth, isSameDay, isToday,
 } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
+import { useEvents } from '@/lib/hooks/useEvents'
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MAX_DOTS = 4
@@ -14,8 +15,10 @@ const MAX_DOTS = 4
 // refills, gifts. Click a day to see its items below the grid.
 export default function CalendarMonth() {
   const entries = useAgendaEntries()
+  const { add: addEvent, remove: removeEvent } = useEvents()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
+  const [newTitle, setNewTitle] = useState('')
 
   const gridStart = startOfWeek(startOfMonth(month))
   const gridEnd = endOfWeek(endOfMonth(month))
@@ -120,9 +123,43 @@ export default function CalendarMonth() {
                   padding: '0.12em 0.5em', borderRadius: '4px', minWidth: '52px', textAlign: 'center',
                 }}>{meta.label}</span>
                 <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', fontWeight: 300 }}>{e.label}</span>
+                {/* Only standalone events are directly deletable here — a
+                    task/renewal/refill/gift row is derived from its own hub
+                    and should be edited there, not silently forked here. */}
+                {e.type === 'event' && e.id && (
+                  <button
+                    onClick={() => removeEvent(e.id!)}
+                    aria-label="Remove event"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.2rem', flexShrink: 0 }}
+                  >✕</button>
+                )}
               </div>
             )
           })}
+
+          {/* Add a standalone event to this day — the one thing the native
+              calendar couldn't do before: anything that isn't already a
+              task/renewal/refill/gift (an appointment, a birthday party). */}
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!newTitle.trim() || !selected) return
+              await addEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'))
+              setNewTitle('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}
+          >
+            <input
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              placeholder="+ Add an event to this day"
+              style={{
+                flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                outline: 'none', fontSize: '0.74rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
+                padding: '0.3rem 0.1rem',
+              }}
+            />
+          </form>
         </div>
       )}
 

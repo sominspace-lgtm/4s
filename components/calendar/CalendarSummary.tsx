@@ -2,11 +2,12 @@
 
 import { format, differenceInCalendarDays } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
+import { useEvents } from '@/lib/hooks/useEvents'
 
 const WINDOW_DAYS = 14
 const MAX_UPCOMING = 8
 
-function Row({ entry, overdue }: { entry: AgendaEntry; overdue: boolean }) {
+function Row({ entry, overdue, onRemoveEvent }: { entry: AgendaEntry; overdue: boolean; onRemoveEvent: (id: string) => void }) {
   const meta = AGENDA_TYPE_META[entry.type]
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.35rem 0', borderBottom: '1px solid var(--faint)' }}>
@@ -21,6 +22,13 @@ function Row({ entry, overdue }: { entry: AgendaEntry; overdue: boolean }) {
       <span style={{ fontSize: '0.64rem', color: overdue ? 'var(--rose)' : 'var(--muted)', flexShrink: 0 }}>
         {overdue ? 'overdue' : format(entry.date, 'EEE, MMM d')}
       </span>
+      {entry.type === 'event' && entry.id && (
+        <button
+          onClick={() => onRemoveEvent(entry.id!)}
+          aria-label="Remove event"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.1rem', flexShrink: 0 }}
+        >✕</button>
+      )}
     </div>
   )
 }
@@ -30,6 +38,7 @@ function Row({ entry, overdue }: { entry: AgendaEntry; overdue: boolean }) {
 // embed below; this works with or without it.
 export default function CalendarSummary() {
   const entries = useAgendaEntries()
+  const { remove: removeEvent } = useEvents()
   const now = new Date()
 
   const dayDiff = (d: Date) => differenceInCalendarDays(d, now)
@@ -53,14 +62,14 @@ export default function CalendarSummary() {
       {today.length > 0 && (
         <div style={{ marginTop: '0.4rem' }}>
           <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.8, marginBottom: '0.2rem' }}>Today</div>
-          {today.map(e => <Row key={e.key} entry={e} overdue={dayDiff(e.date) < 0} />)}
+          {today.map(e => <Row key={e.key} entry={e} overdue={dayDiff(e.date) < 0} onRemoveEvent={removeEvent} />)}
         </div>
       )}
 
       {upcoming.length > 0 && (
         <div style={{ marginTop: today.length > 0 ? '0.7rem' : '0.4rem' }}>
           <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.8, marginBottom: '0.2rem' }}>Upcoming · next {WINDOW_DAYS} days</div>
-          {upcoming.map(e => <Row key={e.key} entry={e} overdue={false} />)}
+          {upcoming.map(e => <Row key={e.key} entry={e} overdue={false} onRemoveEvent={removeEvent} />)}
         </div>
       )}
     </div>

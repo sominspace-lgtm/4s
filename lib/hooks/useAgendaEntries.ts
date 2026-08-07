@@ -5,12 +5,14 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useGiftEvents, nextOccurrence } from '@/lib/hooks/useGiftEvents'
 import { useBuyItems, runoutDate, computeStatus } from '@/lib/hooks/useBuyItems'
+import { useEvents } from '@/lib/hooks/useEvents'
 
 export interface AgendaEntry {
   key: string
   date: Date
   label: string
-  type: 'task' | 'renewal' | 'refill' | 'gift'
+  type: 'task' | 'renewal' | 'refill' | 'gift' | 'event'
+  id?: string   // raw row id — only 'event' entries are directly editable/deletable from the calendar
 }
 
 export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; color: string }> = {
@@ -18,16 +20,19 @@ export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; colo
   renewal: { label: 'renewal', color: 'var(--emerald)' },
   refill:  { label: 'refill',  color: 'var(--amber)' },
   gift:    { label: 'gift',    color: 'var(--blush)' },
+  event:   { label: 'event',   color: 'var(--purple)' },
 }
 
 // Everything the app knows that has a date — dated tasks, renewals, refill
-// run-outs, gift dates. Consumers window/bucket as needed (agenda list,
-// month grid). No external calendar here; Google stays in its embed.
+// run-outs, gift dates, and standalone calendar events. Consumers
+// window/bucket as needed (agenda list, month grid). No external calendar
+// here; Google stays in its embed.
 export function useAgendaEntries(): AgendaEntry[] {
   const { items: workItems } = useWorkItems()
   const { subs } = useSubscriptions()
   const { items: giftItems } = useGiftEvents()
   const { items: buyItems } = useBuyItems()
+  const { items: events } = useEvents()
 
   const entries: AgendaEntry[] = []
 
@@ -48,6 +53,9 @@ export function useAgendaEntries(): AgendaEntry[] {
   }
   for (const g of giftItems) {
     entries.push({ key: `gift-${g.id}`, date: nextOccurrence(g), label: g.name, type: 'gift' })
+  }
+  for (const e of events) {
+    entries.push({ key: `event-${e.id}`, id: e.id, date: parseISO(e.event_date), label: e.title, type: 'event' })
   }
 
   return entries
