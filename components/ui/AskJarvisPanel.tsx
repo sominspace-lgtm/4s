@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { goToSection } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { useAppSnapshot } from '@/lib/hooks/useAppSnapshot'
 import type { Mode } from '@/lib/constants/modes'
 
@@ -15,7 +15,7 @@ interface Props {
 
 const PROMPTS = [
   { label: 'What needs attention?',    run: () => goToSection('brief') },
-  { label: 'What was shared with me?', run: () => goToSection('people') },
+  { label: 'What was shared with me?', run: () => goToPersonal('people') },
   { label: 'Summarize my week',        run: () => goToSection('week-review') },
 ]
 

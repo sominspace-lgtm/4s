@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { buildVillage, hashPos, STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
-import { goToSection, goToGrowth } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import VillageText from './VillageText'
 
 // The village: your life as a place, not a dashboard.
@@ -223,7 +223,7 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
         {/* District labels — the actual navigation */}
         <DistrictLabel x={150} y={130} glyph="🌊" label="Rest Lake" onClick={() => goToSection('brief')}
           count={v.stillness > 0.5 ? 'still' : 'ready when you are'} />
-        <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={() => goToGrowth('habits')}
+        <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={() => goToPersonal('habits')}
           count={`${v.plants.length} growing`} />
         <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={() => goToSection('brief')} count="today" />
         <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={() => goToSection('work')}

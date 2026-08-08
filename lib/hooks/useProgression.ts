@@ -25,7 +25,7 @@ import { createClient } from '@/lib/supabase/client'
 // afterthought" while simultaneously being locked behind a milestone — that
 // contradiction is gone now too. What's left only gates the one section
 // where the milestone genuinely produces the content that section exists to
-// show: Growth (Habits/Life/Council merged, see components/growth/GrowthHub)
+// show: Personal (habits/life/money/people/council — components/personal/PersonalHub)
 // needs either a habit or a capture to have anything to show at all.
 export type ActionKey = 'task' | 'capture' | 'habit' | 'checkHabit' | 'completeTask'
 
@@ -49,12 +49,12 @@ export interface UnlockStage {
 
 // Sections that are never gated — utilities someone may need from minute one,
 // or (People) a place incoming shared items must always be reachable.
-export const NEVER_GATED = new Set(['village', 'money', 'people', 'household'])
+export const NEVER_GATED = new Set(['village', 'household'])
 
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
-    id: 'growth', label: 'Growth', icon: '◉',
-    teaser: 'Habits, Life, and the Council — grow at your pace.',
+    id: 'personal', label: 'Personal', icon: '◈',
+    teaser: 'Habits, Life, Money, People and the Council — all in one place.',
     milestone: 'Track a habit or capture a thought',
     action: 'habit',
     isDone: c => c.habits >= 1 || c.captures >= 1,
@@ -111,10 +111,10 @@ export function useProgression(unlockAll: boolean) {
   }
 
   const stagesWithStatus = UNLOCK_STAGES.map(s => ({ ...s, done: s.isDone(safeCounts) }))
-  // + Village, Today, Tasks, Household, People, Money — always open, never
-  // counted as "to unlock". Growth is the only gated stage.
-  const unlockedCount = 6 + stagesWithStatus.filter(s => s.done).length
-  const total = 6 + UNLOCK_STAGES.length
+  // + Today, Tasks, Village, Household — always open, never
+  // counted as "to unlock". Personal is the only gated stage.
+  const unlockedCount = 4 + stagesWithStatus.filter(s => s.done).length
+  const total = 4 + UNLOCK_STAGES.length
   const next = stagesWithStatus.find(s => !s.done) ?? null
 
   return {

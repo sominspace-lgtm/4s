@@ -12,7 +12,10 @@ export default async function DashboardPage() {
 
   const { data: prefs } = await supabase
     .from('user_prefs')
-    .select('display_name, theme, calendar_url, mode, layout, onboarded')
+    // calendar_url is no longer read — the Google Calendar embed is gone and
+    // the calendar is 4S's own data now. The column is left in place rather
+    // than dropped, in case an ICS-import feature wants a home later.
+    .select('display_name, theme, mode, layout, onboarded')
     .eq('user_id', user.id)
     .single()
 
@@ -32,7 +35,6 @@ export default async function DashboardPage() {
       initialName={prefs?.display_name ?? null}
       initialTheme={normalizeTheme(prefs?.theme)}
       initialMode={normalizeMode(prefs?.mode)}
-      initialCalendarUrl={prefs?.calendar_url ?? null}
       initialLayout={layout ?? null}
       initialFocusConfig={focusConfig ?? null}
       initialSimpleMode={simpleMode}

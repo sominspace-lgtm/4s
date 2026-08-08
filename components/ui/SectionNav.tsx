@@ -6,15 +6,15 @@ import { t } from '@/lib/i18n'
 interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
-  village: 'Village', brief: 'Today', work: 'Tasks', growth: 'Growth',
-  household: 'Household', people: 'People', money: 'Money',
+  brief: 'Today', work: 'Tasks', village: 'Village',
+  personal: 'Personal', household: 'Household',
 }
 
 // Same icons as the mobile BottomNav, so a section looks identical on both
 // surfaces — recognition carries across devices.
 const NAV_ICONS: Record<string, string> = {
-  village: '⌂', brief: '◒', work: '◈', growth: '◉',
-  household: '◫', people: '♡', money: '✦',
+  brief: '◒', work: '◈', village: '⌂',
+  personal: '◉', household: '◫',
 }
 
 interface Props {

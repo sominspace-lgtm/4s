@@ -15,51 +15,44 @@ export interface FocusConfig {
 }
 
 export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
-  sections: ['brief', 'work', 'growth'],
+  sections: ['brief', 'work'],
 }
 
-// Village · Today · Tasks · Growth · Household · People · Money
+// Today · Tasks · Village · Personal · Household
 //
-// Seven tabs, each answering a question nobody has to guess at:
+// Five tabs, ordered by how often you actually open them, each answering a
+// question nobody has to guess at:
+//   Today      — what's happening now?   (brief · inbox · calendar)
+//   Tasks      — what do I need to do?   (the notice board)
 //   Village    — what does my life look like?
-//   Today      — what's happening now?      (agenda + inbox + calendar live here)
-//   Tasks      — what do I need to do?
-//   Growth     — how am I doing?            (habits · life · council)
-//   Household  — what do we share?          (chores · meals)
-//   People     — who am I connected to?
-//   Money      — what am I spending?
+//   Personal   — everything about me     (habits · life · money · people · council)
+//   Household  — everything we share     (chores · meals)
+//
+// The organising split is mine vs ours. That's the distinction a person
+// actually feels day to day, and it's a better dividing line than the
+// previous one, where Money and People each owned a top-level tab despite
+// being opened far less often than Today or Tasks.
 //
 // Calendar stopped being a tab (2026-08-07). A calendar isn't a place you go
 // to live, it's something you check — and once it was 4S's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
-// twice. It's now a panel inside Today, which also frees the name "Home":
-// it used to mean both the Brief and the household tab depending on where
-// you were standing.
+// twice. It's a panel inside Today now.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
-  // The village — your life as a place. First tab because opening 4S should
-  // feel like coming home, not like opening a dashboard.
-  { id: 'village',  label: 'Village',  hidden: false },
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
   // 'brief-inbox'/'week-review' scroll anchors, and every goToSection call.
   // Renaming the id to match the label would be a migration with nothing to
   // gain — the label is the only part anyone sees.
   { id: 'brief',    label: 'Today',    hidden: false },
-  // Doing
   { id: 'work',     label: 'Tasks',    hidden: false },
-  // Growth — Habits, Life, and Council merged (2026-08-07): all three answer
-  // "how am I doing," and Council is a lens on the other two's data, not a
-  // separate place.
-  { id: 'growth',   label: 'Growth',   hidden: false },
-  // Together — shared living, then the people themselves. Adjacent because
-  // they're the two "not just me" tabs, distinct because chores and
-  // relationships are not the same problem.
+  // The village — your life as a place, not a dashboard.
+  { id: 'village',  label: 'Village',  hidden: false },
+  // Personal — Habits, Life, Money, People and Council as flat sub-tabs.
+  // Flat on purpose: nesting Growth inside Personal would have put Council
+  // three levels deep. See components/personal/PersonalHub.tsx.
+  { id: 'personal', label: 'Personal', hidden: false },
+  // Household — chores and meals for the people you live with.
   { id: 'household', label: 'Household', hidden: false },
-  // People — merged from Relationship + Shared (2026-08-07): same question
-  // ("who's in this?") asked in two places was a seam, not a real distinction.
-  { id: 'people',   label: 'People',   hidden: false },
-  // Money — Wishlist, Gifts, Renewals, Buy Again all live here now
-  { id: 'money',    label: 'Money',    hidden: false },
 ]
 
 interface CustomizePanelProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { goToSection } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import type { UnlockStage, ActionKey } from '@/lib/hooks/useProgression'
 
 // The journey bar IS the tutorial: each row names one concrete action, says
@@ -24,7 +24,7 @@ function runAction(action: ActionKey) {
       return
     case 'habit':
     case 'checkHabit':
-      goToSection('growth')
+      goToPersonal('habits')
       return
     case 'completeTask':
       goToSection('work')

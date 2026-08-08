@@ -21,15 +21,14 @@ import { useProgression } from '@/lib/hooks/useProgression'
 import JourneyBar from '@/components/ui/JourneyBar'
 import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
-import GrowthHub from '@/components/growth/GrowthHub'
-import PeopleHub from '@/components/people/PeopleHub'
+import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
-import MoneyHub from '@/components/money/MoneyHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
+import { scrollToAnchor } from '@/lib/utils/navigate'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
@@ -43,31 +42,27 @@ interface Props {
   initialName: string | null
   initialTheme: string
   initialMode: string
-  initialCalendarUrl: string | null
   initialLayout: SectionConfig[] | null
   initialFocusConfig: FocusConfig | null
   initialSimpleMode: boolean
 }
 
-// Simple mode: Village · Today (Brief + calendar) · Tasks · Growth (Habits)
-// Habits belongs here — it's the heart of the product, not an advanced feature.
-// Collaboration does not: it's the opposite of a simplified solo view. Growth
-// (Habits/Life/Council) shows in simple mode too — its Habits sub-tab is the
-// one that matters here, and hiding the whole merged tab to keep out Life and
-// Council would take Habits down with them.
-const SIMPLE_SECTION_IDS = new Set(['village', 'brief', 'work', 'growth'])
+// Simple mode: Today · Tasks · Village. The three you open daily; Personal
+// and Household are both "go there when you mean to", which is exactly what
+// a simplified view is meant to strip out.
+const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'village'])
 
-// Folded into Money hub / Today / the merged People and Growth tabs — strip
-// from any saved layout so returning users don't see dangling, unrenderable
-// section headings. NOTE: 'people' used to be deprecated (folded into Shared)
-// but is now a LIVE id again — it's the merged Relationship+Shared
-// destination — so it must not appear here, or every returning user's
-// customization of the new People tab would be silently wiped on next load.
+// Folded into Personal / Today — strip from any saved layout so returning
+// users don't see dangling, unrenderable section headings. Note that
+// 'people' and 'money' are listed here now: they used to be live top-level
+// ids and are Personal sub-tabs as of this change, so any layout saved
+// before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
   'pulse', 'wishlist', 'spending', 'capture',
-  'relationship', 'shared',           // → people
-  'habits', 'domains', 'council',     // → growth
-  'calendar',                         // → a panel inside Today
+  'relationship', 'shared',                          // → people (a Personal sub-tab)
+  'habits', 'domains', 'council', 'growth',          // → Personal sub-tabs
+  'people', 'money',                                 // → Personal sub-tabs
+  'calendar',                                        // → a panel inside Today
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -78,17 +73,18 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
   return [...cleaned, ...missing]
 }
 
+// Anchors are places inside the Today tab, not tabs of their own.
+const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
+
 const SECTION_GROUPS: Record<string, string> = {
+  brief:     'now',
+  work:      'now',
   village:   'your world',
-  brief:     'your world',
-  work:      'doing',
-  growth:    'doing',
-  household: 'together',
-  people:    'together',
-  money:     'money',
+  personal:  'mine',
+  household: 'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -151,8 +147,9 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   const openEverythingRef = useRef(openEverything)
   useEffect(() => { progRef.current = prog; openEverythingRef.current = openEverything })
 
-  // Tab navigation from anywhere (Brief summary cards, search, Jarvis).
-  // 'week-review' and 'brief-inbox' are anchors inside the Brief tab.
+  // Tab navigation from anywhere (Today's summary cards, search, Jarvis).
+  // 'week-review', 'brief-inbox' and 'brief-calendar' are anchors inside the
+  // Today tab rather than tabs of their own.
   // A direct request for a still-gated section (from search or Jarvis, say)
   // must never silently fail to appear — progression is a suggested order,
   // not a wall. Honoring it by opening everything, same as the journey bar's
@@ -161,13 +158,14 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   useEffect(() => {
     function onNav(e: Event) {
       const id = (e as CustomEvent<string>).detail
-      const anchor = id === 'week-review' || id === 'brief-inbox' || id === 'brief-calendar' ? id : null
+      const anchor = ANCHORS.has(id) ? id : null
       if (!anchor && !progRef.current.isUnlocked(id)) openEverythingRef.current()
       setActiveTab(anchor ? 'brief' : id)
-      requestAnimationFrame(() => {
-        if (anchor) document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        else window.scrollTo({ top: 0, behavior: 'smooth' })
-      })
+      // scrollToAnchor retries until the target mounts and verifies the
+      // scroll actually happened — see lib/utils/navigate.ts for why both
+      // are necessary.
+      if (anchor) scrollToAnchor(anchor)
+      else requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
     }
     window.addEventListener('4s:navigate', onNav)
     return () => window.removeEventListener('4s:navigate', onNav)
@@ -248,8 +246,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      village: t('Village', lang), brief: t('Today', lang), work: t('Tasks', lang), growth: t('Growth', lang),
-      household: t('Household', lang), people: t('People', lang), money: t('Money', lang),
+      brief: t('Today', lang), work: t('Tasks', lang), village: t('Village', lang),
+      personal: t('Personal', lang), household: t('Household', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -275,12 +273,10 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
 
     const body = (() => {
       switch (id) {
-        case 'village':  return <Village key="village" />
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'growth':   return <GrowthHub key="growth" mode={mode} userId={userId} calendarConnected />
-        case 'money':    return <MoneyHub key="money" userId={userId} />
-        case 'people':   return <PeopleHub key="people" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'village':  return <Village key="village" />
+        case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'household': return <HouseholdHub key="household" userId={userId} />
         default: return null
       }
