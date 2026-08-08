@@ -49,15 +49,15 @@ interface Props {
   initialSimpleMode: boolean
 }
 
-// Simple mode: Today (Brief) · Quick Add (inside Brief) · Tasks · Growth (Habits) · Calendar
+// Simple mode: Village · Today (Brief + calendar) · Tasks · Growth (Habits)
 // Habits belongs here — it's the heart of the product, not an advanced feature.
 // Collaboration does not: it's the opposite of a simplified solo view. Growth
 // (Habits/Life/Council) shows in simple mode too — its Habits sub-tab is the
 // one that matters here, and hiding the whole merged tab to keep out Life and
 // Council would take Habits down with them.
-const SIMPLE_SECTION_IDS = new Set(['village', 'brief', 'work', 'growth', 'calendar'])
+const SIMPLE_SECTION_IDS = new Set(['village', 'brief', 'work', 'growth'])
 
-// Folded into Money hub / Brief / the merged People and Growth tabs — strip
+// Folded into Money hub / Today / the merged People and Growth tabs — strip
 // from any saved layout so returning users don't see dangling, unrenderable
 // section headings. NOTE: 'people' used to be deprecated (folded into Shared)
 // but is now a LIVE id again — it's the merged Relationship+Shared
@@ -67,6 +67,7 @@ const DEPRECATED_SECTION_IDS = new Set([
   'pulse', 'wishlist', 'spending', 'capture',
   'relationship', 'shared',           // → people
   'habits', 'domains', 'council',     // → growth
+  'calendar',                         // → a panel inside Today
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -78,14 +79,13 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 }
 
 const SECTION_GROUPS: Record<string, string> = {
-  village:  'your world',
-  brief:    'at a glance',
-  work:     'focus',
-  growth:   'life',
-  money:    'money',
-  calendar: 'review',
-  people:   'companions',
-  household: 'companions',
+  village:   'your world',
+  brief:     'your world',
+  work:      'doing',
+  growth:    'doing',
+  household: 'together',
+  people:    'together',
+  money:     'money',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
@@ -161,7 +161,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   useEffect(() => {
     function onNav(e: Event) {
       const id = (e as CustomEvent<string>).detail
-      const anchor = id === 'week-review' || id === 'brief-inbox' ? id : null
+      const anchor = id === 'week-review' || id === 'brief-inbox' || id === 'brief-calendar' ? id : null
       if (!anchor && !progRef.current.isUnlocked(id)) openEverythingRef.current()
       setActiveTab(anchor ? 'brief' : id)
       requestAnimationFrame(() => {
@@ -248,8 +248,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      village: t('Village', lang), brief: t('Brief', lang), work: t('Tasks', lang), growth: t('Growth', lang),
-      money: t('Money', lang), calendar: t('Calendar', lang), people: t('People', lang), household: t('Home', lang),
+      village: t('Village', lang), brief: t('Today', lang), work: t('Tasks', lang), growth: t('Growth', lang),
+      household: t('Household', lang), people: t('People', lang), money: t('Money', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -280,7 +280,6 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'growth':   return <GrowthHub key="growth" mode={mode} userId={userId} calendarConnected />
         case 'money':    return <MoneyHub key="money" userId={userId} />
-        case 'calendar': return <CalendarEmbed key="calendar" />
         case 'people':   return <PeopleHub key="people" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'household': return <HouseholdHub key="household" userId={userId} />
         default: return null
@@ -365,6 +364,15 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
               return s ? <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, 0, false, false)}</div> : null
             })()
         }
+        {/* The calendar lives inside Today rather than owning a tab — it's
+            something you check, not a place you go to live. Rendered after
+            the Brief so the day reads top-down: what's happening, what's
+            waiting, then the month around it. */}
+        {!zenView && currentTab === 'brief' && (
+          <div id="brief-calendar" style={{ marginTop: '1.2rem' }}>
+            <CalendarEmbed />
+          </div>
+        )}
         <FeedbackBox />
       </main>
       <MobileNav onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))} />

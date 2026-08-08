@@ -260,9 +260,9 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         : domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} · review due` : `${DOMAINS.length} domains · all steady`,
     },
     {
-      label: 'Calendar', action: 'Open Calendar', onAction: () => goToSection('calendar'),
-      // Always "connected" now — the calendar is 4S's own, not an embed that
-      // might not be set up yet.
+      // Calendar is a panel further down this same tab now, so this scrolls
+      // rather than navigates.
+      label: 'Calendar', action: 'See the month', onAction: () => goToSection('brief-calendar'),
       line: 'Your month, from everything dated',
     },
     {

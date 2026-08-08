@@ -49,7 +49,7 @@ export interface UnlockStage {
 
 // Sections that are never gated — utilities someone may need from minute one,
 // or (People) a place incoming shared items must always be reachable.
-export const NEVER_GATED = new Set(['calendar', 'money', 'people'])
+export const NEVER_GATED = new Set(['village', 'money', 'people', 'household'])
 
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
@@ -111,9 +111,10 @@ export function useProgression(unlockAll: boolean) {
   }
 
   const stagesWithStatus = UNLOCK_STAGES.map(s => ({ ...s, done: s.isDone(safeCounts) }))
-  // + Brief, Tasks, Calendar, Money, People — always open, never counted as "to unlock"
-  const unlockedCount = 5 + stagesWithStatus.filter(s => s.done).length
-  const total = 5 + UNLOCK_STAGES.length
+  // + Village, Today, Tasks, Household, People, Money — always open, never
+  // counted as "to unlock". Growth is the only gated stage.
+  const unlockedCount = 6 + stagesWithStatus.filter(s => s.done).length
+  const total = 6 + UNLOCK_STAGES.length
   const next = stagesWithStatus.find(s => !s.done) ?? null
 
   return {

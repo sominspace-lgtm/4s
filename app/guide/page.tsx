@@ -41,14 +41,14 @@ function Say({ children }: { children: React.ReactNode }) {
 
 const NAV = [
   ['start', 'Getting started'],
-  ['brief', 'Brief'],
+  ['brief', 'Today'],
   ['tasks', 'Tasks'],
   ['habits', 'Habits'],
   ['life', 'Life'],
   ['money', 'Money'],
   ['calendar', 'Calendar'],
   ['council', 'Council'],
-  ['shared', 'Shared'],
+  ['shared', 'People'],
   ['ai', 'AI'],
   ['alexa', 'Alexa'],
   ['keys', 'Getting around'],
