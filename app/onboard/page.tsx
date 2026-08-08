@@ -3,94 +3,61 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import ThemeProvider, { THEMES as THEME_TOKENS, THEME_LABELS } from '@/components/ui/ThemeProvider'
-import { MODES as MODE_CONFIG } from '@/lib/constants/modes'
+import ThemeProvider from '@/components/ui/ThemeProvider'
 
-const STEPS = ['Your name', 'Domains', 'Your style', 'First habit', 'First thought']
+// ARRIVAL, not setup.
+//
+// This used to be a five-step wizard: name → domains → theme → first habit →
+// first thought, all before anything had been shown to work. That asked
+// someone to make five decisions about a product they had not yet
+// experienced, and it's where the one blocking bug of this work lived (a
+// failed session check left the button spinning forever with no message).
+//
+// The replacement: three lines of philosophy you can skip, then ONE input.
+// Everything the wizard used to demand is now either defaulted (theme,
+// guide), asked later at the moment it's useful (name, domains), or simply
+// dropped (templates). Target is under 45 seconds from landing to having
+// something real in your village — the old flow took two to four minutes.
+//
+// Everything here still degrades safely: every exit either lands on the
+// dashboard or says what went wrong and lets you retry.
 
-const DOMAIN_OPTIONS = [
-  { id: 'biz-active', label: 'Active Business', icon: '◈' },
-  { id: 'biz-future', label: 'Pipeline / Future', icon: '◇' },
-  { id: 'money', label: 'Money', icon: '◉' },
-  { id: 'health', label: 'Health', icon: '○' },
-  { id: 'relationship', label: 'Relationship', icon: '♡' },
-  { id: 'creative', label: 'Creative', icon: '✦' },
-  { id: 'home', label: 'Home & Admin', icon: '⌂' },
-  { id: 'self', label: 'Self', icon: '◎' },
+const PANELS = [
+  {
+    line: 'Your life is not a list to complete.',
+    sub: 'It is a world to care for.',
+  },
+  {
+    line: 'Nothing here grows because you used an app.',
+    sub: 'It grows because you lived.',
+  },
+  {
+    line: 'Start with one thing.',
+    sub: 'The rest can wait until it matters.',
+  },
 ]
 
-// Cut from 7 to 3 (2026-08-07): Family/Couple/Household/Trip were the same
-// choice — "life shared with people close to you" — at different scales, a
-// distinction invisible to someone who doesn't know what a domain is yet.
-// Student/Creator were likewise both "building something of your own."
-// Fewer, clearer choices at the one moment a new user is asked to decide
-// anything before they've seen the product work.
-const TEMPLATES = [
-  { id: 'personal', label: 'Personal', icon: '◎', domains: ['self', 'health', 'home'],           habit: { name: 'Journal',              category: 'self' } },
-  { id: 'together', label: 'Together', icon: '♡', domains: ['relationship', 'home', 'money'],     habit: { name: 'Plan time together',   category: 'relationship' } },
-  { id: 'building', label: 'Building', icon: '◈', domains: ['creative', 'biz-active', 'money'],   habit: { name: 'Work on your thing',   category: 'creative' } },
-]
-
-// Notes are the only thing hand-written here — bg/accent come straight from
-// the real theme tokens so this can never drift out of sync with them again.
-const THEME_NOTES: Record<string, string> = {
-  sunset: 'deep indigo · premium', ember: 'charcoal · warm', ash: 'warm paper · light',
-  plum: 'dark violet · creative', noir: 'near-mono · stark', solar: 'sunlit cream · bright',
-}
-const THEMES = Object.keys(THEME_TOKENS).map(id => ({
-  id, label: THEME_LABELS[id], bg: THEME_TOKENS[id]['--bg'], accent: THEME_TOKENS[id]['--gold'],
-  note: THEME_NOTES[id] ?? '',
-}))
-
-// Reads the same personality-mode config the dashboard uses (lib/constants/modes.ts)
-// instead of a second hand-copied list, so onboarding can never list a mode
-// that doesn't actually exist.
-const MODE_LIST = (Object.entries(MODE_CONFIG) as [string, typeof MODE_CONFIG[keyof typeof MODE_CONFIG]][])
-  .map(([id, cfg]) => ({ id, label: cfg.label, note: cfg.description }))
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'var(--surface2)', borderWidth: '1px', borderStyle: 'solid',
-  borderColor: 'var(--border)', borderRadius: 'var(--radius-sm, 10px)', color: 'var(--text)',
-  fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontWeight: 300,
-  padding: '0.7rem 1rem', outline: 'none',
-}
-
-function NextBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+// A tiny village that fills in across the three panels — the same visual
+// language as the real thing, so the promise and the product match.
+function MiniVillage({ step }: { step: number }) {
+  const plants = Math.min(step + 1, 3)
   return (
-    <button onClick={onClick} disabled={disabled} className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.05em' }}>
-      {label}
-    </button>
-  )
-}
-
-function BackBtn({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="btn btn-ghost" style={{ padding: '0.7rem 1.2rem', fontSize: '0.78rem', border: '1px solid var(--border)' }}>
-      ← Back
-    </button>
-  )
-}
-
-function ErrorNote({ message }: { message: string | null }) {
-  if (!message) return null
-  return (
-    <div role="alert" style={{
-      fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--text)',
-      padding: '0.6rem 0.8rem', marginBottom: '0.8rem',
-      borderRadius: 'var(--radius-sm, 10px)',
-      border: '1px solid color-mix(in srgb, var(--danger, #c0554d) 45%, var(--border))',
-      background: 'color-mix(in srgb, var(--danger, #c0554d) 10%, transparent)',
-    }}>{message}</div>
-  )
-}
-
-function RecapChip({ label }: { label: string }) {
-  return (
-    <span style={{
-      fontSize: '0.68rem', color: 'var(--text)', padding: '0.25rem 0.6rem',
-      borderRadius: '99px', border: '1px solid color-mix(in srgb, var(--gold) 30%, var(--border))',
-      background: 'color-mix(in srgb, var(--gold) 8%, transparent)',
-    }}>{label}</span>
+    <svg viewBox="0 0 280 90" style={{ width: '100%', maxWidth: '280px', height: 'auto', margin: '0 auto' }} aria-hidden>
+      <path d="M 0 74 Q 70 62 140 70 T 280 64 L 280 90 L 0 90 Z" fill="var(--surface)" opacity={0.9} />
+      <path d="M 0 74 Q 70 62 140 70 T 280 64" fill="none" stroke="var(--border)" strokeWidth={1} />
+      <g transform="translate(140 70)">
+        <rect x={-15} y={-22} width={30} height={22} rx={2} fill="var(--surface2)" stroke="var(--border)" />
+        <path d="M -19 -22 L 0 -34 L 19 -22 Z" fill="var(--gold)" fillOpacity={0.5} />
+        <rect x={-4} y={-12} width={8} height={12} fill="var(--gold)" opacity={0.3} />
+      </g>
+      {/* plants appear as you read */}
+      {[60, 92, 210].slice(0, plants).map((x, i) => (
+        <g key={x} transform={`translate(${x} 72)`} className="grew">
+          <rect x={-1} y={-14 - i * 5} width={2} height={14 + i * 5} fill="var(--emerald)" opacity={0.7} />
+          <circle cy={-16 - i * 5} r={5 + i * 1.6} fill="var(--emerald)" opacity={0.75} />
+        </g>
+      ))}
+    </svg>
   )
 }
 
@@ -98,362 +65,149 @@ export default function OnboardPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Smart default: start pre-loaded with the most common template (Personal)
-  // instead of a blank grid — most people keep the default, and it turns
-  // step 1 into a quick confirm-or-adjust instead of a cold decision.
-  const defaultTemplate = TEMPLATES.find(t => t.id === 'personal')!
-
-  const [step, setStep] = useState(0)
-  const [displayName, setDisplayName] = useState('')
-  const [focusDomains, setFocusDomains] = useState<string[]>(defaultTemplate.domains)
-  const [selectedTheme, setSelectedTheme] = useState('sunset')
-  const [selectedMode, setSelectedMode] = useState('peaceful')
-  const [habitName, setHabitName] = useState(defaultTemplate.habit.name)
-  const [habitCategory, setHabitCategory] = useState(defaultTemplate.habit.category)
-  const [captureText, setCaptureText] = useState('')
+  const [step, setStep] = useState(0)     // 0..2 = philosophy, 3 = the one input
+  const [thought, setThought] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [template, setTemplate] = useState<string | null>(defaultTemplate.id)
 
-  function toggleDomain(id: string) {
-    setFocusDomains(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id])
-  }
-
-  function applyTemplate(tpl: typeof TEMPLATES[number]) {
-    setTemplate(tpl.id)
-    setFocusDomains(tpl.domains)
-    setHabitName(tpl.habit.name)
-    setHabitCategory(tpl.habit.category)
-  }
-
-  // Every exit from here must either land the user on the dashboard or tell
-  // them what went wrong and let them try again. This used to `return` on a
-  // missing session while `saving` stayed true, which left a permanently
-  // disabled button, no message and no retry — at the one moment the user has
-  // already invested five steps. Never fail silently here.
-  async function finish() {
+  // One write, one navigation, every failure surfaced. `finally` guarantees
+  // the button can never be left stuck — the exact bug this page used to have.
+  async function finish(withThought: boolean) {
     setSaving(true)
     setError(null)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
-        setError("We couldn't confirm your session. Your answers are still here — try again.")
+        setError("We couldn't confirm your session. What you typed is still here — try again.")
         return
       }
 
-      // The habit and the first thought are a nice-to-have; the prefs write is
-      // what actually completes onboarding. So a failure on either is reported
-      // but never blocks someone from reaching their dashboard.
-      const optional: string[] = []
-      if (habitName.trim()) {
-        const { error } = await supabase.from('habits')
-          .insert({ user_id: user.id, name: habitName.trim(), category: habitCategory })
-        if (error) optional.push('your first habit')
-      }
-      if (captureText.trim()) {
-        const { error } = await supabase.from('captures')
-          .insert({ user_id: user.id, text: captureText.trim() })
-        if (error) optional.push('your first thought')
+      if (withThought && thought.trim()) {
+        const { error: capErr } = await supabase.from('captures')
+          .insert({ user_id: user.id, text: thought.trim() })
+        // A failed capture is worth logging, but it must never trap someone
+        // on the doorstep — they can always capture again inside.
+        if (capErr) console.error('First capture failed:', capErr.message)
       }
 
       const { error: prefsError } = await supabase.from('user_prefs').upsert({
         user_id: user.id,
         onboarded: true,
-        theme: selectedTheme,
-        mode: selectedMode,
-        ...(displayName.trim() ? { display_name: displayName.trim() } : {}),
+        theme: 'sunset',     // changeable any time from the header ◐
+        mode: 'peaceful',    // the calm default; the app suggests others later
       })
       if (prefsError) {
         setError(`We couldn't save your setup: ${prefsError.message}`)
         return
       }
 
-      if (optional.length > 0) {
-        // Onboarding succeeded, so go — but don't pretend everything landed.
-        sessionStorage.setItem('4s-onboard-partial', optional.join(' and '))
-      }
       router.push('/dashboard')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Try again.')
     } finally {
-      // Runs on every path, including the successful push — the button can
-      // never be left stuck.
       setSaving(false)
     }
   }
 
+  const onPhilosophy = step < PANELS.length
+
   return (
-    <ThemeProvider theme={selectedTheme}>
+    <ThemeProvider theme="sunset">
       <div style={{
         minHeight: '100vh', background: 'var(--bg)',
         backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2rem', fontFamily: 'var(--font-body)', color: 'var(--text)',
-        transition: 'background 0.4s',
       }}>
-        <div style={{ maxWidth: '560px', width: '100%' }}>
+        <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
 
-          {/* Progress — a leading "Account" segment is always lit, since
-              creating the account (to reach this page at all) already counts
-              as real progress. Nobody starts onboarding at 0%. */}
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
-            <div style={{ height: '2px', flex: 1, borderRadius: '2px', background: 'var(--gold)' }} />
-            {STEPS.map((_, i) => (
-              <div key={i} style={{
-                height: '2px', flex: 1, borderRadius: '2px',
-                background: i <= step ? 'var(--gold)' : 'var(--faint)',
-                transition: 'background 0.3s',
+          <MiniVillage step={step} />
+
+          {onPhilosophy ? (
+            <div key={step} className="fade-in" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 300, lineHeight: 1.25 }}>
+                {PANELS[step].line}
+              </div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                {PANELS[step].sub}
+              </div>
+            </div>
+          ) : (
+            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem, 4.5vw, 1.7rem)', fontWeight: 300, textAlign: 'center', lineHeight: 1.3 }}>
+                What&rsquo;s one thing on your mind?
+              </div>
+              <input
+                autoFocus
+                value={thought}
+                onChange={e => setThought(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && thought.trim()) finish(true) }}
+                placeholder="Anything. A task, a worry, an idea."
+                style={{
+                  width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: '10px', color: 'var(--text)', fontFamily: 'var(--font-body)',
+                  fontSize: '0.95rem', padding: '0.85rem 1rem', outline: 'none',
+                }}
+              />
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.7, textAlign: 'center' }}>
+                It becomes the first thing in your world. You can change everything later.
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div role="alert" style={{
+              fontSize: '0.76rem', color: 'var(--rose)', textAlign: 'center', lineHeight: 1.5,
+              background: 'color-mix(in srgb, var(--rose) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)',
+              borderRadius: '9px', padding: '0.6rem 0.8rem',
+            }}>{error}</div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            {onPhilosophy ? (
+              <>
+                <button onClick={() => finish(false)} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
+                  Skip
+                </button>
+                <button onClick={() => setStep(s => s + 1)} className="btn btn-primary press" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
+                  {step === PANELS.length - 1 ? 'Begin →' : 'Next →'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => finish(false)} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
+                  {saving ? '…' : 'Skip'}
+                </button>
+                <button
+                  onClick={() => finish(true)}
+                  disabled={saving || !thought.trim()}
+                  className="btn btn-primary press"
+                  style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.04em' }}
+                >
+                  {saving ? 'Opening…' : 'Enter your world →'}
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Progress — four dots, no "step 1 of 5" pressure */}
+          <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+            {[0, 1, 2, 3].map(i => (
+              <span key={i} style={{
+                width: i === step ? 16 : 5, height: 5, borderRadius: 99,
+                background: i === step ? 'var(--gold)' : 'var(--border)',
+                transition: 'width 200ms ease, background 200ms ease',
               }} />
             ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2.2rem' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.75 }}>
-              Step {step + 1} of {STEPS.length} · {STEPS[step]}
-            </span>
-            {step < STEPS.length - 1 && (
-              <button onClick={finish} disabled={saving} style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.8,
-              }}>
-                {saving ? 'Setting up…' : 'Skip setup — use recommended →'}
-              </button>
-            )}
+
+          <div style={{ textAlign: 'center' }}>
+            <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.75 }}>
+              Want the full tour? Open the guide →
+            </a>
           </div>
-          <ErrorNote message={error} />
-
-          {/* Step 0 — Name */}
-          {step === 0 && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 300, color: 'var(--text)', marginBottom: '0.5rem', lineHeight: 1.2 }}>
-                Welcome to <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>4S</em>.
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '2rem', lineHeight: 1.7 }}>
-                Your private personal life OS. Let&apos;s set you up in a few steps.
-              </div>
-              <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.8rem' }}>
-                What should we call you?
-              </div>
-              <input
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && displayName.trim()) setStep(1) }}
-                placeholder="Your name or nickname"
-                autoFocus
-                style={{ ...inputStyle, marginBottom: '2rem', fontSize: '1rem' }}
-              />
-              <NextBtn label={displayName.trim() ? 'Continue →' : 'Skip →'} onClick={() => setStep(1)} />
-              <div style={{ textAlign: 'center', marginTop: '1.1rem' }}>
-                <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.85 }}>
-                  New here? Take the 2-minute tour →
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* Step 1 — Domains */}
-          {step === 1 && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'var(--text)', marginBottom: '0.5rem', lineHeight: 1.2 }}>
-                Your <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>domains</em>.
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '1.2rem', lineHeight: 1.7 }}>
-                Eight life areas, one operating system. Which matter most right now? (Pick any.)
-              </div>
-
-              <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.6rem' }}>
-                Or start from a template
-              </div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                {TEMPLATES.map(tpl => {
-                  const active = template === tpl.id
-                  return (
-                    <button key={tpl.id} onClick={() => applyTemplate(tpl)} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.4rem',
-                      padding: '0.4rem 0.8rem', borderRadius: '99px', cursor: 'pointer',
-                      border: active ? '1px solid color-mix(in srgb, var(--gold) 50%, transparent)' : '1px solid var(--border)',
-                      background: active ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'var(--surface2)',
-                      color: active ? 'var(--text)' : 'var(--muted)',
-                      fontFamily: 'var(--font-body)', fontSize: '0.75rem',
-                    }}>
-                      <span>{tpl.icon}</span><span>{tpl.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '2rem' }}>
-                {DOMAIN_OPTIONS.map(d => {
-                  const active = focusDomains.includes(d.id)
-                  return (
-                    <button key={d.id} onClick={() => toggleDomain(d.id)} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.6rem',
-                      padding: '0.7rem 0.9rem', borderRadius: 'var(--radius-sm, 10px)', cursor: 'pointer',
-                      border: active ? '1px solid color-mix(in srgb, var(--gold) 50%, transparent)' : '1px solid var(--border)',
-                      background: active ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'var(--surface2)',
-                      color: active ? 'var(--text)' : 'var(--muted)',
-                      fontFamily: 'var(--font-body)', fontSize: '0.78rem', textAlign: 'left',
-                      transition: 'all 0.15s',
-                    }}>
-                      <span style={{ fontSize: '1rem' }}>{d.icon}</span>
-                      <span>{d.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <BackBtn onClick={() => setStep(0)} />
-                <NextBtn label="Continue →" onClick={() => setStep(2)} />
-              </div>
-            </div>
-          )}
-
-          {/* Step 2 — Theme + Mode */}
-          {step === 2 && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'var(--text)', marginBottom: '0.5rem' }}>
-                Make it <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>yours</em>.
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '1.6rem', lineHeight: 1.7 }}>
-                Pick an aesthetic and a Guide for your OS. You can change these anytime.
-              </div>
-
-              {/* Theme grid */}
-              <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.35rem' }}>Aesthetic — visual only</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.85, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                Themes change colors, fonts, and spacing. They never change how 4S talks to you.
-              </div>
-              <div className="onboard-theme-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.6rem' }}>
-                {THEMES.map(t => {
-                  const active = selectedTheme === t.id
-                  return (
-                    <button key={t.id} onClick={() => setSelectedTheme(t.id)} title={`${t.label} — ${t.note}`} style={{
-                      borderRadius: 'var(--radius-sm, 10px)', cursor: 'pointer', padding: '0',
-                      border: active ? `2px solid ${t.accent}` : '2px solid var(--border)',
-                      background: t.bg, height: '52px', position: 'relative', overflow: 'hidden',
-                      transition: 'all 0.15s',
-                    }}>
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: `radial-gradient(ellipse at top right, ${t.accent}30, transparent 70%)`,
-                      }} />
-                      <div style={{ position: 'absolute', bottom: 5, left: 0, right: 0, textAlign: 'center', fontSize: '0.45rem', color: t.accent, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: active ? 1 : 0.6 }}>
-                        {t.label}
-                      </div>
-                      <div style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', background: t.accent }} />
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Guide list */}
-              <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.35rem' }}>Your Guide — voice &amp; proactivity</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.85, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-                Choose the voice that guides you. It shapes tone, greetings, and how much 4S speaks up — never your data.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '2rem' }}>
-                {MODE_LIST.map(m => {
-                  const active = selectedMode === m.id
-                  return (
-                    <button key={m.id} onClick={() => setSelectedMode(m.id)} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem',
-                      padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-sm, 10px)', cursor: 'pointer',
-                      border: active ? '1px solid color-mix(in srgb, var(--gold) 40%, transparent)' : '1px solid var(--border)',
-                      background: active ? 'color-mix(in srgb, var(--gold) 8%, transparent)' : 'var(--surface2)',
-                      textAlign: 'left', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.78rem', color: active ? 'var(--text)' : 'var(--muted)', fontWeight: active ? 500 : 300 }}>{m.label}</div>
-                        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.1rem' }}>{m.note}</div>
-                      </div>
-                      {active && <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <BackBtn onClick={() => setStep(1)} />
-                <NextBtn label="Continue →" onClick={() => setStep(3)} />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 — First habit */}
-          {step === 3 && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'var(--text)', marginBottom: '0.5rem' }}>
-                Build a <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>habit</em>.
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '2rem', lineHeight: 1.7 }}>
-                One habit to start. You can add more — and set custom schedules — any time. What do you want to track?
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                <input
-                  value={habitName} onChange={e => setHabitName(e.target.value)}
-                  placeholder="e.g. Go to the gym, Journal, Read 20 mins"
-                  autoFocus style={inputStyle}
-                />
-                <select value={habitCategory} onChange={e => setHabitCategory(e.target.value)} style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}>
-                  {DOMAIN_OPTIONS.map(d => (
-                    <option key={d.id} value={d.id}>{d.icon} {d.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <BackBtn onClick={() => setStep(2)} />
-                <NextBtn label={habitName.trim() ? 'Continue →' : 'Skip →'} onClick={() => setStep(4)} />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4 — First capture */}
-          {step === 4 && (
-            <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 300, color: 'var(--text)', marginBottom: '0.5rem' }}>
-                Clear your <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>head</em>.
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '2rem', lineHeight: 1.7 }}>
-                What&apos;s one thing on your mind right now? A task, idea, or worry — capture it and let it go.
-              </div>
-              <textarea
-                value={captureText} onChange={e => setCaptureText(e.target.value)}
-                placeholder="What's on your mind?" rows={3} autoFocus
-                style={{ ...inputStyle, resize: 'none', marginBottom: '1.4rem' }}
-              />
-
-              {/* What you've built so far — a quick recap right before the
-                  commit. Naming the choices back reinforces that this OS is
-                  already theirs, not a blank template waiting to be theirs. */}
-              <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '2rem',
-                padding: '0.75rem 0.9rem', borderRadius: 'var(--radius-sm, 10px)',
-                border: '1px solid var(--border)', background: 'var(--surface2)',
-              }}>
-                <span style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, width: '100%', marginBottom: '0.15rem' }}>
-                  Your OS so far
-                </span>
-                {displayName.trim() && <RecapChip label={displayName.trim()} />}
-                {focusDomains.length > 0 && (
-                  <RecapChip label={`${focusDomains.length} domain${focusDomains.length > 1 ? 's' : ''}`} />
-                )}
-                <RecapChip label={THEMES.find(t => t.id === selectedTheme)?.label ?? selectedTheme} />
-                <RecapChip label={MODE_LIST.find(m => m.id === selectedMode)?.label ?? selectedMode} />
-                {habitName.trim() && <RecapChip label={habitName.trim()} />}
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.6rem' }}>
-                <BackBtn onClick={() => setStep(3)} />
-                <button onClick={finish} disabled={saving} className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.05em' }}>
-                  {saving ? 'Setting up…' : 'Enter your OS →'}
-                </button>
-              </div>
-              <div style={{ textAlign: 'center', marginTop: '1.1rem' }}>
-                <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.85 }}>
-                  Want the full tour? Open the guide →
-                </a>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </ThemeProvider>

@@ -19,9 +19,11 @@ import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
 import { useProgression } from '@/lib/hooks/useProgression'
 import JourneyBar from '@/components/ui/JourneyBar'
+import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
 import GrowthHub from '@/components/growth/GrowthHub'
 import PeopleHub from '@/components/people/PeopleHub'
+import HouseholdHub from '@/components/household/HouseholdHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
@@ -53,7 +55,7 @@ interface Props {
 // (Habits/Life/Council) shows in simple mode too — its Habits sub-tab is the
 // one that matters here, and hiding the whole merged tab to keep out Life and
 // Council would take Habits down with them.
-const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'growth', 'calendar'])
+const SIMPLE_SECTION_IDS = new Set(['village', 'brief', 'work', 'growth', 'calendar'])
 
 // Folded into Money hub / Brief / the merged People and Growth tabs — strip
 // from any saved layout so returning users don't see dangling, unrenderable
@@ -76,12 +78,14 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 }
 
 const SECTION_GROUPS: Record<string, string> = {
+  village:  'your world',
   brief:    'at a glance',
   work:     'focus',
   growth:   'life',
   money:    'money',
   calendar: 'review',
   people:   'companions',
+  household: 'companions',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialCalendarUrl, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
@@ -244,8 +248,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      brief: t('Brief', lang), work: t('Tasks', lang), growth: t('Growth', lang),
-      money: t('Money', lang), calendar: t('Calendar', lang), people: t('People', lang),
+      village: t('Village', lang), brief: t('Brief', lang), work: t('Tasks', lang), growth: t('Growth', lang),
+      money: t('Money', lang), calendar: t('Calendar', lang), people: t('People', lang), household: t('Home', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -271,12 +275,14 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} />
+        case 'village':  return <Village key="village" />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'growth':   return <GrowthHub key="growth" mode={mode} userId={userId} calendarConnected={!!initialCalendarUrl} />
+        case 'growth':   return <GrowthHub key="growth" mode={mode} userId={userId} calendarConnected />
         case 'money':    return <MoneyHub key="money" userId={userId} />
-        case 'calendar': return <CalendarEmbed key="calendar" userId={userId} initialUrl={initialCalendarUrl} />
+        case 'calendar': return <CalendarEmbed key="calendar" />
         case 'people':   return <PeopleHub key="people" userId={userId} userEmail={email} onOpenCompanions={() => setCompanionsOpen(true)} />
+        case 'household': return <HouseholdHub key="household" userId={userId} />
         default: return null
       }
     })()
@@ -340,7 +346,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         />
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected={!!initialCalendarUrl} onClose={() => setJarvisOpen(false)} />
+      <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected onClose={() => setJarvisOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />

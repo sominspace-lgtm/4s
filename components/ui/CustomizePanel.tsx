@@ -25,12 +25,19 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
 // Relationship/Shared merged into People. No components were rebuilt, just
 // regrouped — see GrowthHub and PeopleHub for what's still separate underneath.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
+  // The village — your life as a place. First tab because opening 4S should
+  // feel like coming home, not like opening a dashboard.
+  { id: 'village',  label: 'Village',  hidden: false },
   // At a glance — Needs Attention (Pulse) and Quick Add/Inbox (Capture) live inside Brief
   { id: 'brief',    label: 'Brief',    hidden: false },
   // People — merged from Relationship + Shared (2026-08-07): same question
   // ("who's in this?") asked in two places was a seam, not a real distinction.
   // Surfaced early so shared items aren't an afterthought.
   { id: 'people',   label: 'People',   hidden: false },
+  // Home — shared living: chores and meals for couples/families under one
+  // roof. Distinct from People (who you're connected to) and from Brief
+  // (your own day): this is the stuff a household runs on together.
+  { id: 'household', label: 'Home',    hidden: false },
   // Focus
   { id: 'work',     label: 'Tasks',    hidden: false },
   // Growth — Habits, Life, and Council merged (2026-08-07): all three answer

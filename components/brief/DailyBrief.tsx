@@ -261,7 +261,9 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     },
     {
       label: 'Calendar', action: 'Open Calendar', onAction: () => goToSection('calendar'),
-      line: calendarConnected ? 'View your schedule' : 'Not connected yet',
+      // Always "connected" now — the calendar is 4S's own, not an embed that
+      // might not be set up yet.
+      line: 'Your month, from everything dated',
     },
     {
       label: 'Council', action: 'Ask Council', onAction: () => goToGrowth('council'),

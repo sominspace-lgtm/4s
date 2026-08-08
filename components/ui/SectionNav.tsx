@@ -14,8 +14,8 @@ const NAV_LABELS: Record<string, string> = {
 // Same icons as the mobile BottomNav, so a section looks identical on both
 // surfaces — recognition carries across devices.
 const NAV_ICONS: Record<string, string> = {
-  brief: '◒', work: '◈', growth: '◉',
-  money: '✦', calendar: '◎', people: '♡',
+  village: '⌂', brief: '◒', work: '◈', growth: '◉',
+  money: '✦', calendar: '◎', people: '♡', household: '🏠',
 }
 
 interface Props {
