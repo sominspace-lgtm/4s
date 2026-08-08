@@ -21,19 +21,26 @@
 //   surface2 — a second step (inputs, nested surfaces)
 //   accent (--gold) — the theme's signature, kept sophisticated, never neon
 // Dark themes use a soft ~72% muted text; light themes tune for WCAG contrast.
+//
+// DEPTH PASS (2026-08-07): bg→surface→surface2 used to move only ~7% in
+// lightness, so a card had no visible edge against the page and everything
+// read as one flat plane. Each step is roughly doubled now, borders carry
+// more alpha, and the accents are more saturated — the old ones were pale
+// enough that "the theme's signature" barely registered. Calm was being
+// achieved by making everything faint, which isn't calm, it's washed out.
 export const THEMES: Record<string, Record<string, string>> = {
 
   // 🌙 Moonlight — deep indigo, premium minimal
   sunset: {
-    '--bg': '#0a0b15', '--surface': '#111324', '--surface2': '#191c30',
-    '--border': 'rgba(140,155,245,0.10)', '--text': '#edf0fc',
-    '--muted': 'rgba(237,240,252,0.70)', '--faint': 'rgba(237,240,252,0.06)',
-    '--gold': '#94a4f4', '--purple': '#a89af0', '--emerald': '#7ed8c4',
-    '--rose': '#f28a8a', '--blush': '#b4bcf8', '--amber': '#ecc888',
-    '--slate': '#7a8ad0', '--lavender': '#c4b0ff',
-    '--accent-2': '#c9adff', '--shadow': 'rgba(4,6,20,0.55)',
-    '--glow': 'rgba(148,164,244,0.20)', '--selection': 'rgba(148,164,244,0.18)',
-    '--hover-bg': 'rgba(140,155,245,0.05)',
+    '--bg': '#06070f', '--surface': '#0f1226', '--surface2': '#1a1e3c',
+    '--border': 'rgba(140,155,245,0.17)', '--text': '#edf0fc',
+    '--muted': 'rgba(237,240,252,0.68)', '--faint': 'rgba(237,240,252,0.07)',
+    '--gold': '#8b9dff', '--purple': '#a58bf5', '--emerald': '#5fd9bd',
+    '--rose': '#ff8080', '--blush': '#aab6ff', '--amber': '#f5c876',
+    '--slate': '#6d80d8', '--lavender': '#c4a8ff',
+    '--accent-2': '#c9a0ff', '--shadow': 'rgba(2,3,12,0.7)',
+    '--glow': 'rgba(139,157,255,0.26)', '--selection': 'rgba(139,157,255,0.22)',
+    '--hover-bg': 'rgba(140,155,245,0.07)',
     '--font-display': "var(--font-cormorant),'Cormorant Garamond',serif",
     '--font-body':    "var(--font-inter),'Inter',sans-serif",
     '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
@@ -45,15 +52,15 @@ export const THEMES: Record<string, Record<string, string>> = {
 
   // 🔥 Ember — charcoal with warm amber-orange
   ember: {
-    '--bg': '#100c09', '--surface': '#1b1611', '--surface2': '#26201a',
-    '--border': 'rgba(224,140,64,0.11)', '--text': '#f5ede3',
-    '--muted': 'rgba(245,237,227,0.70)', '--faint': 'rgba(245,237,227,0.06)',
-    '--gold': '#e39653', '--purple': '#c494d2', '--emerald': '#84c284',
-    '--rose': '#e2857a', '--blush': '#f0b486', '--amber': '#e3b44c',
-    '--slate': '#a4a4b4', '--lavender': '#c4a4c4',
-    '--accent-2': '#d4683a', '--shadow': 'rgba(10,7,4,0.55)',
-    '--glow': 'rgba(227,150,83,0.20)', '--selection': 'rgba(227,150,83,0.15)',
-    '--hover-bg': 'rgba(224,140,64,0.055)',
+    '--bg': '#0b0806', '--surface': '#1a1410', '--surface2': '#2a221a',
+    '--border': 'rgba(224,140,64,0.19)', '--text': '#f5ede3',
+    '--muted': 'rgba(245,237,227,0.68)', '--faint': 'rgba(245,237,227,0.07)',
+    '--gold': '#f0964a', '--purple': '#c88ad8', '--emerald': '#7ac87a',
+    '--rose': '#f0806f', '--blush': '#f5b478', '--amber': '#f0b83c',
+    '--slate': '#a8a4bc', '--lavender': '#cc9ecc',
+    '--accent-2': '#e0602c', '--shadow': 'rgba(6,4,2,0.72)',
+    '--glow': 'rgba(240,150,74,0.26)', '--selection': 'rgba(240,150,74,0.20)',
+    '--hover-bg': 'rgba(224,140,64,0.075)',
     '--font-display': "var(--font-bitter),'Bitter',serif",
     '--font-body':    "var(--font-manrope),'Manrope',sans-serif",
     '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
@@ -66,13 +73,16 @@ export const THEMES: Record<string, Record<string, string>> = {
   // 📄 Linen — warm paper, minimal light mode
   ash: {
     '--scheme': 'light',
-    '--bg': '#f6f2ea', '--surface': '#fbf8f2', '--surface2': '#ece5d9',
-    '--border': 'rgba(80,55,30,0.12)', '--text': '#2a1e12',
-    '--muted': 'rgba(42,30,18,0.66)', '--faint': 'rgba(42,30,18,0.06)',
+    // Light themes keep their accent hues untouched — those were picked with
+    // real relative-luminance math, and re-tuning them by eye is how you get
+    // a 2:1 "gold" that looked fine on dark. Only depth cues change here.
+    '--bg': '#f2ede2', '--surface': '#fefdfa', '--surface2': '#e6ddcc',
+    '--border': 'rgba(80,55,30,0.20)', '--text': '#2a1e12',
+    '--muted': 'rgba(42,30,18,0.68)', '--faint': 'rgba(42,30,18,0.07)',
     '--gold': '#985018', '--purple': '#68408e', '--emerald': '#367040',
     '--rose': '#a03e3e', '--blush': '#a86048', '--amber': '#8c5414',
     '--slate': '#4c5c6c', '--lavender': '#6f5c8c',
-    '--accent-2': '#68408e', '--shadow': 'rgba(90,62,34,0.14)',
+    '--accent-2': '#68408e', '--shadow': 'rgba(90,62,34,0.22)',
     '--glow': 'rgba(152,80,24,0.14)', '--selection': 'rgba(152,80,24,0.12)',
     '--hover-bg': 'rgba(80,55,30,0.045)',
     '--font-display': "var(--font-libre-baskerville),'Libre Baskerville',serif",
@@ -86,15 +96,15 @@ export const THEMES: Record<string, Record<string, string>> = {
 
   // 🍇 Plum — dark violet, creative and expressive
   plum: {
-    '--bg': '#0e0616', '--surface': '#170b22', '--surface2': '#20122e',
-    '--border': 'rgba(168,96,224,0.11)', '--text': '#f0e8f8',
-    '--muted': 'rgba(240,232,248,0.70)', '--faint': 'rgba(240,232,248,0.06)',
-    '--gold': '#c274e6', '--purple': '#a666c2', '--emerald': '#74d2a4',
-    '--rose': '#e468a4', '--blush': '#e296e2', '--amber': '#c4a4e2',
-    '--slate': '#8666a4', '--lavender': '#c496e2',
-    '--accent-2': '#e468a4', '--shadow': 'rgba(10,4,18,0.55)',
-    '--glow': 'rgba(194,116,230,0.20)', '--selection': 'rgba(194,116,230,0.16)',
-    '--hover-bg': 'rgba(168,96,224,0.055)',
+    '--bg': '#0a0410', '--surface': '#170a25', '--surface2': '#241338',
+    '--border': 'rgba(168,96,224,0.19)', '--text': '#f0e8f8',
+    '--muted': 'rgba(240,232,248,0.68)', '--faint': 'rgba(240,232,248,0.07)',
+    '--gold': '#cc6ff5', '--purple': '#ae5cd0', '--emerald': '#5fd8a4',
+    '--rose': '#f55fa8', '--blush': '#e88ce8', '--amber': '#d0a0f0',
+    '--slate': '#9060b4', '--lavender': '#cc8cf0',
+    '--accent-2': '#f55fa8', '--shadow': 'rgba(6,2,12,0.72)',
+    '--glow': 'rgba(204,111,245,0.26)', '--selection': 'rgba(204,111,245,0.20)',
+    '--hover-bg': 'rgba(168,96,224,0.075)',
     '--font-display': "var(--font-playfair),'Playfair Display',serif",
     '--font-body':    "var(--font-plus-jakarta),'Plus Jakarta Sans',sans-serif",
     '--font-mono':    "var(--font-fira),'Fira Code',monospace",
@@ -106,9 +116,9 @@ export const THEMES: Record<string, Record<string, string>> = {
 
   // ⚫ Obsidian — near-monochrome, stark and focused
   noir: {
-    '--bg': '#050506', '--surface': '#0c0c0e', '--surface2': '#141416',
-    '--border': 'rgba(255,255,255,0.09)', '--text': '#f4f4f6',
-    '--muted': 'rgba(244,244,246,0.66)', '--faint': 'rgba(244,244,246,0.05)',
+    '--bg': '#030304', '--surface': '#0d0d10', '--surface2': '#18181c',
+    '--border': 'rgba(255,255,255,0.14)', '--text': '#f4f4f6',
+    '--muted': 'rgba(244,244,246,0.64)', '--faint': 'rgba(244,244,246,0.06)',
     '--gold': '#e8e8ec', '--purple': '#9494b4', '--emerald': '#74d274',
     '--rose': '#e27474', '--blush': '#f0f0f4', '--amber': '#d2b464',
     '--slate': '#7c7ca4', '--lavender': '#c4c4dc',
@@ -127,13 +137,13 @@ export const THEMES: Record<string, Record<string, string>> = {
   // ☀️ Solar — bright premium light theme, sunlit cream and sky
   solar: {
     '--scheme': 'light',
-    '--bg': '#fdf9ef', '--surface': '#ffffff', '--surface2': '#f4eed7',
-    '--border': 'rgba(150,120,30,0.14)', '--text': '#1c2338',
-    '--muted': 'rgba(28,35,56,0.66)', '--faint': 'rgba(28,35,56,0.06)',
+    '--bg': '#f8f2e2', '--surface': '#ffffff', '--surface2': '#eee6cc',
+    '--border': 'rgba(150,120,30,0.22)', '--text': '#1c2338',
+    '--muted': 'rgba(28,35,56,0.68)', '--faint': 'rgba(28,35,56,0.07)',
     '--gold': '#8a600e', '--purple': '#5868ae', '--emerald': '#367e5e',
     '--rose': '#be464e', '--blush': '#386ea6', '--amber': '#88660c',
     '--slate': '#4676ae', '--lavender': '#48569e',
-    '--accent-2': '#2a6896', '--shadow': 'rgba(150,120,50,0.16)',
+    '--accent-2': '#2a6896', '--shadow': 'rgba(120,95,40,0.24)',
     '--glow': 'rgba(138,96,14,0.16)', '--selection': 'rgba(138,96,14,0.12)',
     '--hover-bg': 'rgba(150,120,30,0.045)',
     '--font-display': "var(--font-libre-baskerville),'Libre Baskerville',serif",

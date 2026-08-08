@@ -51,6 +51,11 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
               key={s.id}
               onClick={() => onSelect(s.id)}
               aria-current={isActive ? 'page' : undefined}
+              // .nav-tab draws the underline as a pseudo-element that grows
+              // from the centre, so switching tabs slides rather than snaps.
+              // data-active drives it in CSS — see globals.css.
+              className="nav-tab"
+              data-active={isActive}
               style={{
                 padding: '0.7rem 1rem', flexShrink: 0, minHeight: '44px',
                 display: 'flex', alignItems: 'center', gap: '0.45rem',
@@ -58,11 +63,10 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
                 fontFamily: 'var(--font-body)', fontSize: '0.78rem',
                 letterSpacing: '0.05em', textTransform: 'uppercase',
                 color: isActive ? 'var(--text)' : 'var(--muted)',
-                borderBottom: isActive ? '1.5px solid var(--gold)' : '1.5px solid transparent',
-                transition: 'color 0.15s, border-color 0.15s',
+                borderRadius: '8px 8px 0 0',
               }}
             >
-              <span aria-hidden style={{ fontSize: '0.9rem', opacity: isActive ? 1 : 0.7, color: isActive ? 'var(--gold)' : 'inherit' }}>
+              <span aria-hidden style={{ fontSize: '0.9rem', opacity: isActive ? 1 : 0.7, color: isActive ? 'var(--gold)' : 'inherit', transition: 'color 160ms ease, opacity 160ms ease' }}>
                 {NAV_ICONS[s.id] ?? '•'}
               </span>
               {label}

@@ -357,7 +357,10 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
             ))
           : (() => {
               const s = visible.find(v => v.id === currentTab)
-              return s ? <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, 0, false, false)}</div> : null
+              // key + .tab-in means React remounts on every tab change, so
+              // the entrance animation replays instead of firing once on
+              // first render and never again.
+              return s ? <div key={s.id} id={`section-${s.id}`} className="tab-in">{renderSection(s.id, 0, false, false)}</div> : null
             })()
         }
         {/* The calendar lives inside Today rather than owning a tab — it's

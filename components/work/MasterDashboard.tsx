@@ -102,6 +102,13 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      // Keyboard parity for the hover-revealed controls (meta editors, share,
+      // delete). Without these, tabbing through the list reaches buttons that
+      // are rendered at opacity 0 or not at all — reachable but invisible,
+      // which is worse than either extreme. onFocus/onBlur bubble in React,
+      // so this behaves like :focus-within.
+      onFocus={() => setHovered(true)}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHovered(false) }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -119,26 +126,18 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
     >
       {/* Main row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem' }}>
-        <button onClick={() => onStatus(item.id, S_NEXT[item.status])} style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-          fontSize: '0.75rem', color: S_COLOR[item.status], lineHeight: 1, transition: 'color 0.15s',
-          marginTop: '0.05rem',
-        }}>{S_ICON[item.status]}</button>
-
-        {/* Energy badge — click to cycle light → medium → deep. Never a rank:
-            no color implies "more important", just how much focus it takes. */}
+        {/* Bigger than it looks — the hit area is padded out to a proper tap
+            target while the glyph itself stays small. */}
         <button
-          onClick={cycleEnergy}
-          title="Click to set energy"
+          onClick={() => onStatus(item.id, S_NEXT[item.status])}
+          aria-label={item.status === 'done' ? 'Mark not done' : 'Advance status'}
+          className="press"
           style={{
-            background: 'none', border: `1px solid ${item.energy ? E_COLOR[item.energy] : 'var(--faint)'}`,
-            borderRadius: '4px', cursor: 'pointer', padding: '0.05em 0.35em',
-            fontSize: '0.52rem', color: item.energy ? E_COLOR[item.energy] : 'var(--faint)',
-            fontFamily: 'var(--font-body)',
-            fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.6, flexShrink: 0,
-            transition: 'all 0.15s', opacity: item.energy ? 1 : 0.55,
+            background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
+            fontSize: '0.85rem', color: S_COLOR[item.status], lineHeight: 1,
+            transition: 'color 0.15s', padding: '0.25rem 0.3rem', margin: '-0.25rem -0.1rem -0.25rem -0.3rem',
           }}
-        >{item.energy ? E_LABEL[item.energy] : '+ energy'}</button>
+        >{S_ICON[item.status]}</button>
 
         <span style={{
           flex: 1, fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.4,
@@ -192,46 +191,92 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
         }}>✕</button>
       </div>
 
-      {/* Details row — domain, due date, recur — always visible */}
-      <div style={{ marginLeft: '2.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-        {/* Domain select */}
-        <select
-          value={item.domain ?? ''}
-          onChange={e => onUpdate(item.id, { domain: e.target.value || null })}
-          style={{
-            background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
-            outline: 'none', fontSize: '0.6rem', color: item.domain ? 'var(--muted)' : 'var(--faint)',
-            fontFamily: 'var(--font-body)', cursor: 'pointer', padding: '0.1em 0.2em',
-            appearance: 'none', WebkitAppearance: 'none',
-          }}
-        >
-          <option value="">{t('+ domain', lang)}</option>
-          {Object.keys(DOMAIN_LABELS).map(k => (
-            <option key={k} value={k}>{domainLabel(k, lang)}</option>
-          ))}
-        </select>
+      {/* Meta row — DENSITY FIX (2026-08-07).
+          Every row used to render a domain <select> and a date <input>
+          permanently, both showing empty "+ domain" placeholders when
+          unset. Ten rows meant twenty always-live form controls competing
+          with the thing you actually came to read: the titles. Now the row
+          shows only what's SET, as quiet text, and the editors appear when
+          you hover or focus it. Keyboard users get them via focus-within,
+          so this is a progressive reveal, not a mouse-only feature. */}
+      {(() => {
+        const showEditors = hovered || editingNotes
+        const hasMeta = item.domain || item.due_date || item.energy || item.recur_days
+        if (!showEditors && !hasMeta) return null
 
-        {/* Due date — always visible */}
-        <input
-          type="date"
-          value={item.due_date ?? ''}
-          onChange={e => onUpdate(item.id, { due_date: e.target.value || null })}
-          style={{
-            background: 'transparent', border: 'none', borderBottom: `1px solid ${item.due_date ? DUE_COLOR[urgency] + '60' : 'var(--faint)'}`,
-            outline: 'none', fontSize: '0.6rem',
-            color: item.due_date ? DUE_COLOR[urgency] : 'var(--faint)',
-            fontFamily: 'var(--font-body)', cursor: 'pointer',
-            fontWeight: urgency === 'overdue' ? 600 : 300,
-          }}
-          title="Due date"
-        />
+        const chip: React.CSSProperties = {
+          fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.75,
+          display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+        }
 
-        {item.recur_days && (
-          <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.58 }}>
-            ↻ {item.recur_days === 1 ? 'daily' : item.recur_days === 7 ? 'weekly' : item.recur_days === 30 ? 'monthly' : `every ${item.recur_days}d`}
-          </span>
-        )}
-      </div>
+        return (
+          <div style={{ marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap', marginTop: '0.2rem', minHeight: '1.05rem' }}>
+            {/* Energy — moved out of the title row, where it used to sit
+                between the checkbox and the text and break the left edge
+                every title aligned to. */}
+            {(item.energy || showEditors) && (
+              <button
+                onClick={cycleEnergy}
+                title="Click to set how much focus this takes"
+                className="press"
+                style={{
+                  background: 'none', border: `1px solid ${item.energy ? E_COLOR[item.energy] : 'var(--faint)'}`,
+                  borderRadius: '4px', cursor: 'pointer', padding: '0.05em 0.35em',
+                  fontSize: '0.52rem', color: item.energy ? E_COLOR[item.energy] : 'var(--muted)',
+                  fontFamily: 'var(--font-body)', fontWeight: 600, letterSpacing: '0.03em',
+                  lineHeight: 1.6, flexShrink: 0, opacity: item.energy ? 1 : 0.6,
+                }}
+              >{item.energy ? E_LABEL[item.energy] : 'energy'}</button>
+            )}
+
+            {showEditors ? (
+              <select
+                value={item.domain ?? ''}
+                onChange={e => onUpdate(item.id, { domain: e.target.value || null })}
+                style={{
+                  background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                  outline: 'none', fontSize: '0.6rem', color: item.domain ? 'var(--muted)' : 'var(--faint)',
+                  fontFamily: 'var(--font-body)', cursor: 'pointer', padding: '0.1em 0.2em',
+                  appearance: 'none', WebkitAppearance: 'none',
+                }}
+              >
+                <option value="">{t('+ domain', lang)}</option>
+                {Object.keys(DOMAIN_LABELS).map(k => (
+                  <option key={k} value={k}>{domainLabel(k, lang)}</option>
+                ))}
+              </select>
+            ) : item.domain ? (
+              <span style={chip}>{domainLabel(item.domain, lang)}</span>
+            ) : null}
+
+            {showEditors ? (
+              <input
+                type="date"
+                value={item.due_date ?? ''}
+                onChange={e => onUpdate(item.id, { due_date: e.target.value || null })}
+                style={{
+                  background: 'transparent', border: 'none', borderBottom: `1px solid ${item.due_date ? DUE_COLOR[urgency] + '60' : 'var(--faint)'}`,
+                  outline: 'none', fontSize: '0.6rem',
+                  color: item.due_date ? DUE_COLOR[urgency] : 'var(--faint)',
+                  fontFamily: 'var(--font-body)', cursor: 'pointer',
+                  fontWeight: urgency === 'overdue' ? 600 : 300,
+                }}
+                title="Due date"
+              />
+            ) : item.due_date ? (
+              <span style={{ ...chip, color: DUE_COLOR[urgency], opacity: 1, fontWeight: urgency === 'overdue' ? 600 : 300 }}>
+                {item.due_date}
+              </span>
+            ) : null}
+
+            {item.recur_days && (
+              <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.58 }}>
+                ↻ {item.recur_days === 1 ? 'daily' : item.recur_days === 7 ? 'weekly' : item.recur_days === 30 ? 'monthly' : `every ${item.recur_days}d`}
+              </span>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Notes — always visible */}
       {item.status !== 'done' && (
@@ -473,10 +518,10 @@ export default function MasterDashboard({ userId }: { userId: string }) {
                 &ldquo;{suggestion.title}&rdquo; · {suggestion.summary.join(' · ')}
               </span>
               <div style={{ display: 'flex', gap: '0.3rem' }}>
-                <button onClick={() => confirmAndAdd(suggestion)} className="btn btn-primary" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
+                <button onClick={() => confirmAndAdd(suggestion)} className="btn btn-primary press" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
                   Confirm &amp; add
                 </button>
-                <button onClick={() => applySuggestion(suggestion)} title="Fill the fields below so you can adjust before adding" className="btn btn-secondary" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
+                <button onClick={() => applySuggestion(suggestion)} title="Fill the fields below so you can adjust before adding" className="btn btn-secondary press" style={{ fontSize: '0.66rem', padding: '0.3em 0.8em' }}>
                   Fill fields
                 </button>
                 <button onClick={() => setDismissedFor(title)} title="Keep my text as-is" className="btn btn-ghost" style={{ fontSize: '0.66rem', padding: '0.3em 0.5em' }}>

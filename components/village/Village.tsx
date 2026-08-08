@@ -139,12 +139,25 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
 
   return (
     <div>
-      <svg
-        viewBox="0 0 800 440"
-        role="img"
-        aria-label="Your village — a view of your habits, projects and history"
-        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 'var(--radius)' }}
+      {/* The village is the centerpiece, so it gets to be a picture rather
+          than a widget: a framed, elevated panel with real depth, an inner
+          highlight along the top edge, and the sky bleeding all the way to
+          the corners. Nothing else on the page is allowed to look like
+          this — that's what makes it read as the anchor. */}
+      <div
+        className="lift"
+        style={{
+          position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden',
+          border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
+          background: 'var(--surface)',
+        }}
       >
+        <svg
+          viewBox="0 0 800 440"
+          role="img"
+          aria-label="Your village — a view of your habits, projects and history"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        >
         <defs>
           <linearGradient id="vsky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={skyTop} />
@@ -153,6 +166,10 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
           <radialGradient id="vlake">
             <stop offset="0%" stopColor="var(--slate)" stopOpacity="0.5" />
             <stop offset="100%" stopColor="var(--slate)" stopOpacity="0.15" />
+          </radialGradient>
+          <radialGradient id="vvignette" cx="50%" cy="45%" r="75%">
+            <stop offset="55%" stopColor="var(--bg)" stopOpacity="0" />
+            <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.5" />
           </radialGradient>
         </defs>
 
@@ -228,9 +245,26 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
         <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={() => goToSection('brief')} count="today" />
         <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={() => goToSection('work')}
           count={`${v.buildings.length} standing`} />
-        <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={() => goToSection('brief')}
-          count={`${v.treeRings}y`} />
-      </svg>
+          <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={() => goToSection('brief')}
+            count={`${v.treeRings}y`} />
+
+          {/* Vignette — pulls the eye to the middle of the scene. Drawn in
+              SVG rather than as a CSS overlay so it can't intercept the
+              clicks on the district labels underneath it. */}
+          <rect width="800" height="440" fill="url(#vvignette)" pointerEvents="none" />
+        </svg>
+
+        {/* Glass highlight along the top edge — the one bit of gloss in the
+            whole app, and only because this is the piece meant to be looked
+            at rather than used. */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 12%)',
+          }}
+        />
+      </div>
 
       <VillageText village={v} />
     </div>

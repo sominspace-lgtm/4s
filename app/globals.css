@@ -47,12 +47,32 @@
   --space-medium:  1rem;
   --space-large:   2.4rem;
 
-  /* Typography scale */
-  --text-display: clamp(2.4rem, 5vw, 3.4rem);  /* greeting */
-  --text-section: clamp(1.15rem, 1.7vw, 1.35rem); /* section titles */
-  --text-card:    1.1rem;                       /* card titles */
-  --text-label:   0.72rem;                      /* uppercase / letter-spaced labels */
-  --text-meta:    0.74rem;                      /* metadata, muted */
+  /* ── Typography scale ────────────────────────────────────────────────
+     Six steps, each clearly distinct from its neighbours. The old scale
+     had card (1.1) and section (1.15–1.35) close enough to read as the
+     same size, which is why the page looked flat: everything was
+     "medium". Section now steps well clear of card, and body/small exist
+     so components stop inventing one-off rem values inline. */
+  --text-display: clamp(2.1rem, 4.5vw, 3rem);     /* the greeting, once per page */
+  --text-section: clamp(1.4rem, 2.2vw, 1.75rem);  /* section titles */
+  --text-card:    1.05rem;                        /* card titles */
+  --text-body:    0.85rem;                        /* default reading size */
+  --text-meta:    0.74rem;                        /* metadata, muted */
+  --text-label:   0.66rem;                        /* uppercase / letter-spaced labels */
+
+  /* Weight is the other half of hierarchy — a scale nobody varies weight
+     across still reads flat. Body stays light; headings step up. */
+  --weight-body:    300;
+  --weight-medium:  400;
+  --weight-strong:  500;
+
+  /* ── Elevation ───────────────────────────────────────────────────────
+     Three levels, so "which of these sits on top" is answerable at a
+     glance instead of every card sharing one flat border. */
+  --elev-0: none;
+  --elev-1: 0 1px 2px color-mix(in srgb, var(--shadow) 40%, transparent);
+  --elev-2: 0 4px 14px color-mix(in srgb, var(--shadow) 50%, transparent);
+  --elev-3: 0 14px 40px color-mix(in srgb, var(--shadow) 65%, transparent);
 
   /* Semantic role aliases — reuse each theme's already-tuned per-theme hues
      so status colors, inputs, and badges stay theme-reactive without every
@@ -296,6 +316,42 @@ select, option {
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .fade-in { animation: fade-in 0.25s ease both; }
 
+/* ── Hierarchy utilities ────────────────────────────────────────────────
+   Named roles rather than raw sizes, so a component says what a piece of
+   text IS and the scale decides how big that looks. */
+.t-section {
+  font-family: var(--font-display); font-size: var(--text-section);
+  font-weight: var(--weight-medium); letter-spacing: -0.01em; line-height: 1.2;
+  color: var(--text);
+}
+.t-card {
+  font-family: var(--font-display); font-size: var(--text-card);
+  font-weight: var(--weight-medium); color: var(--text);
+}
+.t-body  { font-size: var(--text-body); font-weight: var(--weight-body); color: var(--text); }
+.t-meta  { font-size: var(--text-meta); color: var(--muted); }
+.t-label {
+  font-size: var(--text-label); text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); opacity: 0.75; font-weight: var(--weight-medium);
+}
+
+/* Tab switches: content arrives, it doesn't blink into place. Keyed on the
+   section id in DashboardClient so every tab change replays it. */
+@keyframes tab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.tab-in { animation: tab-in 240ms cubic-bezier(.2,.8,.3,1) both; }
+
+/* Staggered list entrance — capped at 8 so a long list never front-loads
+   a visible delay before the user can read anything. */
+.stagger > * { animation: fade-in 260ms cubic-bezier(.2,.8,.3,1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 30ms; }
+.stagger > *:nth-child(3) { animation-delay: 60ms; }
+.stagger > *:nth-child(4) { animation-delay: 90ms; }
+.stagger > *:nth-child(5) { animation-delay: 120ms; }
+.stagger > *:nth-child(6) { animation-delay: 150ms; }
+.stagger > *:nth-child(7) { animation-delay: 180ms; }
+.stagger > *:nth-child(n+8) { animation-delay: 210ms; }
+
 /* ── Screen-reader-only ─────────────────────────────────────────────────
    Content that must exist for assistive tech but isn't shown visually.
    Never use `display:none` for this — that removes it from the a11y tree
@@ -341,10 +397,48 @@ select, option {
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
 
+/* Checking something off should feel like it landed. The box fills, the
+   tick draws itself in — one beat, then still. */
+@keyframes tick-in { from { stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+.tick path { stroke-dasharray: 20; animation: tick-in 220ms cubic-bezier(.3,.7,.4,1) both; }
+
+/* A row that just got completed dims and settles rather than vanishing —
+   things you finish should be seen finishing. */
+@keyframes complete-row { from { background: color-mix(in srgb, var(--emerald) 14%, transparent); } to { background: transparent; } }
+.completed-row { animation: complete-row 700ms ease both; }
+
+/* Drag: the card you're holding should feel picked up, and the place it
+   would land should say so. */
+.drag-source { opacity: 0.38; transform: scale(0.98); transition: opacity 120ms ease, transform 120ms ease; }
+.drop-target {
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  transform: scale(1.012);
+}
+
+/* ── Navigation ─────────────────────────────────────────────────────────
+   The active tab used to differ only in text colour. Now it carries an
+   underline that slides, a filled ground, and real weight — you can see
+   where you are without reading. */
+.nav-tab {
+  position: relative;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.nav-tab::after {
+  content: ''; position: absolute; left: 50%; right: 50%; bottom: -1px; height: 2px;
+  background: var(--gold); border-radius: 2px;
+  transition: left 220ms cubic-bezier(.2,.8,.3,1), right 220ms cubic-bezier(.2,.8,.3,1), opacity 160ms ease;
+  opacity: 0;
+}
+.nav-tab[data-active='true']::after { left: 18%; right: 18%; opacity: 1; }
+.nav-tab[data-active='true'] { color: var(--text); font-weight: var(--weight-strong); }
+.nav-tab:hover:not([data-active='true']) { color: var(--text); background: var(--hover-bg); }
+
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .settle, .grew { animation: none !important; }
-  .press:active, .lift:hover { transform: none !important; }
+  .village-drift, .village-glow, .settle, .grew,
+  .tab-in, .stagger > *, .tick path, .completed-row { animation: none !important; }
+  .press:active, .lift:hover, .drop-target, .drag-source { transform: none !important; }
+  .nav-tab::after { transition: none !important; }
 }
 
 /* Respect reduced motion everywhere */

@@ -19,6 +19,7 @@ import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import AttentionBudget from '@/components/brief/AttentionBudget'
+import OneThing from '@/components/brief/OneThing'
 import CaptureSection from '@/components/capture/CaptureSection'
 import DailyReflection from '@/components/brief/DailyReflection'
 import Breathing from '@/components/focus/Breathing'
@@ -295,22 +296,41 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1, minWidth: '180px', lineHeight: 1.5 }}>
           <span style={{ color: 'var(--muted)' }}>{showAdaptive.reason}</span>
         </span>
-        <button onClick={() => applyGuide(showAdaptive.guide)} className="btn btn-primary" style={{ fontSize: '0.7rem' }}>
+        <button onClick={() => applyGuide(showAdaptive.guide)} className="btn btn-primary press" style={{ fontSize: '0.7rem' }}>
           Try {MODES[showAdaptive.guide].label}
         </button>
         <button onClick={dismissAdaptive} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>Not now</button>
       </div>
     )}
+    {/* One thing, above everything. The greeting and the stats used to be
+        the first things on the page, which meant Today opened by telling
+        you how you're doing rather than what to do. Recovery mode is the
+        one exception — it has its own, gentler answer below. */}
+    {!recovery && (
+      <OneThing
+        items={items}
+        habits={habits}
+        habitsDueToday={habitsDueToday}
+        completedHabitIds={new Set(habitsDueToday.filter(h => (completions[h.id] ?? []).includes(today)).map(h => h.id))}
+        lowEnergy={energy === 'low'}
+        onOpenTask={() => goToSection('work')}
+        onOpenHabit={() => goToPersonal('habits')}
+      />
+    )}
+
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',
       padding: '1.2rem 1.5rem', position: 'relative', overflow: 'hidden',
+      boxShadow: 'var(--elev-1)',
     }}>
       <div style={{
         position: 'absolute', top: 0, right: 0, width: '200px', height: '100%', pointerEvents: 'none',
         background: 'radial-gradient(ellipse at top right, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%)',
       }} />
 
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 1.9rem)', fontWeight: 300, color: 'var(--text)', lineHeight: 1, marginBottom: '0.7rem' }}>
+      {/* Now that One thing carries the page, the greeting steps down from
+          hero to context — it's a nicety, not the headline. */}
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--muted)', lineHeight: 1.3, marginBottom: '0.7rem' }}>
         {greeting}
       </div>
 
@@ -320,7 +340,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           <Breathing />
           <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.2rem' }}>
-            <button onClick={enterFocus} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>⊙ Focus view</button>
+            <button onClick={enterFocus} className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>⊙ Focus view</button>
             <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>I&apos;m okay now</button>
           </div>
         </div>
