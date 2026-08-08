@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem, type Energy } from '@/lib/hooks/useWorkItems'
 import { parseTaskInput, type ParsedTask } from '@/lib/utils/parseTask'
 import { taskStage } from '@/lib/utils/taskStage'
+import NoticeBoard from './NoticeBoard'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
@@ -40,7 +41,7 @@ const RECUR_OPTIONS = [
 
 type Filter = 'all' | 'today' | 'overdue' | 'done'
 
-function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
+export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
   userId: string
   onStatus: (id: string, s: WorkItem['status']) => void
@@ -279,6 +280,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const lang = useLang()
   const { items, loading, add, setStatus, update, remove, toggleShared } = useWorkItems()
   const [filter, setFilter] = useState<Filter>('all')
+  const [view, setView] = useState<'board' | 'list'>('board')
   const [showAdd, setShowAdd] = useState(false)
 
   const [title, setTitle] = useState('')
@@ -346,6 +348,11 @@ export default function MasterDashboard({ userId }: { userId: string }) {
     return i.status !== 'done'
   })
 
+  // Board view has no status filter of its own — it always shows active
+  // work, grouped by column instead of by due-date urgency. Done items stay
+  // reachable via List → Done, and permanently via the Archive.
+  const activeItems = items.filter(i => i.status !== 'done')
+
   const inputStyle: React.CSSProperties = {
     background: 'transparent', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)',
     borderRadius: '7px', color: 'var(--text)', fontFamily: 'var(--font-body)',
@@ -372,10 +379,21 @@ export default function MasterDashboard({ userId }: { userId: string }) {
           {todayCount > 0   && <span style={{ fontSize: '0.6rem', color: 'var(--amber)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{todayCount} due today</span>}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.2rem' }} className="tabs-wrap">
-          {(['all', 'today', 'overdue', 'done'] as Filter[]).map(f => (
-            <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{t(f, lang)}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          {/* The notice board replaces status-based filtering with columns —
+              so the today/overdue/done chips only make sense in list view,
+              where you're scanning a flat queue instead of browsing groups. */}
+          {view === 'list' && (
+            <div style={{ display: 'flex', gap: '0.2rem' }} className="tabs-wrap">
+              {(['all', 'today', 'overdue', 'done'] as Filter[]).map(f => (
+                <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{t(f, lang)}</button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '7px', padding: '0.15rem' }}>
+            <button onClick={() => setView('board')} style={tabStyle(view === 'board')}>Board</button>
+            <button onClick={() => setView('list')} style={tabStyle(view === 'list')}>List</button>
+          </div>
         </div>
       </div>
 
@@ -386,22 +404,38 @@ export default function MasterDashboard({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && filtered.length === 0 && (
-        <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{filter === 'overdue' ? '🎉' : filter === 'done' ? '📋' : '✓'}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>
-            {filter === 'all'     && 'Queue clear. Add one thing worth finishing.'}
-            {filter === 'today'   && 'Nothing due today.'}
-            {filter === 'overdue' && 'Nothing overdue. Nice.'}
-            {filter === 'done'    && 'No completed items yet.'}
-          </div>
-        </div>
-      )}
+      {view === 'board' ? (
+        <>
+          {!loading && activeItems.length === 0 && (
+            <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>✓</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>Queue clear. Add one thing worth finishing.</div>
+            </div>
+          )}
+          {!loading && activeItems.length > 0 && (
+            <NoticeBoard items={activeItems} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Empty state */}
+          {!loading && filtered.length === 0 && (
+            <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{filter === 'overdue' ? '🎉' : filter === 'done' ? '📋' : '✓'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>
+                {filter === 'all'     && 'Queue clear. Add one thing worth finishing.'}
+                {filter === 'today'   && 'Nothing due today.'}
+                {filter === 'overdue' && 'Nothing overdue. Nice.'}
+                {filter === 'done'    && 'No completed items yet.'}
+              </div>
+            </div>
+          )}
 
-      {!loading && filtered.map(i => (
-        <WorkRow key={i.id} item={i} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
-      ))}
+          {!loading && filtered.map(i => (
+            <WorkRow key={i.id} item={i} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+          ))}
+        </>
+      )}
 
       {/* Add area */}
       {!showAdd ? (

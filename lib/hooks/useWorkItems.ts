@@ -19,6 +19,7 @@ export interface WorkItem {
   created_at: string
   completed_at: string | null
   landmark: boolean
+  board_column: 'small' | 'growing' | 'projects' | 'later' | null
 }
 
 export function dueUrgency(due: string | null): 'overdue' | 'today' | 'soon' | 'fine' | 'none' {
