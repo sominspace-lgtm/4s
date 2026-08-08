@@ -13,6 +13,7 @@ interface ArchivedItem {
   status: string
   completed_at: string | null
   created_at: string
+  landmark: boolean
 }
 
 interface Props {
@@ -20,13 +21,17 @@ interface Props {
   onClose: () => void
 }
 
+// Archive Grove, from the 4S Village vision: this is where finished work
+// stops being a task and becomes personal history. Landmarks (see
+// lib/utils/taskStage.ts) are the earned ones — surfaced with their own
+// filter and a ◆ so they read as monuments, not just another line in a list.
 export default function ArchivePanel({ open, onClose }: Props) {
   const lang = useLang()
   const supabase = createClient()
   const ref = useRef<HTMLDivElement>(null)
   const [items, setItems] = useState<ArchivedItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'done' | 'cancelled'>('all')
+  const [filter, setFilter] = useState<'all' | 'done' | 'cancelled' | 'landmark'>('all')
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -41,14 +46,16 @@ export default function ArchivePanel({ open, onClose }: Props) {
     setLoading(true)
     supabase
       .from('work_items')
-      .select('id, title, project, status, completed_at, created_at')
+      .select('id, title, project, status, completed_at, created_at, landmark')
       .in('status', ['done', 'cancelled'])
       .order('completed_at', { ascending: false })
       .limit(100)
       .then(({ data }) => { setItems(data ?? []); setLoading(false) })
   }, [open])
 
-  const visible = items.filter(i => filter === 'all' ? true : i.status === filter)
+  const visible = items.filter(i =>
+    filter === 'all' ? true : filter === 'landmark' ? i.landmark : i.status === filter
+  )
 
   const grouped: Record<string, ArchivedItem[]> = {}
   for (const item of visible) {
@@ -83,7 +90,7 @@ export default function ArchivePanel({ open, onClose }: Props) {
 
         {/* Filter */}
         <div style={{ display: 'flex', gap: '0.4rem' }}>
-          {(['all', 'done', 'cancelled'] as const).map(f => (
+          {(['all', 'done', 'landmark', 'cancelled'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
               padding: '0.25rem 0.7rem', borderRadius: '8px', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: '0.65rem',
@@ -107,11 +114,17 @@ export default function ArchivePanel({ open, onClose }: Props) {
               {monthItems.map(item => (
                 <div key={item.id} style={{
                   padding: '0.6rem 0.75rem', borderRadius: '9px',
-                  background: 'var(--hover-bg)', border: '1px solid var(--border)',
+                  background: item.landmark ? 'color-mix(in srgb, var(--gold) 6%, var(--hover-bg))' : 'var(--hover-bg)',
+                  border: `1px solid ${item.landmark ? 'color-mix(in srgb, var(--gold) 35%, var(--border))' : 'var(--border)'}`,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-                    <div style={{ fontSize: '0.75rem', color: item.status === 'done' ? 'var(--text)' : 'var(--muted)', lineHeight: 1.4, textDecoration: item.status === 'cancelled' ? 'line-through' : 'none' }}>
-                      {item.title}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', minWidth: 0 }}>
+                      {item.landmark && (
+                        <span title="Landmark — this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.7rem', flexShrink: 0, lineHeight: 1.4 }}>◆</span>
+                      )}
+                      <div style={{ fontSize: '0.75rem', color: item.status === 'done' ? 'var(--text)' : 'var(--muted)', lineHeight: 1.4, textDecoration: item.status === 'cancelled' ? 'line-through' : 'none' }}>
+                        {item.title}
+                      </div>
                     </div>
                     <span style={{
                       fontSize: '0.56rem', padding: '0.15em 0.5em', borderRadius: '99px',
