@@ -10,6 +10,11 @@ export function getDayLabel(dateStr: string): string {
   return format(parseISO(dateStr + 'T12:00:00'), 'EEEEE')
 }
 
+// CURRENTLY UNUSED (2026-08-07). HabitRow shows lifetime waterings and a
+// plant stage instead — a streak resets to zero the first time life gets in
+// the way, which is the exact guilt mechanic the product exists to avoid.
+// Kept, not deleted: it's correct code, and restoring streaks is one line if
+// that call ever gets reversed.
 export function calcStreak(completedDates: string[]): number {
   const done = new Set(completedDates)
   const todayStr = format(new Date(), 'yyyy-MM-dd')
