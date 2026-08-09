@@ -71,7 +71,13 @@ export function plantFor(habit: Habit, completions: string[]): Plant {
     id: habit.id,
     name: habit.name,
     stage,
-    dormant: habit.paused || daysSince > 14,
+    // A never-watered habit is a seed waiting to start, NOT a dormant one.
+    // Without the completions check, daysSince is Infinity for a brand-new
+    // habit and every one of them rendered as "resting" the moment it was
+    // created — telling someone they've let something lapse on the day they
+    // committed to it. Dormancy has to be earned: you can only go quiet on
+    // something you actually started.
+    dormant: habit.paused || (completions.length > 0 && daysSince > 14),
     category: habit.category,
   }
 }

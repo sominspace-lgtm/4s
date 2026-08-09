@@ -63,7 +63,10 @@ export default function HabitTracker() {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.4rem 1.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, letterSpacing: '0.02em' }}>Streaks</div>
+        {/* Not "Streaks" — nothing here counts consecutive days anymore, and
+            a heading that names the mechanic you removed is worse than a
+            generic one. This is the forest floor: things you're growing. */}
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>Growing</div>
         <button onClick={() => setShowForm(o => !o)} style={{
           fontSize: '0.68rem', letterSpacing: '0.06em', color: 'var(--muted)',
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
@@ -82,7 +85,7 @@ export default function HabitTracker() {
       {!loading && habits.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '1.2rem 0', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           <div style={{ fontSize: '1.2rem', opacity: 0.3 }}>○</div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>No streaks yet. Start with one small promise.</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>Nothing planted yet. Start with one small promise.</p>
         </div>
       )}
 

@@ -73,8 +73,12 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
         </div>
         <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68, marginLeft: '0.9rem' }}>
           {scheduleSummary(habit)}
-          {plant.dormant && !habit.paused ? ' · resting' : ''}
-          {dueToday && !habit.paused ? ' · due today' : ''}
+          {/* "resting" and "due today" together read as a contradiction, so
+              resting wins the slot — if it's been quiet a fortnight, that's
+              the more useful thing to say. */}
+          {plant.dormant && !habit.paused
+            ? ' · resting'
+            : dueToday && !habit.paused ? ' · due today' : ''}
         </span>
       </div>
 
