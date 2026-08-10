@@ -30,6 +30,47 @@
 // achieved by making everything faint, which isn't calm, it's washed out.
 export const THEMES: Record<string, Record<string, string>> = {
 
+  // 🌿 Bloom — the shared world with BloomScan.
+  //
+  // Palette lifted from the live Bloom app rather than approximated by eye:
+  // cream paper, sage, warm brown ink, and its soft botanical pastels. The
+  // brief says BloomScan and 4S are two products sharing one world — this is
+  // the seam where that becomes visible instead of just being asserted.
+  //
+  // Two things here exist only for this theme:
+  //   --radius-organic   hand-drawn, slightly-uneven corners (Bloom's most
+  //                      distinctive move — every card is a little wonky, so
+  //                      nothing looks machine-stamped)
+  //   --card-border-style  dashed, for the "pressed botanical specimen" feel
+  // Every other theme leaves both unset and cards fall back to plain radii.
+  bloom: {
+    '--scheme': 'light',
+    '--bg': '#f7f0df', '--surface': '#fffaf0', '--surface2': '#e8dfcd',
+    '--border': 'rgba(91,76,59,0.20)', '--text': '#493f35',
+    '--muted': 'rgba(73,63,53,0.72)', '--faint': 'rgba(91,76,59,0.09)',
+    // Accents darkened from Bloom's display pastels so they clear contrast
+    // on cream — the pastels themselves are decorative fills there, not text.
+    '--gold': '#4f6350', '--purple': '#7a6d94', '--emerald': '#54704f',
+    '--rose': '#b05c62', '--blush': '#c98f91', '--amber': '#96701f',
+    '--slate': '#5d7780', '--lavender': '#7a6d94',
+    '--accent-2': '#b05c62', '--shadow': 'rgba(99,78,52,0.20)',
+    '--glow': 'rgba(79,99,80,0.18)', '--selection': 'rgba(79,99,80,0.15)',
+    '--hover-bg': 'rgba(116,99,76,0.08)',
+    '--font-display': "var(--font-lora),'Lora',Georgia,serif",
+    '--font-body':    "var(--font-nunito),'Nunito Sans',sans-serif",
+    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
+    '--aurora-1': 'rgba(160,140,90,0.07)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(120,140,110,0.06)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(200,180,130,0.05)', '--aurora-pos-3': 'center top',
+    '--radius': '20px', '--radius-sm': '12px',
+    // Three variants, cycled by :nth-of-type in globals.css, so a column of
+    // cards isn't wonky in the exact same way down the page.
+    '--radius-organic':   '27px 21px 26px 23px',
+    '--radius-organic-b': '22px 28px 20px 26px',
+    '--radius-organic-c': '25px 22px 29px 20px',
+    '--card-border-style': 'dashed',
+  },
+
   // 🌙 Moonlight — deep indigo, premium minimal
   sunset: {
     '--bg': '#06070f', '--surface': '#0f1226', '--surface2': '#1a1e3c',
@@ -157,7 +198,7 @@ export const THEMES: Record<string, Record<string, string>> = {
 }
 
 export const THEME_LABELS: Record<string, string> = {
-  sunset: 'Moonlight', ember: 'Ember', plum: 'Plum',
+  bloom: 'Bloom', sunset: 'Moonlight', ember: 'Ember', plum: 'Plum',
   noir: 'Obsidian', ash: 'Linen', solar: 'Solar',
 }
 
@@ -178,8 +219,14 @@ export const LEGACY_THEME_MAP: Record<string, string> = {
   sakura: 'ash',      // light warm/gentle
 }
 
+// Bloom is the default (2026-08-07) — 4S and BloomScan are meant to read as
+// one world, and the cream/sage paper feel is that world's look. Only
+// affects accounts with no stored theme: anyone who has ever picked one
+// keeps it, since a stored value short-circuits the fallback below.
+export const DEFAULT_THEME = 'bloom'
+
 export function normalizeTheme(raw: string | null | undefined): string {
   if (raw && raw in THEMES) return raw
   if (raw && raw in LEGACY_THEME_MAP) return LEGACY_THEME_MAP[raw]
-  return 'sunset'
+  return DEFAULT_THEME
 }

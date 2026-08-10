@@ -316,6 +316,23 @@ select, option {
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .fade-in { animation: fade-in 0.25s ease both; }
 
+/* ── Organic surfaces (Bloom) ───────────────────────────────────────────
+   Bloom's most distinctive move is that no card is a perfect rectangle —
+   every corner radius is slightly different, so a page of cards looks
+   hand-cut rather than machine-stamped. Themes that don't set
+   --radius-organic fall back to their normal radius, so this costs the
+   other five themes nothing.
+
+   The nth-of-type variants stop every card on screen being wonky in the
+   IDENTICAL way, which is what gives it away as a CSS trick rather than
+   reading as handmade. */
+.organic { border-radius: var(--radius-organic, var(--radius)); }
+.organic:nth-of-type(2n)   { border-radius: var(--radius-organic-b, var(--radius-organic, var(--radius))); }
+.organic:nth-of-type(3n)   { border-radius: var(--radius-organic-c, var(--radius-organic, var(--radius))); }
+
+/* Pressed-specimen border, only where a theme asks for it. */
+.specimen { border-style: var(--card-border-style, solid); }
+
 /* ── Hierarchy utilities ────────────────────────────────────────────────
    Named roles rather than raw sizes, so a component says what a piece of
    text IS and the scale decides how big that looks. */

@@ -48,10 +48,10 @@ export default function PeopleHub({ userId, userEmail, onOpenCompanions }: {
   const [shareDir, setShareDir] = useState<ShareDir>('with-me')
 
   return (
-    <div className="card-interactive" style={{
+    <div className="card-interactive organic specimen" style={{
       background: 'var(--surface2)', border: '1px solid var(--border)',
       borderTop: '2px solid color-mix(in srgb, var(--blush) 45%, var(--border))',
-      borderRadius: '16px', padding: '1.3rem 1.5rem', boxShadow: '0 12px 32px var(--shadow)',
+      padding: '1.3rem 1.5rem', boxShadow: 'var(--elev-2)',
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
         <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>People</div>

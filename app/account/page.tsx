@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import ThemeProvider from '@/components/ui/ThemeProvider'
+import { normalizeTheme } from '@/lib/constants/themes'
 import AccountClient from './AccountClient'
 
 export default async function AccountPage() {
@@ -22,7 +23,7 @@ export default async function AccountPage() {
     .single()
 
   return (
-    <ThemeProvider theme={prefs?.theme ?? 'sunset'}>
+    <ThemeProvider theme={normalizeTheme(prefs?.theme)}>
       <AccountClient
         email={user.email ?? ''}
         userId={user.id}

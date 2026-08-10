@@ -412,9 +412,9 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   })
 
   return (
-    <div style={{
+    <div className="organic specimen" style={{
       background: 'var(--surface2)', border: '1px solid var(--border)', borderTop: '2px solid color-mix(in srgb, var(--gold) 45%, var(--border))',
-      borderRadius: '16px', padding: '1.3rem 1.5rem', boxShadow: '0 12px 32px var(--shadow)',
+      padding: '1.3rem 1.5rem', boxShadow: 'var(--elev-2)',
     }}>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem', gap: '0.5rem', flexWrap: 'wrap' }} className="tabs-wrap">

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ThemeProvider from '@/components/ui/ThemeProvider'
+import { DEFAULT_THEME } from '@/lib/constants/themes'
 
 // ARRIVAL, not setup.
 //
@@ -93,7 +94,7 @@ export default function OnboardPage() {
       const { error: prefsError } = await supabase.from('user_prefs').upsert({
         user_id: user.id,
         onboarded: true,
-        theme: 'sunset',     // changeable any time from the header ◐
+        theme: DEFAULT_THEME, // changeable any time from the header ◐
         mode: 'peaceful',    // the calm default; the app suggests others later
       })
       if (prefsError) {
@@ -112,7 +113,7 @@ export default function OnboardPage() {
   const onPhilosophy = step < PANELS.length
 
   return (
-    <ThemeProvider theme="sunset">
+    <ThemeProvider theme={DEFAULT_THEME}>
       <div style={{
         minHeight: '100vh', background: 'var(--bg)',
         backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',

@@ -145,9 +145,9 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
           the corners. Nothing else on the page is allowed to look like
           this — that's what makes it read as the anchor. */}
       <div
-        className="lift"
+        className="lift organic"
         style={{
-          position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden',
+          position: 'relative', overflow: 'hidden',
           border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
           background: 'var(--surface)',
         }}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { THEMES, normalizeTheme } from '@/lib/constants/themes'
+import { THEMES, normalizeTheme, DEFAULT_THEME } from '@/lib/constants/themes'
 
 // Theme data + normalizeTheme() live in lib/constants/themes.ts (a plain
 // module) — see the comment there for why: a Server Component can render
@@ -10,7 +10,7 @@ import { THEMES, normalizeTheme } from '@/lib/constants/themes'
 // module as a client reference, not just the component. Re-exported here so
 // nothing that already imports THEMES/THEME_LABELS from '@/components/ui/
 // ThemeProvider' has to change.
-export { THEMES, THEME_LABELS, LEGACY_THEME_MAP, normalizeTheme } from '@/lib/constants/themes'
+export { THEMES, THEME_LABELS, LEGACY_THEME_MAP, normalizeTheme, DEFAULT_THEME } from '@/lib/constants/themes'
 
 const ALL_VARS = [
   '--scheme',
@@ -20,9 +20,10 @@ const ALL_VARS = [
   '--font-display','--font-body','--font-mono',
   '--aurora-1','--aurora-2','--aurora-3','--aurora-pos-1','--aurora-pos-2','--aurora-pos-3',
   '--radius','--radius-sm',
+  '--radius-organic','--radius-organic-b','--radius-organic-c','--card-border-style',
 ]
 
-export default function ThemeProvider({ theme = 'sunset', children }: { theme?: string; children: React.ReactNode }) {
+export default function ThemeProvider({ theme = DEFAULT_THEME, children }: { theme?: string; children: React.ReactNode }) {
   useEffect(() => {
     const vars = THEMES[normalizeTheme(theme)]
     const root = document.documentElement

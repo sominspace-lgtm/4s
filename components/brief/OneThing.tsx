@@ -87,9 +87,8 @@ export default function OneThing({
 
   return (
     <div
-      className="fade-in"
+      className="fade-in organic"
       style={{
-        borderRadius: 'var(--radius)',
         border: `1px solid ${resting ? 'var(--border)' : 'color-mix(in srgb, var(--gold) 32%, var(--border))'}`,
         borderLeft: resting ? '1px solid var(--border)' : '3px solid var(--gold)',
         background: resting
