@@ -4,8 +4,17 @@ import { useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import HomeBrain from '@/components/home/HomeBrain'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
+
+type HouseholdTab = 'chores' | 'meals' | 'brain'
+
+const TABS: { id: HouseholdTab; label: string }[] = [
+  { id: 'chores', label: 'Chores' },
+  { id: 'meals',  label: 'Meals' },
+  { id: 'brain',  label: 'Home Brain' },
+]
 
 // Household — the shared-living tab for couples or families under one roof.
 //
@@ -19,6 +28,7 @@ const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 export default function HouseholdHub({ userId }: { userId: string }) {
   const { spaces } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
+  const [tab, setTab] = useState<HouseholdTab>('chores')
   const h = useHousehold(spaceId)
 
   const [choreName, setChoreName] = useState('')
@@ -77,7 +87,27 @@ export default function HouseholdHub({ userId }: { userId: string }) {
         </div>
       )}
 
+      <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem', alignSelf: 'flex-start' }}>
+        {TABS.map(tb => (
+          <button key={tb.id} onClick={() => setTab(tb.id)} className="btn press" style={{
+            fontSize: '0.72rem', padding: '0.4em 0.9em',
+            background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
+            color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
+          }}>{tb.label}</button>
+        ))}
+      </div>
+
+      {/* Home Brain — the household's memory: wifi passwords, serial
+          numbers, which filter the fridge takes. Moved here from Personal →
+          Life (2026-08-07), where it never belonged: none of it is personal
+          and all of it is the sort of thing the OTHER people in the house
+          need at 9pm when you're not home. It sits under the same space
+          picker as chores and meals, so it follows "just me" vs a shared
+          household exactly like they do. */}
+      {tab === 'brain' && <HomeBrain />}
+
       {/* ── Chores ─────────────────────────────────────────────── */}
+      {tab === 'chores' && (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
           Whose turn
@@ -129,8 +159,10 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
       </section>
+      )}
 
       {/* ── Meals ──────────────────────────────────────────────── */}
+      {tab === 'meals' && (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
           This week&rsquo;s meals
@@ -180,6 +212,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
       </section>
+      )}
     </div>
   )
 }

@@ -1,36 +1,18 @@
 'use client'
 
-import { useState } from 'react'
 import DomainGrid from '@/components/domains/DomainGrid'
-import HomeBrain from '@/components/home/HomeBrain'
 
-type LifeTab = 'domains' | 'home'
-
-const TABS: { id: LifeTab; label: string }[] = [
-  { id: 'domains', label: 'Domains' },
-  { id: 'home',    label: 'Home Brain' },
-]
-
-// Life = the long-term care of every important area. Home Brain is the
-// memory that keeps life from repeating work. Relationship (Companion sync,
-// People, Links) lives in the top-level People tab — see PeopleHub.
+// Life = the long-term care of every important area.
+//
+// This used to be a two-tab wrapper (Domains · Home Brain). Home Brain moved
+// to Household (2026-08-07) — none of it is personal, and all of it is what
+// the other people in the house need when you're not there. That left a tab
+// bar with exactly one tab, which is pure chrome, so the wrapper is gone and
+// Life renders its domains directly.
+//
+// Kept as a component rather than pointing PersonalHub straight at
+// DomainGrid: "Life" is the concept and DomainGrid is one way of drawing it,
+// and this is where anything else life-shaped would land.
 export default function LifeHub() {
-  const [tab, setTab] = useState<LifeTab>('domains')
-
-  return (
-    <div>
-      <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '1rem', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-        {TABS.map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className="btn" style={{
-            fontSize: '0.72rem', padding: '0.4em 0.9em',
-            background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
-            color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
-          }}>{tb.label}</button>
-        ))}
-      </div>
-
-      {tab === 'domains' && <DomainGrid />}
-      {tab === 'home' && <HomeBrain />}
-    </div>
-  )
+  return <DomainGrid />
 }

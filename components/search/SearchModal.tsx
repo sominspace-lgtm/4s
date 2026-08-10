@@ -77,7 +77,10 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
     { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goTo('work') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goToPersonal('habits') },
-    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions', 'home brain', 'wifi', 'password', 'serial', 'manual', 'household'], run: () => goToPersonal('life') },
+    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions'], run: () => goToPersonal('life') },
+    // Home Brain moved to Household, so its keywords have to move with it —
+    // searching "wifi password" landing on Life would be a dead end.
+    { id: 'go-household', label: 'Go to Household',  icon: '◫', keywords: ['household', 'home brain', 'wifi', 'password', 'serial', 'manual', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'partner'], run: () => goTo('household') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goToPersonal('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },
     { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goToPersonal('people') },
