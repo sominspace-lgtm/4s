@@ -7,7 +7,7 @@ import GiftsCard from '@/components/subscriptions/GiftsCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
 import WishlistCard from '@/components/watchlist/WishlistCard'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useBuyItems, daysUntilDue } from '@/lib/hooks/useBuyItems'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 
@@ -36,12 +36,12 @@ function OverviewStat({ label, value, color, onClick }: { label: string; value: 
 export default function MoneyHub({ userId }: { userId: string }) {
   const [tab, setTab] = useState<MoneyTab>('overview')
   const { subs, total } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { items: buyItems } = useBuyItems()
   const { items: wishItems } = useWatchItems()
 
   const nextRenewal = [...subs].filter(s => s.renewal_date).sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? ''))[0]
-  const nextGift = [...giftItems].sort((a, b) => daysUntil(a) - daysUntil(b))[0]
+  const nextGift = giftItems[0]
   const overdueBuys = buyItems.filter(b => daysUntilDue(b) < 0).length
 
   return (
@@ -67,8 +67,8 @@ export default function MoneyHub({ userId }: { userId: string }) {
           <OverviewStat label="wishlist items" value={wishItems.length} onClick={() => setTab('wishlist')} />
           <OverviewStat
             label={nextGift ? `next: ${nextGift.name}` : 'gifts tracked'}
-            value={nextGift ? `${daysUntil(nextGift)}d` : giftItems.length}
-            color={nextGift && daysUntil(nextGift) <= 14 ? 'var(--rose)' : undefined}
+            value={nextGift ? `${nextGift.days}d` : giftItems.length}
+            color={nextGift && nextGift.days <= 14 ? 'var(--rose)' : undefined}
             onClick={() => setTab('gifts')}
           />
           <OverviewStat

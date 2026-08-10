@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+// One contact record per human. This is THE store for people — birthdays
+// used to live here AND in user_prefs.layout.giftEvents, so the same person
+// could be written down twice with neither copy aware of the other. See
+// supabase/migrations/contacts_unify_gifts.sql for the merge.
 export interface Person {
   id: string
   name: string
@@ -11,6 +15,7 @@ export interface Person {
   last_contact: string | null
   notes: string | null
   gift_ideas: string | null
+  gift_budget: number | null
 }
 
 export type NewPerson = Omit<Person, 'id'>
@@ -103,4 +108,26 @@ export function usePeople() {
   }
 
   return { people, loading, add, update, remove, markContacted }
+}
+
+export interface GiftOccasion {
+  id: string
+  name: string
+  /** Days until their next birthday. 0 = today. */
+  days: number
+}
+
+// Upcoming birthdays, derived from contacts.
+//
+// Replaces the old useGiftEvents() (user_prefs.layout.giftEvents), which was
+// a parallel store for the same humans — see
+// supabase/migrations/contacts_unify_gifts.sql. Everything that used to ask
+// "what gift occasions are coming up" now asks contacts, so there is exactly
+// one answer rather than two that could disagree.
+export function useGiftOccasions(): GiftOccasion[] {
+  const { people } = usePeople()
+  return people
+    .filter(p => p.birthday)
+    .map(p => ({ id: p.id, name: p.name, days: daysUntilBirthday(p.birthday)! }))
+    .sort((a, b) => a.days - b.days)
 }

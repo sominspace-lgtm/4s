@@ -36,6 +36,13 @@ function makeId() {
 // order/visibility and Focus View config — read-merge-write on every save
 // so this hook never clobbers those sibling keys, and no schema migration
 // is needed for a new table.
+// DEAD as of 2026-08-07 — nothing in the app calls this any more.
+//
+// Gift occasions moved into the `people` table so a person is written down
+// once instead of once here and once there; see useGiftOccasions() in
+// usePeople.ts and supabase/migrations/contacts_unify_gifts.sql. Kept only
+// so the shape of the old JSON is documented next to the migration that
+// reads it — delete once you've confirmed the backfill landed.
 export function useGiftEvents() {
   const [items, setItems] = useState<GiftEvent[]>([])
   const [loading, setLoading] = useState(true)

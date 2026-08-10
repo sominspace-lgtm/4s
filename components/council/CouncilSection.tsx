@@ -6,7 +6,7 @@ import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
-import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useAppSnapshot } from '@/lib/hooks/useAppSnapshot'
 import { generateCouncilAdvice, COUNCIL_DOMAINS, type CouncilAdvice } from '@/lib/utils/council'
@@ -78,7 +78,7 @@ export default function CouncilSection({ mode = 'peaceful', userId, calendarConn
   const { items: buyItems } = useBuyItems()
   const { touched } = useDomainTouched()
   const { items: workItems } = useWorkItems()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { received } = useCompanions(userId)
   const [convened, setConvened] = useState(false)
   const [advice, setAdvice] = useState<CouncilAdvice[]>([])
@@ -109,7 +109,7 @@ export default function CouncilSection({ mode = 'peaceful', userId, calendarConn
   function convene(domain: string | null = null) {
     const overdueTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'overdue').length
     const dueTodayTasks = workItems.filter(i => i.status !== 'done' && dueUrgency(i.due_date) === 'today').length
-    const upcomingGifts = giftItems.map(g => ({ name: g.name, days: daysUntil(g) }))
+    const upcomingGifts = giftItems.map(g => ({ name: g.name, days: g.days }))
     const pendingShares = received.filter(c => c.status === 'pending').length
     const refillsOverdue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
 

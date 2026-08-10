@@ -7,7 +7,7 @@ import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
@@ -81,7 +81,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { captures } = useCaptures()
   const { touched } = useDomainTouched()
   const { subs, total: monthlyTotal } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { items: wishItems } = useWatchItems()
   const { items: buyItems } = useBuyItems()
   const { received } = useCompanions(userId)
@@ -178,7 +178,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   })
   const refillsDue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
   const moneyDueSoon = subs.filter(s => subUrgency(s.renewal_date) === 'soon').length
-    + giftItems.filter(g => giftDaysUntil(g) <= 7).length
+    + giftItems.filter(g => g.days <= 7).length
     + refillsDue
   const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
 
@@ -220,7 +220,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   // Whisper — one gentle, timely nudge. Quiet Guides (low proactivity) stay
   // silent; the rest surface a single soft line, dismissible for the day.
-  const giftSoon = giftItems.filter(g => { const d = giftDaysUntil(g); return d >= 0 && d <= 10 }).length
+  const giftSoon = giftItems.filter(g => { return g.days >= 0 && g.days <= 10 }).length
   function pickWhisper(): string | null {
     if (proactivity === 'low') return null
     if (domainsNeedingReview.some(d => d.id === 'relationship')) return 'Someone may deserve a hello today.'

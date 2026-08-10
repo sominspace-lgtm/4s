@@ -424,6 +424,51 @@ select, option {
 @keyframes complete-row { from { background: color-mix(in srgb, var(--emerald) 14%, transparent); } to { background: transparent; } }
 .completed-row { animation: complete-row 700ms ease both; }
 
+/* ── Completion ─────────────────────────────────────────────────────────
+   Finishing something should land. The rule is still restraint — no
+   confetti, no fanfare, nothing that turns a life into a slot machine —
+   but "nothing happens at all" is its own failure. A finished thing should
+   visibly become finished.
+
+   Three tiers, matched to how much the thing actually cost you:
+     .did-it     a small thing (a chore, a shopping item)
+     .finished   a real task
+     .landmark-moment  something that earns a place in the skyline        */
+
+/* Small: a soft green wash sweeps through and clears. */
+@keyframes did-it {
+  0%   { background: color-mix(in srgb, var(--emerald) 22%, transparent); }
+  100% { background: transparent; }
+}
+.did-it { animation: did-it 620ms ease both; }
+
+/* Real: the row lifts a touch, settles, and a check ripples out once. */
+@keyframes finished {
+  0%   { transform: scale(1); background: color-mix(in srgb, var(--emerald) 18%, transparent); }
+  35%  { transform: scale(1.012); }
+  100% { transform: scale(1); background: transparent; }
+}
+.finished { animation: finished 700ms cubic-bezier(.3,.7,.4,1) both; }
+
+/* Landmark: slower, gold, and it glows before it settles — this is the one
+   you're allowed to feel something about. Still under 1.2s. */
+@keyframes landmark-moment {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 55%, transparent); }
+  45%  { box-shadow: 0 0 0 10px color-mix(in srgb, var(--gold) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.landmark-moment { animation: landmark-moment 1200ms cubic-bezier(.2,.8,.3,1) both; }
+
+/* A one-shot "well done" line that fades itself out — used where a
+   completion deserves words, not just colour. */
+@keyframes praise-in {
+  0%   { opacity: 0; transform: translateY(3px); }
+  15%  { opacity: 1; transform: none; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+.praise { animation: praise-in 2600ms ease both; pointer-events: none; }
+
 /* Drag: the card you're holding should feel picked up, and the place it
    would land should say so. */
 .drag-source { opacity: 0.38; transform: scale(0.98); transition: opacity 120ms ease, transform 120ms ease; }
@@ -453,7 +498,8 @@ select, option {
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
   .village-drift, .village-glow, .settle, .grew,
-  .tab-in, .stagger > *, .tick path, .completed-row { animation: none !important; }
+  .tab-in, .stagger > *, .tick path, .completed-row,
+  .did-it, .finished, .landmark-moment, .praise { animation: none !important; }
   .press:active, .lift:hover, .drop-target, .drag-source { transform: none !important; }
   .nav-tab::after { transition: none !important; }
 }

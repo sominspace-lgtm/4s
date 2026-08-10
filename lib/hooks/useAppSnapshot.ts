@@ -6,7 +6,7 @@ import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, daysUntil as giftDaysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
@@ -38,7 +38,7 @@ export function useAppSnapshot(userId: string, calendarConnected: boolean): () =
   const { captures } = useCaptures()
   const { touched } = useDomainTouched()
   const { subs, total: monthlyTotal } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { items: buyItems } = useBuyItems()
   const { items: wishItems } = useWatchItems()
   const { received, active } = useCompanions(userId)
@@ -77,7 +77,7 @@ export function useAppSnapshot(userId: string, calendarConnected: boolean): () =
         refillsDue: buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).map(b => b.name),
         wishlistCount: wishItems.length,
       },
-      gifts: giftItems.map(g => ({ name: g.name, inDays: giftDaysUntil(g) })).filter(g => g.inDays <= 30),
+      gifts: giftItems.map(g => ({ name: g.name, inDays: g.days })).filter(g => g.inDays <= 30),
       sharing: {
         pendingInvites: received.filter(c => c.status === 'pending').length,
         friends: active.length,

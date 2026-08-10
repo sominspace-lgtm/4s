@@ -5,12 +5,16 @@ import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import HomeBrain from '@/components/home/HomeBrain'
+import HouseholdCalendar from './HouseholdCalendar'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
-type HouseholdTab = 'chores' | 'shopping' | 'meals' | 'notes' | 'brain'
+type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'brain'
 
 const TABS: { id: HouseholdTab; label: string }[] = [
+  // Calendar leads: "what's coming up for us" is the question you walk in
+  // with, and every other tab is where you go to change the answer.
+  { id: 'calendar', label: 'Calendar' },
   { id: 'chores',   label: 'Chores' },
   { id: 'shopping', label: 'Shopping' },
   { id: 'meals',    label: 'Meals' },
@@ -34,7 +38,7 @@ const SHOP_CATEGORIES = ['Produce', 'Chilled', 'Cupboard', 'Frozen', 'Household'
 export default function HouseholdHub({ userId }: { userId: string }) {
   const { spaces } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
-  const [tab, setTab] = useState<HouseholdTab>('chores')
+  const [tab, setTab] = useState<HouseholdTab>('calendar')
   const h = useHousehold(spaceId)
 
   const [choreName, setChoreName] = useState('')
@@ -58,7 +62,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
   async function doneChore(c: Chore) {
     setJustDone(c.id)
     await h.markChoreDone(c.id)
-    setTimeout(() => setJustDone(null), 420)
+    setTimeout(() => setJustDone(null), 2600)
   }
 
   const input: React.CSSProperties = {
@@ -106,6 +110,13 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           }}>{tb.label}</button>
         ))}
       </div>
+
+      {/* Everything the house has on, in one fortnight view. Separate from
+          the personal calendar in Today by design: that one answers "what do
+          I have on", this answers "what does this house have on", and your
+          dentist appointment isn't household business any more than the bins
+          are personal business. */}
+      {tab === 'calendar' && <HouseholdCalendar chores={h.chores} meals={h.meals} />}
 
       {/* Home Brain — the household's memory: wifi passwords, serial
           numbers, which filter the fridge takes. Moved here from Personal →
@@ -260,11 +271,21 @@ export default function HouseholdHub({ userId }: { userId: string }) {
         {sortedChores.map(c => {
           const due = dueLabel(c)
           return (
-            <div key={c.id} className="lift" style={{
+            <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
               display: 'flex', alignItems: 'center', gap: '0.6rem',
               padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
               background: 'var(--hover-bg)', border: '1px solid var(--border)',
+              position: 'relative',
             }}>
+              {/* A chore done is a small thing, but it's a small thing
+                  somebody in this house actually did — so it says so, once,
+                  and then gets out of the way. */}
+              {justDone === c.id && (
+                <span className="praise" aria-hidden style={{
+                  position: 'absolute', right: '0.6rem', top: '-0.4rem',
+                  fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
+                }}>done ✓</span>
+              )}
               <button
                 onClick={() => doneChore(c)}
                 className={`press ${justDone === c.id ? 'settle' : ''}`}

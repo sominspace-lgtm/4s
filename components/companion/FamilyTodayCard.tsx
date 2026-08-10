@@ -2,19 +2,19 @@
 
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useCompanions } from '@/lib/hooks/useCompanions'
-import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 
 // Compact pulse for shared/family life — only renders once you actually
 // have a shared space, so it doesn't clutter Brief for solo users.
 export default function FamilyTodayCard({ userId }: { userId: string }) {
   const { spaces, ready } = useSharedSpaces(userId)
   const { received } = useCompanions(userId)
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
 
   if (!ready || spaces.length === 0) return null
 
   const pendingInvites = received.filter(c => c.status === 'pending').length
-  const upcomingGifts = giftItems.filter(g => daysUntil(g) <= 14 && daysUntil(g) >= 0)
+  const upcomingGifts = giftItems.filter(g => g.days <= 14 && g.days >= 0)
 
   const parts: string[] = []
   parts.push(`${spaces.length} space${spaces.length > 1 ? 's' : ''}`)

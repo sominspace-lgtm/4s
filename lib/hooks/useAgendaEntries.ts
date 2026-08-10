@@ -3,7 +3,8 @@
 import { parseISO } from 'date-fns'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, nextOccurrence } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
+import { addDays } from 'date-fns'
 import { useBuyItems, runoutDate, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useEvents } from '@/lib/hooks/useEvents'
 
@@ -30,7 +31,7 @@ export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; colo
 export function useAgendaEntries(): AgendaEntry[] {
   const { items: workItems } = useWorkItems()
   const { subs } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { items: buyItems } = useBuyItems()
   const { items: events } = useEvents()
 
@@ -52,7 +53,9 @@ export function useAgendaEntries(): AgendaEntry[] {
     entries.push({ key: `buy-${b.id}`, date: due, label: `${b.name} runs out`, type: 'refill' })
   }
   for (const g of giftItems) {
-    entries.push({ key: `gift-${g.id}`, date: nextOccurrence(g), label: g.name, type: 'gift' })
+    // days-until is already computed from the contact's birthday, so the
+    // calendar date is simply that many days out from today.
+    entries.push({ key: `gift-${g.id}`, date: addDays(new Date(), g.days), label: `${g.name}'s birthday`, type: 'gift' })
   }
   for (const e of events) {
     entries.push({ key: `event-${e.id}`, id: e.id, date: parseISO(e.event_date), label: e.title, type: 'event' })

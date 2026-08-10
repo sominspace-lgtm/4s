@@ -52,6 +52,22 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
   const lang = useLang()
   const [hovered, setHovered] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
+
+  // Completion feedback. Fires on the transition INTO done, not on every
+  // render where the item happens to be done — otherwise the whole list
+  // celebrates itself every time anything reloads.
+  const wasDone = useRef(item.status === 'done')
+  const [celebrate, setCelebrate] = useState<'finished' | 'landmark-moment' | null>(null)
+  useEffect(() => {
+    const isDone = item.status === 'done'
+    if (isDone && !wasDone.current) {
+      setCelebrate(taskStage(item) === 'landmark' ? 'landmark-moment' : 'finished')
+      const t = setTimeout(() => setCelebrate(null), 1300)
+      wasDone.current = isDone
+      return () => clearTimeout(t)
+    }
+    wasDone.current = isDone
+  }, [item.status, item])
   const [notesDraft, setNotesDraft] = useState(item.notes ?? '')
   const urgency = dueUrgency(item.due_date)
   const stage = taskStage(item)
@@ -112,6 +128,7 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      className={celebrate ?? undefined}
       style={{
         borderBottom: '1px solid var(--faint)', padding: '0.55rem 0',
         transform: dragX ? `translateX(${dragX}px)` : undefined,

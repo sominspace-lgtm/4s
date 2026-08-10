@@ -6,7 +6,7 @@ import { startOfWeek, endOfWeek, format, parseISO, isWithinInterval, subWeeks, d
 import { useLang } from '@/lib/LangContext'
 import { t, fmtWeekOf } from '@/lib/i18n'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
-import { useGiftEvents, daysUntil } from '@/lib/hooks/useGiftEvents'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { DOMAINS } from '@/lib/constants/domains'
 import { guideReviewPrompt } from '@/lib/utils/guideVoice'
@@ -28,7 +28,7 @@ export default function WeekReview({ mode = 'peaceful' }: { mode?: Mode }) {
   const [data, setData] = useState<WeekData | null>(null)
   const [loading, setLoading] = useState(true)
   const { subs, total: monthlyTotal } = useSubscriptions()
-  const { items: giftItems } = useGiftEvents()
+  const giftItems = useGiftOccasions()
   const { touched } = useDomainTouched()
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function WeekReview({ mode = 'peaceful' }: { mode?: Mode }) {
   })
   const nextReminder = [...subs].filter(s => s.renewal_date)
     .map(s => ({ label: s.name, days: differenceInDays(parseISO(s.renewal_date!), new Date()) }))
-    .concat(giftItems.map(g => ({ label: g.name, days: daysUntil(g) })))
+    .concat(giftItems.map(g => ({ label: g.name, days: g.days })))
     .sort((a, b) => a.days - b.days)[0]
 
   return (
