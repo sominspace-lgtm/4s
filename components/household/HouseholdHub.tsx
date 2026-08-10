@@ -8,13 +8,19 @@ import HomeBrain from '@/components/home/HomeBrain'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
-type HouseholdTab = 'chores' | 'meals' | 'brain'
+type HouseholdTab = 'chores' | 'shopping' | 'meals' | 'notes' | 'brain'
 
 const TABS: { id: HouseholdTab; label: string }[] = [
-  { id: 'chores', label: 'Chores' },
-  { id: 'meals',  label: 'Meals' },
-  { id: 'brain',  label: 'Home Brain' },
+  { id: 'chores',   label: 'Chores' },
+  { id: 'shopping', label: 'Shopping' },
+  { id: 'meals',    label: 'Meals' },
+  { id: 'notes',    label: 'Notes' },
+  { id: 'brain',    label: 'Home Brain' },
 ]
+
+// Loose aisle grouping. Not a taxonomy to get right — just enough that a
+// 30-item list is scannable while you're standing in a shop.
+const SHOP_CATEGORIES = ['Produce', 'Chilled', 'Cupboard', 'Frozen', 'Household', 'Other']
 
 // Household — the shared-living tab for couples or families under one roof.
 //
@@ -38,6 +44,10 @@ export default function HouseholdHub({ userId }: { userId: string }) {
   const [mealTitle, setMealTitle] = useState('')
   const [mealCook, setMealCook] = useState('')
   const [justDone, setJustDone] = useState<string | null>(null)
+  const [shopName, setShopName] = useState('')
+  const [shopQty, setShopQty] = useState('')
+  const [shopCat, setShopCat] = useState('')
+  const [noteBody, setNoteBody] = useState('')
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
 
@@ -105,6 +115,134 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           picker as chores and meals, so it follows "just me" vs a shared
           household exactly like they do. */}
       {tab === 'brain' && <HomeBrain />}
+
+      {/* ── Shopping ───────────────────────────────────────────────
+          The highest-friction shared list there is: the one thing everyone
+          needs to write to from a different room, where "did you get milk"
+          is the archetypal failure. Grouped by rough aisle so it's scannable
+          while you're actually standing in a shop, and ticking records who
+          got it so the person who did the run doesn't have to announce it. */}
+      {tab === 'shopping' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
+            <div className="t-card">Shopping list</div>
+            {h.shopping.some(s => s.got) && (
+              <button onClick={() => h.clearGot()} className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>
+                Clear {h.shopping.filter(s => s.got).length} got
+              </button>
+            )}
+          </div>
+
+          {h.shopping.length === 0 && !h.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+              Nothing on the list. Add what you&rsquo;re out of.
+            </div>
+          )}
+
+          {/* Category groups, but only ones that actually have something in
+              them — empty headings are just noise in a shop. */}
+          {SHOP_CATEGORIES.map(cat => {
+            // Uncategorised items fall into "Other" rather than getting their
+            // own unlabelled group — one bucket, not two that mean the same.
+            const items = h.shopping.filter(s => (s.category || 'Other') === cat)
+            if (items.length === 0) return null
+            return (
+              <div key={cat} style={{ marginBottom: '0.7rem' }}>
+                <div className="t-label" style={{ marginBottom: '0.25rem' }}>{cat}</div>
+                {items.map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
+                    <button
+                      onClick={() => h.toggleGot(s.id, !s.got)}
+                      aria-pressed={s.got}
+                      aria-label={`${s.name}${s.got ? ', got it' : ''}`}
+                      className="press"
+                      style={{
+                        width: 20, height: 20, borderRadius: '5px', flexShrink: 0, cursor: 'pointer', padding: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: `1px solid ${s.got ? 'var(--emerald)' : 'var(--border)'}`,
+                        background: s.got ? 'color-mix(in srgb, var(--emerald) 30%, transparent)' : 'transparent',
+                      }}
+                    >
+                      {s.got && (
+                        <svg className="tick" width={11} height={11} viewBox="0 0 12 12" aria-hidden>
+                          <path d="M2.5 6.2 L4.9 8.6 L9.5 3.6" fill="none" stroke="var(--emerald)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', textDecoration: s.got ? 'line-through' : 'none', opacity: s.got ? 0.5 : 1 }}>
+                      {s.name}
+                    </span>
+                    {s.qty && <span style={{ fontSize: '0.64rem', color: 'var(--muted)', flexShrink: 0 }}>{s.qty}</span>}
+                    <button onClick={() => h.removeShopping(s.id)} aria-label={`Remove ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!shopName.trim()) return
+              await h.addShopping(shopName.trim(), shopQty.trim() || null, shopCat || null)
+              setShopName(''); setShopQty('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
+          >
+            <input value={shopName} onChange={e => setShopName(e.target.value)} placeholder="Add an item" style={{ ...input, flex: 1, minWidth: '140px' }} />
+            <input value={shopQty} onChange={e => setShopQty(e.target.value)} placeholder="Qty" style={{ ...input, width: '70px' }} />
+            <select value={shopCat} onChange={e => setShopCat(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+              <option value="">Category</option>
+              {SHOP_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+          </form>
+        </section>
+      )}
+
+      {/* ── Notes ──────────────────────────────────────────────────
+          The fridge door. Not tasks and not chores — the gate code, the
+          vet's number, "back late Tuesday". Things you'd write on a magnet
+          pad, which is exactly why they have no due date and no owner. */}
+      {tab === 'notes' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <div className="t-card" style={{ marginBottom: '0.7rem' }}>The fridge door</div>
+
+          {h.notes.length === 0 && !h.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+              Nothing pinned up. Gate codes, the vet&rsquo;s number, &ldquo;back late Tuesday&rdquo;.
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.6rem' }}>
+            {h.notes.map(n => (
+              <div key={n.id} className="organic" style={{
+                background: n.pinned ? 'color-mix(in srgb, var(--amber) 12%, var(--surface2))' : 'var(--surface2)',
+                border: `1px solid ${n.pinned ? 'color-mix(in srgb, var(--amber) 35%, var(--border))' : 'var(--border)'}`,
+                padding: '0.7rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem',
+              }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: 'auto' }}>
+                  <button onClick={() => h.toggleNotePin(n.id, !n.pinned)} title={n.pinned ? 'Unpin' : 'Pin to top'} className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.66rem', color: n.pinned ? 'var(--amber)' : 'var(--muted)', opacity: n.pinned ? 1 : 0.5, padding: 0 }}>
+                    {n.pinned ? '📌' : '📍'}
+                  </button>
+                  <button onClick={() => h.removeNote(n.id)} aria-label="Remove note" className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, marginLeft: 'auto', padding: 0 }}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <form
+            onSubmit={async e => { e.preventDefault(); if (!noteBody.trim()) return; await h.addNote(noteBody.trim()); setNoteBody('') }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
+          >
+            <input value={noteBody} onChange={e => setNoteBody(e.target.value)} placeholder="Pin something up" style={{ ...input, flex: 1, minWidth: '160px' }} />
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Pin</button>
+          </form>
+        </section>
+      )}
 
       {/* ── Chores ─────────────────────────────────────────────── */}
       {tab === 'chores' && (

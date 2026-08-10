@@ -22,6 +22,23 @@ export interface Meal {
   cook: string | null
 }
 
+export interface ShoppingItem {
+  id: string
+  space_id: string | null
+  name: string
+  qty: string | null
+  category: string | null
+  got: boolean
+}
+
+export interface HouseNote {
+  id: string
+  space_id: string | null
+  body: string
+  pinned: boolean
+  created_at: string
+}
+
 /** Days until due. Negative = overdue. Never done = due now, not "overdue". */
 export function choreDue(c: Chore): number {
   if (!c.last_done_at) return 0
@@ -32,6 +49,8 @@ export function useHousehold(spaceId: string | null) {
   const supabase = createClient()
   const [chores, setChores] = useState<Chore[]>([])
   const [meals, setMeals] = useState<Meal[]>([])
+  const [shopping, setShopping] = useState<ShoppingItem[]>([])
+  const [notes, setNotes] = useState<HouseNote[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,16 +58,22 @@ export function useHousehold(spaceId: string | null) {
     setLoading(true)
     // RLS already scopes rows to "mine or my spaces"; the filter here is just
     // about which view you're looking at (a specific household vs personal).
-    const choreQ = supabase.from('household_chores').select('*').order('created_at')
-    const mealQ = supabase.from('household_meals').select('*').order('meal_date')
-    const [{ data: c, error: ce }, { data: m, error: me }] = await Promise.all([
-      spaceId ? choreQ.eq('space_id', spaceId) : choreQ.is('space_id', null),
-      spaceId ? mealQ.eq('space_id', spaceId) : mealQ.is('space_id', null),
+    const scope = <T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(q: T) =>
+      spaceId ? q.eq('space_id', spaceId) : q.is('space_id', null)
+
+    const [{ data: c, error: ce }, { data: m, error: me }, { data: s, error: se }, { data: n, error: ne }] = await Promise.all([
+      scope(supabase.from('household_chores').select('*').order('created_at')),
+      scope(supabase.from('household_meals').select('*').order('meal_date')),
+      scope(supabase.from('household_shopping').select('*').order('created_at')),
+      // Pinned first, then newest — a fridge door reads top-down by urgency.
+      scope(supabase.from('household_notes').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false })),
     ])
-    if (ce || me) setError((ce ?? me)!.message)
-    else setError(null)
+    const firstError = ce ?? me ?? se ?? ne
+    setError(firstError ? firstError.message : null)
     setChores((c as Chore[] | null) ?? [])
     setMeals((m as Meal[] | null) ?? [])
+    setShopping((s as ShoppingItem[] | null) ?? [])
+    setNotes((n as HouseNote[] | null) ?? [])
     setLoading(false)
   }, [supabase, spaceId])
 
@@ -105,5 +130,67 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  return { chores, meals, loading, error, addChore, markChoreDone, removeChore, addMeal, removeMeal }
+  async function addShopping(name: string, qty: string | null, category: string | null) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in' }
+    const { error } = await supabase.from('household_shopping')
+      .insert({ user_id: user.id, space_id: spaceId, name, qty, category })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  // Ticking something off records who got it, same as chores — so the person
+  // who did the shop doesn't have to announce it.
+  async function toggleGot(id: string, got: boolean) {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('household_shopping')
+      .update({ got, got_at: got ? new Date().toISOString() : null, got_by: got ? user?.id ?? null : null })
+      .eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  // Clearing the got items is one action, not N deletes — after a shop the
+  // list is mostly ticked and nobody wants to tap twelve bins.
+  async function clearGot() {
+    const q = supabase.from('household_shopping').delete().eq('got', true)
+    const { error } = await (spaceId ? q.eq('space_id', spaceId) : q.is('space_id', null))
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function removeShopping(id: string) {
+    const { error } = await supabase.from('household_shopping').delete().eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function addNote(body: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in' }
+    const { error } = await supabase.from('household_notes')
+      .insert({ user_id: user.id, space_id: spaceId, body })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function toggleNotePin(id: string, pinned: boolean) {
+    const { error } = await supabase.from('household_notes').update({ pinned }).eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function removeNote(id: string) {
+    const { error } = await supabase.from('household_notes').delete().eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  return {
+    chores, meals, shopping, notes, loading, error,
+    addChore, markChoreDone, removeChore,
+    addMeal, removeMeal,
+    addShopping, toggleGot, clearGot, removeShopping,
+    addNote, toggleNotePin, removeNote,
+  }
 }
