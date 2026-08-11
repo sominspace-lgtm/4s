@@ -62,6 +62,23 @@ export const RESOURCES = {
     update: ['body', 'pinned'],
     order: 'created_at',
   },
+  // Not household chores, but they ride the same household link/token: a
+  // couple's household is the same group either way, and a second auth model
+  // for these would be pure duplication (2026-08-10).
+  watchlist: {
+    table: 'household_watchlist',
+    columns: 'id, domain, title, subtype, status, created_at, updated_at',
+    insert: ['domain', 'title', 'subtype', 'status'],
+    update: ['title', 'subtype', 'status'],
+    order: 'created_at',
+  },
+  dateIdeas: {
+    table: 'household_date_ideas',
+    columns: 'id, title, items, created_at',
+    insert: ['title', 'items'],
+    update: ['title', 'items'],
+    order: 'created_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES

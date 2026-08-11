@@ -23,8 +23,10 @@ export async function PATCH(request: Request, { params }: Props) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
   }
 
-  // household_rules is the only resource here carrying updated_at.
-  if (spec.table === 'household_rules') fields.updated_at = new Date().toISOString()
+  // Only these two resources carry updated_at.
+  if (spec.table === 'household_rules' || spec.table === 'household_watchlist') {
+    fields.updated_at = new Date().toISOString()
+  }
 
   // The space_id filter is what stops a token for one household from editing
   // another's row by guessing a uuid. Without it, a valid token plus any id
@@ -41,4 +43,26 @@ export async function PATCH(request: Request, { params }: Props) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json({ item: data })
+}
+
+// Removing a row entirely — used for watchlist/date-idea deletes from Discord,
+// which don't have a 4S soft-delete concept the way rules go inactive.
+export async function DELETE(request: Request, { params }: Props) {
+  const { resource, id } = await params
+  if (!isResource(resource)) return NextResponse.json({ error: 'Unknown resource' }, { status: 404 })
+
+  const caller = await resolveHouseholdToken(request)
+  if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const spec = RESOURCES[resource]
+  const admin = createAdminClient()
+  const { error, count } = await admin
+    .from(spec.table)
+    .delete({ count: 'exact' })
+    .eq('id', id)
+    .eq('space_id', caller.spaceId)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!count) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json({ ok: true })
 }
