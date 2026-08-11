@@ -10,20 +10,29 @@ import DiscordConnect from './DiscordConnect'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
-type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'rules' | 'inventory' | 'brain' | 'discord'
+type HouseholdTab = 'home' | 'reference' | 'setup'
 
+// Nine tabs became three (2026-08-11).
+//
+// The old set — Calendar, Chores, Shopping, Meals, Notes, Rules, Inventory,
+// Home Brain, Discord — was organised by DATABASE TABLE. One tab per table
+// reads fine to whoever wrote the schema and badly to everyone else: you had
+// to know which table your thing lived in before you could go look at it.
+//
+// These three are organised by why you opened the app instead:
+//   Home       — the things that change weekly. What's due, what to buy,
+//                what we're eating. The 90% case, one scroll, no clicking.
+//   Reference  — the things you look UP, not at. Gate codes, house rules,
+//                what we own. Consulted occasionally, edited rarely.
+//   Setup      — the Discord connection. Touched roughly once.
+//
+// Nothing was removed; every section below still exists, just grouped. The
+// render order in the JSX already happened to match this grouping, so no
+// blocks were moved to do it.
 const TABS: { id: HouseholdTab; label: string }[] = [
-  // Calendar leads: "what's coming up for us" is the question you walk in
-  // with, and every other tab is where you go to change the answer.
-  { id: 'calendar',  label: 'Calendar' },
-  { id: 'chores',    label: 'Chores' },
-  { id: 'shopping',  label: 'Shopping' },
-  { id: 'meals',     label: 'Meals' },
-  { id: 'notes',     label: 'Notes' },
-  { id: 'rules',     label: 'Rules' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'brain',     label: 'Home Brain' },
-  { id: 'discord',   label: 'Discord' },
+  { id: 'home',      label: 'Home' },
+  { id: 'reference', label: 'Reference' },
+  { id: 'setup',     label: 'Setup' },
 ]
 
 // Loose aisle grouping. Not a taxonomy to get right — just enough that a
@@ -42,7 +51,7 @@ const SHOP_CATEGORIES = ['Produce', 'Chilled', 'Cupboard', 'Frozen', 'Household'
 export default function HouseholdHub({ userId }: { userId: string }) {
   const { spaces } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
-  const [tab, setTab] = useState<HouseholdTab>('calendar')
+  const [tab, setTab] = useState<HouseholdTab>('home')
   const h = useHousehold(spaceId)
 
   const [choreName, setChoreName] = useState('')
@@ -125,7 +134,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           I have on", this answers "what does this house have on", and your
           dentist appointment isn't household business any more than the bins
           are personal business. */}
-      {tab === 'calendar' && <HouseholdCalendar chores={h.chores} meals={h.meals} />}
+      {tab === 'home' && <HouseholdCalendar chores={h.chores} meals={h.meals} />}
 
       {/* Home Brain — the household's memory: wifi passwords, serial
           numbers, which filter the fridge takes. Moved here from Personal →
@@ -134,8 +143,8 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           need at 9pm when you're not home. It sits under the same space
           picker as chores and meals, so it follows "just me" vs a shared
           household exactly like they do. */}
-      {tab === 'brain' && <HomeBrain />}
-      {tab === 'discord' && (
+      {tab === 'reference' && <HomeBrain />}
+      {tab === 'setup' && (
         <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
           <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
@@ -148,7 +157,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           is the archetypal failure. Grouped by rough aisle so it's scannable
           while you're actually standing in a shop, and ticking records who
           got it so the person who did the run doesn't have to announce it. */}
-      {tab === 'shopping' && (
+      {tab === 'home' && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
             <div className="t-card">Shopping list</div>
@@ -230,7 +239,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           The fridge door. Not tasks and not chores — the gate code, the
           vet's number, "back late Tuesday". Things you'd write on a magnet
           pad, which is exactly why they have no due date and no owner. */}
-      {tab === 'notes' && (
+      {tab === 'reference' && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <div className="t-card" style={{ marginBottom: '0.7rem' }}>The fridge door</div>
 
@@ -275,7 +284,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           "take the recycling out". Retiring a rule keeps it visible under a
           fold rather than deleting it — "we used to do this" is worth
           remembering when the reason it changed comes up again. */}
-      {tab === 'rules' && (
+      {tab === 'reference' && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <div className="t-card" style={{ marginBottom: '0.7rem' }}>House rules</div>
 
@@ -335,7 +344,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           What the household owns. Grows through use — nobody sits down and
           inventories their whole home; this fills in as Discord captures it
           and as things get added here directly. */}
-      {tab === 'inventory' && (
+      {tab === 'reference' && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <div className="t-card" style={{ marginBottom: '0.7rem' }}>What we have</div>
 
@@ -382,7 +391,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
       )}
 
       {/* ── Chores ─────────────────────────────────────────────── */}
-      {tab === 'chores' && (
+      {tab === 'home' && (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
           Whose turn
@@ -447,7 +456,7 @@ export default function HouseholdHub({ userId }: { userId: string }) {
       )}
 
       {/* ── Meals ──────────────────────────────────────────────── */}
-      {tab === 'meals' && (
+      {tab === 'home' && (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
           This week&rsquo;s meals

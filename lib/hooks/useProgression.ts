@@ -52,11 +52,11 @@ export interface UnlockStage {
 export const NEVER_GATED = new Set(['village', 'household'])
 
 /** Sections that are open from the first login and never counted as something
- *  "to unlock": Today, Tasks, Goals, Village, Household. Kept as a named
- *  constant because it's used twice below to size the journey bar — when it
- *  was a bare `4` in both places, adding a section silently made the bar
- *  report the wrong total. */
-const ALWAYS_OPEN_COUNT = 5
+ *  "to unlock": Today, Tasks, Village, Household. Kept as a named constant
+ *  because it's used twice below to size the journey bar — when it was a bare
+ *  `4` in both places, adding a section silently made the bar report the
+ *  wrong total. */
+const ALWAYS_OPEN_COUNT = 4
 
 export const UNLOCK_STAGES: UnlockStage[] = [
   {

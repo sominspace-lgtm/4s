@@ -4,7 +4,7 @@
 // say "I don't use Reflection" or "put the calendar first". This is the same
 // hide/reorder idea CustomizePanel already gives the top-level tabs, scoped
 // one level down.
-export type TodayBlockId = 'onething' | 'budget' | 'areas' | 'calendar' | 'reflection' | 'inbox'
+export type TodayBlockId = 'onething' | 'budget' | 'areas' | 'calendar' | 'inbox'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -16,7 +16,6 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   budget:     { label: 'Capacity',       hint: 'Deep/medium/light slots for today' },
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Agenda and month view' },
-  reflection: { label: 'Reflection',     hint: 'One quiet question a day' },
   inbox:      { label: 'Quick Add · Inbox', hint: 'Capture and sort' },
 }
 
@@ -28,7 +27,7 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // DashboardClient after DailyBrief returns, a different component
 // entirely). All three can still be hidden. Only these three are true
 // siblings in the render tree and can be reordered against each other.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'reflection', 'inbox'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'inbox'])
 
 // Order here is the default order — not enforced at render time, so a
 // reorder in the customize panel actually changes what you see.
@@ -37,7 +36,6 @@ export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
   { id: 'budget',     hidden: false },
   { id: 'areas',      hidden: false },
   { id: 'calendar',   hidden: false },
-  { id: 'reflection', hidden: false },
   { id: 'inbox',      hidden: false },
 ]
 

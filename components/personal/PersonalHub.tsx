@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import GoalsSection from '@/components/goals/GoalsSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import LifeHub from '@/components/life/LifeHub'
 import MoneyHub from '@/components/money/MoneyHub'
@@ -10,6 +11,9 @@ import { consumePersonalTab, type PersonalTab } from '@/lib/utils/navigate'
 import type { Mode } from '@/lib/constants/modes'
 
 const TABS: { id: PersonalTab; label: string }[] = [
+  // Goals leads: it's the "why" the other four serve. Habits and Life are how
+  // you maintain them, Money and People are the context they happen in.
+  { id: 'goals',   label: 'Goals' },
   { id: 'habits',  label: 'Habits' },
   { id: 'life',    label: 'Life' },
   { id: 'money',   label: 'Money' },
@@ -38,7 +42,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions 
   // A caller can ask for a specific sub-tab (Brief's "Ask Council" card,
   // search's "Go to Money"). See lib/utils/navigate.ts for why this is both
   // a consumed value and a live event.
-  const [tab, setTab] = useState<PersonalTab>(() => consumePersonalTab() ?? 'habits')
+  const [tab, setTab] = useState<PersonalTab>(() => consumePersonalTab() ?? 'goals')
 
   useEffect(() => {
     function onTab(e: Event) { setTab((e as CustomEvent<PersonalTab>).detail) }
@@ -58,6 +62,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions 
         ))}
       </div>
 
+      {tab === 'goals'   && <GoalsSection userId={userId} />}
       {tab === 'habits'  && <HabitTracker />}
       {tab === 'life'    && <LifeHub />}
       {tab === 'money'   && <MoneyHub userId={userId} />}

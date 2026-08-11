@@ -45,9 +45,6 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // gain — the label is the only part anyone sees.
   { id: 'brief',    label: 'Today',    hidden: false },
   { id: 'work',     label: 'Tasks',    hidden: false },
-  // Goals sit next to Tasks because that's the relationship that matters:
-  // a goal without a next action is a wish, and the next action is a task.
-  { id: 'goals',    label: 'Goals',    hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
   // Personal — Habits, Life, Money, People and Council as flat sub-tabs.
