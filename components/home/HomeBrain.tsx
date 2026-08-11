@@ -44,8 +44,14 @@ export default function HomeBrain() {
     setAdding(false)
   }
 
-  // Group by category, preserving a friendly order.
-  const groups = CATEGORIES
+  // Group by category, preserving a friendly order for the built-in ones and
+  // then appending any others alphabetically. Categories are open-ended now
+  // that facts can arrive from Discord (spec §10 asks for custom categories
+  // rather than a hardcoded set) — mapping over CATEGORIES alone silently
+  // dropped any row whose category wasn't on the list.
+  const known = new Set<string>(CATEGORIES)
+  const extras = [...new Set(items.map(f => f.category ?? 'Other').filter(c => !known.has(c)))].sort()
+  const groups = [...CATEGORIES, ...extras]
     .map(cat => ({ cat, rows: items.filter(f => (f.category ?? 'Other') === cat) }))
     .filter(g => g.rows.length > 0)
 

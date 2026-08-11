@@ -6,10 +6,11 @@ import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
+import DiscordConnect from './DiscordConnect'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
-type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'brain'
+type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'brain' | 'discord'
 
 const TABS: { id: HouseholdTab; label: string }[] = [
   // Calendar leads: "what's coming up for us" is the question you walk in
@@ -20,6 +21,7 @@ const TABS: { id: HouseholdTab; label: string }[] = [
   { id: 'meals',    label: 'Meals' },
   { id: 'notes',    label: 'Notes' },
   { id: 'brain',    label: 'Home Brain' },
+  { id: 'discord',  label: 'Discord' },
 ]
 
 // Loose aisle grouping. Not a taxonomy to get right — just enough that a
@@ -126,6 +128,12 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           picker as chores and meals, so it follows "just me" vs a shared
           household exactly like they do. */}
       {tab === 'brain' && <HomeBrain />}
+      {tab === 'discord' && (
+        <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
+          <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
+        </div>
+      )}
 
       {/* ── Shopping ───────────────────────────────────────────────
           The highest-friction shared list there is: the one thing everyone
