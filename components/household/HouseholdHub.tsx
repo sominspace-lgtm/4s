@@ -10,18 +10,20 @@ import DiscordConnect from './DiscordConnect'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
-type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'brain' | 'discord'
+type HouseholdTab = 'calendar' | 'chores' | 'shopping' | 'meals' | 'notes' | 'rules' | 'inventory' | 'brain' | 'discord'
 
 const TABS: { id: HouseholdTab; label: string }[] = [
   // Calendar leads: "what's coming up for us" is the question you walk in
   // with, and every other tab is where you go to change the answer.
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'chores',   label: 'Chores' },
-  { id: 'shopping', label: 'Shopping' },
-  { id: 'meals',    label: 'Meals' },
-  { id: 'notes',    label: 'Notes' },
-  { id: 'brain',    label: 'Home Brain' },
-  { id: 'discord',  label: 'Discord' },
+  { id: 'calendar',  label: 'Calendar' },
+  { id: 'chores',    label: 'Chores' },
+  { id: 'shopping',  label: 'Shopping' },
+  { id: 'meals',     label: 'Meals' },
+  { id: 'notes',     label: 'Notes' },
+  { id: 'rules',     label: 'Rules' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'brain',     label: 'Home Brain' },
+  { id: 'discord',   label: 'Discord' },
 ]
 
 // Loose aisle grouping. Not a taxonomy to get right — just enough that a
@@ -54,6 +56,11 @@ export default function HouseholdHub({ userId }: { userId: string }) {
   const [shopQty, setShopQty] = useState('')
   const [shopCat, setShopCat] = useState('')
   const [noteBody, setNoteBody] = useState('')
+  const [ruleText, setRuleText] = useState('')
+  const [ruleCategory, setRuleCategory] = useState('')
+  const [invName, setInvName] = useState('')
+  const [invRoom, setInvRoom] = useState('')
+  const [showRetiredRules, setShowRetiredRules] = useState(false)
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
 
@@ -259,6 +266,117 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           >
             <input value={noteBody} onChange={e => setNoteBody(e.target.value)} placeholder="Pin something up" style={{ ...input, flex: 1, minWidth: '160px' }} />
             <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Pin</button>
+          </form>
+        </section>
+      )}
+
+      {/* ── Rules ──────────────────────────────────────────────────
+          Standing conventions, not one-off tasks: "no shoes inside", not
+          "take the recycling out". Retiring a rule keeps it visible under a
+          fold rather than deleting it — "we used to do this" is worth
+          remembering when the reason it changed comes up again. */}
+      {tab === 'rules' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <div className="t-card" style={{ marginBottom: '0.7rem' }}>House rules</div>
+
+          {h.rules.filter(r => r.active).length === 0 && !h.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+              No rules yet. The first one is usually about shoes.
+            </div>
+          )}
+
+          {h.rules.filter(r => r.active).map(r => (
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{r.text}</span>
+              {r.category && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', flexShrink: 0 }}>{r.category}</span>}
+              <button onClick={() => h.toggleRuleActive(r.id, false)} title="Retire this rule" className="press"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
+                retire
+              </button>
+              <button onClick={() => h.removeRule(r.id)} aria-label={`Delete ${r.text}`} className="press"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+            </div>
+          ))}
+
+          {h.rules.some(r => !r.active) && (
+            <div style={{ marginTop: '0.8rem' }}>
+              <button onClick={() => setShowRetiredRules(v => !v)} className="btn btn-ghost press" style={{ fontSize: '0.64rem' }}>
+                {showRetiredRules ? 'Hide' : 'Show'} {h.rules.filter(r => !r.active).length} retired
+              </button>
+              {showRetiredRules && h.rules.filter(r => !r.active).map(r => (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.35rem 0', opacity: 0.55 }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.74rem', color: 'var(--text)', textDecoration: 'line-through' }}>{r.text}</span>
+                  <button onClick={() => h.toggleRuleActive(r.id, true)} title="Bring this rule back" className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.6rem', flexShrink: 0 }}>
+                    restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!ruleText.trim()) return
+              await h.addRule(ruleText.trim(), ruleCategory.trim() || null, null)
+              setRuleText(''); setRuleCategory('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
+          >
+            <input value={ruleText} onChange={e => setRuleText(e.target.value)} placeholder="Add a house rule" style={{ ...input, flex: 1, minWidth: '160px' }} />
+            <input value={ruleCategory} onChange={e => setRuleCategory(e.target.value)} placeholder="Category (optional)" style={{ ...input, width: '140px' }} />
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+          </form>
+        </section>
+      )}
+
+      {/* ── Inventory ──────────────────────────────────────────────
+          What the household owns. Grows through use — nobody sits down and
+          inventories their whole home; this fills in as Discord captures it
+          and as things get added here directly. */}
+      {tab === 'inventory' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <div className="t-card" style={{ marginBottom: '0.7rem' }}>What we have</div>
+
+          {h.inventory.length === 0 && !h.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+              Nothing logged yet. This fills in over time — no need to sit down and inventory the house.
+            </div>
+          )}
+
+          {(() => {
+            const byRoom = new Map<string, typeof h.inventory>()
+            for (const item of h.inventory) {
+              const room = item.room || 'Unsorted'
+              byRoom.set(room, [...(byRoom.get(room) ?? []), item])
+            }
+            return [...byRoom.entries()].map(([room, items]) => (
+              <div key={room} style={{ marginBottom: '0.7rem' }}>
+                <div className="t-label" style={{ marginBottom: '0.25rem' }}>{room}</div>
+                {items.map(i => (
+                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{i.name}</span>
+                    <button onClick={() => h.removeInventoryItem(i.id)} aria-label={`Remove ${i.name}`} className="press"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            ))
+          })()}
+
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!invName.trim()) return
+              await h.addInventoryItem(invName.trim(), invRoom.trim() || null, null)
+              setInvName(''); setInvRoom('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
+          >
+            <input value={invName} onChange={e => setInvName(e.target.value)} placeholder="Add an item" style={{ ...input, flex: 1, minWidth: '140px' }} />
+            <input value={invRoom} onChange={e => setInvRoom(e.target.value)} placeholder="Room (optional)" style={{ ...input, width: '120px' }} />
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
           </form>
         </section>
       )}
