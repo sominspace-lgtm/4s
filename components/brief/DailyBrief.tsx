@@ -23,6 +23,7 @@ import OneThing from '@/components/brief/OneThing'
 import { REORDERABLE, type TodayBlockId, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import CaptureSection from '@/components/capture/CaptureSection'
 import DailyReflection from '@/components/brief/DailyReflection'
+import ReflectionEcho from '@/components/brief/ReflectionEcho'
 import Breathing from '@/components/focus/Breathing'
 
 const CALM_QUOTES = [
@@ -456,7 +457,12 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     <FamilyTodayCard userId={userId} />
 
     {tailOrder.map(id => {
-      if (id === 'reflection') return <DailyReflection key="reflection" />
+      if (id === 'reflection') return (
+        <div key="reflection">
+          <ReflectionEcho />
+          <DailyReflection />
+        </div>
+      )
       if (id === 'inbox') return (
         <div key="inbox" id="brief-inbox">
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>

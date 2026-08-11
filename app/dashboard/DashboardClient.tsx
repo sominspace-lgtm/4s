@@ -23,6 +23,7 @@ import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
+import GoalsSection from '@/components/goals/GoalsSection'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
@@ -280,6 +281,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
+        case 'goals':    return <GoalsSection key="goals" userId={userId} />
         case 'village':  return <Village key="village" />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'household': return <HouseholdHub key="household" userId={userId} />

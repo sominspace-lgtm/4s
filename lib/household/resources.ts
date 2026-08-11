@@ -79,6 +79,18 @@ export const RESOURCES = {
     update: ['title', 'items'],
     order: 'created_at',
   },
+  // Goals (2026-08-11). Every query in this module is pinned to the token's
+  // space_id, and a personal goal has space_id null — so Discord can only
+  // ever see goals explicitly SHARED with the household. Personal goals stay
+  // invisible to the bot by the same mechanism that hides work_items, without
+  // needing a rule of its own.
+  goals: {
+    table: 'goals',
+    columns: 'id, title, why, next_action, status, last_touched_at, created_at',
+    insert: ['title', 'why', 'next_action'],
+    update: ['title', 'why', 'next_action', 'status', 'last_touched_at'],
+    order: 'last_touched_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES

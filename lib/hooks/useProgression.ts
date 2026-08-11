@@ -51,6 +51,13 @@ export interface UnlockStage {
 // or (People) a place incoming shared items must always be reachable.
 export const NEVER_GATED = new Set(['village', 'household'])
 
+/** Sections that are open from the first login and never counted as something
+ *  "to unlock": Today, Tasks, Goals, Village, Household. Kept as a named
+ *  constant because it's used twice below to size the journey bar — when it
+ *  was a bare `4` in both places, adding a section silently made the bar
+ *  report the wrong total. */
+const ALWAYS_OPEN_COUNT = 5
+
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
     id: 'personal', label: 'Personal', icon: '◈',
@@ -111,10 +118,10 @@ export function useProgression(unlockAll: boolean) {
   }
 
   const stagesWithStatus = UNLOCK_STAGES.map(s => ({ ...s, done: s.isDone(safeCounts) }))
-  // + Today, Tasks, Village, Household — always open, never
-  // counted as "to unlock". Personal is the only gated stage.
-  const unlockedCount = 4 + stagesWithStatus.filter(s => s.done).length
-  const total = 4 + UNLOCK_STAGES.length
+  // Personal is the only gated stage; everything in ALWAYS_OPEN_COUNT is
+  // open from the start and never counted as "to unlock".
+  const unlockedCount = ALWAYS_OPEN_COUNT + stagesWithStatus.filter(s => s.done).length
+  const total = ALWAYS_OPEN_COUNT + UNLOCK_STAGES.length
   const next = stagesWithStatus.find(s => !s.done) ?? null
 
   return {

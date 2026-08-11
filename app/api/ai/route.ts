@@ -143,6 +143,32 @@ export async function POST(request: Request) {
         return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
       }
 
+      // Reflections were write-only until 2026-08-11: DailyReflection saved
+      // them as captures and nothing ever read them back, which made the most
+      // personal part of the app the one part that never responded. This reads
+      // the recent ones and returns ONE observation.
+      //
+      // The prompt is defensive on purpose. Reflections are the most sensitive
+      // text in the product, so: no advice, no diagnosis, no cheerleading, and
+      // an explicit escape hatch — returning empty when there's no honest
+      // pattern is a correct answer, not a failure. A system that invents a
+      // theme from three unrelated notes would be worse than silence.
+      case 'reflect-synthesis': {
+        const reflections: string[] = Array.isArray(body.reflections) ? body.reflections.slice(0, 20) : []
+        if (reflections.length < 3) return NextResponse.json({ result: '' })
+        const response = await client.messages.create({
+          model: MODEL,
+          max_tokens: 160,
+          system:
+            'You read a person\'s recent private reflections and name ONE honest pattern you notice, in a single ' +
+            'sentence, addressed to them as "you". Observation only — never advice, never a diagnosis, never ' +
+            'encouragement or praise. Do not mention how many entries there are. If there is no genuine recurring ' +
+            'thread, reply with an empty string rather than inventing one. Plain text, lowercase-calm, under 25 words.',
+          messages: [{ role: 'user', content: reflections.map(r => `- ${r}`).join('\n') }],
+        })
+        return NextResponse.json({ result: firstText(response.content).trim() })
+      }
+
       case 'jarvis': {
         const question: string = (body.question ?? '').slice(0, 500)
         if (!question.trim()) return NextResponse.json({ error: 'Missing question' }, { status: 400 })
