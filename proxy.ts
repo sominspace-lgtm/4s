@@ -28,13 +28,15 @@ export async function proxy(request: NextRequest) {
   // and /api/alexa/authorize does its own session check + login?next= redirect
   // for account linking. Without this, both get bounced to /login.
   // /api/household/* is the same situation: the Discord bot calls it
-  // server-to-server with a bearer token and no cookie. The exception is
-  // /api/household/link-code, which is browser-called and needs the session —
-  // it does its own getUser() check, so keeping it gated here too is correct.
+  // server-to-server with a bearer token and no cookie. The exceptions are
+  // browser-called routes that need the session — link-code (issuing a
+  // pairing code) and connections (viewing/editing/revoking a link) — both
+  // do their own getUser() check, so keeping them gated here too is correct.
+  const householdBrowserRoutes = ['/api/household/link-code', '/api/household/connections']
   const isPublic = publicPaths.some(p => pathname.startsWith(p))
     || pathname.startsWith('/auth')
     || pathname.startsWith('/api/alexa')
-    || (pathname.startsWith('/api/household') && !pathname.startsWith('/api/household/link-code'))
+    || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))

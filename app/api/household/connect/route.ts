@@ -92,11 +92,12 @@ export async function GET(request: Request) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: space } = await admin
-    .from('shared_spaces')
-    .select('name')
-    .eq('id', caller.spaceId)
-    .maybeSingle()
+  const [{ data: space }, { data: link }] = await Promise.all([
+    admin.from('shared_spaces').select('name').eq('id', caller.spaceId).maybeSingle(),
+    admin.from('household_discord_links').select('notify').eq('id', caller.linkId).maybeSingle(),
+  ])
 
-  return NextResponse.json({ ok: true, spaceId: caller.spaceId, spaceName: space?.name ?? null })
+  return NextResponse.json({
+    ok: true, spaceId: caller.spaceId, spaceName: space?.name ?? null, notify: link?.notify ?? null,
+  })
 }
