@@ -30,6 +30,8 @@ import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor } from '@/lib/utils/navigate'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
+import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
+import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -45,6 +47,7 @@ interface Props {
   initialLayout: SectionConfig[] | null
   initialFocusConfig: FocusConfig | null
   initialSimpleMode: boolean
+  initialTodayBlocks: TodayBlockConfig[] | null
 }
 
 // Simple mode: Today · Tasks · Village. The three you open daily; Personal
@@ -84,16 +87,18 @@ const SECTION_GROUPS: Record<string, string> = {
   household: 'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
   const [simpleMode, setSimpleMode] = useState(initialSimpleMode)
+  const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
 
   const lang = 'en' as const
   const [activeTab, setActiveTab] = useState('brief')
   const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
@@ -111,7 +116,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, focus: focusConfig, simpleMode, unlockAll }
+    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks }
   }
 
   async function toggleCollapsed(id: string) {
@@ -273,7 +278,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
 
     const body = (() => {
       switch (id) {
-        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'village':  return <Village key="village" />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
@@ -345,6 +350,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
 
@@ -366,8 +372,10 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         {/* The calendar lives inside Today rather than owning a tab — it's
             something you check, not a place you go to live. Rendered after
             the Brief so the day reads top-down: what's happening, what's
-            waiting, then the month around it. */}
-        {!zenView && currentTab === 'brief' && (
+            waiting, then the month around it. Hideable via Customize Today
+            (its position here stays fixed — see REORDERABLE in
+            lib/utils/todayBlocks.ts for why). */}
+        {!zenView && currentTab === 'brief' && !todayBlocks.find(b => b.id === 'calendar')?.hidden && (
           <div id="brief-calendar" style={{ marginTop: '1.2rem' }}>
             <CalendarEmbed />
           </div>

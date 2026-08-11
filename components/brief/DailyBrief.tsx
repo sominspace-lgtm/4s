@@ -20,6 +20,7 @@ import PulseSection from '@/components/pulse/PulseSection'
 import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import AttentionBudget from '@/components/brief/AttentionBudget'
 import OneThing from '@/components/brief/OneThing'
+import { REORDERABLE, type TodayBlockId, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import CaptureSection from '@/components/capture/CaptureSection'
 import DailyReflection from '@/components/brief/DailyReflection'
 import Breathing from '@/components/focus/Breathing'
@@ -73,7 +74,19 @@ function AreaRow({ label, line, onAction }: { label: string; line: string; onAct
   )
 }
 
-export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false }: { userId: string; mode?: Mode; calendarConnected?: boolean }) {
+export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false, blocks, onOpenCustomize }: {
+  userId: string
+  mode?: Mode
+  calendarConnected?: boolean
+  blocks: TodayBlockConfig[]
+  onOpenCustomize: () => void
+}) {
+  const isHidden = (id: TodayBlockId) => blocks.find(b => b.id === id)?.hidden ?? false
+  // The three siblings that can actually change position (see REORDERABLE in
+  // lib/utils/todayBlocks.ts) — filtered and kept in whatever order the
+  // saved blocks array puts them, then rendered by looping over this instead
+  // of writing each one out by hand.
+  const tailOrder = blocks.filter(b => REORDERABLE.has(b.id) && !b.hidden).map(b => b.id)
   const lang = useLang()
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
@@ -306,7 +319,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         the first things on the page, which meant Today opened by telling
         you how you're doing rather than what to do. Recovery mode is the
         one exception — it has its own, gentler answer below. */}
-    {!recovery && (
+    {!recovery && !isHidden('onething') && (
       <OneThing
         items={items}
         habits={habits}
@@ -392,7 +405,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         </div>
       </div>
 
-      {!recovery && lang !== 'ko' && (
+      {!recovery && !isHidden('budget') && lang !== 'ko' && (
         <div style={{ marginTop: '0.8rem' }}>
           <AttentionBudget items={items} />
         </div>
@@ -418,18 +431,12 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       </div>
     </div>
 
-    <DailyReflection />
-
-    <div id="brief-inbox">
-      <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-        Quick Add · Inbox
-      </div>
-      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-        Drop a task, thought, reminder, or idea — sort it later.
-      </div>
-      <CaptureSection userId={userId} />
-    </div>
-
+    {/* Needs Attention and the household card are status, not preference —
+        they're not part of the customizable block set, so they keep a fixed
+        spot rather than being interspersed among blocks whose order can
+        change. Moved here (used to sit between Inbox and the area index)
+        so the three reorderable blocks below form one contiguous, genuinely
+        reorderable group instead of three siblings separated by fixed ones. */}
     <div>
       <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
         {focusItems.length > 0 ? 'Needs Attention' : 'Quiet for now'}
@@ -448,16 +455,35 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
     <FamilyTodayCard userId={userId} />
 
-    {!lowDay && (
-      <div>
-        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-          Everything, at a glance
+    {tailOrder.map(id => {
+      if (id === 'reflection') return <DailyReflection key="reflection" />
+      if (id === 'inbox') return (
+        <div key="inbox" id="brief-inbox">
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+            Quick Add · Inbox
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+            Drop a task, thought, reminder, or idea — sort it later.
+          </div>
+          <CaptureSection userId={userId} />
         </div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.4rem 1rem' }}>
-          {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
+      )
+      if (id === 'areas' && !lowDay) return (
+        <div key="areas">
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
+            Everything, at a glance
+          </div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.4rem 1rem' }}>
+            {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
+          </div>
         </div>
-      </div>
-    )}
+      )
+      return null
+    })}
+
+    <button onClick={onOpenCustomize} className="btn btn-ghost press" style={{ fontSize: '0.64rem', alignSelf: 'flex-start', opacity: 0.6 }}>
+      ⚙ Customize Today
+    </button>
     </div>
   )
 }

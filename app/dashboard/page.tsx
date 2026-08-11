@@ -4,6 +4,7 @@ import { normalizeMode } from '@/lib/constants/modes'
 import { normalizeTheme } from '@/lib/constants/themes'
 import DashboardClient from './DashboardClient'
 import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
+import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -25,6 +26,7 @@ export default async function DashboardPage() {
   const layout = prefs?.layout?.sections as SectionConfig[] | null
   const focusConfig = prefs?.layout?.focus as FocusConfig | null
   const simpleMode = Boolean(prefs?.layout?.simpleMode)
+  const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
 
   return (
     <DashboardClient
@@ -38,6 +40,7 @@ export default async function DashboardPage() {
       initialLayout={layout ?? null}
       initialFocusConfig={focusConfig ?? null}
       initialSimpleMode={simpleMode}
+      initialTodayBlocks={todayBlocks ?? null}
     />
   )
 }

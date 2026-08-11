@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
+import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
 
 // THE single writer for user_prefs.layout.
 //
@@ -18,6 +19,13 @@ export interface LayoutState {
   focus: FocusConfig
   simpleMode: boolean
   unlockAll: boolean
+  // Today's own blocks (One thing, Capacity, Calendar, …) — hide/reorder one
+  // level down from the top-level tabs. Optional in the type only so old
+  // saved rows that predate this key don't fail to parse; every WRITE still
+  // goes through this same required shape via layoutState() in
+  // DashboardClient, which is what stops the five-writer bug this file
+  // already fixed once from coming back for a sixth field.
+  todayBlocks?: TodayBlockConfig[]
 }
 
 export async function saveLayout(
