@@ -18,7 +18,7 @@ export default function ShareMenu({ itemType, itemId, userId }: ShareMenuProps) 
   const [tab, setTab] = useState<'person' | 'space' | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const { links, shareWithPerson, shareWithSpace, stopSharing } = useItemSharing(itemType, itemId)
-  const { active: companions } = useCompanions(userId)
+  const { active: companions, friendEmailOf, friendIdOf } = useCompanions(userId)
   const { spaces } = useSharedSpaces(userId)
 
   const isShared = links.length > 0
@@ -26,8 +26,8 @@ export default function ShareMenu({ itemType, itemId, userId }: ShareMenuProps) 
   const badgeLabel = isShared
     ? links.map(l => {
         if (l.space_id) return spaces.find(s => s.id === l.space_id)?.name ?? 'a group'
-        const c = companions.find(c => c.invitee_id === l.shared_with_user_id)
-        return c ? c.invitee_email.split('@')[0] : 'someone'
+        const c = companions.find(c => friendIdOf(c) === l.shared_with_user_id)
+        return c ? friendEmailOf(c).split('@')[0] : 'someone'
       }).join(', ')
     : null
 
@@ -78,8 +78,8 @@ export default function ShareMenu({ itemType, itemId, userId }: ShareMenuProps) 
               {companions.map(c => (
                 <MenuItem
                   key={c.id}
-                  label={c.invitee_email}
-                  onClick={async () => { if (c.invitee_id) { await shareWithPerson(c.invitee_id); setOpen(false); setTab(null) } }}
+                  label={friendEmailOf(c)}
+                  onClick={async () => { const id = friendIdOf(c); if (id) { await shareWithPerson(id); setOpen(false); setTab(null) } }}
                 />
               ))}
               <MenuItem label="← back" onClick={() => setTab(null)} muted />

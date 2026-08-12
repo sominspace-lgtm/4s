@@ -129,7 +129,7 @@ export function WithMeTab({ onOpenPeople }: { onOpenPeople: () => void }) {
 }
 
 export function ByMeTab({ userId, onManageSharing }: { userId: string; onManageSharing: () => void }) {
-  const { active, loading } = useCompanions(userId)
+  const { active, loading, friendEmailOf } = useCompanions(userId)
   const sharing = active.filter(c => (c.shared_sections ?? []).length > 0)
 
   if (loading) return <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.7 }}>Loading…</div>
@@ -155,10 +155,10 @@ export function ByMeTab({ userId, onManageSharing }: { userId: string; onManageS
           display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem',
           borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--hover-bg)',
         }}>
-          <Avatar email={c.invitee_email} color="var(--emerald)" />
+          <Avatar email={friendEmailOf(c)} color="var(--emerald)" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '0.78rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {c.invitee_email}
+              {friendEmailOf(c)}
             </div>
             <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.8 }}>
               {(c.shared_sections ?? []).map(sectionLabel).join(' · ')}

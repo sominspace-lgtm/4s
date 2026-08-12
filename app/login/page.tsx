@@ -5,19 +5,19 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/ui/Logo'
 
-type Mode = 'magic' | 'signin' | 'signup'
+type Mode = 'signin' | 'signup'
 
 // Turn raw Supabase auth strings into calm, human copy (handbook 12-COPYWRITING).
 function humanError(msg: string): string {
   const m = msg.toLowerCase()
   if (m.includes('invalid login credentials'))
-    return 'That email and password did not match. Try again or use a magic link.'
+    return 'That email and password did not match. Try again.'
   if (m.includes('rate limit') || m.includes('too many'))
     return 'Too many attempts. Please wait a moment before trying again.'
   if (m.includes('already registered') || m.includes('already exists') || m.includes('user already'))
     return 'That email already has an account. Try signing in instead.'
   if (m.includes('email not confirmed'))
-    return 'Please confirm your email first, or use a magic link to sign in.'
+    return 'Please confirm your email first — check your inbox for the link.'
   if (m.includes('anonymous sign-ins are disabled') || m.includes('anonymous'))
     return 'Guest mode is not enabled right now. Create an account instead — it takes ten seconds.'
   return msg
@@ -81,17 +81,6 @@ export default function LoginPage() {
     setError(null)
     const supabase = createClient()
 
-    if (mode === 'magic') {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
-      })
-      if (error) setError(humanError(error.message))
-      else setSent(true)
-      setLoading(false)
-      return
-    }
-
     if (mode === 'signup') {
       if (password !== confirmPassword) { setError('Those passwords do not match.'); setLoading(false); return }
       if (password.length < 8) { setError('Use at least 8 characters for your password.'); setLoading(false); return }
@@ -121,9 +110,9 @@ export default function LoginPage() {
     goNext('/dashboard')
   }
 
-  const loadingLabel = mode === 'magic' ? 'Sending magic link…' : mode === 'signup' ? 'Creating your space…' : 'Checking your account…'
-  const submitLabel = mode === 'magic' ? 'Continue with magic link' : mode === 'signup' ? 'Create account' : 'Sign in'
-  const disabled = loading || !email || ((mode === 'signin' || mode === 'signup') && !password)
+  const loadingLabel = mode === 'signup' ? 'Creating your space…' : 'Checking your account…'
+  const submitLabel = mode === 'signup' ? 'Create account' : 'Sign in'
+  const disabled = loading || !email || !password
 
   const inputStyle: React.CSSProperties = {
     width: '100%', background: 'var(--surface2)', borderWidth: '1px', borderStyle: 'solid',
@@ -170,12 +159,10 @@ export default function LoginPage() {
           {sent ? (
             <div style={{ textAlign: 'center', padding: '0.5rem 0.25rem' }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--text)', marginBottom: '0.5rem' }}>
-                {mode === 'signup' ? 'Your space is ready.' : 'Check your email.'}
+                Your space is ready.
               </div>
               <p style={{ color: 'var(--muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                {mode === 'signup'
-                  ? <>Confirm your email to finish, then sign in below.</>
-                  : <>We sent a secure sign-in link to <strong style={{ color: 'var(--text)' }}>{email}</strong>.</>}
+                Confirm your email to finish, then sign in below.
               </p>
               <button onClick={() => { setSent(false); setError(null) }} style={{ ...quietBtn, color: 'var(--gold)' }}>
                 Back to sign in
@@ -194,14 +181,12 @@ export default function LoginPage() {
                   style={inputStyle} onFocus={focusOn} onBlur={focusOff}
                 />
 
-                {(mode === 'signin' || mode === 'signup') && (
-                  <input
-                    type="password" value={password} onChange={e => setPassword(e.target.value)}
-                    placeholder="Password" required aria-label="Password"
-                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                    style={inputStyle} onFocus={focusOn} onBlur={focusOff}
-                  />
-                )}
+                <input
+                  type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="Password" required aria-label="Password"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  style={inputStyle} onFocus={focusOn} onBlur={focusOff}
+                />
 
                 {mode === 'signup' && (
                   <input
@@ -242,7 +227,7 @@ export default function LoginPage() {
                     background: disabled ? 'color-mix(in srgb, var(--gold) 40%, transparent)' : 'var(--gold)',
                     color: 'var(--bg)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 500,
                     cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.01em',
-                    transition: 'opacity var(--t-base)', marginTop: mode === 'magic' ? '0.4rem' : 0,
+                    transition: 'opacity var(--t-base)',
                   }}
                 >
                   {loading ? loadingLabel : submitLabel}
@@ -251,17 +236,8 @@ export default function LoginPage() {
 
               {/* Secondary + tertiary actions */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', marginTop: '1rem' }}>
-                {mode === 'magic' && (
-                  <>
-                    <button onClick={() => switchMode('signin')} style={quietBtn}>Sign in with password</button>
-                    <button onClick={() => switchMode('signup')} style={{ ...quietBtn, color: 'var(--gold)' }}>New to 4S? Create an account</button>
-                  </>
-                )}
                 {mode === 'signin' && (
-                  <>
-                    <button onClick={() => switchMode('magic')} style={quietBtn}>Use a magic link instead</button>
-                    <button onClick={() => switchMode('signup')} style={{ ...quietBtn, color: 'var(--gold)' }}>New to 4S? Create an account</button>
-                  </>
+                  <button onClick={() => switchMode('signup')} style={{ ...quietBtn, color: 'var(--gold)' }}>New to 4S? Create an account</button>
                 )}
                 {mode === 'signup' && (
                   <button onClick={() => switchMode('signin')} style={quietBtn}>Already have an account? Sign in</button>

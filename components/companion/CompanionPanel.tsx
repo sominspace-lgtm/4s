@@ -42,10 +42,10 @@ function SectionToggle({ label, note, active, onToggle }: { label: string; note:
   )
 }
 
-function SharingTab({ companions, userId, updateSharedSections }: {
+function SharingTab({ companions, updateSharedSections, friendEmailOf }: {
   companions: Companion[]
-  userId: string
   updateSharedSections: (id: string, sections: string[]) => Promise<void>
+  friendEmailOf: (c: Companion) => string
 }) {
   const active = companions.filter(c => c.status === 'accepted')
   const [selected, setSelected] = useState<string | null>(active[0]?.id ?? null)
@@ -86,7 +86,7 @@ function SharingTab({ companions, userId, updateSharedSections }: {
                 background: selected === c.id ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
                 color: selected === c.id ? 'var(--gold)' : 'var(--muted)',
               }}>
-                {c.invitee_email.split('@')[0]}
+                {friendEmailOf(c).split('@')[0]}
               </button>
             ))}
           </div>
@@ -96,9 +96,9 @@ function SharingTab({ companions, userId, updateSharedSections }: {
       {companion && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <Avatar email={companion.invitee_email} color="var(--gold)" />
+            <Avatar email={friendEmailOf(companion)} color="var(--gold)" />
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{companion.invitee_email}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{friendEmailOf(companion)}</div>
               <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6 }}>
                 {(companion.shared_sections ?? []).length === 0 ? 'Nothing shared yet' : `${(companion.shared_sections ?? []).length} section${(companion.shared_sections ?? []).length !== 1 ? 's' : ''} shared`}
               </div>
@@ -223,7 +223,7 @@ export function SpacesTab({ userId }: { userId: string }) {
 
 export default function CompanionPanel({ open, userId, userEmail, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  const { companions, active, loading, updateSharedSections } = useCompanions(userId)
+  const { companions, active, loading, updateSharedSections, friendEmailOf } = useCompanions(userId)
   const [tab, setTab] = useState<Tab>('companions')
 
   useEffect(() => {
@@ -275,7 +275,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
         ) : tab === 'companions' ? (
           <PeopleList userId={userId} userEmail={userEmail} onNavigate={onClose} />
         ) : tab === 'sharing' ? (
-          <SharingTab companions={companions} userId={userId} updateSharedSections={updateSharedSections} />
+          <SharingTab companions={companions} updateSharedSections={updateSharedSections} friendEmailOf={friendEmailOf} />
         ) : (
           <SpacesTab userId={userId} />
         )}

@@ -38,7 +38,7 @@ export default function PeopleList({ userId, userEmail, onNavigate }: {
   userEmail: string
   onNavigate?: () => void
 }) {
-  const { sent, active, loading, invite, accept, decline, remove } = useCompanions(userId)
+  const { sent, active, loading, invite, accept, decline, remove, friendEmailOf } = useCompanions(userId)
   const [emailInput, setEmailInput] = useState('')
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
@@ -125,9 +125,9 @@ export default function PeopleList({ userId, userEmail, onNavigate }: {
           <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.6 }}>Friends</div>
           {active.map(c => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.75rem', borderRadius: '10px', background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
-              <Avatar email={c.invitee_email} color="var(--emerald)" />
+              <Avatar email={friendEmailOf(c)} color="var(--emerald)" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.invitee_email}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{friendEmailOf(c)}</div>
                 <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.7 }}>
                   {(c.shared_sections ?? []).length === 0 ? 'nothing shared yet' : `sharing ${(c.shared_sections ?? []).length} section${(c.shared_sections ?? []).length !== 1 ? 's' : ''}`}
                 </div>
