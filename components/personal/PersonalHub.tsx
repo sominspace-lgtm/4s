@@ -18,7 +18,12 @@ const TABS: { id: PersonalTab; label: string }[] = [
   { id: 'life',    label: 'Life' },
   { id: 'money',   label: 'Money' },
   { id: 'people',  label: 'People' },
-  { id: 'council', label: 'Council' },
+  // Council is deliberately NOT here (2026-08-11). It's an action you invoke
+  // occasionally, not a place you live, and as a sixth tab it competed for
+  // attention with Goals and Habits every single visit. It now lives in the
+  // header ⋯ menu next to Ask Jarvis — same reasoning, same kind of thing.
+  // The 'council' tab id still works, so goToPersonal('council') from the
+  // menu (and the Brief's Council card) lands here exactly as before.
 ]
 
 // Personal — everything that's about you, in one place: your habits, your

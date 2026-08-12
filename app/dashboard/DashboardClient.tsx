@@ -28,7 +28,7 @@ import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
-import { scrollToAnchor } from '@/lib/utils/navigate'
+import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
@@ -316,6 +316,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         onArchive={() => setArchiveOpen(true)}
         onHelp={() => setHelpOpen(true)}
         onJarvis={() => setJarvisOpen(true)}
+        onCouncil={() => goToPersonal('council')}
         zenView={zenView}
         onToggleZen={() => setZenView(z => !z)}
         onConfigureFocus={() => setFocusPanelOpen(true)}
