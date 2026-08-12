@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // The one reorder/hide drawer, used at every level that has a customizable
 // list — top-level tabs (CustomizePanel), Today's blocks (was
@@ -48,6 +49,24 @@ export default function SectionCustomizer({
   open, title, intro, sections, reorderable, defaultSections, onChange, onClose,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
+  // Portal to document.body (2026-08-12 fix): PersonalHub/HouseholdHub render
+  // inside DashboardClient's `.tab-in` wrapper, which carries a CSS
+  // `animation` that sets a real (non-'none') `transform` on it for the
+  // first 240ms after every tab switch. Per spec, ANY transform on an
+  // ancestor — including one from a CSS animation — turns that ancestor into
+  // the containing block for `position:fixed` descendants, so this drawer
+  // was rendering relative to `.tab-in`'s box instead of the viewport: wrong
+  // position, wrong size context, and it could appear "open" without a
+  // click. The pre-existing top-level CustomizePanel/TodayCustomizePanel
+  // never hit this because they render outside `.tab-in`. A portal sidesteps
+  // the whole class of bug regardless of what any ancestor's CSS does.
+  const [mounted, setMounted] = useState(false)
+  // The standard SSR-safe mount detection for a portal target — document.body
+  // doesn't exist during server render, so this must wait for the client.
+  // There's no external system to synchronize with here; it's a one-time
+  // "am I in the browser yet" flag, which is exactly what this effect is for.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -78,7 +97,12 @@ export default function SectionCustomizer({
 
   const reorderOrder = sections.filter(s => canReorder(s.id)).map(s => s.id)
 
-  return (
+  // Not mounted yet (SSR / first client paint) — nothing to portal into.
+  // The drawer is closed on first paint anyway (open starts false in every
+  // caller), so this is never visible either way.
+  if (!mounted) return null
+
+  return createPortal(
     <>
       <div style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -164,6 +188,7 @@ export default function SectionCustomizer({
           </button>
         )}
       </div>
-    </>
+    </>,
+    document.body,
   )
 }
