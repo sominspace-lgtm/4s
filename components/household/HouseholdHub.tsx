@@ -9,11 +9,12 @@ import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
 import CompanionSync from '@/components/relationships/CompanionSync'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
-import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId } from '@/lib/utils/householdLayout'
+import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
+const MOVEIN_CATEGORIES = ['Furniture', 'Appliances', 'Kitchen', 'Bedroom', 'Living room', 'Bathroom', 'Other']
 
-type HouseholdTab = 'home' | 'reference' | 'setup'
+type HouseholdTab = HouseholdTabId
 
 // Household — the shared-living tab for couples or families under one roof.
 //
@@ -59,6 +60,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [ruleCategory, setRuleCategory] = useState('')
   const [invName, setInvName] = useState('')
   const [invRoom, setInvRoom] = useState('')
+  const [moveinName, setMoveinName] = useState('')
+  const [moveinCat, setMoveinCat] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
   const [tabsCustomizeOpen, setTabsCustomizeOpen] = useState(false)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
@@ -369,6 +372,90 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           picker as chores and meals, so it follows "just me" vs a shared
           household exactly like they do. */}
       {tab === 'reference' && <HomeBrain />}
+
+      {/* ── Move-in ────────────────────────────────────────────────
+          Furniture and appliances for a shared move — its own tab, its own
+          table (household_movein_items), deliberately separate from the
+          Shopping block inside Home. See the migration header for why:
+          different rhythm, different question, and it deserves not to be
+          buried right when a move is actually happening. Reachable from
+          Discord too — a message in the configured move-in channel becomes
+          a row here directly. */}
+      {tab === 'movein' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
+            <div className="t-card">Move-in list</div>
+            {h.moveinItems.some(i => i.got) && (
+              <button
+                onClick={() => Promise.all(h.moveinItems.filter(i => i.got).map(i => h.removeMoveinItem(i.id)))}
+                className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}
+              >
+                Clear {h.moveinItems.filter(i => i.got).length} got
+              </button>
+            )}
+          </div>
+
+          {h.moveinItems.length === 0 && !h.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+              Nothing on the list yet. Add what the new place still needs — furniture, appliances, whatever&rsquo;s on your mind.
+            </div>
+          )}
+
+          {MOVEIN_CATEGORIES.map(cat => {
+            const items = h.moveinItems.filter(i => (i.category || 'Other') === cat)
+            if (items.length === 0) return null
+            return (
+              <div key={cat} style={{ marginBottom: '0.7rem' }}>
+                <div className="t-label" style={{ marginBottom: '0.25rem' }}>{cat}</div>
+                {items.map(i => (
+                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
+                    <button
+                      onClick={() => h.toggleMoveinGot(i.id, !i.got)}
+                      aria-pressed={i.got}
+                      aria-label={`${i.name}${i.got ? ', got it' : ''}`}
+                      className="press"
+                      style={{
+                        width: 20, height: 20, borderRadius: '5px', flexShrink: 0, cursor: 'pointer', padding: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: `1px solid ${i.got ? 'var(--emerald)' : 'var(--border)'}`,
+                        background: i.got ? 'color-mix(in srgb, var(--emerald) 30%, transparent)' : 'transparent',
+                      }}
+                    >
+                      {i.got && (
+                        <svg className="tick" width={11} height={11} viewBox="0 0 12 12" aria-hidden>
+                          <path d="M2.5 6.2 L4.9 8.6 L9.5 3.6" fill="none" stroke="var(--emerald)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', textDecoration: i.got ? 'line-through' : 'none', opacity: i.got ? 0.5 : 1 }}>
+                      {i.name}
+                    </span>
+                    <button onClick={() => h.removeMoveinItem(i.id)} aria-label={`Remove ${i.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!moveinName.trim()) return
+              await h.addMoveinItem(moveinName.trim(), moveinCat || null)
+              setMoveinName('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
+          >
+            <input value={moveinName} onChange={e => setMoveinName(e.target.value)} placeholder="Add something for the new place" style={{ ...input, flex: 1, minWidth: '160px' }} />
+            <select value={moveinCat} onChange={e => setMoveinCat(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+              <option value="">Category</option>
+              {MOVEIN_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+          </form>
+        </section>
+      )}
+
       {tab === 'setup' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Moved from People → Close (2026-08-11): confirming a partner and

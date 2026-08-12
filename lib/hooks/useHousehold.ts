@@ -58,6 +58,15 @@ export interface InventoryItem {
   created_at: string
 }
 
+export interface MoveinItem {
+  id: string
+  space_id: string | null
+  name: string
+  category: string | null
+  got: boolean
+  created_at: string
+}
+
 /** Days until due. Negative = overdue. Never done = due now, not "overdue". */
 export function choreDue(c: Chore): number {
   if (!c.last_done_at) return 0
@@ -72,6 +81,7 @@ export function useHousehold(spaceId: string | null) {
   const [notes, setNotes] = useState<HouseNote[]>([])
   const [rules, setRules] = useState<HouseRule[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [moveinItems, setMoveinItems] = useState<MoveinItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -84,7 +94,7 @@ export function useHousehold(spaceId: string | null) {
 
     const [
       { data: c, error: ce }, { data: m, error: me }, { data: s, error: se }, { data: n, error: ne },
-      { data: r, error: re }, { data: inv, error: ie },
+      { data: r, error: re }, { data: inv, error: ie }, { data: mv, error: mve },
     ] = await Promise.all([
       scope(supabase.from('household_chores').select('*').order('created_at')),
       scope(supabase.from('household_meals').select('*').order('meal_date')),
@@ -93,8 +103,9 @@ export function useHousehold(spaceId: string | null) {
       scope(supabase.from('household_notes').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false })),
       scope(supabase.from('household_rules').select('*').order('created_at', { ascending: false })),
       scope(supabase.from('household_inventory').select('*').order('room').order('name')),
+      scope(supabase.from('household_movein_items').select('*').order('created_at')),
     ])
-    const firstError = ce ?? me ?? se ?? ne ?? re ?? ie
+    const firstError = ce ?? me ?? se ?? ne ?? re ?? ie ?? mve
     setError(firstError ? firstError.message : null)
     setChores((c as Chore[] | null) ?? [])
     setMeals((m as Meal[] | null) ?? [])
@@ -102,6 +113,7 @@ export function useHousehold(spaceId: string | null) {
     setNotes((n as HouseNote[] | null) ?? [])
     setRules((r as HouseRule[] | null) ?? [])
     setInventory((inv as InventoryItem[] | null) ?? [])
+    setMoveinItems((mv as MoveinItem[] | null) ?? [])
     setLoading(false)
   }, [supabase, spaceId])
 
@@ -253,13 +265,41 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
+  // Move-in items (2026-08-12) — same got/got_at/got_by shape as shopping,
+  // deliberately a separate table (see the migration header): furniture and
+  // appliances are a different rhythm than groceries, not the same list.
+  async function addMoveinItem(name: string, category: string | null) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in' }
+    const { error } = await supabase.from('household_movein_items')
+      .insert({ user_id: user.id, space_id: spaceId, name, category })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function toggleMoveinGot(id: string, got: boolean) {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('household_movein_items')
+      .update({ got, got_at: got ? new Date().toISOString() : null, got_by: got ? user?.id ?? null : null })
+      .eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function removeMoveinItem(id: string) {
+    const { error } = await supabase.from('household_movein_items').delete().eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
   return {
-    chores, meals, shopping, notes, rules, inventory, loading, error,
+    chores, meals, shopping, notes, rules, inventory, moveinItems, loading, error,
     addChore, markChoreDone, removeChore,
     addMeal, removeMeal,
     addShopping, toggleGot, clearGot, removeShopping,
     addNote, toggleNotePin, removeNote,
     addRule, toggleRuleActive, removeRule,
     addInventoryItem, removeInventoryItem,
+    addMoveinItem, toggleMoveinGot, removeMoveinItem,
   }
 }

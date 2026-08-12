@@ -104,6 +104,16 @@ export const RESOURCES = {
     update: ['name', 'kind', 'note', 'status', 'tags'],
     order: 'created_at',
   },
+  // Move-in items (2026-08-12) — furniture/appliance purchases for a shared
+  // move, separate from household_shopping (groceries). Same shape, same
+  // reasoning as shopping's own RESOURCES entry.
+  moveinItems: {
+    table: 'household_movein_items',
+    columns: 'id, name, category, got, created_at',
+    insert: ['name', 'category'],
+    update: ['name', 'category', 'got'],
+    order: 'created_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES

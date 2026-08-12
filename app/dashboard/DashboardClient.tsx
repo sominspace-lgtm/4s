@@ -27,7 +27,6 @@ import HouseholdHub from '@/components/household/HouseholdHub'
 import PlacesHub from '@/components/places/PlacesHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
-import FeedbackBox from '@/components/feedback/FeedbackBox'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
@@ -419,7 +418,6 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
             <CalendarEmbed />
           </div>
         )}
-        <FeedbackBox />
       </main>
       <MobileNav onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))} />
       {!zenView && (

@@ -1,10 +1,16 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type HouseholdTabId = 'home' | 'reference' | 'setup'
+export type HouseholdTabId = 'home' | 'reference' | 'movein' | 'setup'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
   { id: 'reference', label: 'Reference' },
+  // Move-in (2026-08-12) — furniture/appliance purchases for a shared move,
+  // deliberately its own tab rather than folded into the Shopping block
+  // inside Home: it's a different rhythm (big one-off purchases vs weekly
+  // groceries) and, right when a move is actually happening, it deserves to
+  // not be buried under everything else.
+  { id: 'movein',    label: 'Move-in' },
   { id: 'setup',     label: 'Setup' },
 ].map(s => ({ ...s, hidden: false }))
 
