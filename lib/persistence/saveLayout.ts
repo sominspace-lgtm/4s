@@ -26,6 +26,14 @@ export interface LayoutState {
   // DashboardClient, which is what stops the five-writer bug this file
   // already fixed once from coming back for a sixth field.
   todayBlocks?: TodayBlockConfig[]
+  // Same idea, one level down from Personal and Household's own tab bars,
+  // and (householdHomeBlocks) one level further down still, into what's
+  // inside Household's Home tab. Added 2026-08-12 — see
+  // lib/utils/personalTabs.ts and lib/utils/householdLayout.ts for the
+  // defaults and merge functions these keys round-trip through.
+  personalTabs?: SectionConfig[]
+  householdTabs?: SectionConfig[]
+  householdHomeBlocks?: SectionConfig[]
 }
 
 export async function saveLayout(

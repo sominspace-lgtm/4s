@@ -91,6 +91,19 @@ export const RESOURCES = {
     update: ['title', 'why', 'next_action', 'status', 'last_touched_at'],
     order: 'last_touched_at',
   },
+  // Saved places (2026-08-12). Same reasoning as goals: a personal pin has
+  // space_id null and every query here is pinned to the token's space, so
+  // the bot can only ever see places explicitly shared with the household.
+  // `details`, `provenance` and `verified_at` are NOT in insert/update — the
+  // bot must not be able to stamp a field as looked-up/verified. Enrichment
+  // happens in 4S, where the lookup provider lives, or not at all.
+  places: {
+    table: 'places',
+    columns: 'id, name, kind, note, address, city, country, lat, lng, status, tags, maps_url, provider, provider_place_id, verified_at, created_at',
+    insert: ['name', 'kind', 'note', 'address', 'city', 'country', 'lat', 'lng', 'status', 'tags', 'maps_url'],
+    update: ['name', 'kind', 'note', 'status', 'tags'],
+    order: 'created_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES

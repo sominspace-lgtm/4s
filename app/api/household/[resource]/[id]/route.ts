@@ -23,8 +23,8 @@ export async function PATCH(request: Request, { params }: Props) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
   }
 
-  // Only these two resources carry updated_at.
-  if (spec.table === 'household_rules' || spec.table === 'household_watchlist') {
+  // Only these resources carry updated_at.
+  if (spec.table === 'household_rules' || spec.table === 'household_watchlist' || spec.table === 'places') {
     fields.updated_at = new Date().toISOString()
   }
 

@@ -27,6 +27,9 @@ export default async function DashboardPage() {
   const focusConfig = prefs?.layout?.focus as FocusConfig | null
   const simpleMode = Boolean(prefs?.layout?.simpleMode)
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
+  const personalTabs = prefs?.layout?.personalTabs as SectionConfig[] | null
+  const householdTabs = prefs?.layout?.householdTabs as SectionConfig[] | null
+  const householdHomeBlocks = prefs?.layout?.householdHomeBlocks as SectionConfig[] | null
 
   return (
     <DashboardClient
@@ -41,6 +44,9 @@ export default async function DashboardPage() {
       initialFocusConfig={focusConfig ?? null}
       initialSimpleMode={simpleMode}
       initialTodayBlocks={todayBlocks ?? null}
+      initialPersonalTabs={personalTabs ?? null}
+      initialHouseholdTabs={householdTabs ?? null}
+      initialHouseholdHomeBlocks={householdHomeBlocks ?? null}
     />
   )
 }

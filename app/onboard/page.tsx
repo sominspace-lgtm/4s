@@ -38,6 +38,24 @@ const PANELS = [
   },
 ]
 
+type HouseholdChoice = 'solo' | 'couple' | 'family'
+
+// One tap, not a form — same "cheap to answer" bar as Skip on the philosophy
+// panels. 'solo' (the default if this step is skipped) creates nothing, which
+// is exactly today's behavior: everyone starts in personal (space_id null)
+// mode unless they say otherwise. Couple/family create ONE shared_spaces row,
+// same shape as useSharedSpaces.createSpace({name, owner_id}) — no members
+// are added here, since that needs the other person's email, which this
+// screen doesn't have. This is deliberately NOT the same thing as
+// relationship_pairs (Household → Setup's consent-gated partner pairing):
+// this just removes the friction of creating an empty space to invite into
+// later, it doesn't claim a partner is already connected.
+const HOUSEHOLD_OPTIONS: { id: HouseholdChoice; label: string; spaceName: string | null }[] = [
+  { id: 'solo',   label: 'Just you',   spaceName: null },
+  { id: 'couple', label: 'A couple',   spaceName: 'Couple' },
+  { id: 'family', label: 'A family',   spaceName: 'Family' },
+]
+
 // A tiny village that fills in across the three panels — the same visual
 // language as the real thing, so the promise and the product match.
 function MiniVillage({ step }: { step: number }) {
@@ -66,7 +84,8 @@ export default function OnboardPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [step, setStep] = useState(0)     // 0..2 = philosophy, 3 = the one input
+  const [step, setStep] = useState(0)     // 0..2 = philosophy, 3 = household, 4 = the one input
+  const [household, setHousehold] = useState<HouseholdChoice>('solo')
   const [thought, setThought] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,6 +110,16 @@ export default function OnboardPage() {
         if (capErr) console.error('First capture failed:', capErr.message)
       }
 
+      const spaceName = HOUSEHOLD_OPTIONS.find(o => o.id === household)?.spaceName
+      if (spaceName) {
+        const { error: spaceErr } = await supabase.from('shared_spaces')
+          .insert({ name: spaceName, owner_id: user.id })
+        // Same reasoning as the capture above: worth logging, never worth
+        // blocking arrival over — a space can always be created later from
+        // People → Sharing → Spaces.
+        if (spaceErr) console.error('Starter space failed:', spaceErr.message)
+      }
+
       const { error: prefsError } = await supabase.from('user_prefs').upsert({
         user_id: user.id,
         onboarded: true,
@@ -111,6 +140,10 @@ export default function OnboardPage() {
   }
 
   const onPhilosophy = step < PANELS.length
+  const onHousehold = step === PANELS.length
+  // The remaining step (step === PANELS.length + 1) is the thought-capture
+  // screen — handled as the else branch below rather than its own flag.
+  const TOTAL_STEPS = PANELS.length + 2
 
   return (
     <ThemeProvider theme={DEFAULT_THEME}>
@@ -131,6 +164,27 @@ export default function OnboardPage() {
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--muted)', lineHeight: 1.6 }}>
                 {PANELS[step].sub}
+              </div>
+            </div>
+          ) : onHousehold ? (
+            <div key={step} className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem, 4.5vw, 1.7rem)', fontWeight: 300, textAlign: 'center', lineHeight: 1.3 }}>
+                Who&rsquo;s this for?
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {HOUSEHOLD_OPTIONS.map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => { setHousehold(opt.id); setStep(s => s + 1) }}
+                    className="btn btn-secondary press"
+                    style={{ flex: '1 1 auto', padding: '0.85rem 1rem', fontSize: '0.82rem' }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.7, textAlign: 'center' }}>
+                A couple or family gets a shared space to invite into later. You can change this any time.
               </div>
             </div>
           ) : (
@@ -176,6 +230,14 @@ export default function OnboardPage() {
                   {step === PANELS.length - 1 ? 'Begin →' : 'Next →'}
                 </button>
               </>
+            ) : onHousehold ? (
+              // The tap buttons above are the primary action (choose + advance
+              // in one gesture) — this is just an escape hatch, same "solo"
+              // outcome as picking "Just you", for anyone who'd rather not
+              // answer at all.
+              <button onClick={() => setStep(s => s + 1)} disabled={saving} className="btn btn-ghost press" style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
+                Skip
+              </button>
             ) : (
               <>
                 <button onClick={() => finish(false)} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
@@ -193,9 +255,9 @@ export default function OnboardPage() {
             )}
           </div>
 
-          {/* Progress — four dots, no "step 1 of 5" pressure */}
+          {/* Progress — dots, no "step 1 of 5" pressure */}
           <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-            {[0, 1, 2, 3].map(i => (
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => i).map(i => (
               <span key={i} style={{
                 width: i === step ? 16 : 5, height: 5, borderRadius: 99,
                 background: i === step ? 'var(--gold)' : 'var(--border)',

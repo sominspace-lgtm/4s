@@ -2,29 +2,33 @@
 
 import { useState } from 'react'
 import RelationshipMemory from '@/components/relationships/RelationshipMemory'
-import RelationshipLinks from '@/components/relationships/RelationshipLinks'
 import { WithMeTab, ByMeTab } from '@/components/companion/SharedHub'
 import { SpacesTab } from '@/components/companion/CompanionPanel'
 import PeopleList from '@/components/companion/PeopleList'
 
-type PeopleTab = 'people' | 'sharing' | 'links'
+type PeopleTab = 'people' | 'sharing'
 type ShareDir = 'with-me' | 'by-me'
 
-// Three, down from six (2026-08-11) — was already down from seven.
+// Two, down from three (2026-08-12) — was already down from six, then seven.
 //
 // "Close" (the confirmed-partner pairing + Google Photos/checkin feed) moved
 // to Household → Setup: it's pair-scoped shared-living data, and its Discord
 // counterpart already lived there. That's a genuine relocation, not a merge.
 //
-// The rest is regrouped by the same "why did you open this" test as the
+// Links (a personal bookmark library, backed by relationship_links) was
+// dropped from the tab bar (2026-08-12) — it never had anything to do with
+// People beyond needing *a* home, and nothing else in the app referenced it.
+// The component and table are untouched; components/relationships/
+// RelationshipLinks.tsx is a one-line re-add if a bookmark library needs a
+// home again.
+//
+// What's left is regrouped by the same "why did you open this" test as the
 // Household refactor, not by which table backs it:
 //   People   — the individuals: Friends + your private Notes about them.
 //   Sharing  — the mechanics: Spaces, and what's shared with/by you.
-//   Links    — a personal bookmark library, unchanged.
 const TABS: { id: PeopleTab; label: string }[] = [
   { id: 'people',  label: 'People' },
   { id: 'sharing', label: 'Sharing' },
-  { id: 'links',   label: 'Links' },
 ]
 
 // Everyone in your life who isn't your household partner (that's Household
@@ -104,8 +108,6 @@ export default function PeopleHub({ userId, userEmail, onOpenCompanions }: {
           )}
         </div>
       )}
-
-      {tab === 'links' && <RelationshipLinks />}
     </div>
   )
 }

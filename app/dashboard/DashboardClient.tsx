@@ -34,6 +34,8 @@ import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
+import { mergePersonalTabs } from '@/lib/utils/personalTabs'
+import { mergeHouseholdTabs, mergeHomeBlocks } from '@/lib/utils/householdLayout'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -50,6 +52,9 @@ interface Props {
   initialFocusConfig: FocusConfig | null
   initialSimpleMode: boolean
   initialTodayBlocks: TodayBlockConfig[] | null
+  initialPersonalTabs: SectionConfig[] | null
+  initialHouseholdTabs: SectionConfig[] | null
+  initialHouseholdHomeBlocks: SectionConfig[] | null
 }
 
 // Simple mode: Today · Tasks · Village. The three you open daily; Personal
@@ -90,11 +95,19 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
+  // Personal/Household sub-tab and Home-block customization (2026-08-12) —
+  // same reasoning as todayBlocks below: owned here because saveLayout()
+  // needs the FULL LayoutState to avoid the five-writer bug its own header
+  // comment describes, so the write path lives at this level even though the
+  // customize UI itself renders inside PersonalHub/HouseholdHub.
+  const [personalTabs, setPersonalTabs] = useState<SectionConfig[]>(mergePersonalTabs(initialPersonalTabs))
+  const [householdTabs, setHouseholdTabs] = useState<SectionConfig[]>(mergeHouseholdTabs(initialHouseholdTabs))
+  const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [simpleMode, setSimpleMode] = useState(initialSimpleMode)
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
 
@@ -120,13 +133,28 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks }
+    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks }
   }
 
   async function toggleCollapsed(id: string) {
     const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
     setSections(next)
     await saveLayout(userId, layoutState(), { sections: next })
+  }
+
+  async function changePersonalTabs(next: SectionConfig[]) {
+    setPersonalTabs(next)
+    await saveLayout(userId, layoutState(), { personalTabs: next })
+  }
+
+  async function changeHouseholdTabs(next: SectionConfig[]) {
+    setHouseholdTabs(next)
+    await saveLayout(userId, layoutState(), { householdTabs: next })
+  }
+
+  async function changeHouseholdHomeBlocks(next: SectionConfig[]) {
+    setHouseholdHomeBlocks(next)
+    await saveLayout(userId, layoutState(), { householdHomeBlocks: next })
   }
 
   async function toggleSimpleMode() {
@@ -285,8 +313,8 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'village':  return <Village key="village" />
-        case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
-        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} />
+        case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
+        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} />
         case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />
         default: return null
       }
