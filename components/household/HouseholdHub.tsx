@@ -40,10 +40,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
 }) {
-  const { spaces } = useSharedSpaces(userId)
+  const { spaces, setMemoriesUrl } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [tab, setTab] = useState<HouseholdTab>('home')
   const h = useHousehold(spaceId)
+  const currentSpace = spaces.find(s => s.id === spaceId)
+  const [memoriesInput, setMemoriesInput] = useState('')
+  const [editingMemories, setEditingMemories] = useState(false)
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
@@ -469,6 +472,59 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
             <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
+          </div>
+          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Memories</div>
+            {!spaceId ? (
+              <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
+                Pick a shared space above first — memories are attached to the space, not to you alone.
+              </div>
+            ) : editingMemories ? (
+              <form
+                onSubmit={async e => {
+                  e.preventDefault()
+                  await setMemoriesUrl(spaceId, memoriesInput.trim() || null)
+                  setEditingMemories(false)
+                }}
+                style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}
+              >
+                <input
+                  value={memoriesInput}
+                  onChange={e => setMemoriesInput(e.target.value)}
+                  placeholder="Paste a Google Drive folder or Photos album link"
+                  style={{ ...input, flex: 1, minWidth: '220px' }}
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+                <button type="button" onClick={() => setEditingMemories(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
+              </form>
+            ) : currentSpace?.memories_url ? (
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <a href={currentSpace.memories_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary press" style={{ fontSize: '0.7rem', textDecoration: 'none' }}>
+                  📷 Open {currentSpace.name} memories
+                </a>
+                <button
+                  onClick={() => { setMemoriesInput(currentSpace.memories_url ?? ''); setEditingMemories(true) }}
+                  className="press"
+                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}
+                >
+                  Change link
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
+                  No album linked yet. Paste a shared Google Drive folder or Google Photos album link — opens in a new tab, no login through 4S OS required.
+                </div>
+                <button
+                  onClick={() => { setMemoriesInput(''); setEditingMemories(true) }}
+                  className="btn btn-secondary press"
+                  style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}
+                >
+                  Add memories link
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

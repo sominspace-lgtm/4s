@@ -8,6 +8,7 @@ export interface SharedSpace {
   name: string
   owner_id: string
   created_at: string
+  memories_url: string | null
 }
 
 export interface SpaceMember {
@@ -56,6 +57,13 @@ export function useSharedSpaces(userId: string) {
     setSpaces(prev => prev.filter(s => s.id !== id))
   }
 
+  async function setMemoriesUrl(id: string, url: string | null): Promise<string | null> {
+    const { error } = await supabase.from('shared_spaces').update({ memories_url: url }).eq('id', id)
+    if (error) return error.message
+    setSpaces(prev => prev.map(s => (s.id === id ? { ...s, memories_url: url } : s)))
+    return null
+  }
+
   async function inviteMember(spaceId: string, email: string): Promise<string | null> {
     const { data, error } = await supabase.from('shared_space_members')
       .insert({ space_id: spaceId, member_email: email.toLowerCase().trim(), invited_by: userId })
@@ -74,5 +82,5 @@ export function useSharedSpaces(userId: string) {
     return members.filter(m => m.space_id === spaceId)
   }
 
-  return { spaces, members, loading, ready, createSpace, removeSpace, inviteMember, removeMember, membersOf }
+  return { spaces, members, loading, ready, createSpace, removeSpace, setMemoriesUrl, inviteMember, removeMember, membersOf }
 }

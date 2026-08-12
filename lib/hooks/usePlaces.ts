@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { uploadPlacePhoto, deletePlacePhoto } from '@/lib/storage/placePhotos'
 
 export type PlaceStatus = 'idea' | 'been' | 'favourite' | 'archived'
 export type PlaceProvenanceSource = 'user' | 'lookup' | 'ai'
@@ -26,6 +27,7 @@ export interface Place {
   tags: string[]
   details: Record<string, unknown>
   provenance: Record<string, PlaceProvenanceSource>
+  photo_paths: string[]
   created_at: string
   updated_at: string
 }
@@ -97,7 +99,7 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details'
+    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths'
   >>) {
     const { error: e } = await supabase.from('places')
       .update({ ...fields, updated_at: new Date().toISOString() })
@@ -112,11 +114,31 @@ export function usePlaces() {
     await load(); notify(); return { error: null }
   }
 
+  // Uploads to Storage then appends the resulting path to the place's
+  // photo_paths — two steps, but the place row is the source of truth for
+  // "what photos does this pin have" so a failed upload never leaves a
+  // dangling reference.
+  async function addPhoto(place: Place, file: File) {
+    try {
+      const path = await uploadPlacePhoto(place.id, file)
+      return await updatePlace(place.id, { photo_paths: [...place.photo_paths, path] })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      setError(message)
+      return { error: message }
+    }
+  }
+
+  async function removePhoto(place: Place, path: string) {
+    await deletePlacePhoto(path)
+    return await updatePlace(place.id, { photo_paths: place.photo_paths.filter(p => p !== path) })
+  }
+
   const withLocation = places.filter(p => p.lat != null && p.lng != null)
   const withoutLocation = places.filter(p => p.lat == null || p.lng == null)
 
   return {
     places, withLocation, withoutLocation, loading, error,
-    addPlace, updatePlace, removePlace,
+    addPlace, updatePlace, removePlace, addPhoto, removePhoto,
   }
 }

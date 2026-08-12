@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import PlaceKindFields from '@/components/places/PlaceKindFields'
 import ProvenanceBadge from '@/components/places/ProvenanceBadge'
 import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
+import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
   idea: 'Want to go', been: 'Been', favourite: 'Favourite', archived: 'Archived',
@@ -21,17 +22,35 @@ export default function PlaceSheet({ place, open, onClose }: {
   open: boolean
   onClose: () => void
 }) {
-  const { updatePlace, removePlace } = usePlaces()
+  const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
   const [editingNote, setEditingNote] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [editingFields, setEditingFields] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (!place || place.photo_paths.length === 0) { setPhotoUrls({}); return }
+    let cancelled = false
+    getPlacePhotoUrls(place.photo_paths).then(urls => { if (!cancelled) setPhotoUrls(urls) })
+    return () => { cancelled = true }
+  }, [place?.id, place?.photo_paths])
 
   if (!place) return <PlacesSheet open={open} onClose={onClose} title="Place">{null}</PlacesSheet>
 
   const spec = kindSpec(place.kind)
   const mapsHref = place.maps_url
     ?? (place.lat != null && place.lng != null ? `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}` : null)
+
+  async function handlePhotoPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !place) return
+    setUploading(true)
+    await addPhoto(place, file)
+    setUploading(false)
+  }
 
   async function saveNote() {
     await updatePlace(place!.id, { note: noteDraft.trim() || null })
@@ -95,6 +114,43 @@ export default function PlaceSheet({ place, open, onClose }: {
             Open in Maps
           </a>
         )}
+
+        {/* Photos */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+            <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75 }}>
+              Photos
+            </div>
+            <label className="btn btn-ghost press" style={{ fontSize: '0.64rem', cursor: 'pointer' }}>
+              {uploading ? 'Uploading…' : '+ Add'}
+              <input type="file" accept="image/*" onChange={handlePhotoPick} disabled={uploading} style={{ display: 'none' }} />
+            </label>
+          </div>
+          {place.photo_paths.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: '0.4rem' }}>
+              {place.photo_paths.map(path => (
+                <div key={path} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                  {photoUrls[path] && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoUrls[path]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  )}
+                  <button
+                    onClick={() => removePhoto(place!, path)}
+                    title="Remove photo"
+                    className="press"
+                    style={{
+                      position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px',
+                      borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.55)', color: '#fff',
+                      fontSize: '0.6rem', lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Note — the field people actually read back later. */}
         <div>
