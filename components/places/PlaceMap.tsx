@@ -119,8 +119,12 @@ export default function PlaceMap({ places, theme, onSelect }: {
     map.addLayer({
       id: 'places-points', type: 'circle', source: sourceId, filter: ['!', ['has', 'point_count']],
       paint: {
+        // The spread of a variable-length kindColors array produces a tuple
+        // TS can't line up against maplibre's `match` overloads directly
+        // (its arity is fixed per overload, ours is dynamic) — going through
+        // `unknown` first is what the compiler itself suggests for this case.
         'circle-color': kindColors.length
-          ? (['match', ['get', 'kind'], ...kindColors, readCssColor('--gold')] as maplibregl.ExpressionSpecification)
+          ? (['match', ['get', 'kind'], ...kindColors, readCssColor('--gold')] as unknown as maplibregl.ExpressionSpecification)
           : readCssColor('--gold'),
         'circle-radius': 6, 'circle-stroke-width': 1.5, 'circle-stroke-color': readCssColor('--bg'),
       },
