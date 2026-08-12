@@ -72,7 +72,12 @@ export const THEMES: Record<string, Record<string, string>> = {
   },
 
   // 🌙 Moonlight — deep indigo, premium minimal
-  sunset: {
+  //
+  // RENAMED from key `sunset` (2026-08-11) — the label was always
+  // "Moonlight"; the key just never matched, which is exactly backwards from
+  // a genuine Sunset theme that was added below. LEGACY_THEME_MAP carries the
+  // old key forward so nobody's saved preference breaks.
+  moonlight: {
     '--bg': '#06070f', '--surface': '#0f1226', '--surface2': '#1a1e3c',
     '--border': 'rgba(140,155,245,0.17)', '--text': '#edf0fc',
     '--muted': 'rgba(237,240,252,0.68)', '--faint': 'rgba(237,240,252,0.07)',
@@ -111,52 +116,70 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '12px', '--radius-sm': '7px',
   },
 
-  // 📄 Linen — warm paper, minimal light mode
-  ash: {
-    '--scheme': 'light',
-    // Light themes keep their accent hues untouched — those were picked with
-    // real relative-luminance math, and re-tuning them by eye is how you get
-    // a 2:1 "gold" that looked fine on dark. Only depth cues change here.
-    '--bg': '#f2ede2', '--surface': '#fefdfa', '--surface2': '#e6ddcc',
-    '--border': 'rgba(80,55,30,0.20)', '--text': '#2a1e12',
-    '--muted': 'rgba(42,30,18,0.68)', '--faint': 'rgba(42,30,18,0.07)',
-    '--gold': '#985018', '--purple': '#68408e', '--emerald': '#367040',
-    '--rose': '#a03e3e', '--blush': '#a86048', '--amber': '#8c5414',
-    '--slate': '#4c5c6c', '--lavender': '#6f5c8c',
-    '--accent-2': '#68408e', '--shadow': 'rgba(90,62,34,0.22)',
-    '--glow': 'rgba(152,80,24,0.14)', '--selection': 'rgba(152,80,24,0.12)',
-    '--hover-bg': 'rgba(80,55,30,0.045)',
-    '--font-display': "var(--font-libre-baskerville),'Libre Baskerville',serif",
-    '--font-body':    "var(--font-inter),'Inter',sans-serif",
+  // 🌇 Sunset — warm dark, dusky plum-to-amber
+  //
+  // NEW (2026-08-11). Deliberately not a repaint of Ember: Ember is charcoal
+  // with orange embers (a fire palette), Sunset leans pink-purple-to-amber
+  // (a sky palette) — the two should never be mistaken for each other in a
+  // theme picker.
+  //
+  // Key is `dusk`, NOT `sunset`, even though the label is "Sunset" — the
+  // string "sunset" is what old accounts have literally stored from when
+  // THAT key meant today's Moonlight. normalizeTheme() checks THEMES before
+  // LEGACY_THEME_MAP, so if this new theme also claimed the key "sunset", a
+  // stored "sunset" would resolve straight to THIS palette and silently skip
+  // the migration to Moonlight — no error, just the wrong theme. Keeping the
+  // key distinct is what lets LEGACY_THEME_MAP's `sunset: 'moonlight'` entry
+  // ever actually run.
+  dusk: {
+    '--bg': '#170b16', '--surface': '#241226', '--surface2': '#341c38',
+    '--border': 'rgba(232,140,120,0.20)', '--text': '#f8ece8',
+    '--muted': 'rgba(248,236,232,0.68)', '--faint': 'rgba(248,236,232,0.07)',
+    '--gold': '#f0966a', '--purple': '#c8709c', '--emerald': '#6ecca0',
+    '--rose': '#ec6a7e', '--blush': '#f0a888', '--amber': '#f5b45a',
+    '--slate': '#a87ca0', '--lavender': '#d896b8',
+    '--accent-2': '#e0567e', '--shadow': 'rgba(10,4,10,0.72)',
+    '--glow': 'rgba(240,150,106,0.24)', '--selection': 'rgba(240,150,106,0.20)',
+    '--hover-bg': 'rgba(232,140,120,0.075)',
+    '--font-display': "var(--font-fraunces),'Fraunces',serif",
+    '--font-body':    "var(--font-work-sans),'Work Sans',sans-serif",
     '--font-mono':    "var(--font-jetbrains),'JetBrains Mono',monospace",
-    '--aurora-1': 'rgba(160,90,30,0.05)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(120,60,20,0.035)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(180,110,40,0.025)', '--aurora-pos-3': 'center top',
-    '--radius': '18px', '--radius-sm': '10px',
-  },
-
-  // 🍇 Plum — dark violet, creative and expressive
-  plum: {
-    '--bg': '#0a0410', '--surface': '#170a25', '--surface2': '#241338',
-    '--border': 'rgba(168,96,224,0.19)', '--text': '#f0e8f8',
-    '--muted': 'rgba(240,232,248,0.68)', '--faint': 'rgba(240,232,248,0.07)',
-    '--gold': '#cc6ff5', '--purple': '#ae5cd0', '--emerald': '#5fd8a4',
-    '--rose': '#f55fa8', '--blush': '#e88ce8', '--amber': '#d0a0f0',
-    '--slate': '#9060b4', '--lavender': '#cc8cf0',
-    '--accent-2': '#f55fa8', '--shadow': 'rgba(6,2,12,0.72)',
-    '--glow': 'rgba(204,111,245,0.26)', '--selection': 'rgba(204,111,245,0.20)',
-    '--hover-bg': 'rgba(168,96,224,0.075)',
-    '--font-display': "var(--font-playfair),'Playfair Display',serif",
-    '--font-body':    "var(--font-plus-jakarta),'Plus Jakarta Sans',sans-serif",
-    '--font-mono':    "var(--font-fira),'Fira Code',monospace",
-    '--aurora-1': 'rgba(160,40,220,0.13)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(220,60,160,0.08)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(200,60,240,0.05)', '--aurora-pos-3': '70% 30%',
+    '--aurora-1': 'rgba(240,150,106,0.13)', '--aurora-pos-1': 'bottom right',
+    '--aurora-2': 'rgba(200,90,140,0.08)', '--aurora-pos-2': 'top left',
+    '--aurora-3': 'rgba(245,180,90,0.05)', '--aurora-pos-3': 'center bottom',
     '--radius': '15px', '--radius-sm': '8px',
   },
 
+  // 🌿 Sage — soft green on warm off-white
+  //
+  // NEW (2026-08-11), the second light theme alongside Bloom. Pairs with
+  // Bloom's paper feel but reads cooler/quieter — sage rather than cream,
+  // ink-grey rather than warm brown.
+  sage: {
+    '--scheme': 'light',
+    '--bg': '#f1f0e6', '--surface': '#fbfbf6', '--surface2': '#e2e2d0',
+    '--border': 'rgba(60,80,58,0.18)', '--text': '#2e332c',
+    '--muted': 'rgba(46,51,44,0.68)', '--faint': 'rgba(46,51,44,0.07)',
+    '--gold': '#4d7a52', '--purple': '#71708e', '--emerald': '#3f7d55',
+    '--rose': '#b0605c', '--blush': '#9a8a5c', '--amber': '#8a7a2c',
+    '--slate': '#5c7266', '--lavender': '#7c7a9e',
+    '--accent-2': '#3f7d55', '--shadow': 'rgba(50,64,48,0.20)',
+    '--glow': 'rgba(77,122,82,0.14)', '--selection': 'rgba(77,122,82,0.12)',
+    '--hover-bg': 'rgba(60,80,58,0.045)',
+    '--font-display': "var(--font-newsreader),'Newsreader',serif",
+    '--font-body':    "var(--font-nunito),'Nunito Sans',sans-serif",
+    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
+    '--aurora-1': 'rgba(77,122,82,0.05)', '--aurora-pos-1': 'top right',
+    '--aurora-2': 'rgba(120,140,90,0.035)', '--aurora-pos-2': 'bottom left',
+    '--aurora-3': 'rgba(90,110,70,0.025)', '--aurora-pos-3': 'center top',
+    '--radius': '17px', '--radius-sm': '9px',
+  },
+
   // ⚫ Obsidian — near-monochrome, stark and focused
-  noir: {
+  //
+  // RENAMED from key `noir` (2026-08-11), same reasoning as Moonlight above:
+  // the label was already "Obsidian".
+  obsidian: {
     '--bg': '#030304', '--surface': '#0d0d10', '--surface2': '#18181c',
     '--border': 'rgba(255,255,255,0.14)', '--text': '#f4f4f6',
     '--muted': 'rgba(244,244,246,0.64)', '--faint': 'rgba(244,244,246,0.06)',
@@ -175,48 +198,46 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '10px', '--radius-sm': '6px',
   },
 
-  // ☀️ Solar — bright premium light theme, sunlit cream and sky
-  solar: {
-    '--scheme': 'light',
-    '--bg': '#f8f2e2', '--surface': '#ffffff', '--surface2': '#eee6cc',
-    '--border': 'rgba(150,120,30,0.22)', '--text': '#1c2338',
-    '--muted': 'rgba(28,35,56,0.68)', '--faint': 'rgba(28,35,56,0.07)',
-    '--gold': '#8a600e', '--purple': '#5868ae', '--emerald': '#367e5e',
-    '--rose': '#be464e', '--blush': '#386ea6', '--amber': '#88660c',
-    '--slate': '#4676ae', '--lavender': '#48569e',
-    '--accent-2': '#2a6896', '--shadow': 'rgba(120,95,40,0.24)',
-    '--glow': 'rgba(138,96,14,0.16)', '--selection': 'rgba(138,96,14,0.12)',
-    '--hover-bg': 'rgba(150,120,30,0.045)',
-    '--font-display': "var(--font-libre-baskerville),'Libre Baskerville',serif",
-    '--font-body':    "var(--font-manrope),'Manrope',sans-serif",
-    '--font-mono':    "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
-    '--aurora-1': 'rgba(220,180,40,0.09)', '--aurora-pos-1': 'top right',
-    '--aurora-2': 'rgba(80,140,200,0.05)', '--aurora-pos-2': 'bottom left',
-    '--aurora-3': 'rgba(240,210,120,0.045)', '--aurora-pos-3': 'center top',
-    '--radius': '13px', '--radius-sm': '7px',
-  },
 }
 
 export const THEME_LABELS: Record<string, string> = {
-  bloom: 'Bloom', sunset: 'Moonlight', ember: 'Ember', plum: 'Plum',
-  noir: 'Obsidian', ash: 'Linen', solar: 'Solar',
+  bloom: 'Bloom', moonlight: 'Moonlight', dusk: 'Sunset',
+  obsidian: 'Obsidian', ember: 'Ember', sage: 'Sage',
 }
 
-// Cut from 13 to 6 (2026-08-07): two dark neutral (Moonlight, Obsidian), two
-// dark warm (Ember, Plum), two light (Linen, Solar) — enough range for every
-// mood without asking a new user to compare thirteen near-identical dark
-// palettes at the one moment they should be experiencing the product, not
-// deciding about it. Retired themes remap to their nearest surviving
-// relative below, same pattern as the Guides 9→5 consolidation — applied at
-// read time via normalizeTheme(), so nobody's saved preference breaks.
+// Cut from 13 to 6 (2026-08-07), then re-cut to a different 6 (2026-08-11):
+// Bloom, Moonlight, Sunset, Obsidian, Ember, Sage. Same reasoning both times
+// — enough range for every mood without asking a new user to compare a dozen
+// near-identical dark palettes at the one moment they should be experiencing
+// the product, not deciding about it.
+//
+// Every entry below must point at a key that still exists in THEMES. This is
+// the actual migration mechanism — normalizeTheme() checks THEMES first and
+// falls back to this map, so a wrong or dangling target here means a real
+// account silently lands on the default (or errors) instead of migrating.
+// The two 2026-08-11 renames (old `sunset`→`moonlight`, `noir`→`obsidian`)
+// are entries too, not just the fully-retired themes.
 export const LEGACY_THEME_MAP: Record<string, string> = {
-  rose: 'plum',       // dark warm jewel-tone family
-  lavender: 'plum',   // dark purple family
-  forest: 'sunset',   // dark neutral calm
-  ocean: 'sunset',    // dark neutral blue
-  aurora: 'sunset',   // dark neutral premium multi-tone
-  sand: 'ember',      // dark warm coffee/amber family
-  sakura: 'ash',      // light warm/gentle
+  // Renamed keys, not retired palettes — the account's stored value is exact,
+  // it just needs to point at the same palette's new key.
+  sunset: 'moonlight',  // old key for what was always labeled "Moonlight"
+  noir: 'obsidian',     // old key for what was always labeled "Obsidian"
+
+  // Genuinely retired (2026-08-07 cut), targets re-picked 2026-08-11 since
+  // their original targets (plum, sunset-the-old-moonlight, ash) no longer
+  // exist under those names.
+  rose: 'dusk',         // dark warm jewel-tone family → Sunset
+  lavender: 'moonlight', // dark purple family → Moonlight's indigo/purple
+  forest: 'moonlight',   // dark neutral calm
+  ocean: 'moonlight',    // dark neutral blue
+  aurora: 'moonlight',   // dark neutral premium multi-tone
+  sand: 'ember',         // dark warm coffee/amber family — unchanged, still valid
+  sakura: 'bloom',       // light warm/gentle → Bloom's cream, not Sage's green
+
+  // Retired 2026-08-11.
+  plum: 'dusk',    // dark violet/jewel-tone → Sunset's pink-purple
+  ash: 'sage',     // light, minimal, paper-adjacent → Sage
+  solar: 'sage',   // bright light → Sage (Bloom is warmer/cream; Sage is the cooler light option)
 }
 
 // Bloom is the default (2026-08-07) — 4S and BloomScan are meant to read as

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import AlexaConnect from '@/components/ui/AlexaConnect'
 
 interface Props {
   email: string
@@ -80,50 +81,9 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
   const [deleteInput, setDeleteInput] = useState('')
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null)
 
-  const [alexaCode, setAlexaCode] = useState<string | null>(null)
-  const [alexaLoading, setAlexaLoading] = useState(false)
-  const [alexaErr, setAlexaErr] = useState<string | null>(null)
-  const [alexaLinked, setAlexaLinked] = useState<boolean | null>(null) // null = still checking
-  const [alexaUnlinking, setAlexaUnlinking] = useState(false)
-
-  useEffect(() => {
-    supabase.from('alexa_links').select('user_id').eq('user_id', userId).maybeSingle()
-      .then(({ data }) => setAlexaLinked(!!data))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // While a code is showing, poll so "Connected" appears the moment linking
-  // succeeds on Alexa's side — no manual refresh needed.
-  useEffect(() => {
-    if (!alexaCode || alexaLinked) return
-    const id = setInterval(() => {
-      supabase.from('alexa_links').select('user_id').eq('user_id', userId).maybeSingle()
-        .then(({ data }) => { if (data) { setAlexaLinked(true); setAlexaCode(null) } })
-    }, 3000)
-    return () => clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alexaCode, alexaLinked])
-
-  async function connectAlexa() {
-    setAlexaLoading(true); setAlexaCode(null); setAlexaErr(null)
-    try {
-      const res = await fetch('/api/alexa/link-code', { method: 'POST' })
-      const data = await res.json().catch(() => ({}))
-      if (data.code) setAlexaCode(data.code)
-      else setAlexaErr(data.error || `Couldn't generate a code (status ${res.status}).`)
-    } catch {
-      setAlexaErr('Network error — try again.')
-    } finally { setAlexaLoading(false) }
-  }
-
-  async function unlinkAlexa() {
-    setAlexaUnlinking(true); setAlexaErr(null)
-    const { error } = await supabase.from('alexa_links').delete().eq('user_id', userId)
-    setAlexaUnlinking(false)
-    if (error) { setAlexaErr(error.message); return }
-    setAlexaLinked(false)
-    setAlexaCode(null)
-  }
+  // Alexa state/logic moved to components/ui/AlexaConnect.tsx (2026-08-11) so
+  // it can render here AND in the header Connect panel without duplicating
+  // the code-generation/poll/unlink logic.
 
   async function saveName() {
     const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, display_name: name.trim() || email.split('@')[0] })
@@ -259,54 +219,11 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
         </Row>
       </div>
 
-      {/* Alexa */}
+      {/* Alexa — same component the header Connect panel uses. */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
         <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Alexa</div>
         <Row label="Connect Alexa">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-            {alexaErr && <div style={{ fontSize: '0.68rem', color: 'var(--rose)' }}>{alexaErr}</div>}
-
-            {alexaLinked === null ? (
-              <span style={{ fontSize: '0.73rem', color: 'var(--muted)', opacity: 0.7 }}>Checking…</span>
-            ) : alexaLinked ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.73rem',
-                  color: 'var(--emerald)',
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--emerald)', display: 'inline-block' }} />
-                  Connected — your Echo is linked to this account.
-                </div>
-                <span style={{ fontSize: '0.68rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-                  Switching to a different Echo, or handing this off to someone else? Unlink first —
-                  an Alexa device can only be bound to one 4S account at a time.
-                </span>
-                <Btn onClick={unlinkAlexa} disabled={alexaUnlinking} danger>{alexaUnlinking ? 'unlinking…' : 'Unlink Alexa'}</Btn>
-              </div>
-            ) : (
-              <>
-                <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-                  Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link&rdquo;</em> and read it out. Links your Echo to this account.
-                </span>
-                {!alexaCode ? (
-                  <Btn onClick={connectAlexa} disabled={alexaLoading}>{alexaLoading ? 'generating…' : 'Get my code'}</Btn>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <div style={{
-                      fontFamily: 'var(--font-display)', fontSize: '2rem', letterSpacing: '0.35em',
-                      color: 'var(--gold)', padding: '0.4rem 0', textAlign: 'center',
-                      background: 'color-mix(in srgb, var(--gold) 8%, transparent)', borderRadius: '10px',
-                      border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
-                    }}>{alexaCode}</div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center' }}>
-                      Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link {alexaCode.split('').join(' ')}&rdquo;</strong>
-                    </span>
-                    <Btn onClick={connectAlexa} disabled={alexaLoading}>New code</Btn>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <AlexaConnect userId={userId} />
         </Row>
       </div>
 

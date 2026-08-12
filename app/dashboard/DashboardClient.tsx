@@ -9,6 +9,7 @@ import FocusViewPanel from '@/components/ui/FocusViewPanel'
 import AskJarvisPanel from '@/components/ui/AskJarvisPanel'
 import QuickCapture from '@/components/ui/QuickCapture'
 import CompanionPanel from '@/components/companion/CompanionPanel'
+import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
 import FocusMode from '@/components/focus/FocusMode'
 import ArchivePanel from '@/components/archive/ArchivePanel'
@@ -100,6 +101,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
+  const [connectOpen, setConnectOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
@@ -282,7 +284,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'village':  return <Village key="village" />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
-        case 'household': return <HouseholdHub key="household" userId={userId} />
+        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} />
         default: return null
       }
     })()
@@ -317,6 +319,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         onHelp={() => setHelpOpen(true)}
         onJarvis={() => setJarvisOpen(true)}
         onCouncil={() => goToPersonal('council')}
+        onConnect={() => setConnectOpen(true)}
         zenView={zenView}
         onToggleZen={() => setZenView(z => !z)}
         onConfigureFocus={() => setFocusPanelOpen(true)}
@@ -354,6 +357,10 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
+      <ConnectPanel
+        open={connectOpen} userId={userId} onClose={() => setConnectOpen(false)}
+        onOpenCompanions={() => setCompanionsOpen(true)}
+      />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
         {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}

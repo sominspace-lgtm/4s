@@ -7,6 +7,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
+import CompanionSync from '@/components/relationships/CompanionSync'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 
@@ -48,7 +49,7 @@ const SHOP_CATEGORIES = ['Produce', 'Chilled', 'Cupboard', 'Frozen', 'Household'
 // chores" scorekeeping: making housework competitive is a good way to make
 // a household worse, and the product's whole premise is reducing guilt
 // rather than redistributing it.
-export default function HouseholdHub({ userId }: { userId: string }) {
+export default function HouseholdHub({ userId, userEmail }: { userId: string; userEmail: string }) {
   const { spaces } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [tab, setTab] = useState<HouseholdTab>('home')
@@ -145,9 +146,19 @@ export default function HouseholdHub({ userId }: { userId: string }) {
           household exactly like they do. */}
       {tab === 'reference' && <HomeBrain />}
       {tab === 'setup' && (
-        <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
-          <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Moved from People → Close (2026-08-11): confirming a partner and
+              the Google Photos/checkin feed that comes with it is pair-scoped
+              shared-living data, and its Discord counterpart already lived
+              right here. Same tab, same "who else is in this household". */}
+          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Partner</div>
+            <CompanionSync userId={userId} userEmail={userEmail} />
+          </div>
+          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
+            <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
+          </div>
         </div>
       )}
 

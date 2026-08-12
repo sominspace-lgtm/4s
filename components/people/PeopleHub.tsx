@@ -1,50 +1,42 @@
 'use client'
 
 import { useState } from 'react'
-import CompanionSync from '@/components/relationships/CompanionSync'
 import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 import RelationshipLinks from '@/components/relationships/RelationshipLinks'
 import { WithMeTab, ByMeTab } from '@/components/companion/SharedHub'
 import { SpacesTab } from '@/components/companion/CompanionPanel'
 import PeopleList from '@/components/companion/PeopleList'
 
-type PeopleTab = 'close' | 'friends' | 'spaces' | 'shared' | 'notes' | 'links'
+type PeopleTab = 'people' | 'sharing' | 'links'
 type ShareDir = 'with-me' | 'by-me'
 
-// Six, down from seven. "Shared With Me" and "Shared By Me" were two tabs
-// for one subject — sharing — split by direction, which is a filter, not a
-// destination. They're one Shared tab with a direction toggle now.
+// Three, down from six (2026-08-11) — was already down from seven.
 //
-// Ordered by how close the relationship is, then by what's shared, then by
-// your own private notes: people first, mechanics second.
+// "Close" (the confirmed-partner pairing + Google Photos/checkin feed) moved
+// to Household → Setup: it's pair-scoped shared-living data, and its Discord
+// counterpart already lived there. That's a genuine relocation, not a merge.
+//
+// The rest is regrouped by the same "why did you open this" test as the
+// Household refactor, not by which table backs it:
+//   People   — the individuals: Friends + your private Notes about them.
+//   Sharing  — the mechanics: Spaces, and what's shared with/by you.
+//   Links    — a personal bookmark library, unchanged.
 const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'close',   label: 'Close' },
-  { id: 'friends', label: 'Friends' },
-  { id: 'spaces',  label: 'Spaces' },
-  { id: 'shared',  label: 'Shared' },
-  { id: 'notes',   label: 'Notes' },
+  { id: 'people',  label: 'People' },
+  { id: 'sharing', label: 'Sharing' },
   { id: 'links',   label: 'Links' },
 ]
 
-// One destination for everyone in your life, replacing the Relationship and
-// Shared tabs — same person, same question ("who's in this?"), asked in two
-// places a user couldn't predict between. This is a surface merge only: the
-// privacy models underneath stay exactly as separate as they were.
-// - Close (CompanionSync): confirmed, dual-consent pairs. Mutual.
-// - Friends / Spaces / Shared: companions and shared_item_links —
-//   unilateral, revocable, per-item.
-// - Notes (RelationshipMemory): private notes, birthdays, nothing shared.
-//   Renamed from "People" — a tab called People inside a tab called People
-//   told you nothing about which one you wanted.
-// - Links: a personal bookmark library, nothing shared.
-// No schema changes, no data moved — every one of these renders the exact
-// component it did before, just under one set of tabs instead of two.
+// Everyone in your life who isn't your household partner (that's Household
+// → Setup now). Privacy models stay exactly as separate as they were — this
+// is a tab-grouping change only, no data moved, no component rewritten.
 export default function PeopleHub({ userId, userEmail, onOpenCompanions }: {
   userId: string
   userEmail: string
   onOpenCompanions: () => void
 }) {
-  const [tab, setTab] = useState<PeopleTab>('close')
+  const [tab, setTab] = useState<PeopleTab>('people')
+  const [sharingSub, setSharingSub] = useState<'spaces' | 'shared'>('spaces')
   const [shareDir, setShareDir] = useState<ShareDir>('with-me')
 
   return (
@@ -68,30 +60,52 @@ export default function PeopleHub({ userId, userEmail, onOpenCompanions }: {
         ))}
       </div>
 
-      {tab === 'close'   && <CompanionSync userId={userId} userEmail={userEmail} />}
-      {tab === 'friends' && <PeopleList userId={userId} userEmail={userEmail} />}
-      {tab === 'spaces'  && <SpacesTab userId={userId} />}
-
-      {tab === 'shared' && (
-        <div>
-          {/* Direction is a filter on one list, not two places to go. */}
-          <div style={{ display: 'inline-flex', gap: '0.2rem', marginBottom: '0.8rem', background: 'var(--hover-bg)', borderRadius: '7px', padding: '0.18rem' }}>
-            {([['with-me', 'With me'], ['by-me', 'By me']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => setShareDir(id)} className="btn press" style={{
-                fontSize: '0.66rem', padding: '0.28em 0.7em', border: 'none',
-                background: shareDir === id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
-                color: shareDir === id ? 'var(--gold)' : 'var(--muted)',
-              }}>{label}</button>
-            ))}
+      {tab === 'people' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <PeopleList userId={userId} userEmail={userEmail} />
+          <div>
+            <div className="t-label" style={{ marginBottom: '0.5rem' }}>Notes</div>
+            <RelationshipMemory />
           </div>
-          {shareDir === 'with-me'
-            ? <WithMeTab onOpenPeople={() => setTab('friends')} />
-            : <ByMeTab userId={userId} onManageSharing={onOpenCompanions} />}
         </div>
       )}
 
-      {tab === 'notes'   && <RelationshipMemory />}
-      {tab === 'links'   && <RelationshipLinks />}
+      {tab === 'sharing' && (
+        <div>
+          <div style={{ display: 'inline-flex', gap: '0.2rem', marginBottom: '0.8rem', background: 'var(--hover-bg)', borderRadius: '7px', padding: '0.18rem' }}>
+            {([['spaces', 'Spaces'], ['shared', 'Shared']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setSharingSub(id)} className="btn press" style={{
+                fontSize: '0.66rem', padding: '0.28em 0.7em', border: 'none',
+                background: sharingSub === id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
+                color: sharingSub === id ? 'var(--gold)' : 'var(--muted)',
+              }}>{label}</button>
+            ))}
+          </div>
+
+          {sharingSub === 'spaces' && <SpacesTab userId={userId} />}
+
+          {sharingSub === 'shared' && (
+            <div>
+              {/* Direction is a filter on one list, not two places to go —
+                  same reasoning as collapsing With Me/By Me into Sharing. */}
+              <div style={{ display: 'inline-flex', gap: '0.2rem', marginBottom: '0.8rem', background: 'var(--hover-bg)', borderRadius: '7px', padding: '0.18rem' }}>
+                {([['with-me', 'With me'], ['by-me', 'By me']] as const).map(([id, label]) => (
+                  <button key={id} onClick={() => setShareDir(id)} className="btn press" style={{
+                    fontSize: '0.66rem', padding: '0.28em 0.7em', border: 'none',
+                    background: shareDir === id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
+                    color: shareDir === id ? 'var(--gold)' : 'var(--muted)',
+                  }}>{label}</button>
+                ))}
+              </div>
+              {shareDir === 'with-me'
+                ? <WithMeTab onOpenPeople={() => setTab('people')} />
+                : <ByMeTab userId={userId} onManageSharing={onOpenCompanions} />}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'links' && <RelationshipLinks />}
     </div>
   )
 }

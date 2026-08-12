@@ -23,7 +23,14 @@ export function useDomainTouched() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const today = format(new Date(), 'yyyy-MM-dd')
-    const { error } = await supabase.from('domain_touched').upsert({ user_id: user.id, domain_id: domainId, last_touched: today })
+    // Explicit onConflict: without it, supabase-js can only infer a conflict
+    // target from a single-column primary key. domain_touched's real key is
+    // the (user_id, domain_id) pair, so an inferred upsert either silently
+    // inserts a duplicate row per touch or errors — neither is what "mark
+    // this domain reviewed today" should do. Requires the unique constraint
+    // in supabase/migrations/domain_touched.sql.
+    const { error } = await supabase.from('domain_touched')
+      .upsert({ user_id: user.id, domain_id: domainId, last_touched: today }, { onConflict: 'user_id,domain_id' })
     if (error) {
       console.error('Failed to record domain touch:', error.message)
       return { error }

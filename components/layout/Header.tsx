@@ -23,6 +23,7 @@ interface HeaderProps {
   onHelp: () => void
   onJarvis: () => void
   onCouncil: () => void
+  onConnect: () => void
   zenView: boolean
   onToggleZen: () => void
   onConfigureFocus: () => void
@@ -86,7 +87,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -213,6 +214,7 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           // attention it only wants occasionally. Same reasoning that put
           // Jarvis here rather than in the tab bar.
           { icon: '◈', label: 'Convene the Council', onClick: onCouncil },
+          { icon: '⇄', label: 'Connect', onClick: onConnect },
           ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
           { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
           { divider: true, icon: '', label: '' },
