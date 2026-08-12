@@ -358,7 +358,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
       <ConnectPanel
-        open={connectOpen} userId={userId} onClose={() => setConnectOpen(false)}
+        open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)}
         onOpenCompanions={() => setCompanionsOpen(true)}
       />
 

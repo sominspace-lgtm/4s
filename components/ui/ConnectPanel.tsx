@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
+import CompanionSync from '@/components/relationships/CompanionSync'
 
 // One place for every external connection (2026-08-11), replacing three
 // scattered ones: Discord and Alexa each had their own home (Household →
@@ -18,11 +19,12 @@ import AlexaConnect from '@/components/ui/AlexaConnect'
 interface Props {
   open: boolean
   userId: string
+  userEmail: string
   onClose: () => void
   onOpenCompanions: () => void
 }
 
-export default function ConnectPanel({ open, userId, onClose, onOpenCompanions }: Props) {
+export default function ConnectPanel({ open, userId, userEmail, onClose, onOpenCompanions }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const { spaces } = useSharedSpaces(userId)
   const primarySpace = spaces[0]
@@ -95,11 +97,11 @@ export default function ConnectPanel({ open, userId, onClose, onOpenCompanions }
 
         <div style={sectionStyle}>
           <div style={sectionLabel}>Partner</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Confirming a partner and their Google Photos/checkin feed lives in
-            Household → Setup, alongside your Discord connection — the same
-            "who else is in this household" question, one place.
-          </div>
+          {/* CompanionSync is the same component rendered in Household →
+              Setup — this isn't a summary or a link out to it, it's the
+              actual widget, so confirming/inviting/connecting Companion all
+              work right here without leaving Connect. */}
+          <CompanionSync userId={userId} userEmail={userEmail} />
         </div>
       </div>
     </>
