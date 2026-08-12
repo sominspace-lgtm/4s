@@ -18,15 +18,16 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
   sections: ['brief', 'work'],
 }
 
-// Today · Tasks · Village · Personal · Household
+// Today · Tasks · Village · Personal · Household · Places
 //
-// Five tabs, ordered by how often you actually open them, each answering a
+// Six tabs, ordered by how often you actually open them, each answering a
 // question nobody has to guess at:
 //   Today      — what's happening now?   (brief · inbox · calendar)
 //   Tasks      — what do I need to do?   (the notice board)
 //   Village    — what does my life look like?
 //   Personal   — everything about me     (habits · life · money · people · council)
 //   Household  — everything we share     (chores · meals)
+//   Places     — where do we want to be? (a themed map, saved pins, trips)
 //
 // The organising split is mine vs ours. That's the distinction a person
 // actually feels day to day, and it's a better dividing line than the
@@ -53,6 +54,10 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'personal', label: 'Personal', hidden: false },
   // Household — chores and meals for the people you live with.
   { id: 'household', label: 'Household', hidden: false },
+  // Places — saved pins and trips, on a themed map. Never gated (see
+  // lib/hooks/useProgression.ts NEVER_GATED) — there's no milestone that
+  // produces a pin other than opening this tab and adding one.
+  { id: 'places', label: 'Places', hidden: false },
 ]
 
 interface CustomizePanelProps {

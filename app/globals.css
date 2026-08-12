@@ -513,3 +513,23 @@ select, option {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── MapLibre re-skin (Places, 2026-08-12) ─────────────────────────────
+   MapLibre's default control chrome is white boxes with grey borders — the
+   one vendor stylesheet in this codebase, and the one surface that ignores
+   the theme unless we tell it not to. Scoped under .places-map so no other
+   surface can be hit. The custom control stack in MapControls.tsx is styled
+   directly with theme vars and doesn't need this; these rules cover
+   MapLibre's own popup and attribution chrome, which we do use as-is. */
+.places-map .maplibregl-popup-content {
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font-body);
+}
+.places-map .maplibregl-popup-tip { border-top-color: var(--surface); }
+.places-map .maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--surface) 80%, transparent) !important;
+  color: var(--muted); font-size: 0.62rem;
+}
+.places-map .maplibregl-ctrl-attrib a { color: var(--muted); }
+.places-map .maplibregl-canvas { outline: none; }

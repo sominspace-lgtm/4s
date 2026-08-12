@@ -7,14 +7,14 @@ interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
   brief: 'Today', work: 'Tasks', village: 'Village',
-  personal: 'Personal', household: 'Household',
+  personal: 'Personal', household: 'Household', places: 'Places',
 }
 
 // Same icons as the mobile BottomNav, so a section looks identical on both
 // surfaces — recognition carries across devices.
 const NAV_ICONS: Record<string, string> = {
   brief: '◒', work: '◈', village: '⌂',
-  personal: '◉', household: '◫',
+  personal: '◉', household: '◫', places: '◇',
 }
 
 interface Props {

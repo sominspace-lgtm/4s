@@ -24,6 +24,7 @@ import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
+import PlacesHub from '@/components/places/PlacesHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import MasterDashboard from '@/components/work/MasterDashboard'
 import FeedbackBox from '@/components/feedback/FeedbackBox'
@@ -86,6 +87,7 @@ const SECTION_GROUPS: Record<string, string> = {
   village:   'your world',
   personal:  'mine',
   household: 'ours',
+  places:    'ours',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks }: Props) {
@@ -254,7 +256,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), work: t('Tasks', lang), village: t('Village', lang),
-      personal: t('Personal', lang), household: t('Household', lang),
+      personal: t('Personal', lang), household: t('Household', lang), places: t('Places', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -285,6 +287,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
         case 'village':  return <Village key="village" />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} />
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} />
+        case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />
         default: return null
       }
     })()

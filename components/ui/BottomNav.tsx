@@ -4,11 +4,11 @@ interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
   brief: 'Today', work: 'Tasks', village: 'Village',
-  personal: 'Personal', household: 'Household',
+  personal: 'Personal', household: 'Household', places: 'Places',
 }
 const ICONS: Record<string, string> = {
   brief: '◒', work: '◈', village: '⌂',
-  personal: '◉', household: '◫',
+  personal: '◉', household: '◫', places: '◇',
 }
 
 // Thumb-first bottom navigation for mobile. Shows the first few core tabs and
@@ -17,7 +17,9 @@ export default function BottomNav({ sections, activeId, onSelect }: { sections: 
   if (sections.length < 2) return null
   // Show every section; the row scrolls horizontally so nothing is unreachable
   // once the top nav is hidden on mobile. Even spacing when few, scroll when many.
-  const fill = sections.length <= 5
+  // Bumped 5→6 (2026-08-12) for the Places tab — 6 × 3.9rem min-width still
+  // fits an even layout on a 375px viewport; verify on real narrow phones.
+  const fill = sections.length <= 6
 
   return (
     <nav className="bottom-nav" aria-label="Sections" style={{
