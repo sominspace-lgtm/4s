@@ -25,6 +25,15 @@ interface NominatimResult {
   address?: Record<string, string>
 }
 
+async function searchNominatim(q: string): Promise<NominatimResult[]> {
+  const res = await fetch(
+    `${NOMINATIM_URL}?format=jsonv2&q=${encodeURIComponent(q)}&limit=1&addressdetails=1`,
+    { headers: { 'User-Agent': '4S-OS/1.0 (household places pin capture)' } },
+  )
+  if (!res.ok) return []
+  return res.json()
+}
+
 export async function GET(request: Request) {
   const caller = await resolveHouseholdToken(request)
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -51,12 +60,19 @@ export async function GET(request: Request) {
 
   let results: NominatimResult[]
   try {
-    const res = await fetch(
-      `${NOMINATIM_URL}?format=jsonv2&q=${encodeURIComponent(raw)}&limit=1&addressdetails=1`,
-      { headers: { 'User-Agent': '4S-OS/1.0 (household places pin capture)' } },
-    )
-    if (!res.ok) return NextResponse.json({ found: false })
-    results = await res.json()
+    results = await searchNominatim(raw)
+    // Nominatim's free-form parser chokes on "Business Name, Street, City,
+    // State Zip" — a business name glued onto the front of a real address
+    // reliably returns nothing, even though the address alone resolves fine
+    // (confirmed: "Alice Marbles Tennis Court, 1200 Greenwich St, San
+    // Francisco, CA 94109" → [], "1200 Greenwich St, San Francisco, CA
+    // 94109" → a match). If the full text has commas and came up empty,
+    // retry with everything after the first comma — the address-shaped part
+    // a name-prefixed pin almost always has.
+    if (results.length === 0 && raw.includes(',')) {
+      const afterFirstComma = raw.slice(raw.indexOf(',') + 1).trim()
+      if (afterFirstComma.length >= 5) results = await searchNominatim(afterFirstComma)
+    }
   } catch {
     return NextResponse.json({ found: false })
   }
