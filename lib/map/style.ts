@@ -61,18 +61,28 @@ export function readThemeMapColors(): ThemeMapColors {
   }
 }
 
-// Matched by substring against layer.id, most specific first where it
-// matters. OpenMapTiles-derived styles (which Liberty is) are consistent
-// about naming — "water", "landuse", "landcover", "building", "road",
-// "bridge", "tunnel", "boundary", label layers containing "label" or "poi".
-const LAYER_RULES: { test: (id: string) => boolean; paint: (c: ThemeMapColors) => Record<string, unknown> }[] = [
-  { test: id => id === 'background', paint: c => ({ 'background-color': c.bg }) },
-  { test: id => id.includes('water'), paint: c => ({ 'fill-color': c.water }) },
-  { test: id => id.includes('landuse') || id.includes('landcover') || id.includes('park'), paint: c => ({ 'fill-color': c.land }) },
-  { test: id => id.includes('building'), paint: c => ({ 'fill-color': c.building }) },
-  { test: id => id.includes('boundary'), paint: c => ({ 'line-color': c.boundary }) },
-  { test: id => (id.includes('road') || id.includes('bridge') || id.includes('tunnel') || id.includes('street')) && !id.includes('label'), paint: c => ({ 'line-color': c.road }) },
-  { test: id => id.includes('label') || id.includes('poi') || id.includes('place'), paint: c => ({ 'text-color': c.text, 'text-halo-color': c.textHalo, 'text-halo-width': 1 }) },
+// Matched by substring against layer.id AND layer.type, most specific
+// first where it matters. The type check is load-bearing, not decoration:
+// Liberty has layers whose id matches a rule's substring but whose type
+// takes a different paint property — road_one_way_arrow and road_shield_us
+// are 'symbol' layers (not 'line'), building-3d is 'fill-extrusion' (not
+// 'fill'), and label layers like water_name_point_label are 'symbol' but
+// contain "water". Setting line-color on a symbol layer or fill-color on a
+// fill-extrusion layer is an invalid paint property for that layer type —
+// MapLibre rejects the whole style as invalid when that happens, which is
+// what was producing "Map unavailable" (confirmed against Liberty's actual
+// 111 layers: 7 of them hit exactly this mismatch). Anything a rule's type
+// check doesn't cover — those arrow/shield icons — just keeps Liberty's
+// own default styling rather than getting force-patched incorrectly.
+const LAYER_RULES: { test: (id: string, type: string) => boolean; paint: (c: ThemeMapColors) => Record<string, unknown> }[] = [
+  { test: (id, type) => id === 'background' && type === 'background', paint: c => ({ 'background-color': c.bg }) },
+  { test: (id, type) => id.includes('water') && type === 'fill', paint: c => ({ 'fill-color': c.water }) },
+  { test: (id, type) => (id.includes('landuse') || id.includes('landcover') || id.includes('park')) && type === 'fill', paint: c => ({ 'fill-color': c.land }) },
+  { test: (id, type) => id.includes('building') && type === 'fill', paint: c => ({ 'fill-color': c.building }) },
+  { test: (id, type) => id.includes('building') && type === 'fill-extrusion', paint: c => ({ 'fill-extrusion-color': c.building }) },
+  { test: (id, type) => id.includes('boundary') && type === 'line', paint: c => ({ 'line-color': c.boundary }) },
+  { test: (id, type) => (id.includes('road') || id.includes('bridge') || id.includes('tunnel') || id.includes('street')) && !id.includes('label') && type === 'line', paint: c => ({ 'line-color': c.road }) },
+  { test: (id, type) => (id.includes('label') || id.includes('poi') || id.includes('place')) && type === 'symbol', paint: c => ({ 'text-color': c.text, 'text-halo-color': c.textHalo, 'text-halo-width': 1 }) },
 ]
 
 interface MapLibreLayer {
@@ -88,7 +98,7 @@ interface MapLibreStyle {
 
 function patchStyle(base: MapLibreStyle, colors: ThemeMapColors): MapLibreStyle {
   const layers = base.layers.map(layer => {
-    const rule = LAYER_RULES.find(r => r.test(layer.id))
+    const rule = LAYER_RULES.find(r => r.test(layer.id, layer.type))
     if (!rule) return layer
     return { ...layer, paint: { ...layer.paint, ...rule.paint(colors) } }
   })
