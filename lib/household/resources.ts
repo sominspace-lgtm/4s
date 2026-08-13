@@ -101,7 +101,7 @@ export const RESOURCES = {
     table: 'places',
     columns: 'id, name, kind, note, address, city, country, lat, lng, status, tags, maps_url, provider, provider_place_id, verified_at, channel_id, discord_message_id, created_at',
     insert: ['name', 'kind', 'note', 'address', 'city', 'country', 'lat', 'lng', 'status', 'tags', 'maps_url', 'channel_id', 'discord_message_id'],
-    update: ['name', 'kind', 'note', 'status', 'tags'],
+    update: ['name', 'kind', 'note', 'status', 'tags', 'channel_id', 'discord_message_id'],
     order: 'created_at',
   },
   // Move-in items (2026-08-12) — furniture/appliance purchases for a shared
