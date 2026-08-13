@@ -52,8 +52,15 @@ export default function PlaceMap({ places, theme, onSelect }: {
         center: bounds ? [(bounds.west + bounds.east) / 2, (bounds.south + bounds.north) / 2] : [0, 20],
         zoom: bounds ? 11 : 1.5,
       })
-      map.on('error', () => setUnavailable(true))
+      // Belt and suspenders: if 'load' never fires (OpenFreeMap hangs
+      // instead of erroring, a tile request stalls, whatever) the map was
+      // previously stuck showing a blank box forever with no explanation.
+      // 12s is generous for a vector style + first tile batch; past that,
+      // fail honest instead of failing silent.
+      const loadTimeout = setTimeout(() => { if (!cancelled) setUnavailable(true) }, 12_000)
+      map.on('error', () => { clearTimeout(loadTimeout); setUnavailable(true) })
       map.on('load', () => {
+        clearTimeout(loadTimeout)
         if (bounds) map.fitBounds([[bounds.west, bounds.south], [bounds.east, bounds.north]], { padding: 40, duration: 0 })
         setReady(true)
         setMapInstance(map)
