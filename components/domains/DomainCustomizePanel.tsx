@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Domain } from '@/lib/constants/domains'
 
 const PRESET_ICONS = ['◈', '◇', '◉', '○', '♡', '✦', '⌂', '◎', '✧', '◐', '△', '✿', '◆', '⬡', '⊕', '⊗']
@@ -30,6 +31,16 @@ const DEFAULT_IDS = new Set(['biz-active', 'biz-future', 'money', 'health', 'rel
 
 export default function DomainCustomizePanel({ open, domains, onClose, onMove, onToggle, onAdd, onRemove, onReset }: Props) {
   const ref = useRef<HTMLDivElement>(null)
+  // Portal to document.body (2026-08-12 fix, same root cause as
+  // SectionCustomizer): this panel renders inside DashboardClient's
+  // `.tab-in` wrapper, whose CSS animation puts a real transform on it for
+  // the first 240ms after every tab switch — which per spec makes it the
+  // containing block for position:fixed descendants, so this drawer showed
+  // up mispositioned/"open" without a click and its close click-outside
+  // handler landed on the wrong element. A portal sidesteps it entirely.
+  const [mounted, setMounted] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true) }, [])
 
   const [showAdd, setShowAdd] = useState(false)
   const [label, setLabel] = useState('')
@@ -59,7 +70,9 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
     padding: '0.4rem 0.65rem', outline: 'none', width: '100%',
   }
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <>
       <div style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -202,6 +215,7 @@ export default function DomainCustomizePanel({ open, domains, onClose, onMove, o
           letterSpacing: '0.05em',
         }}>Reset to default</button>
       </div>
-    </>
+    </>,
+    document.body,
   )
 }

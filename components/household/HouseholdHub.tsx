@@ -497,9 +497,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 />
                 <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
                 <button type="button" onClick={() => setEditingMemories(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
-                <a href="https://photos.google.com/albums" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.8, alignSelf: 'center' }}>
-                  Don&rsquo;t have an album yet? Create one on Google Photos ↗
-                </a>
               </form>
             ) : currentSpace?.memories_url ? (
               <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -519,18 +516,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
                   No album linked yet. Paste a shared Google Drive folder or Google Photos album link — opens in a new tab, no login through 4S OS required.
                 </div>
-                <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => { setMemoriesInput(''); setEditingMemories(true) }}
-                    className="btn btn-secondary press"
-                    style={{ fontSize: '0.7rem' }}
-                  >
-                    Add memories link
-                  </button>
-                  <a href="https://photos.google.com/albums" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.8 }}>
-                    Create a Google Photos album ↗
-                  </a>
-                </div>
+                <button
+                  onClick={() => { setMemoriesInput(''); setEditingMemories(true) }}
+                  className="btn btn-secondary press"
+                  style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}
+                >
+                  Add memories link
+                </button>
               </div>
             )}
           </div>

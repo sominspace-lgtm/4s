@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // The Places feature's shared sheet primitive (2026-08-12).
 //
@@ -24,6 +25,16 @@ export default function PlacesSheet({ open, onClose, title, children }: {
   const [isMobile, setIsMobile] = useState(false)
   const [dragY, setDragY] = useState(0)
   const dragStart = useRef<number | null>(null)
+  // Portal to document.body (2026-08-12 fix, same root cause as
+  // SectionCustomizer/DomainCustomizePanel): PlacesHub renders inside
+  // DashboardClient's `.tab-in` wrapper, whose CSS animation puts a real
+  // transform on it for the first 240ms after every tab switch — which per
+  // spec makes it the containing block for position:fixed descendants, so
+  // this sheet (used by PlaceSheet, TripDetail, TravelAssistantPanel) showed
+  // up mispositioned/"open" without a click.
+  const [mounted, setMounted] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     function check() { setIsMobile(window.innerWidth < 768) }
@@ -76,7 +87,9 @@ export default function PlacesSheet({ open, onClose, title, children }: {
         display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto',
       }
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <>
       <div style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
@@ -102,6 +115,7 @@ export default function PlacesSheet({ open, onClose, title, children }: {
         </div>
         {children}
       </div>
-    </>
+    </>,
+    document.body,
   )
 }
