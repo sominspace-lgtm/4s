@@ -54,7 +54,7 @@ const SECTIONS = [
   {
     icon: '◈',
     title: 'Places',
-    body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: idea, been, favourite. Add photos right on a pin, and share it to a household space to put it on both your maps.',
+    body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: want to go, 👍 good (go again), or 👎 not again. Add photos right on a pin, and share it to a household space to put it on both your maps. From Discord, no command needed — just post the name in #pins, and react 👍/👎 once you’ve been.',
   },
   {
     icon: '◐',

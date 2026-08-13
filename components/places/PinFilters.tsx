@@ -13,8 +13,8 @@ export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, stat
 
 const STATUS_CHIPS: { id: PlaceStatus; label: string }[] = [
   { id: 'idea', label: 'Want to go' },
-  { id: 'been', label: 'Been' },
-  { id: 'favourite', label: 'Favourite' },
+  { id: 'good', label: '👍 Good' },
+  { id: 'bad', label: '👎 Not again' },
 ]
 
 export default function PinFilters({ filters, kindsInUse, onChange }: {

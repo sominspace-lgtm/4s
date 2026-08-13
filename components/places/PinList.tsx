@@ -4,7 +4,7 @@ import { kindSpec } from '@/lib/constants/placeKinds'
 import type { Place, PlaceStatus } from '@/lib/hooks/usePlaces'
 
 const STATUS_DOT: Record<PlaceStatus, string> = {
-  idea: '--muted', been: '--slate', favourite: '--gold', archived: '--muted',
+  idea: '--muted', good: '--emerald', bad: '--rose', archived: '--muted',
 }
 
 export default function PinList({ places, onSelect }: {

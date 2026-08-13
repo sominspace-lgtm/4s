@@ -204,8 +204,10 @@ export default function GuidePage() {
       <Section id="places" kicker="don't lose track of it" title="Places">
         <Card>
           Pin the restaurants, courts, and spots you don&rsquo;t want to have to remember on your own — a themed map plus a list,
-          filterable by kind. Status is the only &ldquo;rating&rdquo; this has: <strong style={{ color: 'var(--text)' }}>idea</strong>,
-          <strong style={{ color: 'var(--text)' }}> been</strong>, or <strong style={{ color: 'var(--text)' }}>favourite</strong>.
+          filterable by kind. Status is the only &ldquo;rating&rdquo; this has: <strong style={{ color: 'var(--text)' }}>want to go</strong>,
+          <strong style={{ color: 'var(--text)' }}> 👍 good</strong> (go again), or <strong style={{ color: 'var(--text)' }}>👎 not again</strong>.
+          From Discord, no command needed — post a name or a maps link in #pins and it&rsquo;s saved; react 👍 or 👎 on the bot&rsquo;s
+          message once you&rsquo;ve been.
         </Card>
         <Card title="Photos">
           Open any pin and add photos right there — they&rsquo;re private to you, or shared with your household space if the pin is shared,

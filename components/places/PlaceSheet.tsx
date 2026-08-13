@@ -9,7 +9,7 @@ import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
-  idea: 'Want to go', been: 'Been', favourite: 'Favourite', archived: 'Archived',
+  idea: 'Want to go', good: '👍 Good — go again', bad: '👎 Not again', archived: 'Archived',
 }
 
 // Type-adaptive place detail. Order, top to bottom: name, kind + city, one
@@ -92,7 +92,7 @@ export default function PlaceSheet({ place, open, onClose }: {
 
         {/* Status — the only "rating" this product has: whether you'd go. */}
         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-          {(['idea', 'been', 'favourite'] as PlaceStatus[]).map(s => (
+          {(['idea', 'good', 'bad'] as PlaceStatus[]).map(s => (
             <button
               key={s}
               onClick={() => updatePlace(place!.id, { status: s })}

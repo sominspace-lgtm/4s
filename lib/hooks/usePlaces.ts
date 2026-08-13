@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { uploadPlacePhoto, deletePlacePhoto } from '@/lib/storage/placePhotos'
 
-export type PlaceStatus = 'idea' | 'been' | 'favourite' | 'archived'
+export type PlaceStatus = 'idea' | 'good' | 'bad' | 'archived'
 export type PlaceProvenanceSource = 'user' | 'lookup' | 'ai'
 
 export interface Place {
