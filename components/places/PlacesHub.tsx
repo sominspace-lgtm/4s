@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
+import { usePlaces } from '@/lib/hooks/usePlaces'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import PinList from '@/components/places/PinList'
 import PinFilters, { DEFAULT_PIN_FILTERS, applyPinFilters, type PinFilterState } from '@/components/places/PinFilters'
@@ -43,8 +43,14 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
 
   const [tab, setTab] = useState<SubTab>('map')
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
-  const [selected, setSelected] = useState<Place | null>(null)
+  // An id, not a Place object — a stored object snapshot would go stale the
+  // moment something (a photo upload, a note edit) changes the place while
+  // the sheet is open, since usePlaces()'s own internal refresh wouldn't
+  // touch a value sitting outside its state. Looking the place up fresh from
+  // `places` every render means the open sheet always reflects live data.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const selected = useMemo(() => places.find(p => p.id === selectedId) ?? null, [places, selectedId])
 
   const kindsInUse = useMemo(() => Array.from(new Set(places.map(p => p.kind))), [places])
   const filtered = useMemo(() => applyPinFilters(places, filters), [places, filters])
@@ -73,24 +79,24 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
       {tab === 'map' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
           <div style={{ height: '52vh', minHeight: '320px' }}>
-            <PlaceMap places={filteredWithLocation} theme={theme} onSelect={setSelected} />
+            <PlaceMap places={filteredWithLocation} theme={theme} onSelect={p => setSelectedId(p.id)} />
           </div>
           {filteredWithoutLocation.length > 0 && (
             <div>
               <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.3rem' }}>
                 {filteredWithoutLocation.length} without a location
               </div>
-              <PinList places={filteredWithoutLocation} onSelect={setSelected} />
+              <PinList places={filteredWithoutLocation} onSelect={p => setSelectedId(p.id)} />
             </div>
           )}
         </div>
       )}
 
       {tab === 'pins' && !loading && (
-        <PinList places={filtered} onSelect={setSelected} />
+        <PinList places={filtered} onSelect={p => setSelectedId(p.id)} />
       )}
 
-      <PlaceSheet place={selected} open={!!selected} onClose={() => setSelected(null)} />
+      <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} />
       <AddPlacePanel open={adding} spaceId={spaceId} hasSpace={spaces.length > 0} onClose={() => setAdding(false)} />
     </div>
   )
