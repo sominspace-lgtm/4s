@@ -49,6 +49,8 @@ const NAV = [
   ['calendar', 'Calendar'],
   ['council', 'Council'],
   ['shared', 'People'],
+  ['household', 'Household'],
+  ['places', 'Places'],
   ['ai', 'AI'],
   ['alexa', 'Alexa'],
   ['keys', 'Getting around'],
@@ -182,6 +184,32 @@ export default function GuidePage() {
           Everything is private unless you share it. Under <strong style={{ color: 'var(--text)' }}>Shared</strong> you&rsquo;ll find what&rsquo;s been shared with you,
           what you&rsquo;re sharing, shared spaces (Family, Couple, Trip…), and <strong style={{ color: 'var(--text)' }}>People</strong> — invite friends by email,
           accept or decline, and only accepted people become share targets.
+        </Card>
+      </Section>
+
+      <Section id="household" kicker="shared living" title="Household">
+        <Card>
+          For the people you live with. <strong style={{ color: 'var(--text)' }}>Home</strong> groups Calendar, Shopping, Chores,
+          and Meals — reorder or hide any of them from the ⊹ Customize button, the same as the top-level tabs.
+          <strong style={{ color: 'var(--text)' }}> Reference</strong> is the fridge door: gate codes, the vet&rsquo;s number, notes
+          with no due date and no owner. <strong style={{ color: 'var(--text)' }}> Move-in</strong> tracks furniture and appliance
+          purchases for a shared move — its own tab so it doesn&rsquo;t get lost in weekly Shopping.
+        </Card>
+        <Card title="Setup">
+          Connect a partner, link a Discord server so chores/shopping/move-in sync both ways, and paste a shared Google Drive
+          folder or Google Photos album link for household and couple memories — opens in a new tab, no login through 4S required.
+        </Card>
+      </Section>
+
+      <Section id="places" kicker="don't lose track of it" title="Places">
+        <Card>
+          Pin the restaurants, courts, and spots you don&rsquo;t want to have to remember on your own — a themed map plus a list,
+          filterable by kind. Status is the only &ldquo;rating&rdquo; this has: <strong style={{ color: 'var(--text)' }}>idea</strong>,
+          <strong style={{ color: 'var(--text)' }}> been</strong>, or <strong style={{ color: 'var(--text)' }}>favourite</strong>.
+        </Card>
+        <Card title="Photos">
+          Open any pin and add photos right there — they&rsquo;re private to you, or shared with your household space if the pin is shared,
+          same as everything else. Share a pin to a space and it&rsquo;s on both your maps.
         </Card>
       </Section>
 

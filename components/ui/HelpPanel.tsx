@@ -47,6 +47,16 @@ const SECTIONS = [
     body: 'Invite friends by email; accept or decline. Only accepted people become share targets. Shared spaces (Family, Couple, Trip) let you share with a whole group. Private by default, always.',
   },
   {
+    icon: '⌂',
+    title: 'Household',
+    body: 'Chores, meals, shared shopping, and move-in purchases for the people you live with. Home groups Calendar, Shopping, Chores, and Meals — reorder or hide any of them. Reference is the fridge door — gate codes, the vet’s number. Setup connects a partner, Discord, and a link to a shared Google Drive or Photos album for household memories.',
+  },
+  {
+    icon: '◈',
+    title: 'Places',
+    body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: idea, been, favourite. Add photos right on a pin, and share it to a household space to put it on both your maps.',
+  },
+  {
     icon: '◐',
     title: 'Themes & modes',
     body: '13 visual themes (dark & light) change only the look; 10 personality modes change only the tone. Mix freely. Gamer mode earns XP (+25 per task, +10 per habit).',
