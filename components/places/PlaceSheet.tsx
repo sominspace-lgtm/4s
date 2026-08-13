@@ -23,6 +23,8 @@ export default function PlaceSheet({ place, open, onClose }: {
   onClose: () => void
 }) {
   const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
   const [editingNote, setEditingNote] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [editingFields, setEditingFields] = useState(false)
@@ -54,6 +56,13 @@ export default function PlaceSheet({ place, open, onClose }: {
     setUploading(true)
     await addPhoto(place, file)
     setUploading(false)
+  }
+
+  async function saveName() {
+    const trimmed = nameDraft.trim()
+    if (!trimmed) { setEditingName(false); return }
+    await updatePlace(place!.id, { name: trimmed })
+    setEditingName(false)
   }
 
   async function saveNote() {
@@ -92,12 +101,32 @@ export default function PlaceSheet({ place, open, onClose }: {
     <PlacesSheet open={open} onClose={onClose} title={spec.label}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-            <span aria-hidden style={{ fontSize: '1.1rem', color: `var(${spec.color})` }}>{spec.icon}</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>
-              {place.name}
-            </span>
-          </div>
+          {editingName ? (
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.2rem' }}>
+              <span aria-hidden style={{ fontSize: '1.1rem', color: `var(${spec.color})`, flexShrink: 0 }}>{spec.icon}</span>
+              <input
+                autoFocus value={nameDraft} onChange={e => setNameDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false) }}
+                style={{ ...inputStyle, fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', padding: '0.3rem 0.5rem' }}
+              />
+              <button onClick={saveName} className="btn btn-secondary press" style={{ fontSize: '0.68rem', flexShrink: 0 }}>Save</button>
+              <button onClick={() => setEditingName(false)} className="btn btn-ghost press" style={{ fontSize: '0.68rem', flexShrink: 0 }}>Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setEditingName(true); setNameDraft(place!.name) }}
+              className="press"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem',
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <span aria-hidden style={{ fontSize: '1.1rem', color: `var(${spec.color})` }}>{spec.icon}</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>
+                {place.name}
+              </span>
+            </button>
+          )}
           <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
             {spec.label}{place.city ? ` · ${place.city}` : ''}
           </div>
