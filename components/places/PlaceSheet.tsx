@@ -27,6 +27,10 @@ export default function PlaceSheet({ place, open, onClose }: {
   const [noteDraft, setNoteDraft] = useState('')
   const [editingFields, setEditingFields] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [addressDraft, setAddressDraft] = useState('')
+  const [cityDraft, setCityDraft] = useState('')
+  const [countryDraft, setCountryDraft] = useState('')
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
 
@@ -55,6 +59,15 @@ export default function PlaceSheet({ place, open, onClose }: {
   async function saveNote() {
     await updatePlace(place!.id, { note: noteDraft.trim() || null })
     setEditingNote(false)
+  }
+
+  async function saveAddress() {
+    await updatePlace(place!.id, {
+      address: addressDraft.trim() || null,
+      city: cityDraft.trim() || null,
+      country: countryDraft.trim() || null,
+    })
+    setEditingAddress(false)
   }
 
   async function addTag(e: React.FormEvent) {
@@ -183,12 +196,46 @@ export default function PlaceSheet({ place, open, onClose }: {
           )}
         </div>
 
-        {(place.address || place.lat != null) && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            {place.address ?? `${place.lat?.toFixed(4)}, ${place.lng?.toFixed(4)}`}
-            <ProvenanceBadge source={place.provenance?.address} verifiedAt={place.verified_at} />
+        <div>
+          <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.4rem' }}>
+            Address
           </div>
-        )}
+          {editingAddress ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <input autoFocus value={addressDraft} onChange={e => setAddressDraft(e.target.value)} placeholder="Street address" style={inputStyle} />
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <input value={cityDraft} onChange={e => setCityDraft(e.target.value)} placeholder="City" style={inputStyle} />
+                <input value={countryDraft} onChange={e => setCountryDraft(e.target.value)} placeholder="Country" style={inputStyle} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <button onClick={saveAddress} className="btn btn-secondary press" style={{ fontSize: '0.68rem' }}>Save</button>
+                <button onClick={() => setEditingAddress(false)} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setEditingAddress(true)
+                setAddressDraft(place!.address ?? '')
+                setCityDraft(place!.city ?? '')
+                setCountryDraft(place!.country ?? '')
+              }}
+              className="press"
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+                fontSize: '0.74rem', color: place.address || place.city ? 'var(--text)' : 'var(--muted)',
+                opacity: place.address || place.city ? 0.9 : 0.6, fontFamily: 'var(--font-body)', lineHeight: 1.6,
+              }}
+            >
+              {place.address || place.city
+                ? [place.address, place.city, place.country].filter(Boolean).join(', ')
+                : place.lat != null
+                  ? `${place.lat.toFixed(4)}, ${place.lng?.toFixed(4)}`
+                  : 'add an address'}
+              <ProvenanceBadge source={place.provenance?.address} verifiedAt={place.verified_at} />
+            </button>
+          )}
+        </div>
 
         {/* Kind-specific fields */}
         <div>
