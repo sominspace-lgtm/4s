@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
@@ -40,13 +41,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
 }) {
-  const { spaces, setMemoriesUrl } = useSharedSpaces(userId)
+  const { spaces } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [tab, setTab] = useState<HouseholdTab>('home')
   const h = useHousehold(spaceId)
-  const currentSpace = spaces.find(s => s.id === spaceId)
-  const [memoriesInput, setMemoriesInput] = useState('')
-  const [editingMemories, setEditingMemories] = useState(false)
+  const memories = useMemoryLinks(spaceId)
+  const [addingMemoryLink, setAddingMemoryLink] = useState(false)
+  const [memoryLabel, setMemoryLabel] = useState('')
+  const [memoryUrl, setMemoryUrl] = useState('')
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
@@ -477,50 +479,77 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
               <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
                 Pick a shared space above first — memories are attached to the space, not to you alone.
               </div>
-            ) : editingMemories ? (
-              <form
-                onSubmit={async e => {
-                  e.preventDefault()
-                  await setMemoriesUrl(spaceId, memoriesInput.trim() || null)
-                  setEditingMemories(false)
-                }}
-                style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}
-              >
-                <input
-                  value={memoriesInput}
-                  onChange={e => setMemoriesInput(e.target.value)}
-                  placeholder="Paste a Google Drive folder or Photos album link"
-                  style={{ ...input, flex: 1, minWidth: '220px' }}
-                  autoFocus
-                />
-                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-                <button type="button" onClick={() => setEditingMemories(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
-              </form>
-            ) : currentSpace?.memories_url ? (
-              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <a href={currentSpace.memories_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary press" style={{ fontSize: '0.7rem', textDecoration: 'none' }}>
-                  📷 Open {currentSpace.name} memories
-                </a>
-                <button
-                  onClick={() => { setMemoriesInput(currentSpace.memories_url ?? ''); setEditingMemories(true) }}
-                  className="press"
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}
-                >
-                  Change link
-                </button>
-              </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-                  No album linked yet. Paste a shared Google Drive folder or Google Photos album link — opens in a new tab, no login through 4S OS required.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                {/* Each source (Google Photos, iCloud, a Drive folder...) is its
+                    own tile — a couple usually has more than one photo home,
+                    and the old single-link field could only ever hold one. */}
+                {memories.links.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {memories.links.map(link => (
+                      <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.4rem 0.4rem 0.4rem 0.7rem' }}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--text)', textDecoration: 'none' }}>
+                          📷 {link.label}
+                        </a>
+                        <button
+                          onClick={() => memories.removeLink(link.id)}
+                          aria-label={`Remove ${link.label}`}
+                          className="press"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {addingMemoryLink ? (
+                  <form
+                    onSubmit={async e => {
+                      e.preventDefault()
+                      if (!memoryLabel.trim() || !memoryUrl.trim()) return
+                      await memories.addLink(memoryLabel.trim(), memoryUrl.trim())
+                      setMemoryLabel(''); setMemoryUrl(''); setAddingMemoryLink(false)
+                    }}
+                    style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}
+                  >
+                    <input
+                      value={memoryLabel} onChange={e => setMemoryLabel(e.target.value)}
+                      placeholder="Label (e.g. Google Photos, iCloud)" style={{ ...input, width: '180px' }} autoFocus
+                    />
+                    <input
+                      value={memoryUrl} onChange={e => setMemoryUrl(e.target.value)}
+                      placeholder="Paste the album/folder link" style={{ ...input, flex: 1, minWidth: '220px' }}
+                    />
+                    <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+                    <button type="button" onClick={() => setAddingMemoryLink(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
+                  </form>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {memories.links.length === 0 && (
+                      <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
+                        No albums linked yet. Paste a Google Photos, iCloud, or Drive link — opens in a new tab, no login through 4S OS required.
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setAddingMemoryLink(true)}
+                      className="btn btn-secondary press"
+                      style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}
+                    >
+                      + Add a memories link
+                    </button>
+                  </div>
+                )}
+
+                {/* Distinct from the link-outs above: photos actually
+                    uploaded through a Places pin (Discord attachment or the
+                    "+ Add" button in 4S OS) live in the pin's own Photos
+                    section, not here — this is the album-link home, not a
+                    gallery of hosted photos. */}
+                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, borderTop: '1px solid var(--faint)', paddingTop: '0.5rem' }}>
+                  Photos you&rsquo;ve uploaded to a specific pin live on that pin, under Places → Photos — not here.
                 </div>
-                <button
-                  onClick={() => { setMemoriesInput(''); setEditingMemories(true) }}
-                  className="btn btn-secondary press"
-                  style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}
-                >
-                  Add memories link
-                </button>
               </div>
             )}
           </div>
