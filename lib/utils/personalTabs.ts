@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'goals' | 'habits' | 'life' | 'money' | 'people'
+export type PersonalTabId = 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences'
 
 // council is deliberately NOT here. It's reachable only by deep link
 // (Brief's "Ask Council" card, the header ⋯ menu via goToPersonal('council'))
@@ -13,6 +13,7 @@ export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   { id: 'life',   label: 'Life',   hidden: false },
   { id: 'money',  label: 'Money',  hidden: false },
   { id: 'people', label: 'People', hidden: false },
+  { id: 'preferences', label: 'Preferences', hidden: false },
 ]
 
 // Same merge shape as mergeTodayBlocks(): a saved list might predate a tab

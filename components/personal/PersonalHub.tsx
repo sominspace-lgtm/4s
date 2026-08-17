@@ -6,6 +6,7 @@ import HabitTracker from '@/components/habits/HabitTracker'
 import LifeHub from '@/components/life/LifeHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
+import PreferencesHub from '@/components/personal/PreferencesHub'
 import CouncilSection from '@/components/council/CouncilSection'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_PERSONAL_TABS } from '@/lib/utils/personalTabs'
@@ -94,6 +95,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
       {tab === 'life'    && <LifeHub />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub userId={userId} userEmail={userEmail} onOpenCompanions={onOpenCompanions} />}
+      {tab === 'preferences' && <PreferencesHub />}
       {tab === 'council' && <CouncilSection mode={mode} userId={userId} calendarConnected />}
 
       <SectionCustomizer

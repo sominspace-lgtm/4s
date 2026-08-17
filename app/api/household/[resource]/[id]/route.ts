@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: Props) {
   }
 
   // Only these resources carry updated_at.
-  if (spec.table === 'household_rules' || spec.table === 'household_watchlist' || spec.table === 'places') {
+  if (spec.table === 'household_rules' || spec.table === 'household_watchlist' || spec.table === 'places' || spec.table === 'preferences') {
     fields.updated_at = new Date().toISOString()
   }
 

@@ -48,6 +48,19 @@ export const RESOURCES = {
     update: ['label', 'value', 'category'],
     order: 'created_at',
   },
+  // Personal-first (2026-08-13): primary UI lives under Personal, not
+  // Household — but a bot token is always household-scoped (every generic
+  // write here stamps space_id from the caller's space), so a preference
+  // captured via Discord is inherently shared with the household, same as
+  // every other Discord-writable resource. Genuinely personal-only
+  // (space_id null) preferences only come from 4S OS directly.
+  preferences: {
+    table: 'preferences',
+    columns: 'id, category, text, note, created_at, updated_at',
+    insert: ['category', 'text', 'note'],
+    update: ['category', 'text', 'note'],
+    order: 'created_at',
+  },
   notes: {
     table: 'household_notes',
     columns: 'id, body, pinned, created_at',
