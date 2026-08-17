@@ -49,15 +49,6 @@ export interface HouseRule {
   created_at: string
 }
 
-export interface InventoryItem {
-  id: string
-  space_id: string | null
-  name: string
-  room: string | null
-  note: string | null
-  created_at: string
-}
-
 export interface MoveinItem {
   id: string
   space_id: string | null
@@ -80,7 +71,6 @@ export function useHousehold(spaceId: string | null) {
   const [shopping, setShopping] = useState<ShoppingItem[]>([])
   const [notes, setNotes] = useState<HouseNote[]>([])
   const [rules, setRules] = useState<HouseRule[]>([])
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [moveinItems, setMoveinItems] = useState<MoveinItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +84,7 @@ export function useHousehold(spaceId: string | null) {
 
     const [
       { data: c, error: ce }, { data: m, error: me }, { data: s, error: se }, { data: n, error: ne },
-      { data: r, error: re }, { data: inv, error: ie }, { data: mv, error: mve },
+      { data: r, error: re }, { data: mv, error: mve },
     ] = await Promise.all([
       scope(supabase.from('household_chores').select('*').order('created_at')),
       scope(supabase.from('household_meals').select('*').order('meal_date')),
@@ -102,17 +92,15 @@ export function useHousehold(spaceId: string | null) {
       // Pinned first, then newest — a fridge door reads top-down by urgency.
       scope(supabase.from('household_notes').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false })),
       scope(supabase.from('household_rules').select('*').order('created_at', { ascending: false })),
-      scope(supabase.from('household_inventory').select('*').order('room').order('name')),
       scope(supabase.from('household_movein_items').select('*').order('created_at')),
     ])
-    const firstError = ce ?? me ?? se ?? ne ?? re ?? ie ?? mve
+    const firstError = ce ?? me ?? se ?? ne ?? re ?? mve
     setError(firstError ? firstError.message : null)
     setChores((c as Chore[] | null) ?? [])
     setMeals((m as Meal[] | null) ?? [])
     setShopping((s as ShoppingItem[] | null) ?? [])
     setNotes((n as HouseNote[] | null) ?? [])
     setRules((r as HouseRule[] | null) ?? [])
-    setInventory((inv as InventoryItem[] | null) ?? [])
     setMoveinItems((mv as MoveinItem[] | null) ?? [])
     setLoading(false)
   }, [supabase, spaceId])
@@ -226,9 +214,9 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  // Rules and inventory are the two resources Discord already writes to
-  // (`/rule`, `/save`, `/task`... land here too, but into chores) that had no
-  // UI at all until now — same shape as everything above, just newer.
+  // Rules is a resource Discord already writes to (`/rule`, `/save`, `/task`...
+  // land here too, but into chores) that had no UI at all until now — same
+  // shape as everything above, just newer.
   async function addRule(text: string, category: string | null, note: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
@@ -246,21 +234,6 @@ export function useHousehold(spaceId: string | null) {
 
   async function removeRule(id: string) {
     const { error } = await supabase.from('household_rules').delete().eq('id', id)
-    if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify(); return { error: null }
-  }
-
-  async function addInventoryItem(name: string, room: string | null, note: string | null) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Not signed in' }
-    const { error } = await supabase.from('household_inventory')
-      .insert({ user_id: user.id, space_id: spaceId, name, room, note })
-    if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify(); return { error: null }
-  }
-
-  async function removeInventoryItem(id: string) {
-    const { error } = await supabase.from('household_inventory').delete().eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
   }
@@ -293,13 +266,12 @@ export function useHousehold(spaceId: string | null) {
   }
 
   return {
-    chores, meals, shopping, notes, rules, inventory, moveinItems, loading, error,
+    chores, meals, shopping, notes, rules, moveinItems, loading, error,
     addChore, markChoreDone, removeChore,
     addMeal, removeMeal,
     addShopping, toggleGot, clearGot, removeShopping,
     addNote, toggleNotePin, removeNote,
     addRule, toggleRuleActive, removeRule,
-    addInventoryItem, removeInventoryItem,
     addMoveinItem, toggleMoveinGot, removeMoveinItem,
   }
 }

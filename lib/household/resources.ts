@@ -48,13 +48,6 @@ export const RESOURCES = {
     update: ['label', 'value', 'category'],
     order: 'created_at',
   },
-  inventory: {
-    table: 'household_inventory',
-    columns: 'id, name, room, note, created_at',
-    insert: ['name', 'room', 'note'],
-    update: ['name', 'room', 'note'],
-    order: 'created_at',
-  },
   notes: {
     table: 'household_notes',
     columns: 'id, body, pinned, created_at',

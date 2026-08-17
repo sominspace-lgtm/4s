@@ -61,8 +61,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [noteBody, setNoteBody] = useState('')
   const [ruleText, setRuleText] = useState('')
   const [ruleCategory, setRuleCategory] = useState('')
-  const [invName, setInvName] = useState('')
-  const [invRoom, setInvRoom] = useState('')
   const [moveinName, setMoveinName] = useState('')
   const [moveinCat, setMoveinCat] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
@@ -629,56 +627,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           >
             <input value={ruleText} onChange={e => setRuleText(e.target.value)} placeholder="Add a house rule" style={{ ...input, flex: 1, minWidth: '160px' }} />
             <input value={ruleCategory} onChange={e => setRuleCategory(e.target.value)} placeholder="Category (optional)" style={{ ...input, width: '140px' }} />
-            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-          </form>
-        </section>
-      )}
-
-      {/* ── Inventory ──────────────────────────────────────────────
-          What the household owns. Grows through use — nobody sits down and
-          inventories their whole home; this fills in as Discord captures it
-          and as things get added here directly. */}
-      {tab === 'reference' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <div className="t-card" style={{ marginBottom: '0.7rem' }}>What we have</div>
-
-          {h.inventory.length === 0 && !h.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-              Nothing logged yet. This fills in over time — no need to sit down and inventory the house.
-            </div>
-          )}
-
-          {(() => {
-            const byRoom = new Map<string, typeof h.inventory>()
-            for (const item of h.inventory) {
-              const room = item.room || 'Unsorted'
-              byRoom.set(room, [...(byRoom.get(room) ?? []), item])
-            }
-            return [...byRoom.entries()].map(([room, items]) => (
-              <div key={room} style={{ marginBottom: '0.7rem' }}>
-                <div className="t-label" style={{ marginBottom: '0.25rem' }}>{room}</div>
-                {items.map(i => (
-                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{i.name}</span>
-                    <button onClick={() => h.removeInventoryItem(i.id)} aria-label={`Remove ${i.name}`} className="press"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            ))
-          })()}
-
-          <form
-            onSubmit={async e => {
-              e.preventDefault()
-              if (!invName.trim()) return
-              await h.addInventoryItem(invName.trim(), invRoom.trim() || null, null)
-              setInvName(''); setInvRoom('')
-            }}
-            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
-          >
-            <input value={invName} onChange={e => setInvName(e.target.value)} placeholder="Add an item" style={{ ...input, flex: 1, minWidth: '140px' }} />
-            <input value={invRoom} onChange={e => setInvRoom(e.target.value)} placeholder="Room (optional)" style={{ ...input, width: '120px' }} />
             <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
           </form>
         </section>
