@@ -9,7 +9,7 @@ import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
-  idea: 'Want to go', good: '👍 Good — go again', bad: '👎 Not again', archived: 'Archived',
+  idea: 'Want to go', good: '👍 Good — go again', hmm: '🤷 Hmm — no strong opinion', bad: '👎 Not again', archived: 'Archived',
 }
 
 // Type-adaptive place detail. Order, top to bottom: name, kind + city, one
@@ -33,6 +33,8 @@ export default function PlaceSheet({ place, open, onClose }: {
   const [addressDraft, setAddressDraft] = useState('')
   const [cityDraft, setCityDraft] = useState('')
   const [countryDraft, setCountryDraft] = useState('')
+  const [editingVisited, setEditingVisited] = useState(false)
+  const [visitedDraft, setVisitedDraft] = useState('')
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
 
@@ -77,6 +79,11 @@ export default function PlaceSheet({ place, open, onClose }: {
       country: countryDraft.trim() || null,
     })
     setEditingAddress(false)
+  }
+
+  async function saveVisited() {
+    await updatePlace(place!.id, { first_visited_on: visitedDraft || null })
+    setEditingVisited(false)
   }
 
   async function addTag(e: React.FormEvent) {
@@ -130,11 +137,16 @@ export default function PlaceSheet({ place, open, onClose }: {
           <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
             {spec.label}{place.city ? ` · ${place.city}` : ''}
           </div>
+          {place.kind === 'unset' && (
+            <div style={{ fontSize: '0.68rem', color: 'var(--amber)', opacity: 0.85, marginTop: '0.3rem' }}>
+              Needs a type — pick one below in Details.
+            </div>
+          )}
         </div>
 
         {/* Status — the only "rating" this product has: whether you'd go. */}
         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-          {(['idea', 'good', 'bad'] as PlaceStatus[]).map(s => (
+          {(['idea', 'good', 'hmm', 'bad'] as PlaceStatus[]).map(s => (
             <button
               key={s}
               onClick={() => updatePlace(place!.id, { status: s })}
@@ -262,6 +274,33 @@ export default function PlaceSheet({ place, open, onClose }: {
                   ? `${place.lat.toFixed(4)}, ${place.lng?.toFixed(4)}`
                   : 'add an address'}
               <ProvenanceBadge source={place.provenance?.address} verifiedAt={place.verified_at} />
+            </button>
+          )}
+        </div>
+
+        {/* First visited — auto-stamped the first time status goes to
+            good/hmm/bad, editable by hand too (e.g. backfilling an old spot). */}
+        <div>
+          <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.4rem' }}>
+            First visited
+          </div>
+          {editingVisited ? (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <input type="date" autoFocus value={visitedDraft} onChange={e => setVisitedDraft(e.target.value)} style={{ ...inputStyle, width: 'auto' }} />
+              <button onClick={saveVisited} className="btn btn-secondary press" style={{ fontSize: '0.68rem' }}>Save</button>
+              <button onClick={() => setEditingVisited(false)} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setEditingVisited(true); setVisitedDraft(place!.first_visited_on ?? '') }}
+              className="press"
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+                fontSize: '0.78rem', color: place.first_visited_on ? 'var(--text)' : 'var(--muted)',
+                opacity: place.first_visited_on ? 0.9 : 0.6, fontFamily: 'var(--font-body)', lineHeight: 1.6,
+              }}
+            >
+              {place.first_visited_on ?? 'set a date'}
             </button>
           )}
         </div>

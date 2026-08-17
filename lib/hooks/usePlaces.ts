@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { uploadPlacePhoto, deletePlacePhoto } from '@/lib/storage/placePhotos'
 
-export type PlaceStatus = 'idea' | 'good' | 'bad' | 'archived'
+export type PlaceStatus = 'idea' | 'hmm' | 'good' | 'bad' | 'archived'
 export type PlaceProvenanceSource = 'user' | 'lookup' | 'ai'
 
 export interface Place {
@@ -28,6 +28,7 @@ export interface Place {
   details: Record<string, unknown>
   provenance: Record<string, PlaceProvenanceSource>
   photo_paths: string[]
+  first_visited_on: string | null
   created_at: string
   updated_at: string
 }
@@ -99,10 +100,18 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths'
+    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on'
   >>) {
+    // First time a place is marked good/hmm/bad, stamp today as the visit
+    // date automatically — but never overwrite one already set (manual edits
+    // to first_visited_on stay authoritative).
+    const patch: typeof fields = { ...fields }
+    if (fields.status && ['good', 'hmm', 'bad'].includes(fields.status) && patch.first_visited_on === undefined) {
+      const current = places.find(p => p.id === id)
+      if (current && !current.first_visited_on) patch.first_visited_on = new Date().toISOString().slice(0, 10)
+    }
     const { error: e } = await supabase.from('places')
-      .update({ ...fields, updated_at: new Date().toISOString() })
+      .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (e) { setError(e.message); return { error: e.message } }
     await load(); notify(); return { error: null }

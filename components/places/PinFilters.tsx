@@ -14,6 +14,7 @@ export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, stat
 const STATUS_CHIPS: { id: PlaceStatus; label: string }[] = [
   { id: 'idea', label: 'Want to go' },
   { id: 'good', label: '👍 Good' },
+  { id: 'hmm', label: '🤷 Hmm' },
   { id: 'bad', label: '👎 Not again' },
 ]
 

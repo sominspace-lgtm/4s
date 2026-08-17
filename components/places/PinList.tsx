@@ -4,7 +4,7 @@ import { kindSpec } from '@/lib/constants/placeKinds'
 import type { Place, PlaceStatus } from '@/lib/hooks/usePlaces'
 
 const STATUS_DOT: Record<PlaceStatus, string> = {
-  idea: '--muted', good: '--emerald', bad: '--rose', archived: '--muted',
+  idea: '--muted', good: '--emerald', hmm: '--amber', bad: '--rose', archived: '--muted',
 }
 
 export default function PinList({ places, onSelect }: {
@@ -45,6 +45,7 @@ export default function PinList({ places, onSelect }: {
               </div>
               <div style={{ fontSize: '0.66rem', color: 'var(--muted)' }}>
                 {spec.label}{place.city ? ` · ${place.city}` : ''}{place.lat == null ? ' · no location' : ''}
+                {place.kind === 'unset' && <span style={{ color: 'var(--amber)' }}> · needs a type</span>}
               </div>
             </div>
             <span aria-hidden style={{
