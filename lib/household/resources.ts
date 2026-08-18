@@ -131,6 +131,17 @@ export const RESOURCES = {
     update: ['name', 'items'],
     order: 'created_at',
   },
+  // Routines + maintenance (2026-08-13), one table split by `kind`. Same
+  // items-jsonb shape as lists. `last_done_by` is NOT bot-writable — same
+  // reasoning as places.verified_at: attribution is server-stamped from the
+  // token's userId on update, never client-supplied (see the PATCH route).
+  routines: {
+    table: 'household_routines',
+    columns: 'id, kind, name, cadence_days, items, last_done_at, last_done_by, created_at',
+    insert: ['kind', 'name', 'cadence_days', 'items'],
+    update: ['kind', 'name', 'cadence_days', 'items', 'last_done_at'],
+    order: 'created_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES

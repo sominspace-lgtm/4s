@@ -6,6 +6,7 @@ import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useLists } from '@/lib/hooks/useLists'
+import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
@@ -50,6 +51,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const listsHook = useLists(spaceId)
   const [newListName, setNewListName] = useState('')
   const [listItemDrafts, setListItemDrafts] = useState<Record<string, string>>({})
+  const routinesHook = useRoutines(spaceId)
+  const [addingRoutine, setAddingRoutine] = useState(false)
+  const [routineName, setRoutineName] = useState('')
+  const [routineCadence, setRoutineCadence] = useState('7')
+  const [routineSteps, setRoutineSteps] = useState('')
+  const [addingMaintenance, setAddingMaintenance] = useState(false)
+  const [maintName, setMaintName] = useState('')
+  const [maintCadence, setMaintCadence] = useState('90')
   const [addingMemoryLink, setAddingMemoryLink] = useState(false)
   const [memoryLabel, setMemoryLabel] = useState('')
   const [memoryUrl, setMemoryUrl] = useState('')
@@ -386,6 +395,77 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </form>
       </section>
     ),
+
+    // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" with
+    // sub-tasks, separate from the flat single-item chores block above.
+    routines: () => {
+      const routines = routinesHook.routines.filter(r => r.kind === 'routine')
+      return (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          <div className="t-card">Routines</div>
+
+          {routines.length === 0 && !routinesHook.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+              Nothing yet. A routine is a named group of steps — &ldquo;Sunday Home Reset&rdquo;: Bathroom, Kitchen, Laundry, Trash, Sheets.
+            </div>
+          )}
+
+          {[...routines].sort((a, b) => routineDue(a) - routineDue(b)).map(r => {
+            const done = r.items.filter(i => i.done).length
+            const due = routineDue(r)
+            return (
+              <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
+                  <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
+                    {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
+                  </span>
+                </div>
+                {r.items.map(i => (
+                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
+                    <button onClick={() => routinesHook.toggleRoutineItem(r.id, i.id)} className="press" style={{
+                      width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+                      background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
+                    }} />
+                    <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
+                      {i.label}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
+                  <button onClick={() => routinesHook.markRoutineDone(r.id)} className="btn btn-secondary press" style={{ fontSize: '0.66rem' }}>Mark whole thing done</button>
+                  <button onClick={() => routinesHook.removeRoutine(r.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', cursor: 'pointer' }}>Remove</button>
+                </div>
+              </div>
+            )
+          })}
+
+          {addingRoutine ? (
+            <form
+              onSubmit={async e => {
+                e.preventDefault()
+                if (!routineName.trim()) return
+                await routinesHook.addRoutine('routine', routineName.trim(), Number(routineCadence) || 7, routineSteps.split(',').map(s => s.trim()).filter(Boolean))
+                setRoutineName(''); setRoutineSteps(''); setRoutineCadence('7'); setAddingRoutine(false)
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+            >
+              <input value={routineName} onChange={e => setRoutineName(e.target.value)} placeholder="Routine name (e.g. Sunday Home Reset)" style={input} autoFocus />
+              <input value={routineSteps} onChange={e => setRoutineSteps(e.target.value)} placeholder="Steps, comma-separated (Bathroom, Kitchen, Laundry...)" style={input} />
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Every</span>
+                <input type="number" min="1" value={routineCadence} onChange={e => setRoutineCadence(e.target.value)} style={{ ...input, width: '60px' }} />
+                <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days</span>
+                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+                <button type="button" onClick={() => setAddingRoutine(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <button onClick={() => setAddingRoutine(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New routine</button>
+          )}
+        </section>
+      )
+    },
   }
 
   return (
@@ -731,6 +811,61 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           </form>
         </section>
       )}
+
+      {/* Maintenance (2026-08-13) — long-cadence items ("HVAC filter every 3
+          months") that would get lost in a weekly chore/routine list. Same
+          household_routines table as Routines, kind='maintenance'. */}
+      {tab === 'reference' && (() => {
+        const maint = [...routinesHook.routines.filter(r => r.kind === 'maintenance')].sort((a, b) => routineDue(a) - routineDue(b))
+        return (
+          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+            <div className="t-card" style={{ marginBottom: '0.7rem' }}>Maintenance</div>
+
+            {maint.length === 0 && !routinesHook.loading && (
+              <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+                Nothing yet. The stuff that happens occasionally: HVAC filter every 3 months, smoke detector batteries every year.
+              </div>
+            )}
+
+            {maint.map(m => {
+              const due = routineDue(m)
+              return (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{m.name}</span>
+                  <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : due === 0 ? 'var(--amber)' : 'var(--muted)', flexShrink: 0 }}>
+                    every {m.cadence_days}d · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
+                  </span>
+                  <button onClick={() => routinesHook.markRoutineDone(m.id)} className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.62rem', flexShrink: 0 }}>done</button>
+                  <button onClick={() => routinesHook.removeRoutine(m.id)} aria-label={`Remove ${m.name}`} className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                </div>
+              )
+            })}
+
+            {addingMaintenance ? (
+              <form
+                onSubmit={async e => {
+                  e.preventDefault()
+                  if (!maintName.trim()) return
+                  await routinesHook.addRoutine('maintenance', maintName.trim(), Number(maintCadence) || 90, [])
+                  setMaintName(''); setMaintCadence('90'); setAddingMaintenance(false)
+                }}
+                style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
+              >
+                <input value={maintName} onChange={e => setMaintName(e.target.value)} placeholder="e.g. Replace HVAC filter" style={{ ...input, flex: 1, minWidth: '160px' }} autoFocus />
+                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', alignSelf: 'center' }}>every</span>
+                <input type="number" min="1" value={maintCadence} onChange={e => setMaintCadence(e.target.value)} style={{ ...input, width: '60px' }} />
+                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', alignSelf: 'center' }}>days</span>
+                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+                <button type="button" onClick={() => setAddingMaintenance(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
+              </form>
+            ) : (
+              <button onClick={() => setAddingMaintenance(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', marginTop: '0.7rem' }}>+ New maintenance item</button>
+            )}
+          </section>
+        )
+      })()}
 
       <SectionCustomizer
         open={tabsCustomizeOpen}

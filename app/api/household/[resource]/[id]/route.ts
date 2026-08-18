@@ -28,6 +28,13 @@ export async function PATCH(request: Request, { params }: Props) {
     fields.updated_at = new Date().toISOString()
   }
 
+  // last_done_by is never client-supplied (same reasoning as places'
+  // verified_at) — attribution comes from the token, stamped here whenever
+  // a caller marks a routine/maintenance item done.
+  if (spec.table === 'household_routines' && 'last_done_at' in fields) {
+    fields.last_done_by = caller.userId
+  }
+
   // The space_id filter is what stops a token for one household from editing
   // another's row by guessing a uuid. Without it, a valid token plus any id
   // would be enough.
