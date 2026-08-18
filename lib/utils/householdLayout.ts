@@ -29,9 +29,14 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // in HouseholdHub.tsx; pulling them into one ordered array is what makes
 // reordering/hiding possible at all, the same refactor todayBlocks.ts already
 // did for Today.
-export type HomeBlockId = 'calendar' | 'shopping' | 'chores' | 'routines' | 'meals' | 'lists'
+export type HomeBlockId = 'thisWeek' | 'calendar' | 'shopping' | 'chores' | 'routines' | 'meals' | 'lists'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
+  // The week in review (2026-08-18) — same computation the bot posts on
+  // Sundays, see lib/household/weeklyRecap.ts. First in the default order:
+  // it's the one block that's about what already happened rather than
+  // what's coming up, so it reads best before the forward-looking ones.
+  thisWeek: { label: 'This week',         hint: 'What got done, in one glance' },
   calendar: { label: 'Calendar',          hint: 'Everything the house has on' },
   shopping: { label: 'Shopping list',     hint: 'What to buy' },
   chores:   { label: 'Whose turn',        hint: 'Chores and who’s due' },
@@ -45,7 +50,7 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   lists:    { label: 'Lists',             hint: 'Anything else worth a checklist' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'shopping', 'chores', 'routines', 'meals', 'lists'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'calendar', 'shopping', 'chores', 'routines', 'meals', 'lists'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

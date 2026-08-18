@@ -10,6 +10,7 @@ import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
+import WeeklyRecapBlock from './WeeklyRecapBlock'
 import DiscordConnect from './DiscordConnect'
 import CompanionSync from '@/components/relationships/CompanionSync'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
@@ -141,6 +142,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // filterable map, the same refactor todayBlocks.ts already did for Today's
   // own content. Each renderer closes over the local state/handlers above.
   const homeBlockRenderers: Record<HomeBlockId, () => React.ReactNode> = {
+    thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
+
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
     // I have on", this answers "what does this house have on", and your
