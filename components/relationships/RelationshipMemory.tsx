@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { usePeople, daysUntilBirthday, daysSinceContact, type Person } from '@/lib/hooks/usePeople'
+import { usePersonPreferences, PERSON_CATEGORY_LABEL, type PersonPreferenceCategory } from '@/lib/hooks/usePersonPreferences'
+
+const PREF_CATEGORIES: PersonPreferenceCategory[] = ['preference', 'like', 'dislike', 'idea', 'general']
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px',
@@ -34,6 +37,9 @@ function PersonCard({ person, onSave, onRemove, onContacted }: {
   const [draft, setDraft] = useState<Person>(person)
   const contact = contactLine(person)
   const bday = birthdayLine(person)
+  const prefs = usePersonPreferences(person.id)
+  const [prefText, setPrefText] = useState('')
+  const [prefCategory, setPrefCategory] = useState<PersonPreferenceCategory>('like')
 
   function save() {
     onSave({
@@ -68,6 +74,38 @@ function PersonCard({ person, onSave, onRemove, onContacted }: {
       )}
       {!editing && person.gift_ideas && (
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.85 }}><span style={{ opacity: 0.7 }}>Gift ideas · </span>{person.gift_ideas}</div>
+      )}
+
+      {!editing && prefs.items.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {prefs.items.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--muted)' }}>
+              <span style={{ flexShrink: 0, opacity: 0.85 }}>{PERSON_CATEGORY_LABEL[p.category]}</span>
+              <span style={{ flex: 1 }}>{p.text}</span>
+              <button onClick={() => prefs.remove(p.id)} aria-label={`Remove ${p.text}`} className="press"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!editing && (
+        <form
+          onSubmit={async e => {
+            e.preventDefault()
+            if (!prefText.trim()) return
+            await prefs.add(prefCategory, prefText.trim())
+            setPrefText('')
+          }}
+          style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}
+        >
+          <select value={prefCategory} onChange={e => setPrefCategory(e.target.value as PersonPreferenceCategory)} style={{ ...inputStyle, width: 'auto', padding: '0.4em 0.5em', fontSize: '0.68rem' }}>
+            {PREF_CATEGORIES.map(c => <option key={c} value={c}>{PERSON_CATEGORY_LABEL[c]}</option>)}
+          </select>
+          <input value={prefText} onChange={e => setPrefText(e.target.value)} placeholder="e.g. loves lilies, hates surprises"
+            style={{ ...inputStyle, flex: 1, minWidth: '140px', padding: '0.4em 0.6em', fontSize: '0.7rem' }} />
+          <button type="submit" className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Add</button>
+        </form>
       )}
 
       {editing && (
