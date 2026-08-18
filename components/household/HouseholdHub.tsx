@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { addDays, format, isSameDay, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
@@ -100,6 +100,22 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '7px',
     color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.75rem',
     padding: '0.4rem 0.6rem', outline: 'none',
+  }
+
+  // "You" or a member's email, for anything stamped with a user_id — routines'
+  // last_done_by, check-ins' rows. First-name-only would be nicer, but nothing
+  // in this app collects one; email is what's actually on hand.
+  function nameFor(uid: string | null): string | null {
+    if (!uid) return null
+    if (uid === userId) return 'You'
+    return members.find(m => m.member_id === uid)?.member_email ?? null
+  }
+
+  function daysAgo(dateStr: string): string {
+    const d = differenceInCalendarDays(new Date(), parseISO(dateStr))
+    if (d <= 0) return 'today'
+    if (d === 1) return 'yesterday'
+    return `${d}d ago`
   }
 
   function dueLabel(c: Chore) {
@@ -417,12 +433,17 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             const due = routineDue(r)
             return (
               <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
                   <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
                     {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
                   </span>
                 </div>
+                {r.last_done_at && nameFor(r.last_done_by) && (
+                  <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.3rem' }}>
+                    Last done by {nameFor(r.last_done_by)}, {daysAgo(r.last_done_at)}
+                  </div>
+                )}
                 {r.items.map(i => (
                   <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
                     <button onClick={() => routinesHook.toggleRoutineItem(r.id, i.id)} className="press" style={{
@@ -821,7 +842,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           just where you go back and read what was actually said. */}
       {tab === 'reference' && (() => {
         const weeks = groupCheckinsByWeek(checkins)
-        const nameFor = (uid: string) => uid === userId ? 'You' : (members.find(m => m.member_id === uid)?.member_email ?? 'Partner')
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
             <div className="t-card" style={{ marginBottom: '0.3rem' }}>Check-ins</div>
@@ -846,7 +866,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                   {Object.entries(w.byUser).map(([uid, c]) => (
                     <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid)}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid) ?? 'Partner'}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                         {c.answers.map((a, i) => (
                           <div key={i}>
@@ -883,7 +903,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
               const due = routineDue(m)
               return (
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{m.name}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{m.name}</div>
+                    {m.last_done_at && nameFor(m.last_done_by) && (
+                      <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.55 }}>
+                        Last done by {nameFor(m.last_done_by)}, {daysAgo(m.last_done_at)}
+                      </div>
+                    )}
+                  </div>
                   <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : due === 0 ? 'var(--amber)' : 'var(--muted)', flexShrink: 0 }}>
                     every {m.cadence_days}d · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
                   </span>
