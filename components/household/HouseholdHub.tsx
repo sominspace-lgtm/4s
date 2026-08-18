@@ -5,6 +5,7 @@ import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
+import { useLists } from '@/lib/hooks/useLists'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
@@ -46,6 +47,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [tab, setTab] = useState<HouseholdTab>('home')
   const h = useHousehold(spaceId)
   const memories = useMemoryLinks(spaceId)
+  const listsHook = useLists(spaceId)
+  const [newListName, setNewListName] = useState('')
+  const [listItemDrafts, setListItemDrafts] = useState<Record<string, string>>({})
   const [addingMemoryLink, setAddingMemoryLink] = useState(false)
   const [memoryLabel, setMemoryLabel] = useState('')
   const [memoryUrl, setMemoryUrl] = useState('')
@@ -312,6 +316,73 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <input value={mealTitle} onChange={e => setMealTitle(e.target.value)} placeholder="What's cooking?" style={{ ...input, flex: 1, minWidth: '130px' }} />
           <input value={mealCook} onChange={e => setMealCook(e.target.value)} placeholder="Who cooks" style={{ ...input, width: '100px' }} />
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+        </form>
+      </section>
+    ),
+
+    // Anything that isn't groceries, move-in, or a watchlist — generic,
+    // additive, not a replacement for those (2026-08-13).
+    lists: () => (
+      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        <div className="t-card">Lists</div>
+
+        {listsHook.lists.length === 0 && !listsHook.loading && (
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+            Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, or a watchlist — &ldquo;things to research&rdquo;, gift ideas, whatever.
+          </div>
+        )}
+
+        {listsHook.lists.map(l => (
+          <div key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
+              <button onClick={() => listsHook.removeList(l.id)} aria-label={`Remove list ${l.name}`} className="press"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
+            </div>
+            {l.items.map(i => (
+              <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
+                <button onClick={() => listsHook.toggleItem(l.id, i.id)} className="press" style={{
+                  width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+                  background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
+                }} />
+                <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
+                  {i.label}
+                </span>
+                <button onClick={() => listsHook.removeItem(l.id, i.id)} aria-label={`Remove ${i.label}`} className="press"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
+              </div>
+            ))}
+            <form
+              onSubmit={async e => {
+                e.preventDefault()
+                const val = listItemDrafts[l.id]?.trim()
+                if (!val) return
+                await listsHook.addItem(l.id, val)
+                setListItemDrafts(d => ({ ...d, [l.id]: '' }))
+              }}
+              style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem' }}
+            >
+              <input
+                value={listItemDrafts[l.id] ?? ''}
+                onChange={e => setListItemDrafts(d => ({ ...d, [l.id]: e.target.value }))}
+                placeholder="Add an item" style={{ ...input, flex: 1, fontSize: '0.72rem' }}
+              />
+              <button type="submit" className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>Add</button>
+            </form>
+          </div>
+        ))}
+
+        <form
+          onSubmit={async e => {
+            e.preventDefault()
+            if (!newListName.trim()) return
+            await listsHook.addList(newListName.trim())
+            setNewListName('')
+          }}
+          style={{ display: 'flex', gap: '0.4rem' }}
+        >
+          <input value={newListName} onChange={e => setNewListName(e.target.value)} placeholder="New list name" style={{ ...input, flex: 1, minWidth: '140px' }} />
+          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>+ New list</button>
         </form>
       </section>
     ),

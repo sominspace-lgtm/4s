@@ -29,16 +29,19 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // in HouseholdHub.tsx; pulling them into one ordered array is what makes
 // reordering/hiding possible at all, the same refactor todayBlocks.ts already
 // did for Today.
-export type HomeBlockId = 'calendar' | 'shopping' | 'chores' | 'meals'
+export type HomeBlockId = 'calendar' | 'shopping' | 'chores' | 'meals' | 'lists'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   calendar: { label: 'Calendar',          hint: 'Everything the house has on' },
   shopping: { label: 'Shopping list',     hint: 'What to buy' },
   chores:   { label: 'Whose turn',        hint: 'Chores and who’s due' },
   meals:    { label: 'This week’s meals', hint: 'What we’re eating' },
+  // Generic ad-hoc lists (2026-08-13) — anything that isn't groceries,
+  // move-in, or a watchlist: "things to research", "gift ideas for Mom".
+  lists:    { label: 'Lists',             hint: 'Anything else worth a checklist' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'shopping', 'chores', 'meals'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'shopping', 'chores', 'meals', 'lists'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

@@ -120,6 +120,17 @@ export const RESOURCES = {
     update: ['name', 'category', 'got'],
     order: 'created_at',
   },
+  // Generic ad-hoc lists (2026-08-13) — "things to research", "gift ideas
+  // for Mom", whatever doesn't already have its own bespoke table (shopping/
+  // move-in/watchlist/date-ideas all stay separate, this is only for new
+  // ones). `items` is jsonb, [{id,label,done}], client-owned like routines.
+  lists: {
+    table: 'household_lists',
+    columns: 'id, name, items, created_at',
+    insert: ['name', 'items'],
+    update: ['name', 'items'],
+    order: 'created_at',
+  },
 } as const
 
 export type ResourceName = keyof typeof RESOURCES
