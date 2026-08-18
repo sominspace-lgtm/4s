@@ -18,6 +18,7 @@ export interface SpaceMember {
   member_id: string | null
   status: 'pending' | 'accepted'
   invited_by: string
+  role: 'owner' | 'member'
 }
 
 // Backed by shared_spaces / shared_space_members — see
@@ -78,9 +79,40 @@ export function useSharedSpaces(userId: string) {
     setMembers(prev => prev.filter(m => m.id !== id))
   }
 
+  // Accepting binds the pending row to your account and makes you a full
+  // co-owner (see the migration for why 'owner' — this isn't a
+  // capability-restriction system, every accepted member has always been
+  // able to do everything the space allows; role just names that honestly).
+  async function acceptInvite(id: string): Promise<string | null> {
+    const { data, error } = await supabase.from('shared_space_members')
+      .update({ member_id: userId, status: 'accepted', role: 'owner' })
+      .eq('id', id).select().single()
+    if (error) return error.message
+    setMembers(prev => prev.map(m => (m.id === id ? data : m)))
+    await load() // the newly-joined space itself is now visible too
+    return null
+  }
+
+  async function declineInvite(id: string) {
+    await supabase.from('shared_space_members').delete().eq('id', id)
+    setMembers(prev => prev.filter(m => m.id !== id))
+  }
+
   function membersOf(spaceId: string) {
     return members.filter(m => m.space_id === spaceId)
   }
 
-  return { spaces, members, loading, ready, createSpace, removeSpace, setMemoriesUrl, inviteMember, removeMember, membersOf }
+  // Pending invites addressed to this email, not yet claimed by anyone —
+  // RLS now surfaces these (see shared_space_roles_and_accept.sql) even
+  // though the invitee isn't a member yet.
+  function invitesFor(email: string) {
+    const lower = email.toLowerCase()
+    return members.filter(m => m.status === 'pending' && !m.member_id && m.member_email.toLowerCase() === lower)
+  }
+
+  return {
+    spaces, members, loading, ready,
+    createSpace, removeSpace, setMemoriesUrl,
+    inviteMember, removeMember, acceptInvite, declineInvite, membersOf, invitesFor,
+  }
 }

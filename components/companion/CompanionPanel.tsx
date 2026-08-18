@@ -124,11 +124,15 @@ function SharingTab({ companions, updateSharedSections, friendEmailOf }: {
   )
 }
 
-export function SpacesTab({ userId }: { userId: string }) {
-  const { spaces, ready, loading, createSpace, removeSpace, inviteMember, membersOf } = useSharedSpaces(userId)
+export function SpacesTab({ userId, userEmail }: { userId: string; userEmail: string }) {
+  const {
+    spaces, ready, loading, createSpace, removeSpace, inviteMember, membersOf,
+    invitesFor, acceptInvite, declineInvite,
+  } = useSharedSpaces(userId)
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
   const [emailDrafts, setEmailDrafts] = useState<Record<string, string>>({})
+  const myInvites = invitesFor(userEmail)
 
   if (!ready) {
     return (
@@ -155,6 +159,30 @@ export function SpacesTab({ userId }: { userId: string }) {
       <p style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.78, lineHeight: 1.6 }}>
         Spaces are named groups — Family, Couple, Trip, Household — you can share items with all at once.
       </p>
+
+      {myInvites.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7 }}>
+            Invited you
+          </div>
+          {myInvites.map(inv => (
+            <div key={inv.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
+              padding: '0.6rem 0.7rem', borderRadius: '10px',
+              background: 'color-mix(in srgb, var(--gold) 10%, var(--hover-bg))',
+              border: '1px solid color-mix(in srgb, var(--gold) 30%, var(--border))',
+            }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>
+                Join {spaces.find(s => s.id === inv.space_id)?.name ?? 'a shared space'}?
+              </span>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <button onClick={() => acceptInvite(inv.id)} className="btn btn-primary press" style={{ fontSize: '0.68rem' }}>Accept</button>
+                <button onClick={() => declineInvite(inv.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Decline</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
         {STARTER_SPACES.filter(n => !existingNames.has(n)).map(n => (
@@ -194,7 +222,7 @@ export function SpacesTab({ userId }: { userId: string }) {
           </div>
           {membersOf(s.id).map(m => (
             <div key={m.id} style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.78 }}>
-              {m.member_email} · {m.status}
+              {m.member_email} · {m.status}{m.status === 'accepted' ? ` · ${m.role}` : ''}
             </div>
           ))}
           <div style={{ display: 'flex', gap: '0.3rem' }}>
@@ -277,7 +305,7 @@ export default function CompanionPanel({ open, userId, userEmail, onClose }: Pro
         ) : tab === 'sharing' ? (
           <SharingTab companions={companions} updateSharedSections={updateSharedSections} friendEmailOf={friendEmailOf} />
         ) : (
-          <SpacesTab userId={userId} />
+          <SpacesTab userId={userId} userEmail={userEmail} />
         )}
       </div>
     </>

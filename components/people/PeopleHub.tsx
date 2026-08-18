@@ -86,7 +86,7 @@ export default function PeopleHub({ userId, userEmail, onOpenCompanions }: {
             ))}
           </div>
 
-          {sharingSub === 'spaces' && <SpacesTab userId={userId} />}
+          {sharingSub === 'spaces' && <SpacesTab userId={userId} userEmail={userEmail} />}
 
           {sharingSub === 'shared' && (
             <div>
