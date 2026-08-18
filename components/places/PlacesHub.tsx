@@ -8,6 +8,9 @@ import PinList from '@/components/places/PinList'
 import PinFilters, { DEFAULT_PIN_FILTERS, applyPinFilters, type PinFilterState } from '@/components/places/PinFilters'
 import PlaceSheet from '@/components/places/PlaceSheet'
 import AddPlacePanel from '@/components/places/AddPlacePanel'
+import TripsPanel from '@/components/places/TripsPanel'
+import TripDetail from '@/components/places/TripDetail'
+import { useTrips, type Trip } from '@/lib/hooks/useTrips'
 
 // Dynamic, ssr:false: maplibre-gl touches `window` at module scope and would
 // hard-fail server rendering, and this keeps its ~230KB gzipped out of the
@@ -24,18 +27,20 @@ function MapSkeleton() {
   )
 }
 
-type SubTab = 'map' | 'pins'
+type SubTab = 'map' | 'pins' | 'trips'
 
 const TABS: { id: SubTab; label: string }[] = [
   { id: 'map', label: 'Map' },
   { id: 'pins', label: 'Pins' },
-  // Trips (Phase 4) adds a third entry here without touching anything above.
+  { id: 'trips', label: 'Trips' },
 ]
 
-// Places — "where are the places we care about?" The counterpart is Travel,
-// which answers "where should we go next?" (Phase 4+). Deliberately its own
-// top-level tab rather than a Household sub-tab: a full-bleed map needs the
-// room, and burying it three levels down would mean nobody opens it casually.
+// Places — "where are the places we care about?" Trips answers the other
+// question, "where should we go next?" — a third sub-tab here rather than a
+// tab of its own, since a trip's shortlist IS a set of these same pins.
+// Deliberately its own top-level tab rather than a Household sub-tab: a
+// full-bleed map needs the room, and burying it three levels down would mean
+// nobody opens it casually.
 export default function PlacesHub({ userId, theme }: { userId: string; theme: string }) {
   const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
@@ -51,6 +56,10 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const selected = useMemo(() => places.find(p => p.id === selectedId) ?? null, [places, selectedId])
+
+  const { trips } = useTrips()
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
+  const selectedTrip = useMemo(() => trips.find(t => t.id === selectedTripId) ?? null, [trips, selectedTripId])
 
   const kindsInUse = useMemo(() => Array.from(new Set(places.map(p => p.kind))), [places])
   const filtered = useMemo(() => applyPinFilters(places, filters), [places, filters])
@@ -69,12 +78,14 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
             }}>{tb.label}</button>
           ))}
         </div>
-        <button onClick={() => setAdding(true)} className="btn btn-primary press" style={{ fontSize: '0.72rem' }}>
-          + Save a place
-        </button>
+        {tab !== 'trips' && (
+          <button onClick={() => setAdding(true)} className="btn btn-primary press" style={{ fontSize: '0.72rem' }}>
+            + Save a place
+          </button>
+        )}
       </div>
 
-      <PinFilters filters={filters} kindsInUse={kindsInUse} onChange={setFilters} />
+      {tab !== 'trips' && <PinFilters filters={filters} kindsInUse={kindsInUse} onChange={setFilters} />}
 
       {tab === 'map' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -96,8 +107,13 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
         <PinList places={filtered} onSelect={p => setSelectedId(p.id)} />
       )}
 
+      {tab === 'trips' && (
+        <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} />
+      )}
+
       <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} />
       <AddPlacePanel open={adding} spaceId={spaceId} hasSpace={spaces.length > 0} onClose={() => setAdding(false)} />
+      <TripDetail trip={selectedTrip} open={!!selectedTrip} onClose={() => setSelectedTripId(null)} />
     </div>
   )
 }
