@@ -10,6 +10,9 @@ import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
+import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
+import { useVillageWork } from '@/lib/hooks/useVillageWork'
+import { buildVillage } from '@/lib/village/state'
 import { DOMAINS } from '@/lib/constants/domains'
 
 // A compact, privacy-light summary of the user's current state, sent to the
@@ -30,6 +33,22 @@ export interface AppSnapshot {
   gifts: { name: string; inDays: number }[]
   sharing: { pendingInvites: number; friends: number }
   calendarConnected: boolean
+  // The Village, framed the same way the user sees it (VillageText's own
+  // vocabulary — "growing"/"resting"/"standing"/"underway"), not as a second,
+  // disagreeing description of the same habits and tasks. Council reads
+  // people's lives through the same lens they open the app to see.
+  //
+  // treeRings/canopy are deliberately left out: those need accountCreated,
+  // which isn't threaded to every useAppSnapshot caller, and reporting "0
+  // rings" here when the real village shows more would be Council stating a
+  // wrong fact about the user's own history — worse than not mentioning it.
+  village: {
+    plantsGrowing: number
+    plantsResting: number
+    buildingsStanding: number
+    buildingsUnderway: number
+    reflectionDaysThisWeek: number
+  }
 }
 
 export function useAppSnapshot(userId: string, calendarConnected: boolean): () => AppSnapshot {
@@ -42,6 +61,8 @@ export function useAppSnapshot(userId: string, calendarConnected: boolean): () =
   const { items: buyItems } = useBuyItems()
   const { items: wishItems } = useWatchItems()
   const { received, active } = useCompanions(userId)
+  const reflectionDays = useReflectionDays()
+  const { done: doneWork } = useVillageWork()
 
   // Returned as a builder so callers snapshot at click time, not render time.
   return () => {
@@ -83,6 +104,19 @@ export function useAppSnapshot(userId: string, calendarConnected: boolean): () =
         friends: active.length,
       },
       calendarConnected,
+      village: (() => {
+        const v = buildVillage({
+          habits, completions, workItems: [...workItems, ...doneWork],
+          reflectionDays, accountCreated: null,
+        })
+        return {
+          plantsGrowing: v.plants.filter(p => !p.dormant).length,
+          plantsResting: v.plants.filter(p => p.dormant).length,
+          buildingsStanding: v.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length,
+          buildingsUnderway: v.buildings.length - v.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length,
+          reflectionDaysThisWeek: v.reflectionDays,
+        }
+      })(),
     }
   }
 }
