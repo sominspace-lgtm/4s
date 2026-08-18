@@ -5,7 +5,7 @@ import { parseISO, isToday, isFuture, format } from 'date-fns'
 import { getDayLabel, DOMAIN_COLORS } from '@/lib/utils/habits'
 import { createClient } from '@/lib/supabase/client'
 import { scheduleSummary, isDueOn, type Habit } from '@/lib/hooks/useHabits'
-import { plantFor, STAGE_INDEX } from '@/lib/village/state'
+import { plantFor, STAGE_INDEX, completionsToNextStage } from '@/lib/village/state'
 import PlantGlyph from './PlantGlyph'
 
 interface HabitRowProps {
@@ -31,6 +31,15 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
   // grow a plant by tapping in the app instead of living, the whole "reward
   // reality" premise is dead.
   const plant = plantFor(habit, completions)
+
+  // A nudge toward what's coming, never a warning about what's slipping.
+  // Only surfaces close to the payoff (within 3) and only once the plant has
+  // actually started — a brand-new habit doesn't need "1 more to grow" on its
+  // very first render, and a resting plant already has its own line to say.
+  const toNext = completionsToNextStage(completions)
+  const growthHint = !plant.dormant && !habit.paused && completions.length >= 1 && toNext !== null && toNext <= 3
+    ? `${toNext} more to grow`
+    : null
 
   // Growth is celebrated once, on the render where it actually happens.
   // Comparing against the previous stage rather than animating on every
@@ -75,10 +84,13 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
           {scheduleSummary(habit)}
           {/* "resting" and "due today" together read as a contradiction, so
               resting wins the slot — if it's been quiet a fortnight, that's
-              the more useful thing to say. */}
+              the more useful thing to say. The growth hint composes with
+              either, since "due today, 1 more to grow" is two true things
+              rather than a contradiction. */}
           {plant.dormant && !habit.paused
             ? ' · resting'
             : dueToday && !habit.paused ? ' · due today' : ''}
+          {growthHint && <span style={{ color: 'var(--emerald)', opacity: 0.85 }}> · {growthHint}</span>}
         </span>
       </div>
 

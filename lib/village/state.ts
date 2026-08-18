@@ -72,6 +72,17 @@ function stageFor(count: number): PlantStage {
   return 'seed'
 }
 
+// Count needed to reach the NEXT stage, or null once a plant is fully grown.
+// Forward-looking on purpose — this is the only direction a hint is allowed
+// to point. A hint about what's about to happen ("2 more and it's a tree") is
+// encouragement; the same fact phrased backward ("you're 2 short of a tree")
+// is a countdown, and a countdown is a lapse warning wearing a costume.
+const STAGE_THRESHOLDS = [1, 4, 12, 30]
+export function completionsToNextStage(completions: string[]): number | null {
+  const next = STAGE_THRESHOLDS.find(t => t > completions.length)
+  return next === undefined ? null : next - completions.length
+}
+
 export function plantFor(habit: Habit, completions: string[]): Plant {
   // Peak, not recent: stage is computed from ALL-TIME completions so a plant
   // can never shrink. A quiet fortnight desaturates it (dormant) but the
