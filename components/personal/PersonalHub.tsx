@@ -95,7 +95,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
       {tab === 'life'    && <LifeHub />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub userId={userId} userEmail={userEmail} onOpenCompanions={onOpenCompanions} />}
-      {tab === 'preferences' && <PreferencesHub />}
+      {tab === 'preferences' && <PreferencesHub userId={userId} />}
       {tab === 'council' && <CouncilSection mode={mode} userId={userId} calendarConnected />}
 
       <SectionCustomizer
