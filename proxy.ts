@@ -35,6 +35,9 @@ export async function proxy(request: NextRequest) {
   const householdBrowserRoutes = ['/api/household/link-code', '/api/household/connections']
   const isPublic = publicPaths.some(p => pathname.startsWith(p))
     || pathname.startsWith('/auth')
+    // Dev-only visual harness for the village scene. The page itself 404s in
+    // production, so this exception can never expose anything there.
+    || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/village-preview'))
     || pathname.startsWith('/api/alexa')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
 

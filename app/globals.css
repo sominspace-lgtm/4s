@@ -425,6 +425,47 @@ select, option {
 @keyframes village-fade { from { opacity: 0; } to { opacity: 1; } }
 .village-fade { animation: village-fade 400ms ease both; }
 
+/* ── Village weather and life ───────────────────────────────────────────
+   Same budget as the three above: nothing under seven seconds, nothing over
+   0.35 opacity. These are the things that make the place feel inhabited
+   without ever asking to be watched. */
+@keyframes village-smoke {
+  0%   { transform: translateY(0)     scale(0.8); opacity: 0; }
+  22%  { opacity: 0.28; }
+  100% { transform: translateY(-26px) scale(1.5); opacity: 0; }
+}
+.village-smoke circle { animation: village-smoke 12s ease-out infinite; }
+.village-smoke circle:nth-child(2) { animation-delay: 4s; }
+.village-smoke circle:nth-child(3) { animation-delay: 8s; }
+
+@keyframes village-birds { from { transform: translateX(-60px); } to { transform: translateX(760px); } }
+.village-birds { animation: village-birds 34s linear infinite; }
+
+@keyframes village-firefly { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.32; } }
+.village-firefly   { animation: village-firefly 7s ease-in-out infinite; }
+.village-firefly-1 { animation-delay: 2.3s; }
+.village-firefly-2 { animation-delay: 4.6s; }
+
+/* Petals drift, leaves sway wider, snow just falls. All fall the full height
+   of the scene and restart, so there's no visible seam. */
+@keyframes village-petal {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to   { transform: translate(38px, 430px) rotate(220deg); }
+}
+@keyframes village-leaf {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to   { transform: translate(-46px, 430px) rotate(-300deg); }
+}
+@keyframes village-snow {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(14px, 430px); }
+}
+.village-petal { animation: village-petal 20s linear infinite; }
+.village-leaf  { animation: village-leaf  18s linear infinite; }
+.village-snow  { animation: village-snow  26s linear infinite; }
+.village-fall-1 { animation-delay: -7s; }
+.village-fall-2 { animation-delay: -14s; }
+
 /* Checking something off should feel like it landed. The box fills, the
    tick draws itself in — one beat, then still. */
 @keyframes tick-in { from { stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
@@ -508,7 +549,10 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-fade, .settle, .grew,
+  .village-drift, .village-glow, .village-fade,
+  .village-smoke circle, .village-birds, .village-firefly,
+  .village-petal, .village-leaf, .village-snow,
+  .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }
   .village-sky-stop { transition: none !important; }

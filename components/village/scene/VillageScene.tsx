@@ -1,9 +1,12 @@
 'use client'
 
 import type { VillageState } from '@/lib/village/state'
+import type { SeasonPalette } from '@/lib/village/palette'
+import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { PlantShape, BuildingShape, DistrictLabel } from './shapes'
 import Sky from './Sky'
+import Ambient from './Ambient'
 
 export const GROUND_Y = 372
 
@@ -19,9 +22,11 @@ export interface Slot {
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
  * `village`, so this file can be read top to bottom as a draw order.
  */
-export default function VillageScene({ village: v, live, plantSlots, buildingSlots }: {
+export default function VillageScene({ village: v, live, palette, celestial, plantSlots, buildingSlots }: {
   village: VillageState
   live: boolean
+  palette: SeasonPalette
+  celestial: CelestialData | null
   plantSlots: (Slot & { plant: VillageState['plants'][number] })[]
   buildingSlots: (Slot & { building: VillageState['buildings'][number] })[]
 }) {
@@ -43,11 +48,17 @@ export default function VillageScene({ village: v, live, plantSlots, buildingSlo
         </radialGradient>
       </defs>
 
-      <Sky timeOfDay={v.timeOfDay} live={live} />
+      <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
 
       {/* Rolling ground */}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
         fill="var(--surface)" opacity={0.95} />
+      {/* The season, laid over the ground rather than replacing it: the land
+          keeps its shape, it just goes gold or goes cold. */}
+      {live && palette.ground && (
+        <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+          fill={palette.ground} opacity={palette.groundOpacity} className="village-fade" />
+      )}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
@@ -61,7 +72,8 @@ export default function VillageScene({ village: v, live, plantSlots, buildingSlo
 
       {/* Growth Forest */}
       {plantSlots.map(({ plant, x, y, scale }) => (
-        <PlantShape key={plant.id} plant={plant} x={x} y={y} scale={scale} />
+        <PlantShape key={plant.id} plant={plant} x={x} y={y} scale={scale}
+          foliage={live ? palette.foliage : undefined} />
       ))}
 
       {/* Home — always present, grows detail with activity */}
@@ -93,9 +105,9 @@ export default function VillageScene({ village: v, live, plantSlots, buildingSlo
         }</title>
         <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
           transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />
-        <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill="var(--emerald)" opacity={0.35} />
-        <circle cx={-14} cy={-44} r={11 + v.canopy * 5} fill="var(--emerald)" opacity={0.28} />
-        <circle cx={14} cy={-45} r={10 + v.canopy * 5} fill="var(--emerald)" opacity={0.3} />
+        <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.35} />
+        <circle cx={-14} cy={-44} r={11 + v.canopy * 5} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.28} />
+        <circle cx={14} cy={-45} r={10 + v.canopy * 5} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.3} />
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
           <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
@@ -111,6 +123,10 @@ export default function VillageScene({ village: v, live, plantSlots, buildingSlo
           </g>
         ))}
       </g>
+
+      {/* The things that move. Above the scenery so smoke reads as being in
+          front of the house, below the labels so it never fights the text. */}
+      {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
 
       {/* District labels — the actual navigation */}
       <DistrictLabel x={150} y={130} glyph="🌊" label="Rest Lake" onClick={() => goToSection('brief')}

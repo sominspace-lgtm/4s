@@ -9,13 +9,16 @@ import { STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
 
 // Plant silhouettes by stage. Each stage is a real change in shape, not just
 // scale — growth should read at a glance, from across the room.
-export function PlantShape({ plant, x, y, scale = 1, changed = false }: {
+export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)' }: {
   plant: Plant; x: number; y: number; scale?: number; changed?: boolean
+  /** The season's green. Dormant plants ignore it: resting is resting in
+   *  any weather, and it has to stay visually distinct from autumn. */
+  foliage?: string
 }) {
   const i = STAGE_INDEX(plant.stage)
   const h = [8, 18, 34, 52, 72][i]
   const w = [7, 12, 22, 32, 44][i]
-  const color = plant.dormant ? 'var(--muted)' : 'var(--emerald)'
+  const color = plant.dormant ? 'var(--muted)' : foliage
   const opacity = plant.dormant ? 0.4 : 1
 
   return (

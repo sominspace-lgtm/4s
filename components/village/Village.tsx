@@ -7,6 +7,9 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { buildVillage, hashPos } from '@/lib/village/state'
+import { seasonPalette } from '@/lib/village/palette'
+import { celestialOf } from '@/lib/village/sky'
+import { THEMES } from '@/lib/constants/themes'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -53,6 +56,13 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
     [habits, completions, allWork, reflectionDays, accountCreated, clock]
   )
 
+  // Light vs dark comes from the theme's declared --scheme rather than from
+  // reading computed styles off the DOM, so the palette stays a pure function
+  // and there's nothing for the server and client to disagree about.
+  const isLight = THEMES[theme]?.['--scheme'] === 'light'
+  const palette = useMemo(() => seasonPalette(v.season, isLight), [v.season, isLight])
+  const celestial = useMemo(() => (clock ? celestialOf(clock) : null), [clock])
+
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles.
   const plantSlots = useMemo(() => v.plants.slice(0, 14).map((p, idx) => ({
@@ -86,7 +96,8 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
           background: 'var(--surface)',
         }}
       >
-        <VillageScene village={v} live={clock !== null} plantSlots={plantSlots} buildingSlots={buildingSlots} />
+        <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
+          plantSlots={plantSlots} buildingSlots={buildingSlots} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

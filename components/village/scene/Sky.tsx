@@ -1,6 +1,9 @@
 'use client'
 
 import type { VillageState } from '@/lib/village/state'
+import type { SeasonPalette } from '@/lib/village/palette'
+import type { Celestial as CelestialData } from '@/lib/village/sky'
+import Celestial from './Celestial'
 
 // Sky colour by time of day. `day` doubles as the pre-mount default: see the
 // `live` prop below for why there has to be one.
@@ -25,9 +28,11 @@ const SKY: Record<VillageState['timeOfDay'], [string, string]> = {
  * mechanism: because the stops animate rather than swap, dusk becoming night in
  * a tab you left open is a slow wash rather than a snap.
  */
-export default function Sky({ timeOfDay, live }: {
+export default function Sky({ timeOfDay, live, palette, celestial }: {
   timeOfDay: VillageState['timeOfDay']
   live: boolean
+  palette: SeasonPalette
+  celestial: CelestialData | null
 }) {
   const [top, bottom] = live ? SKY[timeOfDay] : SKY.day
 
@@ -42,6 +47,13 @@ export default function Sky({ timeOfDay, live }: {
 
       <rect width="800" height="440" fill="url(#vsky)" />
 
+      {/* The season's own wash over the whole sky. Barely there on purpose:
+          it should change how the picture feels, not announce itself. */}
+      {live && (
+        <rect width="800" height="440" fill={palette.skyWash} opacity={palette.skyWashOpacity}
+          className="village-fade" />
+      )}
+
       {/* Night sky — quiet, never twinkling into a distraction */}
       {live && timeOfDay === 'night' && (
         <g className="village-fade">
@@ -51,6 +63,8 @@ export default function Sky({ timeOfDay, live }: {
           ))}
         </g>
       )}
+
+      {live && celestial && <Celestial c={celestial} />}
     </>
   )
 }
