@@ -7,6 +7,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useLists } from '@/lib/hooks/useLists'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
+import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import DiscordConnect from './DiscordConnect'
@@ -43,8 +44,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
 }) {
-  const { spaces } = useSharedSpaces(userId)
+  const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
+  const { checkins, loading: checkinsLoading } = useCheckins()
   const [tab, setTab] = useState<HouseholdTab>('home')
   const h = useHousehold(spaceId)
   const memories = useMemoryLinks(spaceId)
@@ -811,6 +813,56 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           </form>
         </section>
       )}
+
+      {/* Check-ins (2026-08-18) — the weekly relationship check-in you answer
+          in Discord, read-only here. This is deliberately NOT where you answer
+          them: the DM flow exists because a modal/DM is the only place that
+          feels private enough to write an honest answer in the moment. 4S is
+          just where you go back and read what was actually said. */}
+      {tab === 'reference' && (() => {
+        const weeks = groupCheckinsByWeek(checkins)
+        const nameFor = (uid: string) => uid === userId ? 'You' : (members.find(m => m.member_id === uid)?.member_email ?? 'Partner')
+        return (
+          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+            <div className="t-card" style={{ marginBottom: '0.3rem' }}>Check-ins</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
+              Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept.
+            </div>
+
+            {weeks.length === 0 && !checkinsLoading && (
+              <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+                No check-ins yet. They show up here once you&rsquo;ve answered one in Discord.
+              </div>
+            )}
+
+            {weeks.map(w => (
+              <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
+                <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>Week of {w.weekOf}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
+                    {Object.keys(w.byUser).length === 1 ? 'one of you answered' : 'both answered'}
+                  </span>
+                </summary>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
+                  {Object.entries(w.byUser).map(([uid, c]) => (
+                    <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid)}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {c.answers.map((a, i) => (
+                          <div key={i}>
+                            {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </section>
+        )
+      })()}
 
       {/* Maintenance (2026-08-13) — long-cadence items ("HVAC filter every 3
           months") that would get lost in a weekly chore/routine list. Same
