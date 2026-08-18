@@ -9,7 +9,12 @@ import { FOREST_CAP, DISTRICT_CAP } from '@/lib/village/layout'
 // your own life. Screen readers get this (the SVG is aria-hidden from the
 // list's perspective via its own single label), and it doubles as a plain
 // summary for anyone who'd simply rather read than look at a picture.
-export default function VillageText({ village }: { village: VillageState }) {
+export default function VillageText({ village, arrival = null, horizonCount = 0 }: {
+  village: VillageState
+  /** Repeated here so "what changed" is knowable without seeing the picture. */
+  arrival?: string | null
+  horizonCount?: number
+}) {
   const [open, setOpen] = useState(false)
 
   const resting = village.plants.filter(p => p.dormant).length
@@ -38,6 +43,12 @@ export default function VillageText({ village }: { village: VillageState }) {
     // because the sentence is about rest, not compliance.
     `Rest Lake: reflected on ${village.reflectionDays} of the last 7 days.`,
     `It is ${village.timeOfDay}, in ${village.season}.`,
+    // Omitted entirely when solo, rather than saying "0 places". The picture
+    // shows nothing there either.
+    ...(horizonCount > 0
+      ? [`Shared horizon: ${horizonCount} place${horizonCount === 1 ? '' : 's'} you have both been.`]
+      : []),
+    ...(arrival ? [arrival] : []),
   ]
 
   return (

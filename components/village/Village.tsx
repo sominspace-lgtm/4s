@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
-import { buildVillage } from '@/lib/village/state'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
+import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
@@ -14,6 +16,9 @@ import { THEMES } from '@/lib/constants/themes'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
+import VillageArrival from './VillageArrival'
+
+const ARRIVAL_KEY = '4s-village-arrival'
 
 // The village: your life as a place, not a dashboard.
 //
@@ -29,11 +34,14 @@ import VillageText from './VillageText'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, theme, accountCreatedAt = null }: {
+export default function Village({ userId, theme, accountCreatedAt = null, lastSeen = null, onSeen }: {
   userId: string
   theme: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
+  /** ISO string of the previous visit, frozen for the session by the caller. */
+  lastSeen?: string | null
+  onSeen?: () => void
 }) {
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
@@ -42,6 +50,8 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
   const { done } = useVillageWork()
   const reflectionDays = useReflectionDays()
   const clock = useVillageClock()
+  const { spaces } = useSharedSpaces(userId)
+  const horizon = useSharedHorizon(spaces.length > 0)
 
   const accountCreated = useMemo(
     () => (accountCreatedAt ? parseISO(accountCreatedAt) : null),
@@ -55,6 +65,29 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
       now: clock ?? undefined,
     }),
     [habits, completions, allWork, reflectionDays, accountCreated, clock]
+  )
+
+  // The arrival line, computed once per visit.
+  //
+  // Guarded through sessionStorage because DashboardClient only renders the
+  // active tab, so the Village unmounts and remounts on every tab switch and
+  // the caption would otherwise replay each time you came back to it. Once you
+  // have read what changed, it should stop being news.
+  const [showArrival, setShowArrival] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (sessionStorage.getItem(ARRIVAL_KEY)) return
+    sessionStorage.setItem(ARRIVAL_KEY, '1')
+    setShowArrival(true)
+    onSeen?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const changes = useMemo(
+    () => (showArrival && lastSeen
+      ? villageChangesSince({ habits, completions, workItems: allWork }, parseISO(lastSeen))
+      : undefined),
+    [showArrival, lastSeen, habits, completions, allWork]
   )
 
   // Light vs dark comes from the theme's declared --scheme rather than from
@@ -97,7 +130,8 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
         }}
       >
         <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
-          plantSlots={plantSlots} buildingSlots={buildingSlots} />
+          plantSlots={plantSlots} buildingSlots={buildingSlots}
+          horizon={horizon} changes={changes} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked
@@ -111,7 +145,8 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
         />
       </div>
 
-      <VillageText village={v} />
+      <VillageArrival caption={changes?.caption ?? null} />
+      <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />
     </div>
   )
 }

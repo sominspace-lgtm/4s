@@ -173,6 +173,123 @@ export function buildVillage(input: {
 
 export const STAGE_INDEX = (s: PlantStage) => STAGE_ORDER.indexOf(s)
 
+export interface VillageChanges {
+  grownPlantIds: string[]
+  newPlantIds: string[]
+  newLandmarkIds: string[]
+  finishedCount: number
+  seasonTurned: boolean
+  /** One quiet sentence, or null when there's nothing worth saying. */
+  caption: string | null
+}
+
+const EMPTY_CHANGES: VillageChanges = {
+  grownPlantIds: [], newPlantIds: [], newLandmarkIds: [],
+  finishedCount: 0, seasonTurned: false, caption: null,
+}
+
+/**
+ * What's different since you last looked.
+ *
+ * No stored snapshot, and none needed. Stage is a pure function of how many
+ * completions a habit has, and a completion is an immutable dated fact, so
+ * filtering the completions to the ones that existed at `since` reconstructs
+ * exactly what the village showed you last time. That also means it self-heals
+ * if you backfill a completion later, and it can't invent a change that didn't
+ * happen.
+ *
+ * It structurally cannot report a shrink either: a filtered list is a subset,
+ * stageFor only increases with count, so `then` is always <= `now`. The
+ * anti-guilt rule the whole village is built on survives the diff for free
+ * rather than needing to be re-enforced here.
+ */
+export function villageChangesSince(input: {
+  habits: Habit[]
+  completions: Record<string, string[]>
+  workItems: WorkItem[]
+  now?: Date
+}, since: Date | null): VillageChanges {
+  if (!since) return EMPTY_CHANGES
+  const now = input.now ?? new Date()
+  // Compared as a local calendar day. A completion carries a bare date with no
+  // time, so same-day is genuinely ambiguous, and this errs toward showing:
+  // something you did after opening the village today still counts as growth on
+  // your next visit. The opposite error swallows real growth silently, which is
+  // the worse one.
+  const sinceDay = formatDay(since)
+
+  const grownPlantIds: string[] = []
+  const newPlantIds: string[] = []
+  for (const habit of input.habits) {
+    const all = input.completions[habit.id] ?? []
+    if (habit.created_at && formatDay(parseISO(habit.created_at)) >= sinceDay) {
+      newPlantIds.push(habit.id)
+      continue
+    }
+    const before = all.filter(d => d < sinceDay)
+    if (STAGE_INDEX(stageFor(all.length)) > STAGE_INDEX(stageFor(before.length))) {
+      grownPlantIds.push(habit.id)
+    }
+  }
+
+  const newLandmarkIds: string[] = []
+  let finishedCount = 0
+  for (const item of input.workItems) {
+    if (item.status !== 'done' || !item.completed_at) continue
+    if (formatDay(parseISO(item.completed_at)) < sinceDay) continue
+    if (taskStage(item) === 'landmark') newLandmarkIds.push(item.id)
+    else finishedCount++
+  }
+
+  const changes: VillageChanges = {
+    grownPlantIds, newPlantIds, newLandmarkIds, finishedCount,
+    seasonTurned: seasonOf(since) !== seasonOf(now),
+    caption: null,
+  }
+  changes.caption = captionFor(changes, input.habits)
+  return changes
+}
+
+function formatDay(d: Date): string {
+  const m = `${d.getMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getDate()}`.padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+const COUNT_WORD = ['no', 'one', 'two', 'three']
+const countWord = (n: number) => COUNT_WORD[n] ?? 'a few'
+
+// Written here rather than in the component so there's exactly one place that
+// controls the tone. Deliberately never says how long you were away, never
+// gives a total, and never congratulates: it reports what happened, the way you
+// would notice it walking back into a room.
+function captionFor(c: VillageChanges, habits: Habit[]): string | null {
+  const parts: string[] = []
+
+  if (c.grownPlantIds.length === 1) {
+    const name = habits.find(h => h.id === c.grownPlantIds[0])?.name
+    parts.push(name ? `${name.toLowerCase()} grew` : 'something grew')
+  } else if (c.grownPlantIds.length > 1) {
+    parts.push(`${countWord(c.grownPlantIds.length)} plants grew`)
+  }
+
+  if (c.newPlantIds.length === 1) parts.push('something new was planted')
+  else if (c.newPlantIds.length > 1) parts.push(`${countWord(c.newPlantIds.length)} things were planted`)
+
+  if (c.newLandmarkIds.length === 1) parts.push('a landmark went up')
+  else if (c.newLandmarkIds.length > 1) parts.push(`${countWord(c.newLandmarkIds.length)} landmarks went up`)
+
+  if (!parts.length && c.finishedCount > 0) {
+    parts.push(c.finishedCount === 1 ? 'something got finished' : `${countWord(c.finishedCount)} things got finished`)
+  }
+
+  if (c.seasonTurned) parts.push('the season turned')
+
+  if (!parts.length) return null
+  if (parts.length === 1) return `Since you were last here, ${parts[0]}.`
+  return `Since you were last here, ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`
+}
+
 // Deterministic pseudo-random from an id, so a given habit/project always
 // sits in the same spot. Stable placement is what makes it feel like a
 // place you know rather than a chart that reshuffles on every load.

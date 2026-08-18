@@ -8,6 +8,9 @@ import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { PlantShape, BuildingShape, DistrictLabel } from './shapes'
 import Sky from './Sky'
 import Ambient from './Ambient'
+import Horizon from './Horizon'
+import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
+import type { VillageChanges } from '@/lib/village/state'
 
 export const GROUND_Y = 372
 
@@ -18,14 +21,22 @@ export type { Slot } from '@/lib/village/layout'
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
  * `village`, so this file can be read top to bottom as a draw order.
  */
-export default function VillageScene({ village: v, live, palette, celestial, plantSlots, buildingSlots }: {
+export default function VillageScene({
+  village: v, live, palette, celestial, plantSlots, buildingSlots,
+  horizon = [], changes,
+}: {
   village: VillageState
   live: boolean
   palette: SeasonPalette
   celestial: CelestialData | null
   plantSlots: (Slot & { plant: VillageState['plants'][number] })[]
   buildingSlots: (Slot & { building: VillageState['buildings'][number] })[]
+  horizon?: HorizonPlace[]
+  changes?: VillageChanges
 }) {
+  const grew = new Set(changes?.grownPlantIds ?? [])
+  const planted = new Set(changes?.newPlantIds ?? [])
+  const landmarked = new Set(changes?.newLandmarkIds ?? [])
   return (
     <svg
       viewBox="0 0 800 440"
@@ -55,6 +66,10 @@ export default function VillageScene({ village: v, live, palette, celestial, pla
         <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
           fill={palette.ground} opacity={palette.groundOpacity} className="village-fade" />
       )}
+      {/* Behind the ground line and above the sky: places you've both been.
+          Drawn before the ground stroke so the hills sit properly behind it. */}
+      <Horizon places={horizon} groundY={GROUND_Y} />
+
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
@@ -70,7 +85,8 @@ export default function VillageScene({ village: v, live, palette, celestial, pla
       {plantSlots.map(({ plant, x, y, scale, back }) => (
         <g key={plant.id} opacity={back ? 0.55 : 1}>
           <PlantShape plant={plant} x={x} y={y} scale={scale}
-            foliage={live ? palette.foliage : undefined} />
+            foliage={live ? palette.foliage : undefined}
+            changed={grew.has(plant.id) || planted.has(plant.id)} />
         </g>
       ))}
 
@@ -90,7 +106,8 @@ export default function VillageScene({ village: v, live, palette, celestial, pla
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
         <g key={building.id} opacity={back ? 0.55 : 1}>
-          <BuildingShape building={building} x={x} y={y} scale={scale} />
+          <BuildingShape building={building} x={x} y={y} scale={scale}
+            changed={landmarked.has(building.id)} />
         </g>
       ))}
 

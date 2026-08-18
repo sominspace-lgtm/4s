@@ -466,6 +466,20 @@ select, option {
 .village-fall-1 { animation-delay: -7s; }
 .village-fall-2 { animation-delay: -14s; }
 
+/* Something that changed while you were away. Two separate mechanisms on
+   purpose: a static ring that carries the information, and a one-shot glow
+   that draws the eye to it. Under reduced motion the glow is stripped and the
+   ring stays, so the thing being pointed at doesn't disappear along with the
+   pointing. Landmark tier, 1200ms — the one beat allowed to be felt. */
+@keyframes village-arrive {
+  0%   { filter: drop-shadow(0 0 0   var(--gold)); }
+  35%  { filter: drop-shadow(0 0 6px var(--gold)); }
+  100% { filter: drop-shadow(0 0 1.5px var(--gold)); }
+}
+/* The static form comes first, so killing the animation leaves the mark. */
+.village-changed { filter: drop-shadow(0 0 1.5px var(--gold)); }
+.village-changed { animation: village-arrive 1200ms ease-out both; }
+
 /* Checking something off should feel like it landed. The box fills, the
    tick draws itself in — one beat, then still. */
 @keyframes tick-in { from { stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
@@ -551,7 +565,7 @@ select, option {
 @media (prefers-reduced-motion: reduce) {
   .village-drift, .village-glow, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
-  .village-petal, .village-leaf, .village-snow,
+  .village-petal, .village-leaf, .village-snow, .village-changed,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }

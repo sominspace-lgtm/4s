@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import SectionLabel from '@/components/ui/SectionLabel'
@@ -45,6 +45,8 @@ interface Props {
   isAnonymous: boolean
   /** ISO string from auth.users.created_at. Drives the Village's Life Tree. */
   accountCreatedAt: string | null
+  /** ISO string of the last Village visit, from user_prefs.layout. */
+  initialVillageLastSeen: string | null
   initialUnlockAll: boolean
   initialName: string | null
   initialTheme: string
@@ -96,7 +98,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, accountCreatedAt, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -129,12 +131,24 @@ export default function DashboardClient({ email, userId, isAnonymous, accountCre
   // now" is a one-way choice, persisted in the layout JSON.
   const [unlockAll, setUnlockAll] = useState(initialUnlockAll)
 
+  // Frozen for the whole session on purpose: if this tracked the value we're
+  // about to write, the "since you were last here" line would vanish under the
+  // reader a moment after they arrived. The stamp moves, the story doesn't.
+  const [villageLastSeen] = useState(initialVillageLastSeen)
+  const villageSeenWritten = useRef(false)
+  const markVillageSeen = useCallback(() => {
+    if (villageSeenWritten.current) return
+    villageSeenWritten.current = true
+    saveLayout(userId, layoutState(), { villageLastSeen: new Date().toISOString() })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
   // All layout writes go through saveLayout(). See lib/persistence/saveLayout.ts:
   // the layout column is one JSON blob, so a hand-built object that omits a key
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks }
+    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
   }
 
   async function toggleCollapsed(id: string) {
@@ -313,7 +327,7 @@ export default function DashboardClient({ email, userId, isAnonymous, accountCre
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} />
+        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} />
         case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />

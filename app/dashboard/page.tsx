@@ -41,6 +41,7 @@ export default async function DashboardPage() {
       // rings on the Life Tree, which was stuck at zero because nothing ever
       // read it.
       accountCreatedAt={user.created_at ?? null}
+      initialVillageLastSeen={(prefs?.layout?.villageLastSeen as string | undefined) ?? null}
       initialUnlockAll={Boolean(prefs?.layout?.unlockAll)}
       initialName={prefs?.display_name ?? null}
       initialTheme={normalizeTheme(prefs?.theme)}

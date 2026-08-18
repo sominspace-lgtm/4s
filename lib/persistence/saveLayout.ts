@@ -34,6 +34,15 @@ export interface LayoutState {
   personalTabs?: SectionConfig[]
   householdTabs?: SectionConfig[]
   householdHomeBlocks?: SectionConfig[]
+  // When the Village was last opened, so it can say what changed since. Not a
+  // layout setting, but it lives here for the same reason the others do: it's
+  // one small per-user value and this column already exists.
+  //
+  // Optional in the type, which is exactly the hazard this file's header
+  // describes — an optional key left out of layoutState() gets wiped by every
+  // unrelated write and TypeScript stays quiet about it. It IS in layoutState()
+  // in DashboardClient. Keep it there.
+  villageLastSeen?: string
 }
 
 export async function saveLayout(
