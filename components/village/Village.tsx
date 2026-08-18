@@ -1,8 +1,11 @@
 'use client'
 
 import { useMemo } from 'react'
+import { parseISO } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
+import { useVillageWork } from '@/lib/hooks/useVillageWork'
+import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { buildVillage, hashPos, STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import VillageText from './VillageText'
@@ -109,16 +112,28 @@ function DistrictLabel({ x, y, glyph, label, count, onClick }: {
   )
 }
 
-export default function Village({ reflectionDays = 0, accountCreated = null }: {
-  reflectionDays?: number
-  accountCreated?: Date | null
+export default function Village({ userId, theme, accountCreatedAt = null }: {
+  userId: string
+  theme: string
+  /** ISO string from auth.users.created_at, via DashboardClient. */
+  accountCreatedAt?: string | null
 }) {
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
+  // Finished work, which useWorkItems deliberately excludes. Without this the
+  // Project District can only ever show scaffolding — see useVillageWork.
+  const { done } = useVillageWork()
+  const reflectionDays = useReflectionDays()
+
+  const accountCreated = useMemo(
+    () => (accountCreatedAt ? parseISO(accountCreatedAt) : null),
+    [accountCreatedAt]
+  )
+  const allWork = useMemo(() => [...workItems, ...done], [workItems, done])
 
   const v = useMemo(
-    () => buildVillage({ habits, completions, workItems, reflectionDays, accountCreated }),
-    [habits, completions, workItems, reflectionDays, accountCreated]
+    () => buildVillage({ habits, completions, workItems: allWork, reflectionDays, accountCreated }),
+    [habits, completions, allWork, reflectionDays, accountCreated]
   )
 
   const [skyTop, skyBottom] = SKY[v.timeOfDay]
@@ -214,13 +229,20 @@ export default function Village({ reflectionDays = 0, accountCreated = null }: {
         {/* Project District */}
         {buildingSlots.map(({ building, x, y }) => <BuildingShape key={building.id} building={building} x={x} y={y} />)}
 
-        {/* Archive Grove — the Life Tree, one ring per year */}
+        {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
+            canopy is the continuum underneath, so the tree visibly thickens
+            across your first months instead of standing still until month 12. */}
         <g transform={`translate(725 ${groundY + 2})`}>
-          <title>{`Archive Grove — Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`}</title>
-          <rect x={-4} y={-40} width={8} height={40} rx={2} fill="var(--slate)" opacity={0.7} />
-          <circle cx={0} cy={-52} r={26} fill="var(--emerald)" opacity={0.35} />
-          <circle cx={-14} cy={-44} r={16} fill="var(--emerald)" opacity={0.28} />
-          <circle cx={14} cy={-45} r={15} fill="var(--emerald)" opacity={0.3} />
+          <title>{
+            v.treeRings > 0
+              ? `Archive Grove, Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`
+              : `Archive Grove, Life Tree in its first year, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
+          }</title>
+          <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
+            transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />
+          <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill="var(--emerald)" opacity={0.35} />
+          <circle cx={-14} cy={-44} r={11 + v.canopy * 5} fill="var(--emerald)" opacity={0.28} />
+          <circle cx={14} cy={-45} r={10 + v.canopy * 5} fill="var(--emerald)" opacity={0.3} />
           {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
             <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
           ))}

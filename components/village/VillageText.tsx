@@ -18,11 +18,17 @@ export default function VillageText({ village }: { village: VillageState }) {
 
   const lines = [
     `Growth Forest: ${village.plants.length} plant${village.plants.length === 1 ? '' : 's'}` +
-      (village.plants.length ? ` — ${growing} growing, ${resting} resting.` : ' — nothing planted yet.'),
+      (village.plants.length ? `. ${growing} growing, ${resting} resting.` : '. Nothing planted yet.'),
     `Project District: ${standing} standing, ${underway} underway.`,
-    `Archive Grove: Life Tree has ${village.treeRings} ring${village.treeRings === 1 ? '' : 's'}.`,
+    // A new account should never read "0 rings" for its whole first year. The
+    // canopy is already moving by then, so the words say so too.
+    village.treeRings > 0
+      ? `Archive Grove: Life Tree has ${village.treeRings} ring${village.treeRings === 1 ? '' : 's'}.`
+      : `Archive Grove: Life Tree in its first year, ${village.accountMonths} month${village.accountMonths === 1 ? '' : 's'} of growth.`,
     `Bloom Garden: ${village.flowers.length || 'no'} flower${village.flowers.length === 1 ? '' : 's'} so far.`,
-    `Rest Lake: ${village.stillness > 0.5 ? 'clear and still' : 'waiting for you to slow down'}.`,
+    // Stated as the plain count rather than a verdict. Zero reads as neutral
+    // because the sentence is about rest, not compliance.
+    `Rest Lake: reflected on ${village.reflectionDays} of the last 7 days.`,
     `It is ${village.timeOfDay}, in ${village.season}.`,
   ]
 

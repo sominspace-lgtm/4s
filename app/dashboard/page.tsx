@@ -36,6 +36,11 @@ export default async function DashboardPage() {
       email={user.email ?? ''}
       userId={user.id}
       isAnonymous={Boolean(user.is_anonymous)}
+      // Passed as an ISO string, not a Date: every other prop across this
+      // boundary is a primitive. The Village parses it once. This is what puts
+      // rings on the Life Tree, which was stuck at zero because nothing ever
+      // read it.
+      accountCreatedAt={user.created_at ?? null}
       initialUnlockAll={Boolean(prefs?.layout?.unlockAll)}
       initialName={prefs?.display_name ?? null}
       initialTheme={normalizeTheme(prefs?.theme)}

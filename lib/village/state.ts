@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseISO } from 'date-fns'
+import { differenceInCalendarDays, differenceInCalendarMonths, parseISO } from 'date-fns'
 import type { Habit } from '@/lib/hooks/useHabits'
 import type { WorkItem } from '@/lib/hooks/useWorkItems'
 import { taskStage } from '@/lib/utils/taskStage'
@@ -38,8 +38,23 @@ export interface VillageState {
   flowers: { id: string; name: string }[]
   /** Rings on the Life Tree — one per year of use. */
   treeRings: number
+  /** Whole months since the account was made. Drives canopy. */
+  accountMonths: number
+  /**
+   * Life Tree canopy fullness 0..1, from account age in months.
+   *
+   * treeRings only ticks once a YEAR, so without this a new user watches the
+   * Archive Grove do nothing at all for twelve months and reasonably concludes
+   * it's broken. Rings stay the milestone; canopy is the continuum underneath
+   * it, moving about a pixel of radius a month — invisible day to day, obvious
+   * across a season. Floored so day one is a small tree rather than a stick.
+   */
+  canopy: number
   /** Calm-water score 0..1 for Rest Lake: recent reflection/rest activity. */
   stillness: number
+  /** The raw count behind `stillness`, carried through so the text equivalent
+   *  can state it plainly rather than reverse-engineering it from a ratio. */
+  reflectionDays: number
   season: 'spring' | 'summer' | 'autumn' | 'winter'
   timeOfDay: 'dawn' | 'day' | 'dusk' | 'night'
   isEmpty: boolean
@@ -135,15 +150,21 @@ export function buildVillage(input: {
   const years = input.accountCreated
     ? Math.max(0, Math.floor(differenceInCalendarDays(now, input.accountCreated) / 365))
     : 0
+  const months = input.accountCreated
+    ? Math.max(0, differenceInCalendarMonths(now, input.accountCreated))
+    : 0
 
   return {
     plants,
     buildings,
     flowers: [],
     treeRings: years,
+    accountMonths: months,
+    canopy: Math.max(0.35, Math.min(1, months / 18)),
     // Rest is productive: the lake gets clearer the more you actually rest,
     // capped so it's never a metric to max out.
     stillness: Math.min(1, input.reflectionDays / 7),
+    reflectionDays: input.reflectionDays,
     season: seasonOf(now),
     timeOfDay: timeOfDayOf(now),
     isEmpty: plants.length === 0 && buildings.length === 0,

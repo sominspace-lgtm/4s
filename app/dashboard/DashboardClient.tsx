@@ -43,6 +43,8 @@ interface Props {
   email: string
   userId: string
   isAnonymous: boolean
+  /** ISO string from auth.users.created_at. Drives the Village's Life Tree. */
+  accountCreatedAt: string | null
   initialUnlockAll: boolean
   initialName: string | null
   initialTheme: string
@@ -94,7 +96,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, accountCreatedAt, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -311,7 +313,7 @@ export default function DashboardClient({ email, userId, isAnonymous, initialUnl
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'work':     return <MasterDashboard key="work" userId={userId} />
-        case 'village':  return <Village key="village" />
+        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} />
         case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />

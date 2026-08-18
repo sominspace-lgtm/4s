@@ -14,6 +14,9 @@ export interface Habit {
   interval_days: number | null
   days_of_week: number[] | null
   paused: boolean
+  /** Already returned by the select('*') below; typed so the Village can tell
+   *  a genuinely new plant from one that merely grew. */
+  created_at: string
 }
 
 const DOW_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
