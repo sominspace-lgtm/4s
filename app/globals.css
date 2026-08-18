@@ -414,6 +414,17 @@ select, option {
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
 
+/* The sky eases between times of day rather than snapping. This is also the
+   hydration fix: the scene renders a fixed daytime sky on the server and on
+   the first client paint, then transitions to the real time once mounted, so
+   the two passes are identical markup. See components/village/useVillageClock. */
+.village-sky-stop { transition: stop-color 400ms ease; }
+
+/* Anything that only exists once the clock is live (stars, sun, ambient life)
+   arrives on the same 400ms beat instead of popping in. */
+@keyframes village-fade { from { opacity: 0; } to { opacity: 1; } }
+.village-fade { animation: village-fade 400ms ease both; }
+
 /* Checking something off should feel like it landed. The box fills, the
    tick draws itself in — one beat, then still. */
 @keyframes tick-in { from { stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
@@ -497,9 +508,10 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .settle, .grew,
+  .village-drift, .village-glow, .village-fade, .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }
+  .village-sky-stop { transition: none !important; }
   .press:active, .lift:hover, .drop-target, .drag-source { transform: none !important; }
   .nav-tab::after { transition: none !important; }
 }
