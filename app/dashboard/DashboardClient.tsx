@@ -399,9 +399,9 @@ export default function DashboardClient({ email, userId, isAnonymous, accountCre
       <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected onClose={() => setJarvisOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
-      <CustomizePanel open={customizeOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
+      <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
-      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} simpleMode={simpleMode} unlockAll={unlockAll} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
+      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} current={layoutState()} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
       <ConnectPanel
         open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)}

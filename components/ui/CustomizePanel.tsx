@@ -1,7 +1,7 @@
 'use client'
 
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
-import { saveLayout } from '@/lib/persistence/saveLayout'
+import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 
 // Re-exported so every existing importer (DashboardClient, app/dashboard/
 // page.tsx, saveLayout.ts, FocusViewPanel) keeps working unchanged — the
@@ -63,18 +63,22 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
 interface CustomizePanelProps {
   open: boolean
   sections: SectionConfig[]
-  focusConfig: FocusConfig
-  simpleMode: boolean
-  unlockAll: boolean
+  /** The COMPLETE current layout. See the note in update(). */
+  current: LayoutState
   userId: string
   onChange: (sections: SectionConfig[]) => void
   onClose: () => void
 }
 
-export default function CustomizePanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: CustomizePanelProps) {
+export default function CustomizePanel({ open, sections, current, userId, onChange, onClose }: CustomizePanelProps) {
   async function update(next: SectionConfig[]) {
     onChange(next)
-    await saveLayout(userId, { sections, focus: focusConfig, simpleMode, unlockAll }, { sections: next })
+    // `current` must be the COMPLETE LayoutState. This used to be built here
+    // from four props, so reordering your sections silently reset your Today
+    // blocks and your Personal and Household tab arrangements — the exact bug
+    // lib/persistence/saveLayout.ts was written to end, reintroduced by
+    // rebuilding the object by hand in a second place.
+    await saveLayout(userId, current, { sections: next })
   }
 
   return (

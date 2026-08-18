@@ -1,21 +1,21 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { saveLayout } from '@/lib/persistence/saveLayout'
+import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import type { SectionConfig, FocusConfig } from './CustomizePanel'
 
 interface FocusViewPanelProps {
   open: boolean
   sections: SectionConfig[]
   focusConfig: FocusConfig
-  simpleMode: boolean
-  unlockAll: boolean
+  /** The COMPLETE current layout. See the note in update(). */
+  current: LayoutState
   userId: string
   onChange: (config: FocusConfig) => void
   onClose: () => void
 }
 
-export default function FocusViewPanel({ open, sections, focusConfig, simpleMode, unlockAll, userId, onChange, onClose }: FocusViewPanelProps) {
+export default function FocusViewPanel({ open, sections, focusConfig, current, userId, onChange, onClose }: FocusViewPanelProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -28,7 +28,12 @@ export default function FocusViewPanel({ open, sections, focusConfig, simpleMode
 
   async function update(next: FocusConfig) {
     onChange(next)
-    await saveLayout(userId, { sections, focus: focusConfig, simpleMode, unlockAll }, { focus: next })
+    // `current` must be the COMPLETE LayoutState. This used to be built here
+    // from four props, which silently wiped todayBlocks, personalTabs,
+    // householdTabs and householdHomeBlocks every time anyone touched Focus
+    // view — exactly the bug lib/persistence/saveLayout.ts was written to end,
+    // reintroduced by rebuilding the object by hand in a second place.
+    await saveLayout(userId, current, { focus: next })
   }
 
   function toggleSection(id: string) {
