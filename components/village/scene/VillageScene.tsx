@@ -1,6 +1,7 @@
 'use client'
 
 import type { VillageState } from '@/lib/village/state'
+import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
@@ -10,12 +11,7 @@ import Ambient from './Ambient'
 
 export const GROUND_Y = 372
 
-export interface Slot {
-  id: string
-  x: number
-  y: number
-  scale: number
-}
+export type { Slot } from '@/lib/village/layout'
 
 /**
  * The scene itself: pure presentation, no hooks and no dates. Everything
@@ -71,9 +67,11 @@ export default function VillageScene({ village: v, live, palette, celestial, pla
       </g>
 
       {/* Growth Forest */}
-      {plantSlots.map(({ plant, x, y, scale }) => (
-        <PlantShape key={plant.id} plant={plant} x={x} y={y} scale={scale}
-          foliage={live ? palette.foliage : undefined} />
+      {plantSlots.map(({ plant, x, y, scale, back }) => (
+        <g key={plant.id} opacity={back ? 0.55 : 1}>
+          <PlantShape plant={plant} x={x} y={y} scale={scale}
+            foliage={live ? palette.foliage : undefined} />
+        </g>
       ))}
 
       {/* Home — always present, grows detail with activity */}
@@ -90,8 +88,10 @@ export default function VillageScene({ village: v, live, palette, celestial, pla
       </g>
 
       {/* Project District */}
-      {buildingSlots.map(({ building, x, y, scale }) => (
-        <BuildingShape key={building.id} building={building} x={x} y={y} scale={scale} />
+      {buildingSlots.map(({ building, x, y, scale, back }) => (
+        <g key={building.id} opacity={back ? 0.55 : 1}>
+          <BuildingShape building={building} x={x} y={y} scale={scale} />
+        </g>
       ))}
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the

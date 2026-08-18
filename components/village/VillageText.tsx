@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { VillageState } from '@/lib/village/state'
+import { FOREST_CAP, DISTRICT_CAP } from '@/lib/village/layout'
 
 // The village's mandatory text equivalent. Not a nice-to-have and not a
 // phase-2 item: the village is never the ONLY way to know something about
@@ -16,10 +17,17 @@ export default function VillageText({ village }: { village: VillageState }) {
   const standing = village.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length
   const underway = village.buildings.length - standing
 
+  // Raising the caps still hides things at scale, and a plant you can't see has
+  // to remain knowable in words. Same rule as everything else in this file.
+  const plantOverflow = Math.max(0, village.plants.length - FOREST_CAP)
+  const buildingOverflow = Math.max(0, village.buildings.length - DISTRICT_CAP)
+
   const lines = [
     `Growth Forest: ${village.plants.length} plant${village.plants.length === 1 ? '' : 's'}` +
-      (village.plants.length ? `. ${growing} growing, ${resting} resting.` : '. Nothing planted yet.'),
-    `Project District: ${standing} standing, ${underway} underway.`,
+      (village.plants.length ? `. ${growing} growing, ${resting} resting.` : '. Nothing planted yet.') +
+      (plantOverflow ? ` Showing ${FOREST_CAP} of ${village.plants.length}.` : ''),
+    `Project District: ${standing} standing, ${underway} underway.` +
+      (buildingOverflow ? ` Showing ${DISTRICT_CAP} of ${village.buildings.length}.` : ''),
     // A new account should never read "0 rings" for its whole first year. The
     // canopy is already moving by then, so the words say so too.
     village.treeRings > 0

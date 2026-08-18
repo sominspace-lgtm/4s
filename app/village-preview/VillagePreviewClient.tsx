@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import VillageScene, { GROUND_Y } from '@/components/village/scene/VillageScene'
-import { hashPos, type VillageState, type Plant, type Building } from '@/lib/village/state'
+import { type VillageState, type Plant, type Building } from '@/lib/village/state'
+import { forestSlots, districtSlots } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
 import { THEMES, THEME_LABELS } from '@/lib/constants/themes'
@@ -13,15 +14,18 @@ const TIMES: VillageState['timeOfDay'][] = ['dawn', 'day', 'dusk', 'night']
 const PLANT_STAGES: Plant['stage'][] = ['seed', 'sprout', 'plant', 'young', 'tree']
 const PHASES: Building['phase'][] = ['blueprint', 'foundation', 'construction', 'complete', 'landmark']
 
-function fakeVillage(season: VillageState['season'], timeOfDay: VillageState['timeOfDay']): VillageState {
-  const plants: Plant[] = [...Array(9)].map((_, i) => ({
+function fakeVillage(
+  season: VillageState['season'], timeOfDay: VillageState['timeOfDay'],
+  nPlants = 9, nBuildings = 6,
+): VillageState {
+  const plants: Plant[] = [...Array(nPlants)].map((_, i) => ({
     id: `p${i}`,
     name: `Habit ${i}`,
     stage: PLANT_STAGES[i % PLANT_STAGES.length],
     dormant: i === 4 || i === 7,
     category: null,
   }))
-  const buildings: Building[] = [...Array(6)].map((_, i) => ({
+  const buildings: Building[] = [...Array(nBuildings)].map((_, i) => ({
     id: `b${i}`,
     title: `Project ${i}`,
     phase: PHASES[i % PHASES.length],
@@ -35,20 +39,17 @@ function fakeVillage(season: VillageState['season'], timeOfDay: VillageState['ti
   }
 }
 
-// The same placement maths Village.tsx uses, so the preview isn't a different
-// picture from the real thing.
+// The real placement functions, not a copy, so the preview can't drift.
 function slotsFor(v: VillageState) {
+  const plantsById = new Map(v.plants.map(p => [p.id, p]))
+  const buildingsById = new Map(v.buildings.map(b => [b.id, b]))
   return {
-    plantSlots: v.plants.map((p, idx) => ({
-      id: p.id, plant: p, scale: 1,
-      x: 60 + ((hashPos(p.id) * 0.7 + (idx % 7) / 7 * 0.3) * 250),
-      y: GROUND_Y - 6 + (hashPos(p.id + 'y') * 26),
-    })),
-    buildingSlots: v.buildings.map((b, idx) => ({
-      id: b.id, building: b, scale: 1,
-      x: 500 + ((hashPos(b.id) * 0.55 + (idx % 4) / 4 * 0.45) * 250),
-      y: GROUND_Y - 4 + (hashPos(b.id + 'y') * 20),
-    })),
+    plantSlots: forestSlots(v.plants.map(p => p.id), GROUND_Y)
+      .map(s => ({ ...s, plant: plantsById.get(s.id)! }))
+      .sort((a, b) => Number(b.back) - Number(a.back)),
+    buildingSlots: districtSlots(v.buildings.map(b => b.id), GROUND_Y)
+      .map(s => ({ ...s, building: buildingsById.get(s.id)! }))
+      .sort((a, b) => Number(b.back) - Number(a.back)),
   }
 }
 
@@ -70,6 +71,32 @@ export default function VillagePreviewClient() {
             color: t === theme ? 'var(--bg)' : 'var(--text)',
           }}>{THEME_LABELS[t] ?? t}</button>
         ))}
+      </div>
+
+      {/* Density: growth has to stay visible past the old caps rather than
+          silently stopping. Last one is deliberately over the cap. */}
+      <div style={{ marginBottom: '1.4rem' }}>
+        <div style={{ color: 'var(--text)', fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          density
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.7rem' }}>
+          {[[1, 1], [8, 5], [28, 16], [60, 40]].map(([np, nb]) => {
+            const v = fakeVillage('summer', 'day', np, nb)
+            const { plantSlots, buildingSlots } = slotsFor(v)
+            return (
+              <div key={np} data-density={np}>
+                <div style={{ color: 'var(--muted)', fontSize: '0.65rem', marginBottom: '0.25rem' }}>
+                  {np} plants / {nb} projects
+                </div>
+                <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)' }}>
+                  <VillageScene village={v} live palette={seasonPalette('summer', isLight)}
+                    celestial={celestialOf(new Date(2026, 6, 15, 13))}
+                    plantSlots={plantSlots} buildingSlots={buildingSlots} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {SEASONS.map(season => (

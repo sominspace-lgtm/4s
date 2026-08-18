@@ -6,7 +6,8 @@ import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
-import { buildVillage, hashPos } from '@/lib/village/state'
+import { buildVillage } from '@/lib/village/state'
+import { forestSlots, districtSlots } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
 import { THEMES } from '@/lib/constants/themes'
@@ -64,22 +65,21 @@ export default function Village({ userId, theme, accountCreatedAt = null }: {
   const celestial = useMemo(() => (clock ? celestialOf(clock) : null), [clock])
 
   // Deterministic placement: same entity, same spot, every load. A place you
-  // recognise, not a chart that reshuffles.
-  const plantSlots = useMemo(() => v.plants.slice(0, 14).map((p, idx) => ({
-    id: p.id,
-    plant: p,
-    scale: 1,
-    x: 60 + ((hashPos(p.id) * 0.7 + (idx % 7) / 7 * 0.3) * 250),
-    y: GROUND_Y - 6 + (hashPos(p.id + 'y') * 26),
-  })), [v.plants])
+  // recognise, not a chart that reshuffles. See lib/village/layout.
+  const plantSlots = useMemo(() => {
+    const byId = new Map(v.plants.map(p => [p.id, p]))
+    return forestSlots(v.plants.map(p => p.id), GROUND_Y)
+      .map(s => ({ ...s, plant: byId.get(s.id)! }))
+      // Back row first, so the front row overlaps it rather than the reverse.
+      .sort((a, b) => Number(b.back) - Number(a.back))
+  }, [v.plants])
 
-  const buildingSlots = useMemo(() => v.buildings.slice(0, 8).map((b, idx) => ({
-    id: b.id,
-    building: b,
-    scale: 1,
-    x: 500 + ((hashPos(b.id) * 0.55 + (idx % 4) / 4 * 0.45) * 250),
-    y: GROUND_Y - 4 + (hashPos(b.id + 'y') * 20),
-  })), [v.buildings])
+  const buildingSlots = useMemo(() => {
+    const byId = new Map(v.buildings.map(b => [b.id, b]))
+    return districtSlots(v.buildings.map(b => b.id), GROUND_Y)
+      .map(s => ({ ...s, building: byId.get(s.id)! }))
+      .sort((a, b) => Number(b.back) - Number(a.back))
+  }, [v.buildings])
 
   return (
     <div>
