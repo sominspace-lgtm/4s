@@ -37,18 +37,24 @@ type HouseholdTab = HouseholdTabId
 // what's INSIDE Home (Calendar/Shopping/Chores/Meals) are reorderable and
 // hideable — `tabs`/`homeBlocks` are owned by DashboardClient, same
 // relationship Today has with its own blocks.
-export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks }: {
+export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
   userId: string
   userEmail: string
   tabs: SectionConfig[]
   onChangeTabs: (next: SectionConfig[]) => void
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
+  /** From the no-PIN "Shared" login tile. Opens straight on Reference —
+   *  "the fridge door" pinned notes are already the first thing in it
+   *  (household_notes sorts pinned-first, see useHousehold.ts) — rather than
+   *  Home, so a quick glance shows what's pinned, not the full weekly-chore
+   *  working view. */
+  sharedMode?: boolean
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const { checkins, loading: checkinsLoading } = useCheckins()
-  const [tab, setTab] = useState<HouseholdTab>('home')
+  const [tab, setTab] = useState<HouseholdTab>(sharedMode ? 'reference' : 'home')
   const h = useHousehold(spaceId)
   const memories = useMemoryLinks(spaceId)
   const listsHook = useLists(spaceId)

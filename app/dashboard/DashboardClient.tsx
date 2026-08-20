@@ -336,7 +336,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
-        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} />
+        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
         case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />
         default: return null
       }
