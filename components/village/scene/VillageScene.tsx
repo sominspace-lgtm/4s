@@ -151,7 +151,7 @@ export default function VillageScene({
       <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={() => goToPersonal('habits')}
         count={`${v.plants.length} growing`} />
       <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={() => goToSection('brief')} count="today" />
-      <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={() => goToSection('work')}
+      <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={() => goToPersonal('tasks')}
         count={`${v.buildings.length} standing`} />
       <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={() => goToSection('brief')}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`} />

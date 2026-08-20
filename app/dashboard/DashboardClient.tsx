@@ -24,9 +24,7 @@ import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
-import PlacesHub from '@/components/places/PlacesHub'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
-import MasterDashboard from '@/components/work/MasterDashboard'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
@@ -66,22 +64,26 @@ interface Props {
   initialHouseholdHomeBlocks: SectionConfig[] | null
 }
 
-// Simple mode: Today · Tasks · Village. The three you open daily; Personal
-// and Household are both "go there when you mean to", which is exactly what
-// a simplified view is meant to strip out.
-const SIMPLE_SECTION_IDS = new Set(['brief', 'work', 'village'])
+// Simple mode: Today · Personal · Village. Tasks folded into Personal
+// (2026-08-20), so the three-you-open-daily set now names Personal itself
+// rather than the sub-tab that used to be a top-level one; Household is
+// still "go there when you mean to", which is exactly what a simplified view
+// is meant to strip out.
+const SIMPLE_SECTION_IDS = new Set(['brief', 'personal', 'village'])
 
-// Folded into Personal / Today — strip from any saved layout so returning
-// users don't see dangling, unrenderable section headings. Note that
-// 'people' and 'money' are listed here now: they used to be live top-level
-// ids and are Personal sub-tabs as of this change, so any layout saved
-// before it still names them.
+// Folded into Personal / Today / Household — strip from any saved layout so
+// returning users don't see dangling, unrenderable section headings. Note
+// that 'people' and 'money' are listed here now: they used to be live
+// top-level ids and are Personal sub-tabs as of this change, so any layout
+// saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
   'pulse', 'wishlist', 'spending', 'capture',
   'relationship', 'shared',                          // → people (a Personal sub-tab)
   'habits', 'domains', 'council', 'growth',          // → Personal sub-tabs
   'people', 'money',                                 // → Personal sub-tabs
   'calendar',                                        // → a panel inside Today
+  'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
+  'places',                                          // → Household sub-tab 'places' (2026-08-20)
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -97,11 +99,9 @@ const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
 
 const SECTION_GROUPS: Record<string, string> = {
   brief:     'now',
-  work:      'now',
   village:   'your world',
   personal:  'mine',
   household: 'ours',
-  places:    'ours',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
@@ -305,8 +305,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
-      brief: t('Today', lang), work: t('Tasks', lang), village: t('Village', lang),
-      personal: t('Personal', lang), household: t('Household', lang), places: t('Places', lang),
+      brief: t('Today', lang), village: t('Village', lang),
+      // "Shared" (2026-08-20), not "Household" — the id stays 'household'
+      // (every saved layout, goToSection call and RLS-adjacent check names
+      // it), but the label now matches the vocabulary the PIN login screen
+      // already uses: Personal vs Shared is the one split that runs through
+      // the whole app now, not a name that happens to mean the same thing.
+      personal: t('Personal', lang), household: t('Shared', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -333,11 +338,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'work':     return <MasterDashboard key="work" userId={userId} />
         case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
-        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
-        case 'places':    return <PlacesHub key="places" userId={userId} theme={theme} />
+        // Tasks and Places both fold in as sub-tabs now (2026-08-20) — see
+        // components/personal/PersonalHub.tsx and components/household/HouseholdHub.tsx.
+        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} theme={theme} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
         default: return null
       }
     })()

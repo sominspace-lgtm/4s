@@ -38,6 +38,13 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
 // to live, it's something you check — and once it was 4S's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
 // twice. It's a panel inside Today now.
+// Four top-level tabs (2026-08-20), down from six: Tasks folded into
+// Personal as a sub-tab, Places folded into Household (now labeled "Shared")
+// as a sub-tab. Both used to be their own top-level entries that happened to
+// share a SECTION_GROUPS grouping ('now' with Today, 'ours' with Household)
+// with something else — this just makes that grouping literal instead of
+// two same-labeled tabs sitting side by side. See personalTabs.ts and
+// householdLayout.ts for where they actually live now.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
@@ -45,19 +52,16 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Renaming the id to match the label would be a migration with nothing to
   // gain — the label is the only part anyone sees.
   { id: 'brief',    label: 'Today',    hidden: false },
-  { id: 'work',     label: 'Tasks',    hidden: false },
+  // Personal — Tasks, Habits, Life, Money, People and Council as flat
+  // sub-tabs. Flat on purpose: nesting Growth inside Personal would have put
+  // Council three levels deep. See components/personal/PersonalHub.tsx.
+  { id: 'personal', label: 'Personal', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
-  // Personal — Habits, Life, Money, People and Council as flat sub-tabs.
-  // Flat on purpose: nesting Growth inside Personal would have put Council
-  // three levels deep. See components/personal/PersonalHub.tsx.
-  { id: 'personal', label: 'Personal', hidden: false },
-  // Household — chores and meals for the people you live with.
-  { id: 'household', label: 'Household', hidden: false },
-  // Places — saved pins and trips, on a themed map. Never gated (see
-  // lib/hooks/useProgression.ts NEVER_GATED) — there's no milestone that
-  // produces a pin other than opening this tab and adding one.
-  { id: 'places', label: 'Places', hidden: false },
+  // Shared (id stays 'household' — see the label-vs-id note in
+  // DashboardClient.tsx's LABELS map) — chores, meals, and now Places, for
+  // the people you live with.
+  { id: 'household', label: 'Shared', hidden: false },
 ]
 
 interface CustomizePanelProps {

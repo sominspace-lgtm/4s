@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences'
+export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences'
 
 // council is deliberately NOT here. It's reachable only by deep link
 // (Brief's "Ask Council" card, the header ⋯ menu via goToPersonal('council'))
@@ -8,6 +8,12 @@ export type PersonalTabId = 'goals' | 'habits' | 'life' | 'money' | 'people' | '
 // components/personal/PersonalHub.tsx's header comment) — customization must
 // not hand it a position or a hide toggle it was never meant to have.
 export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
+  // Folded in from the old top-level Tasks tab (2026-08-20) — tasks are
+  // individual work, the same "mine" grouping DashboardClient's
+  // SECTION_GROUPS already put it in, just now literally inside Personal
+  // instead of merely labeled the same. First, since it's the one people
+  // open most.
+  { id: 'tasks',  label: 'Tasks',  hidden: false },
   { id: 'goals',  label: 'Goals',  hidden: false },
   { id: 'habits', label: 'Habits', hidden: false },
   { id: 'life',   label: 'Life',   hidden: false },

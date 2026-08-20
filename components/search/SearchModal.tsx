@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
-import { goToSection, goToPersonal } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
 import { DOMAINS } from '@/lib/constants/domains'
 
 const TYPE_ICON: Record<string, string> = {
@@ -75,17 +75,22 @@ export default function SearchModal({ open, onClose }: Props) {
   const baseCommands: Command[] = [
     { id: 'what-attention', label: 'What needs attention', hint: 'Brief', icon: '◒', keywords: ['attention', 'urgent', 'important', 'priorities', 'what matters', 'today', 'now', 'focus'], run: () => goTo('brief') },
     { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
-    { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goTo('work') },
+    { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goToPersonal('tasks') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goToPersonal('habits') },
     { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions'], run: () => goToPersonal('life') },
     // Home Brain moved to Household, so its keywords have to move with it —
     // searching "wifi password" landing on Life would be a dead end.
-    { id: 'go-household', label: 'Go to Household',  icon: '◫', keywords: ['household', 'home brain', 'wifi', 'password', 'serial', 'manual', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'partner'], run: () => goTo('household') },
+    { id: 'go-household', label: 'Go to Shared',  icon: '◫', keywords: ['household', 'shared', 'home brain', 'wifi', 'password', 'serial', 'manual', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'partner'], run: () => goTo('household') },
+    // Places folded into Shared as a sub-tab (2026-08-20) — goToHousehold
+    // carries the specific sub-tab the same way goToPersonal does for e.g.
+    // "Go to Money", so this doesn't just land on whichever Shared sub-tab
+    // happened to be open last.
+    { id: 'go-places',   label: 'Go to Places',      icon: '◇', keywords: ['places', 'pin', 'pins', 'map', 'trip', 'trips', 'restaurant', 'travel'], run: () => goToHousehold('places') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goToPersonal('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },
     { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goToPersonal('people') },
     { id: 'go-council',  label: 'Go to Council',     icon: '⌂', keywords: ['council', 'advice', 'advisor', 'reflect', 'decision', 'guidance'], run: () => goToPersonal('council') },
-    { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goTo('work'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
+    { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goToPersonal('tasks'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
     { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToPersonal('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
     { id: 'capture-thought', label: 'Capture a thought', hint: 'Brief', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'inbox', 'quick add'], run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
     { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },

@@ -13,8 +13,10 @@ import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import DiscordConnect from './DiscordConnect'
 import CompanionSync from '@/components/relationships/CompanionSync'
+import PlacesHub from '@/components/places/PlacesHub'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
+import { consumeHouseholdTab } from '@/lib/utils/navigate'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 const MOVEIN_CATEGORIES = ['Furniture', 'Appliances', 'Kitchen', 'Bedroom', 'Living room', 'Bathroom', 'Other']
@@ -37,9 +39,12 @@ type HouseholdTab = HouseholdTabId
 // what's INSIDE Home (Calendar/Shopping/Chores/Meals) are reorderable and
 // hideable — `tabs`/`homeBlocks` are owned by DashboardClient, same
 // relationship Today has with its own blocks.
-export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
+export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
   userId: string
   userEmail: string
+  /** Passed through to Places — its map re-skin needs the active theme's
+   *  colors, same as when Places was its own top-level tab. */
+  theme: string
   tabs: SectionConfig[]
   onChangeTabs: (next: SectionConfig[]) => void
   homeBlocks: SectionConfig[]
@@ -61,7 +66,17 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     if (!spaceId && spaces.length > 0) setSpaceId(spaces[0].id)
   }, [spaces, spaceId])
   const { checkins, loading: checkinsLoading } = useCheckins()
-  const [tab, setTab] = useState<HouseholdTab>(sharedMode ? 'reference' : 'home')
+  // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
+  // Places folding into Household as a sub-tab means reaching it from
+  // outside (search, a future Archive Grove deep link) needs a specific
+  // sub-tab, not just goToSection('household'). A pending deep link wins
+  // over sharedMode's own Reference default.
+  const [tab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
+  useEffect(() => {
+    function onTab(e: Event) { setTab((e as CustomEvent<HouseholdTab>).detail) }
+    window.addEventListener('4s:household-tab', onTab)
+    return () => window.removeEventListener('4s:household-tab', onTab)
+  }, [])
   const h = useHousehold(spaceId)
   const memories = useMemoryLinks(spaceId)
   const listsHook = useLists(spaceId)
@@ -648,6 +663,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           </form>
         </section>
       )}
+
+      {/* Folded in from the old top-level Places tab (2026-08-20) — see the
+          DEFAULT_HOUSEHOLD_TABS comment in lib/utils/householdLayout.ts.
+          PlacesHub is a complete, self-contained hub (its own internal
+          Pins/Trips/Photos sub-navigation), so this is a straight mount, not
+          a rebuild — same component, same props, just reached one level
+          deeper than before. */}
+      {tab === 'places' && <PlacesHub userId={userId} theme={theme} />}
 
       {tab === 'setup' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

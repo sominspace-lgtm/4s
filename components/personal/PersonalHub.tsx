@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import MasterDashboard from '@/components/work/MasterDashboard'
 import GoalsSection from '@/components/goals/GoalsSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import PersonalRoutines from '@/components/habits/PersonalRoutines'
@@ -50,7 +51,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
   // A caller can ask for a specific sub-tab (Brief's "Ask Council" card,
   // search's "Go to Money"). See lib/utils/navigate.ts for why this is both
   // a consumed value and a live event.
-  const [tab, setTab] = useState<PersonalTab>(() => consumePersonalTab() ?? 'goals')
+  const [tab, setTab] = useState<PersonalTab>(() => consumePersonalTab() ?? 'tasks')
   const [customizeOpen, setCustomizeOpen] = useState(false)
 
   // A deep link (search, Brief) must never land on a tab the user has
@@ -91,6 +92,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
         }}>⚙</button>
       </div>
 
+      {tab === 'tasks'   && <MasterDashboard userId={userId} />}
       {tab === 'goals'   && <GoalsSection userId={userId} />}
       {tab === 'habits'  && <><PersonalRoutines userId={userId} /><HabitTracker /></>}
       {tab === 'life'    && <LifeHub />}

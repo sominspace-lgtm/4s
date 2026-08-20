@@ -259,7 +259,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   const summaryCards = [
     {
-      label: 'Tasks', action: 'Open Tasks', onAction: () => goToSection('work'),
+      label: 'Tasks', action: 'Open Tasks', onAction: () => goToPersonal('tasks'),
       line: overdue + dueToday > 0 ? `${overdue} overdue · ${dueToday} due today` : 'Queue clear',
     },
     {
@@ -325,7 +325,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         habitsDueToday={habitsDueToday}
         completedHabitIds={new Set(habitsDueToday.filter(h => (completions[h.id] ?? []).includes(today)).map(h => h.id))}
         lowEnergy={energy === 'low'}
-        onOpenTask={() => goToSection('work')}
+        onOpenTask={() => goToPersonal('tasks')}
         onOpenHabit={() => goToPersonal('habits')}
       />
     )}

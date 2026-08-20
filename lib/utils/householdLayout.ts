@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type HouseholdTabId = 'home' | 'reference' | 'movein' | 'setup'
+export type HouseholdTabId = 'home' | 'reference' | 'movein' | 'places' | 'setup'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
@@ -11,6 +11,11 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // groceries) and, right when a move is actually happening, it deserves to
   // not be buried under everything else.
   { id: 'movein',    label: 'Move-in' },
+  // Folded in from the old top-level Places tab (2026-08-20) — pins and
+  // trips were already the "ours" group in DashboardClient's SECTION_GROUPS,
+  // same as Household; this just makes that literal instead of two tabs
+  // that happened to share a label.
+  { id: 'places',    label: 'Places' },
   { id: 'setup',     label: 'Setup' },
 ].map(s => ({ ...s, hidden: false }))
 

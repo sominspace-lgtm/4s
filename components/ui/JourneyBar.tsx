@@ -15,7 +15,7 @@ import type { UnlockStage, ActionKey } from '@/lib/hooks/useProgression'
 function runAction(action: ActionKey) {
   switch (action) {
     case 'task':
-      goToSection('work')
+      goToPersonal('tasks')
       setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-task')), 80)
       return
     case 'capture':
@@ -27,7 +27,7 @@ function runAction(action: ActionKey) {
       goToPersonal('habits')
       return
     case 'completeTask':
-      goToSection('work')
+      goToPersonal('tasks')
       return
   }
 }

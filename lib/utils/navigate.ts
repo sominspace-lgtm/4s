@@ -36,7 +36,7 @@ export function scrollToAnchor(id: string, attempt = 0) {
   }, 350)
 }
 
-export type PersonalTab = 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences' | 'council'
+export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences' | 'council'
 
 // Personal holds Habits/Life/Money/People/Council as sub-tabs (see
 // components/personal/PersonalHub.tsx) — plain goToSection('personal')
@@ -60,5 +60,25 @@ export function goToPersonal(tab: PersonalTab) {
 export function consumePersonalTab(): PersonalTab | null {
   const t = pendingPersonalTab
   pendingPersonalTab = null
+  return t
+}
+
+export type HouseholdTab = 'home' | 'reference' | 'movein' | 'setup' | 'places'
+
+// Same reasoning and shape as goToPersonal/consumePersonalTab above — Places
+// folded into Household as a sub-tab (2026-08-20), so reaching it from
+// outside needs the same "tab + specific sub-view" carrier a bare
+// goToSection('household') can't express.
+let pendingHouseholdTab: HouseholdTab | null = null
+
+export function goToHousehold(tab: HouseholdTab) {
+  pendingHouseholdTab = tab
+  window.dispatchEvent(new CustomEvent('4s:household-tab', { detail: tab }))
+  goToSection('household')
+}
+
+export function consumeHouseholdTab(): HouseholdTab | null {
+  const t = pendingHouseholdTab
+  pendingHouseholdTab = null
   return t
 }

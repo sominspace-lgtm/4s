@@ -47,18 +47,20 @@ export interface UnlockStage {
   isDone: (c: Counts) => boolean
 }
 
-// Sections that are never gated — utilities someone may need from minute one,
-// or (People) a place incoming shared items must always be reachable. Places
-// joined (2026-08-12): there's no milestone that produces a pin other than
-// opening the tab and adding one, so any gate on it would be circular.
-export const NEVER_GATED = new Set(['village', 'household', 'places'])
+// Sections that are never gated — utilities someone may need from minute one.
+// Places used to need its own entry here (no milestone produces a pin other
+// than opening the tab and adding one, so any gate on it would be circular)
+// but it folded into Household as a sub-tab (2026-08-20), so Household's own
+// entry already covers it.
+export const NEVER_GATED = new Set(['village', 'household'])
 
 /** Sections that are open from the first login and never counted as something
- *  "to unlock": Today, Tasks, Village, Household, Places. Kept as a named
- *  constant because it's used twice below to size the journey bar — when it
- *  was a bare `4` in both places, adding a section silently made the bar
- *  report the wrong total. */
-const ALWAYS_OPEN_COUNT = 5
+ *  "to unlock": Today, Village, Household — down from 5 (2026-08-20) now that
+ *  Tasks and Places are Personal/Household sub-tabs rather than top-level
+ *  sections of their own. Kept as a named constant because it's used twice
+ *  below to size the journey bar — when it was a bare number in both places,
+ *  adding a section silently made the bar report the wrong total. */
+const ALWAYS_OPEN_COUNT = 3
 
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
