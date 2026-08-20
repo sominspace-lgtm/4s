@@ -43,6 +43,12 @@ interface Props {
   email: string
   userId: string
   isAnonymous: boolean
+  /** Set from the httpOnly 4s-shared-mode cookie the PIN-login route stamps
+   *  for the "Shared" tile. Restricts the whole session to Household only,
+   *  regardless of which real account is actually signed in behind it —
+   *  nothing personal (Village, Personal, Places) should be reachable from a
+   *  shared/no-PIN entry point. */
+  sharedMode: boolean
   /** ISO string from auth.users.created_at. Drives the Village's Life Tree. */
   accountCreatedAt: string | null
   /** ISO string of the last Village visit, from user_prefs.layout. */
@@ -98,7 +104,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
@@ -287,6 +293,7 @@ export default function DashboardClient({ email, userId, isAnonymous, accountCre
     && prog.isUnlocked(s.id)
     && (!zenView || focusConfig.sections.includes(s.id))
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
+    && (!sharedMode || s.id === 'household')
   )
 
   // Tab mode: only the active section renders. If the active tab was hidden

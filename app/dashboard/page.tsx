@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { normalizeMode } from '@/lib/constants/modes'
 import { normalizeTheme } from '@/lib/constants/themes'
@@ -10,6 +11,8 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) redirect('/login')
+
+  const sharedMode = (await cookies()).get('4s-shared-mode')?.value === '1'
 
   const { data: prefs } = await supabase
     .from('user_prefs')
@@ -36,6 +39,7 @@ export default async function DashboardPage() {
       email={user.email ?? ''}
       userId={user.id}
       isAnonymous={Boolean(user.is_anonymous)}
+      sharedMode={sharedMode}
       // Passed as an ISO string, not a Date: every other prop across this
       // boundary is a primitive. The Village parses it once. This is what puts
       // rings on the Life Tree, which was stuck at zero because nothing ever
