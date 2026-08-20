@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import ThemeModePicker from '@/components/ui/ThemeModePicker'
 import type { Mode } from '@/lib/constants/modes'
 import { guideGreeting } from '@/lib/utils/guideVoice'
+import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 
 interface HeaderProps {
   email: string
@@ -132,6 +133,11 @@ export default function Header({ email, userId, initialName, sharedMode = false,
   function handleThemeChange(t: string) { setTheme(t); onThemeChange(t) }
   function handleModeChange(m: Mode) { setMode(m); onModeChange(m) }
 
+  // Per-device, per-person — not shown in shared mode: it's a browser
+  // permission tied to whoever's actually holding this device, and shared
+  // mode is explicitly not any one person.
+  const push = usePushNotifications()
+
   const { prefix, suffix } = guideGreeting(mode, h)
   const displayName = name
 
@@ -255,6 +261,13 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           { icon: '⇄', label: 'Connect', onClick: onConnect },
           ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
           { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
+          ...(push.status === 'unsupported' ? [] : [{
+            icon: push.status === 'subscribed' ? '🔔' : '🔕',
+            label: push.status === 'subscribed' ? 'Notifications on'
+              : push.status === 'denied' ? 'Notifications blocked'
+              : 'Enable notifications',
+            onClick: push.status === 'subscribed' ? push.unsubscribe : push.status === 'denied' ? undefined : push.subscribe,
+          }]),
           { divider: true, icon: '', label: '' },
           { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
           { icon: '⇆', label: 'Friends', onClick: onCompanions },

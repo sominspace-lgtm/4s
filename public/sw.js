@@ -13,6 +13,33 @@ self.addEventListener('activate', e => {
   self.clients.claim()
 })
 
+// Real push (2026-08-20) — everything above this was offline app-shell
+// caching only; this is what lets a server trigger (see
+// app/api/cron/waiting-notice) reach a device even when no 4S tab is open.
+self.addEventListener('push', e => {
+  let data = { title: '4S', body: '' }
+  try { data = e.data.json() } catch { /* not JSON, use the default */ }
+  e.waitUntil(self.registration.showNotification(data.title || '4S', {
+    body: data.body,
+    icon: '/icons/192.png',
+    badge: '/icons/192.png',
+    data: { url: data.url || '/dashboard' },
+  }))
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = e.notification.data?.url || '/dashboard'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      for (const client of clients) {
+        if (client.url.includes(url) && 'focus' in client) return client.focus()
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url)
+    })
+  )
+})
+
 self.addEventListener('fetch', e => {
   // Only cache GET requests; pass everything else through
   if (e.request.method !== 'GET') return

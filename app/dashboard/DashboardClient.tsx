@@ -28,7 +28,6 @@ import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
-import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergePersonalTabs } from '@/lib/utils/personalTabs'
@@ -259,34 +258,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // A quiet reminder of what's waiting — at most once a day, and never a count
-  // of failures. This used to fire on EVERY dashboard load with "3 items are
-  // overdue", which is a system-level guilt notification following the user out
-  // of the app. The product's whole premise is that it reduces guilt, so: once
-  // per day, named not counted, and phrased as something waiting rather than
-  // something missed.
-  useEffect(() => {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
-    const today = new Date().toISOString().slice(0, 10)
-    const key = '4s-waiting-notice'
-    if (localStorage.getItem(key) === today) return
-
-    const supabase = createClient()
-    supabase.from('work_items')
-      .select('title, due_date, status')
-      .neq('status', 'done')
-      .then(({ data }) => {
-        const waiting = (data ?? []).filter(i => dueUrgency(i.due_date) === 'overdue')
-        if (waiting.length === 0) return
-        localStorage.setItem(key, today)
-        new Notification('4S', {
-          body: waiting.length === 1
-            ? `"${waiting[0].title}" is still waiting for you.`
-            : `"${waiting[0].title}" and a few others are still waiting for you.`,
-          icon: '/icons/192.png',
-        })
-      })
-  }, [])
+  // The quiet waiting-reminder that used to live here as a tab-only
+  // Notification() call is now a real server push (app/api/cron/waiting-notice,
+  // once a day via Vercel Cron) — same rule (at most once a day, named not
+  // counted, "waiting" not "missed"), just actually reaching you when the tab
+  // isn't open instead of only when it happens to be. Keeping both would
+  // double-notify anyone who has the tab open when the cron fires.
 
   const visible = sections.filter(s =>
     !s.hidden
