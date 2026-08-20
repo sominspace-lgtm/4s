@@ -40,10 +40,12 @@ export async function proxy(request: NextRequest) {
     || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/village-preview'))
     || pathname.startsWith('/api/alexa')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
-    // Called from the login page before any session cookie exists — it does
-    // its own PIN check and mints the session itself, same reasoning as the
-    // Alexa webhook above.
+    // Called from the login page before any session cookie exists — each
+    // does its own PIN check (or none, for pin-status's read-only lookup)
+    // and mints the session itself, same reasoning as the Alexa webhook above.
     || pathname === '/api/auth/pin-login'
+    || pathname === '/api/auth/pin-setup'
+    || pathname === '/api/auth/pin-status'
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
