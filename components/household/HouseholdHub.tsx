@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -53,6 +53,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
+  // There are only ever Harry, Sylvia, and the one space between them — no
+  // reason to make either of them pick "Couple" from a dropdown every visit.
+  // Still overridable via the picker below (e.g. back to "Just me"), this
+  // only changes the DEFAULT, once spaces have actually loaded.
+  useEffect(() => {
+    if (!spaceId && spaces.length > 0) setSpaceId(spaces[0].id)
+  }, [spaces, spaceId])
   const { checkins, loading: checkinsLoading } = useCheckins()
   const [tab, setTab] = useState<HouseholdTab>(sharedMode ? 'reference' : 'home')
   const h = useHousehold(spaceId)

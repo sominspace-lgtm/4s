@@ -16,6 +16,12 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Shared mode is backed by a real account under the hood, but it must
+  // never expose or let anyone edit that account's actual settings — the
+  // menu link is already hidden (Header.tsx), this is the server-side
+  // backstop for anyone who navigates here directly.
+  if (cookieStore.get('4s-shared-mode')?.value === '1') redirect('/dashboard')
+
   const { data: prefs } = await supabase
     .from('user_prefs')
     .select('display_name, theme')

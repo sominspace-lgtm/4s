@@ -362,7 +362,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         </a>
       )}
       <Header
-        email={email} userId={userId} initialName={initialName}
+        email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
         initialTheme={theme} initialMode={mode}
         onThemeChange={setTheme} onModeChange={setMode}
         onCustomize={() => setCustomizeOpen(true)}

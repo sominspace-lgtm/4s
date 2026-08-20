@@ -12,6 +12,11 @@ interface HeaderProps {
   email: string
   userId: string
   initialName: string | null
+  /** From the no-PIN "Shared" login tile. Swaps the personal greeting/name
+   *  editor and most of the menu for a plain "Household" label and a short
+   *  menu — this session is backed by one real account under the hood, but
+   *  it must never present as, or let you edit, that account's identity. */
+  sharedMode?: boolean
   initialTheme: string
   initialMode: Mode
   onThemeChange: (t: string) => void
@@ -87,7 +92,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -148,8 +153,12 @@ export default function Header({ email, userId, initialName, initialTheme, initi
         }}>
           {prefix && <span>{prefix}{' '}</span>}
 
-          {/* Name — always clickable to edit */}
-          {editing ? (
+          {/* Shared never shows or edits the real backing account's name —
+              that would both leak whose account it is and let a shared-device
+              session rename someone's personal profile. */}
+          {sharedMode ? (
+            <em style={{ ...accentStyle, fontStyle: 'normal' }}>Household</em>
+          ) : editing ? (
             <input
               ref={inputRef}
               value={draft}
@@ -180,10 +189,26 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           <span>.</span>
         </div>
 
-        <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-          {format(now, "EEEE, MMMM d · yyyy")}
-          {mode !== 'peaceful' && (
-            <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} guide</span>
+        <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span>
+            {format(now, "EEEE, MMMM d · yyyy")}
+            {mode !== 'peaceful' && !sharedMode && (
+              <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} guide</span>
+            )}
+          </span>
+          {/* The one unmistakable, always-visible cue for which mode this is
+              — restricting the tab bar to Household alone is the real
+              boundary, but a person glancing at the screen needs to SEE
+              they're in the shared view, not infer it from what's missing. */}
+          {sharedMode && (
+            <span style={{
+              fontSize: '0.62rem', letterSpacing: '0.06em', color: 'var(--gold)',
+              background: 'color-mix(in srgb, var(--gold) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+              borderRadius: '20px', padding: '0.15em 0.7em', textTransform: 'none',
+            }}>
+              Shared view
+            </span>
           )}
         </div>
       </div>
@@ -194,20 +219,33 @@ export default function Header({ email, userId, initialName, initialTheme, initi
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>⌕</button>
-        <button onClick={onToggleZen} title={zenView ? 'Exit Focus view' : 'Focus view'} aria-label="Focus view" aria-pressed={zenView} style={{
-          background: zenView ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
-          border: `1px solid ${zenView ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
-          borderRadius: '8px', padding: '0.4rem 0.7rem', cursor: 'pointer',
-          color: zenView ? 'var(--gold)' : 'var(--muted)', fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>⊙</button>
-        <ThemeModePicker
-          userId={userId}
-          currentTheme={theme}
-          currentMode={mode}
-          onThemeChange={handleThemeChange}
-          onModeChange={handleModeChange}
-        />
-        <MoreMenu items={[
+        {!sharedMode && (
+          <button onClick={onToggleZen} title={zenView ? 'Exit Focus view' : 'Focus view'} aria-label="Focus view" aria-pressed={zenView} style={{
+            background: zenView ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
+            border: `1px solid ${zenView ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
+            borderRadius: '8px', padding: '0.4rem 0.7rem', cursor: 'pointer',
+            color: zenView ? 'var(--gold)' : 'var(--muted)', fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+          }}>⊙</button>
+        )}
+        {/* Theme is a personal preference stored on the backing account
+            (user_prefs.theme) — changing it from a shared-device session
+            would silently change that person's real profile the next time
+            they sign in personally. Left out of shared mode entirely rather
+            than risk that. */}
+        {!sharedMode && (
+          <ThemeModePicker
+            userId={userId}
+            currentTheme={theme}
+            currentMode={mode}
+            onThemeChange={handleThemeChange}
+            onModeChange={handleModeChange}
+          />
+        )}
+        <MoreMenu items={sharedMode ? [
+          { icon: '?', label: 'Help & tutorial', onClick: onHelp },
+          { icon: '↗', label: 'Guide', href: '/guide' },
+          { icon: '←', label: 'Sign out', onClick: signOut },
+        ] : [
           { icon: '✦', label: 'Ask Jarvis', onClick: onJarvis },
           // Council is an action you invoke, not a place you live — it was a
           // sixth sub-tab under Personal competing with Goals and Habits for
