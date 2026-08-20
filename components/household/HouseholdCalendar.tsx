@@ -1,7 +1,9 @@
 'use client'
 
-import { addDays, format, isSameDay, parseISO } from 'date-fns'
+import { addDays, format, isSameDay, isWithinInterval, parseISO } from 'date-fns'
 import { choreDue, type Chore, type Meal } from '@/lib/hooks/useHousehold'
+import { routineDue, type Routine } from '@/lib/hooks/useRoutines'
+import type { Trip } from '@/lib/hooks/useTrips'
 
 // One calendar for everything the household has going on: which chores come
 // due when, and what's being eaten.
@@ -16,16 +18,30 @@ import { choreDue, type Chore, type Meal } from '@/lib/hooks/useHousehold'
 // quarters, and a month of mostly-empty cells says less than fourteen dense
 // ones.
 
-type Entry = { kind: 'chore' | 'meal'; label: string; sub?: string; overdue?: boolean }
+type Entry = { kind: 'chore' | 'meal' | 'routine' | 'trip'; label: string; sub?: string; overdue?: boolean }
 
 const KIND_COLOR: Record<Entry['kind'], string> = {
   chore: 'var(--amber)',
   meal:  'var(--emerald)',
+  // Routines and Maintenance share a color — both come from the same
+  // household_routines table, split only by `kind`, and the calendar's job
+  // is "what's coming up", not re-litigating that distinction visually.
+  routine: 'var(--slate)',
+  trip:  'var(--purple)',
 }
 
 const DAYS = 14
 
-export default function HouseholdCalendar({ chores, meals }: { chores: Chore[]; meals: Meal[] }) {
+export default function HouseholdCalendar({ chores, meals, routines = [], trips = [] }: {
+  chores: Chore[]
+  meals: Meal[]
+  /** Routines AND maintenance — both live in household_routines, this
+   *  calendar didn't know about either until now. */
+  routines?: Routine[]
+  /** Only trips with both a start and end date show — a trip still being
+   *  dreamed about with no dates yet has nothing to put on a calendar. */
+  trips?: Trip[]
+}) {
   const today = new Date()
   const days = [...Array(DAYS)].map((_, i) => addDays(today, i))
 
@@ -48,6 +64,29 @@ export default function HouseholdCalendar({ chores, meals }: { chores: Chore[]; 
         out.push({ kind: 'meal', label: m.title, sub: m.cook ? `${m.slot} · ${m.cook}` : m.slot })
       }
     }
+
+    // Same due-date logic as chores — routineDue() is the one function that
+    // already knows how, no reason for the calendar to recompute it.
+    for (const r of routines) {
+      const due = routineDue(r)
+      const dueDate = addDays(today, due)
+      const showOn = due < 0 ? today : dueDate
+      if (isSameDay(showOn, day)) {
+        out.push({
+          kind: 'routine', label: r.name,
+          sub: due < 0 ? `${-due}d overdue` : r.kind === 'maintenance' ? 'maintenance' : undefined,
+          overdue: due < 0,
+        })
+      }
+    }
+
+    for (const t of trips) {
+      if (!t.start_date || !t.end_date) continue
+      if (isWithinInterval(day, { start: parseISO(t.start_date), end: parseISO(t.end_date) })) {
+        out.push({ kind: 'trip', label: t.title, sub: t.destination ?? undefined })
+      }
+    }
+
     return out
   }
 
@@ -58,7 +97,7 @@ export default function HouseholdCalendar({ chores, meals }: { chores: Chore[]; 
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
         <div className="t-card">The next two weeks</div>
         <div className="t-meta" style={{ display: 'flex', gap: '0.7rem' }}>
-          {(['chore', 'meal'] as const).map(k => (
+          {(['chore', 'meal', 'routine', 'trip'] as const).map(k => (
             <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
               <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: KIND_COLOR[k], display: 'inline-block' }} />
               {k}s

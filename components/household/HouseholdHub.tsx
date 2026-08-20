@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useLists } from '@/lib/hooks/useLists'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
+import { useTrips } from '@/lib/hooks/useTrips'
+import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
@@ -83,6 +85,17 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
   const [newListName, setNewListName] = useState('')
   const [listItemDrafts, setListItemDrafts] = useState<Record<string, string>>({})
   const routinesHook = useRoutines(spaceId)
+  // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
+  // I'm-in), so a personal solo-trip daydream would otherwise show up on
+  // the SHARED household calendar next to it — filtered here to only trips
+  // actually shared with this space, same "shared means shared" boundary
+  // Village's own horizon feature already draws.
+  const { trips: allTrips } = useTrips()
+  const trips = allTrips.filter(t => t.space_id === spaceId)
+  // Not during sharedMode — see usePresence.ts for why that would misrepresent
+  // whichever real account backs the shared-device session as "online".
+  usePresenceHeartbeat(userId, spaceId, !sharedMode)
+  const partnerPresence = usePartnerPresence(userId, spaceId)
   const [addingRoutine, setAddingRoutine] = useState(false)
   const [routineName, setRoutineName] = useState('')
   const [routineCadence, setRoutineCadence] = useState('7')
@@ -177,7 +190,7 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
     // I have on", this answers "what does this house have on", and your
     // dentist appointment isn't household business any more than the bins
     // are personal business.
-    calendar: () => <HouseholdCalendar chores={h.chores} meals={h.meals} />,
+    calendar: () => <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} />,
 
     // The highest-friction shared list there is: the one thing everyone
     // needs to write to from a different room, where "did you get milk"
@@ -531,6 +544,26 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
           <option value="">Just me</option>
           {spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
+        {/* Presence — "is my partner using this right now", not a chat-style
+            read receipt. Absent entirely when there's nothing to say (no
+            space, or presence has never been recorded), same as every other
+            quiet-when-empty surface in this app. */}
+        {partnerPresence.map(p => {
+          const name = nameFor(p.userId) ?? 'Partner'
+          const mins = p.lastActiveAt ? differenceInMinutes(new Date(), parseISO(p.lastActiveAt)) : null
+          return (
+            <span key={p.userId} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+              fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.85,
+            }}>
+              <span aria-hidden style={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                background: p.online ? 'var(--emerald)' : 'var(--muted)', opacity: p.online ? 1 : 0.4,
+              }} />
+              {name} {p.online ? 'online now' : mins !== null ? `active ${mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h`} ago` : ''}
+            </span>
+          )
+        })}
         {spaces.length === 0 && (
           <span style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.7 }}>
             Create a space in People → Spaces to share this with someone.

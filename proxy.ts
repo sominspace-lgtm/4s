@@ -48,7 +48,15 @@ export async function proxy(request: NextRequest) {
     || pathname === '/api/auth/pin-status'
 
   if (!user && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    // Preserve where the request was actually headed, so signing in lands
+    // back there instead of always at the dashboard — login/page.tsx already
+    // reads ?next= (this is exactly what Alexa's link-code flow builds by
+    // hand today), this just makes it the general behavior instead of a
+    // one-off. Concretely fixes /share-target: a share arriving after the
+    // session's expired shouldn't just discard whatever was shared.
+    const loginUrl = new URL('/login', request.url)
+    if (pathname !== '/dashboard') loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
   }
 
   if (user && pathname === '/login') {

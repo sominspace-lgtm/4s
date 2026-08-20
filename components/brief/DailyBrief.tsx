@@ -12,6 +12,7 @@ import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
+import { plantFor } from '@/lib/village/state'
 import { DOMAINS } from '@/lib/constants/domains'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
@@ -233,11 +234,33 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   // Whisper — one gentle, timely nudge. Quiet Guides (low proactivity) stay
   // silent; the rest surface a single soft line, dismissible for the day.
   const giftSoon = giftItems.filter(g => { return g.days >= 0 && g.days <= 10 }).length
+  // Two concrete automations (2026-08-20), living in the same one-nudge-a-day
+  // whisper rather than a new mechanism of their own — the whole point of a
+  // "when X, gently say Y" layer is that it composes with what's already
+  // here, not that it competes with it for attention.
+  //
+  // Dormant, not "behind" — plantFor() is the SAME function the Village and
+  // every habit row already use, so this can never disagree with what those
+  // show. A plant going dormant is explicitly not a demotion (see its own
+  // header comment in lib/village/state.ts); the copy here has to match that
+  // or it's just a guilt trip wearing the village's language.
+  const dormantHabits = habits.filter(h => !h.paused && plantFor(h, completions[h.id] ?? []).dormant)
   function pickWhisper(): string | null {
     if (proactivity === 'low') return null
+    // A cluster, not any overdue task — one slipped thing doesn't need its
+    // own automation, the existing generic line below already covers that.
+    // Checked ahead of it because it's the more specific, more useful thing
+    // to say once there's enough of a pile that naming a real next step
+    // (one focused stretch, not "catch up on everything") actually helps.
+    if (overdue >= 3) return `${overdue} things are overdue — one focused stretch might clear more than piecemeal would.`
     if (domainsNeedingReview.some(d => d.id === 'relationship')) return 'Someone may deserve a hello today.'
     if (giftSoon > 0) return 'A gift moment is coming up — worth a thought.'
     if (refillsDue > 0) return 'You may be running low on something.'
+    if (dormantHabits.length > 0) {
+      return dormantHabits.length === 1
+        ? `${dormantHabits[0].name} has gone quiet — it's still yours whenever you come back to it.`
+        : `${dormantHabits.length} habits have gone quiet — still yours, whenever.`
+    }
     if (lifeReviewedOnce && domainsNeedingReview.length > 0) return `${domainsNeedingReview[0].label} could use a quiet check-in.`
     if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
     if (inboxCount > 4) return 'A few notes are waiting whenever you\'re ready.'
