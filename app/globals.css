@@ -466,6 +466,16 @@ select, option {
 .village-fall-1 { animation-delay: -7s; }
 .village-fall-2 { animation-delay: -14s; }
 
+/* Clouds drift the width of the whole sky and loop — slow enough that you'd
+   have to watch for a minute to catch it moving, which is the point. */
+@keyframes village-cloud-drift {
+  from { transform: translateX(-40px); }
+  to   { transform: translateX(40px); }
+}
+.village-cloud { animation: village-cloud-drift 70s ease-in-out infinite alternate; }
+.village-cloud-2 { animation-duration: 95s; }
+.village-cloud-3 { animation-duration: 55s; animation-direction: alternate-reverse; }
+
 /* Something that changed while you were away. Two separate mechanisms on
    purpose: a static ring that carries the information, and a one-shot glow
    that draws the eye to it. Under reduced motion the glow is stripped and the
@@ -565,7 +575,7 @@ select, option {
 @media (prefers-reduced-motion: reduce) {
   .village-drift, .village-glow, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
-  .village-petal, .village-leaf, .village-snow, .village-changed,
+  .village-petal, .village-leaf, .village-snow, .village-changed, .village-cloud,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }

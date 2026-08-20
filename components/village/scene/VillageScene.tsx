@@ -7,6 +7,7 @@ import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { PlantShape, BuildingShape, DistrictLabel } from './shapes'
 import Sky from './Sky'
+import Clouds from './Clouds'
 import Ambient from './Ambient'
 import Horizon from './Horizon'
 import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
@@ -53,9 +54,13 @@ export default function VillageScene({
           <stop offset="55%" stopColor="var(--bg)" stopOpacity="0" />
           <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.5" />
         </radialGradient>
+        <clipPath id="vlakeClip">
+          <ellipse cx={150} cy={410} rx={110} ry={22} />
+        </clipPath>
       </defs>
 
       <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
+      {live && <Clouds timeOfDay={v.timeOfDay} />}
 
       {/* Rolling ground */}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
@@ -75,6 +80,24 @@ export default function VillageScene({
 
       {/* Rest Lake — clarity reflects actual rest taken */}
       <ellipse cx={150} cy={410} rx={110} ry={22} fill="url(#vlake)" opacity={0.4 + v.stillness * 0.6} />
+      {/* The sky's own celestial body, mirrored onto the water. Its x maps
+          the sun/moon's full arc across the sky (roughly 70-730) onto the
+          lake's own width, so the reflection glides smoothly from one bank
+          to the other over the course of a real day rather than only
+          appearing when the sun happens to be directly overhead the pond —
+          a village pond earns a little license there. Clipped to the lake's
+          own ellipse so it never floats off the water's edge. */}
+      {live && celestial && (
+        <g clipPath="url(#vlakeClip)">
+          <ellipse
+            cx={60 + Math.max(0, Math.min(1, (celestial.x - 70) / 660)) * 180}
+            cy={405} rx={celestial.body === 'sun' ? 16 : 11} ry={5}
+            fill={celestial.body === 'sun' ? 'var(--amber)' : 'var(--text)'}
+            opacity={celestial.body === 'sun' ? 0.3 : 0.22}
+            className="village-drift"
+          />
+        </g>
+      )}
       <ellipse cx={150} cy={410} rx={110} ry={22} fill="none" stroke="var(--slate)" strokeWidth={0.8} opacity={0.4} />
       <g className="village-drift">
         <ellipse cx={120} cy={406} rx={26} ry={3} fill="var(--text)" opacity={0.07} />
