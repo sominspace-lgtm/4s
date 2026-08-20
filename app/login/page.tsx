@@ -5,38 +5,29 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/ui/Logo'
 
-type Mode = 'signin' | 'signup'
+// Sign-in only (2026-08-18) — 4S is now just Harry and Sylvia, two existing
+// accounts. There is deliberately no sign-up form and no guest/anonymous
+// entry here any more: both used to mint a brand-new Supabase account on
+// click, which is exactly the "no other account creation" this removes. If
+// a password ever needs resetting, that happens directly in Supabase, not
+// through this page.
 
-// Turn raw Supabase auth strings into calm, human copy (handbook 12-COPYWRITING).
 function humanError(msg: string): string {
   const m = msg.toLowerCase()
   if (m.includes('invalid login credentials'))
     return 'That email and password did not match. Try again.'
   if (m.includes('rate limit') || m.includes('too many'))
     return 'Too many attempts. Please wait a moment before trying again.'
-  if (m.includes('already registered') || m.includes('already exists') || m.includes('user already'))
-    return 'That email already has an account. Try signing in instead.'
   if (m.includes('email not confirmed'))
     return 'Please confirm your email first — check your inbox for the link.'
-  if (m.includes('anonymous sign-ins are disabled') || m.includes('anonymous'))
-    return 'Guest mode is not enabled right now. Create an account instead — it takes ten seconds.'
   return msg
 }
 
-const PREVIEW = [
-  'See what needs attention today',
-  'Capture what matters, wherever you are',
-  'Review your life with calm guidance',
-]
-
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(true)
-  const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -59,59 +50,18 @@ export default function LoginPage() {
     else router.push(target)
   }
 
-  function switchMode(m: Mode) {
-    setMode(m); setError(null); setSent(false); setPassword(''); setConfirmPassword('')
-  }
-
-  // Guest mode — a real (anonymous) Supabase user, so RLS and every feature
-  // work normally. The space becomes permanent later by adding an email +
-  // password in Account → Keep your space; nothing is migrated or lost.
-  async function tryAsGuest() {
-    setLoading(true)
-    setError(null)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInAnonymously()
-    if (error) { setError(humanError(error.message)); setLoading(false); return }
-    router.push('/onboard')
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
     const supabase = createClient()
 
-    if (mode === 'signup') {
-      if (password !== confirmPassword) { setError('Those passwords do not match.'); setLoading(false); return }
-      if (password.length < 8) { setError('Use at least 8 characters for your password.'); setLoading(false); return }
-      const { data, error } = await supabase.auth.signUp({ email, password })
-      if (error) { setError(humanError(error.message)); setLoading(false); return }
-      // Email confirmation is off — session is returned immediately
-      if (data.session) {
-        goNext('/onboard')
-        return
-      }
-      // Fallback: try signing in
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInErr) {
-        // Confirmation might be required — tell user
-        setSent(true)
-      } else {
-        goNext('/onboard')
-      }
-      setLoading(false)
-      return
-    }
-
-    // signin
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(humanError(error.message)); setLoading(false); return }
     if (!rememberMe) sessionStorage.setItem('4s-session-only', '1')
     goNext('/dashboard')
   }
 
-  const loadingLabel = mode === 'signup' ? 'Creating your space…' : 'Checking your account…'
-  const submitLabel = mode === 'signup' ? 'Create account' : 'Sign in'
   const disabled = loading || !email || !password
 
   const inputStyle: React.CSSProperties = {
@@ -122,13 +72,6 @@ export default function LoginPage() {
   }
   const focusOn = (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = 'var(--gold)' }
   const focusOff = (e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = 'var(--border)' }
-
-  // Quiet text-style action (secondary / tertiary).
-  const quietBtn: React.CSSProperties = {
-    background: 'transparent', border: 'none', color: 'var(--muted)',
-    fontFamily: 'var(--font-body)', fontSize: '0.85rem', cursor: 'pointer',
-    padding: '0.5rem', transition: 'color var(--t-fast)',
-  }
 
   return (
     <div style={{
@@ -156,120 +99,55 @@ export default function LoginPage() {
           border: '1px solid var(--border)', borderRadius: '20px',
           padding: '1.6rem 1.4rem', boxShadow: 'var(--shadow-soft)',
         }}>
-          {sent ? (
-            <div style={{ textAlign: 'center', padding: '0.5rem 0.25rem' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--text)', marginBottom: '0.5rem' }}>
-                Your space is ready.
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="you@email.com" required aria-label="Email" autoComplete="email"
+              style={inputStyle} onFocus={focusOn} onBlur={focusOff}
+            />
+
+            <input
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Password" required aria-label="Password" autoComplete="current-password"
+              style={inputStyle} onFocus={focusOn} onBlur={focusOff}
+            />
+
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.15rem 0 1rem',
+              cursor: 'pointer', fontSize: '0.85rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
+            }}>
+              <input
+                type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
+                style={{ accentColor: 'var(--gold)', width: 16, height: 16, cursor: 'pointer' }}
+              />
+              Remember me
+            </label>
+
+            {error && (
+              <div role="alert" style={{
+                color: 'var(--rose)', fontSize: '0.85rem', margin: '0.25rem 0 0.85rem', fontFamily: 'var(--font-body)',
+                padding: '0.7rem 0.85rem', background: 'color-mix(in srgb, var(--rose) 10%, transparent)',
+                borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--rose) 22%, transparent)', lineHeight: 1.5,
+              }}>
+                {error}
               </div>
-              <p style={{ color: 'var(--muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                Confirm your email to finish, then sign in below.
-              </p>
-              <button onClick={() => { setSent(false); setError(null) }} style={{ ...quietBtn, color: 'var(--gold)' }}>
-                Back to sign in
-              </button>
-            </div>
-          ) : (
-            <>
-              <p style={{ color: 'var(--muted)', fontSize: '0.92rem', fontFamily: 'var(--font-body)', lineHeight: 1.55, marginBottom: '1.2rem', textAlign: 'center' }}>
-                Organize your goals, tasks, routines, reflections, and priorities in one calm workspace.
-              </p>
+            )}
 
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-                <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="you@email.com" required aria-label="Email" autoComplete="email"
-                  style={inputStyle} onFocus={focusOn} onBlur={focusOff}
-                />
-
-                <input
-                  type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Password" required aria-label="Password"
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                  style={inputStyle} onFocus={focusOn} onBlur={focusOff}
-                />
-
-                {mode === 'signup' && (
-                  <input
-                    type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm password" required aria-label="Confirm password" autoComplete="new-password"
-                    style={inputStyle} onFocus={focusOn} onBlur={focusOff}
-                  />
-                )}
-
-                {mode === 'signin' && (
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.15rem 0 1rem',
-                    cursor: 'pointer', fontSize: '0.85rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
-                  }}>
-                    <input
-                      type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
-                      style={{ accentColor: 'var(--gold)', width: 16, height: 16, cursor: 'pointer' }}
-                    />
-                    Remember me
-                  </label>
-                )}
-
-                {error && (
-                  <div role="alert" style={{
-                    color: 'var(--rose)', fontSize: '0.85rem', margin: '0.25rem 0 0.85rem', fontFamily: 'var(--font-body)',
-                    padding: '0.7rem 0.85rem', background: 'color-mix(in srgb, var(--rose) 10%, transparent)',
-                    borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--rose) 22%, transparent)', lineHeight: 1.5,
-                  }}>
-                    {error}
-                  </div>
-                )}
-
-                {/* Primary action */}
-                <button
-                  type="submit" disabled={disabled}
-                  style={{
-                    width: '100%', padding: '1rem', borderRadius: '12px', border: 'none',
-                    background: disabled ? 'color-mix(in srgb, var(--gold) 40%, transparent)' : 'var(--gold)',
-                    color: 'var(--bg)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 500,
-                    cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.01em',
-                    transition: 'opacity var(--t-base)',
-                  }}
-                >
-                  {loading ? loadingLabel : submitLabel}
-                </button>
-              </form>
-
-              {/* Secondary + tertiary actions */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', marginTop: '1rem' }}>
-                {mode === 'signin' && (
-                  <button onClick={() => switchMode('signup')} style={{ ...quietBtn, color: 'var(--gold)' }}>New to 4S? Create an account</button>
-                )}
-                {mode === 'signup' && (
-                  <button onClick={() => switchMode('signin')} style={quietBtn}>Already have an account? Sign in</button>
-                )}
-
-                {/* Guest entry — value before commitment. A divider keeps it
-                    clearly separate from the credential flows above. */}
-                <div aria-hidden style={{ width: '100%', height: 1, background: 'var(--faint)', margin: '0.7rem 0 0.45rem' }} />
-                <button onClick={tryAsGuest} disabled={loading} style={{ ...quietBtn, color: 'var(--gold)' }}>
-                  Just exploring? Try 4S without an account →
-                </button>
-                <span style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.7, fontFamily: 'var(--font-body)', textAlign: 'center' }}>
-                  Your space starts on this device. Add an email later to keep it.
-                </span>
-              </div>
-            </>
-          )}
+            <button
+              type="submit" disabled={disabled}
+              style={{
+                width: '100%', padding: '1rem', borderRadius: '12px', border: 'none',
+                background: disabled ? 'color-mix(in srgb, var(--gold) 40%, transparent)' : 'var(--gold)',
+                color: 'var(--bg)', fontFamily: 'var(--font-body)', fontSize: '0.95rem', fontWeight: 500,
+                cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.01em',
+                transition: 'opacity var(--t-base)',
+              }}
+            >
+              {loading ? 'Checking your account…' : 'Sign in'}
+            </button>
+          </form>
         </div>
 
-        {/* Feature preview */}
-        {!sent && (
-          <ul style={{ listStyle: 'none', margin: '1.5rem 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {PREVIEW.map(item => (
-              <li key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-                <span aria-hidden style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0, opacity: 0.8 }} />
-                {item}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* Privacy reassurance */}
         <p style={{ textAlign: 'center', color: 'var(--muted)', opacity: 0.7, fontSize: '0.78rem', fontFamily: 'var(--font-body)', marginTop: '1.5rem', lineHeight: 1.5 }}>
           Private by default. Your space stays yours.
         </p>

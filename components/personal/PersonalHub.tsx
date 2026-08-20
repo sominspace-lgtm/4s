@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import GoalsSection from '@/components/goals/GoalsSection'
 import HabitTracker from '@/components/habits/HabitTracker'
+import PersonalRoutines from '@/components/habits/PersonalRoutines'
 import LifeHub from '@/components/life/LifeHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
@@ -91,7 +92,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
       </div>
 
       {tab === 'goals'   && <GoalsSection userId={userId} />}
-      {tab === 'habits'  && <HabitTracker />}
+      {tab === 'habits'  && <><PersonalRoutines userId={userId} /><HabitTracker /></>}
       {tab === 'life'    && <LifeHub />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub userId={userId} userEmail={userEmail} onOpenCompanions={onOpenCompanions} />}
