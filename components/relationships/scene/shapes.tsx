@@ -40,8 +40,12 @@ export function TreeShape({ tree, x, y, scale = 1, selected = false, onClick }: 
       <circle cx={0} cy={-trunkH} r={r} fill={color} opacity={0.88} />
       {i >= 2 && <circle cx={-r * 0.4} cy={-trunkH + r * 0.3} r={r * 0.55} fill={color} opacity={0.7} />}
       {i >= 3 && <circle cx={r * 0.45} cy={-trunkH + r * 0.25} r={r * 0.5} fill={color} opacity={0.65} />}
+      {!tree.quiet && <circle cx={0} cy={-trunkH} r={r} fill="url(#rsheen)" />}
+      {/* A small gold spark rather than an emoji (2026-08-21) — matches the
+          Village's own glyph treatment: a shape the theme can color, not a
+          fixed-color pictograph. */}
       {tree.birthdaySoon && (
-        <text x={0} y={-trunkH - r - 6} textAnchor="middle" fontSize={9}>🎂</text>
+        <circle cx={0} cy={-trunkH - r - 5} r={2.2} fill="var(--gold)" className="village-glow" />
       )}
     </g>
   )

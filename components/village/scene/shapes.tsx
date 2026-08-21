@@ -46,6 +46,9 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
           <circle cx={0} cy={-h} r={w / 2} fill={color} opacity={0.92} />
           <circle cx={-w / 3.2} cy={-h + w / 5} r={w / 3.4} fill={color} opacity={0.75} />
           <circle cx={w / 3.2} cy={-h + w / 5.5} r={w / 3.8} fill={color} opacity={0.7} />
+          {/* Sheen — a plain flat-filled circle reads as a paper cutout;
+              this makes it read as lit from above instead. */}
+          {!plant.dormant && <circle cx={0} cy={-h} r={w / 2} fill="url(#vsheen)" />}
         </>
       )}
       {plant.dormant && i >= 1 && (
@@ -79,6 +82,10 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
         fill={spec.fill} fillOpacity={building.phase === 'blueprint' ? 0 : 0.55}
         stroke={spec.stroke} strokeWidth={1.2} strokeDasharray={spec.dash} strokeOpacity={0.9}
       />
+      {/* Sheen on the body — same reasoning as PlantShape's */}
+      {building.phase !== 'blueprint' && (
+        <rect x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={2} fill="url(#vsheen)" />
+      )}
       {/* roof, once it's actually a building */}
       {(building.phase === 'complete' || building.phase === 'landmark') && (
         <path d={`M ${-w / 2 - 3} ${-spec.h} L 0 ${-spec.h - 12} L ${w / 2 + 3} ${-spec.h} Z`} fill={spec.stroke} fillOpacity={0.7} />
@@ -121,15 +128,25 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
+// Glyphs are plain geometric characters from the app's own icon vocabulary
+// (the same ones SectionNav uses — ◒ ⌂ ◫ etc.), not emoji (2026-08-21).
+// Emoji render as fixed, fully-saturated pictographs that ignore `fill` —
+// they can't take the theme's gold, so every district glyph looked the same
+// regardless of theme and read as a foreign, cartoonish accent against the
+// rest of the scene's restrained SVG-drawn palette. A text glyph is a real
+// shape the theme can color, and the soft badge behind it gives an
+// otherwise-thin single character some actual presence.
 export function DistrictLabel({ x, y, glyph, label, count, onClick }: {
   x: number; y: number; glyph: string; label: string; count: string; onClick: () => void
 }) {
   return (
     <g transform={`translate(${x} ${y})`} onClick={onClick} className="village-district" style={{ cursor: 'pointer' }}>
       <title>{`${label} — ${count}. Click to open.`}</title>
-      <text textAnchor="middle" fontSize={13} y={-13}>{glyph}</text>
-      <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" letterSpacing="0.06em">{label.toUpperCase()}</text>
-      <text textAnchor="middle" fontSize={7.5} fill="var(--muted)" opacity={0.6} y={10}>{count}</text>
+      <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.8} opacity={0.9} />
+      <circle cy={-14} r={14} fill="none" stroke="var(--border)" strokeWidth={0.6} />
+      <text textAnchor="middle" dominantBaseline="central" fontSize={13} y={-14} fill="var(--gold)">{glyph}</text>
+      <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" letterSpacing="0.06em" y={10}>{label.toUpperCase()}</text>
+      <text textAnchor="middle" fontSize={7.5} fill="var(--muted)" opacity={0.6} y={21}>{count}</text>
     </g>
   )
 }

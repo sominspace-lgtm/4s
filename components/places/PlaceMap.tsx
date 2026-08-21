@@ -180,9 +180,24 @@ export default function PlaceMap({ places, theme, onSelect }: {
   )
 }
 
+// Same bug and same fix as lib/map/style.ts's resolveColor(): a CSS custom
+// property never resolves through getComputedStyle() the way a real
+// property does, so a custom theme's color-mix(...) vars reached MapLibre
+// as a literal string it can't parse. A canvas 2D context always
+// rasterizes to literal 0-255 RGBA regardless of input syntax — the only
+// version-proof way to turn ANY valid CSS color into one MapLibre accepts.
 function readCssColor(varName: string): string {
   if (typeof document === 'undefined') return '#888'
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#888'
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+  if (!raw) return '#888'
+  const canvas = document.createElement('canvas')
+  canvas.width = 1; canvas.height = 1
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return raw
+  ctx.fillStyle = raw
+  ctx.fillRect(0, 0, 1, 1)
+  const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data
+  return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`
 }
 
 function placeKindColorPairs(): Record<string, string> {

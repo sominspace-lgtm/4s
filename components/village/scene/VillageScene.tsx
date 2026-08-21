@@ -13,8 +13,23 @@ import Ambient from './Ambient'
 import Horizon from './Horizon'
 import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
 import type { VillageChanges } from '@/lib/village/state'
+import { hashPos } from '@/lib/village/state'
 
 export const GROUND_Y = 372
+
+// A fixed scatter of grass tufts along the ground line (2026-08-21) — one
+// of the concrete things making the scene read as sparse rather than calm:
+// a wide gap of bare ground between the tree line and the district row with
+// nothing in it. hashPos() keyed by a fixed per-tuft string keeps every
+// tuft's position and height stable across renders — same "pure function of
+// an id" rule the rest of the village runs under, just with a literal index
+// standing in for a real entity id since these aren't tied to any data.
+const GRASS_TUFTS = Array.from({ length: 34 }, (_, i) => {
+  const seed = `grass-${i}`
+  const x = 20 + hashPos(seed) * 760
+  const h = 4 + hashPos(seed + 'h') * 5
+  return { x, h, id: seed }
+})
 
 export type { Slot } from '@/lib/village/layout'
 
@@ -87,14 +102,32 @@ export default function VillageScene({
         <clipPath id="vlakeClip">
           <ellipse cx={150} cy={410} rx={110} ry={22} />
         </clipPath>
+        {/* Depth pass (2026-08-21) — the ground and every rounded shape were
+            flat single-color fills, which is what read as sparse/flat rather
+            than "not enough is drawn". vground gives the field a top-to-
+            bottom gradient instead of one flat tone; vsheen is a soft
+            highlight overlaid on canopies/roofs/hills so a plain circle
+            reads as lit from above rather than as a paper cutout.
+            objectBoundingBox (the SVG default) means every shape that
+            references vsheen gets its own correctly-scaled highlight from
+            this one definition — no per-shape gradient needed. */}
+        <linearGradient id="vground" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--surface)" />
+          <stop offset="100%" stopColor="var(--surface2)" />
+        </linearGradient>
+        <radialGradient id="vsheen" cx="32%" cy="28%" r="78%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.30" />
+          <stop offset="55%" stopColor="#fff" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
       <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
       {live && <Clouds timeOfDay={v.timeOfDay} />}
 
-      {/* Rolling ground */}
+      {/* Rolling ground — a top-to-bottom gradient now, not one flat tone */}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
-        fill="var(--surface)" opacity={0.95} />
+        fill="url(#vground)" opacity={0.95} />
       {/* The season, laid over the ground rather than replacing it: the land
           keeps its shape, it just goes gold or goes cold. */}
       {live && palette.ground && (
@@ -107,6 +140,15 @@ export default function VillageScene({
 
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
+
+      {/* Grass — texture along the ground line, see GRASS_TUFTS above */}
+      <g opacity={0.5}>
+        {GRASS_TUFTS.map(t => (
+          <path key={t.id}
+            d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
+            fill="none" stroke={live ? palette.foliage : 'var(--emerald)'} strokeWidth={1} strokeLinecap="round" />
+        ))}
+      </g>
 
       {/* Rest Lake — clarity reflects actual rest taken */}
       <ellipse cx={150} cy={410} rx={110} ry={22} fill="url(#vlake)" opacity={0.4 + v.stillness * 0.6} />
@@ -149,6 +191,7 @@ export default function VillageScene({
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
         <title>Home — your Brief and today</title>
         <rect x={-30} y={-44} width={60} height={44} rx={3} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.2} />
+        <rect x={-30} y={-44} width={60} height={44} rx={3} fill="url(#vsheen)" />
         <path d="M -36 -44 L 0 -68 L 36 -44 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.7} />
         <rect x={-8} y={-24} width={16} height={24} rx={1.5} fill="var(--gold)" opacity={0.35} />
         <rect x={-22} y={-34} width={10} height={10} rx={1} fill="var(--amber)" opacity={0.75} className="village-glow" />
@@ -202,15 +245,17 @@ export default function VillageScene({
           front of the house, below the labels so it never fights the text. */}
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
 
-      {/* District labels — the actual navigation */}
-      <DistrictLabel x={150} y={130} glyph="🌊" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
+      {/* District labels — the actual navigation. Glyphs match the app's
+          existing SectionNav icon set (◒ = Today, ⌂ = Home/Village, ◻ =
+          Archive elsewhere) rather than inventing a new vocabulary. */}
+      <DistrictLabel x={150} y={130} glyph="◡" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
         count={v.stillness > 0.5 ? 'still' : 'ready when you are'} />
-      <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
+      <DistrictLabel x={175} y={250} glyph="◉" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
         count={`${v.plants.length} growing`} />
-      <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today" />
-      <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
+      <DistrictLabel x={400} y={250} glyph="⌂" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today" />
+      <DistrictLabel x={620} y={250} glyph="◫" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
         count={`${v.buildings.length} standing`} />
-      <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
+      <DistrictLabel x={725} y={190} glyph="◻" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`} />
 
       {/* Styled callout for whichever plant/building is selected — see the

@@ -5,8 +5,20 @@ import type { Slot } from '@/lib/village/layout'
 import type { PersonTree } from '@/lib/relationships/garden'
 import { TreeShape } from './shapes'
 import { EntityCallout } from '@/components/village/scene/shapes'
+import { hashPos } from '@/lib/village/state'
 
 const GROUND_Y = 200
+
+// Same fixed grass-tuft scatter as the Village scene, scaled to this
+// shorter canvas — see VillageScene.tsx's GRASS_TUFTS for the full
+// reasoning. Different seed prefix so the two scenes don't echo each
+// other's exact pattern.
+const GRASS_TUFTS = Array.from({ length: 20 }, (_, i) => {
+  const seed = `rgrass-${i}`
+  const x = 20 + hashPos(seed) * 760
+  const h = 3 + hashPos(seed + 'h') * 4
+  return { x, h, id: seed }
+})
 
 // A calm, static garden bed — deliberately NOT a Village clone. No sky, no
 // time-of-day, no seasons: the Village's "live" dimension is the day itself,
@@ -44,13 +56,31 @@ export default function RelationshipScene({ trees, slots, onSelect }: {
           <stop offset="55%" stopColor="var(--bg)" stopOpacity="0" />
           <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.4" />
         </radialGradient>
+        <linearGradient id="rground" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--surface)" />
+          <stop offset="100%" stopColor="var(--surface2)" />
+        </linearGradient>
+        <radialGradient id="rsheen" cx="32%" cy="28%" r="78%">
+          <stop offset="0%" stopColor="#fff" stopOpacity="0.30" />
+          <stop offset="55%" stopColor="#fff" stopOpacity="0.06" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
       {/* Ground */}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 14} 400 ${GROUND_Y - 4} T 800 ${GROUND_Y - 10} L 800 240 L 0 240 Z`}
-        fill="var(--surface)" opacity={0.95} />
+        fill="url(#rground)" opacity={0.95} />
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 14} 400 ${GROUND_Y - 4} T 800 ${GROUND_Y - 10}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
+
+      {/* Grass — same texture treatment as the Village */}
+      <g opacity={0.5}>
+        {GRASS_TUFTS.map(t => (
+          <path key={t.id}
+            d={`M ${t.x - 2} ${GROUND_Y + 4} Q ${t.x} ${GROUND_Y + 4 - t.h} ${t.x + 2} ${GROUND_Y + 4}`}
+            fill="none" stroke="var(--emerald)" strokeWidth={1} strokeLinecap="round" />
+        ))}
+      </g>
 
       {trees.length === 0 && (
         <text x={400} y={GROUND_Y - 40} textAnchor="middle" fontSize={11} fill="var(--muted)" opacity={0.6}>
