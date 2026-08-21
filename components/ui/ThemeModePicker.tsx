@@ -2,24 +2,23 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { THEMES, THEME_LABELS, resolveThemeVars, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED, type CustomThemeSeed } from './ThemeProvider'
+import {
+  THEMES, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED, NEUTRAL_LIGHT, NEUTRAL_DARK, DEFAULT_ACCENT,
+  type CustomThemeSeed,
+} from './ThemeProvider'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 
+// Only three Guides now (2026-08-21), down from five — Therapist and
+// Challenger felt like the same underlying voice wearing different framing
+// as Friend and Executive respectively, and five options for "who's talking
+// to me today" was more choosing than deciding.
 const MODE_ICONS: Partial<Record<Mode, string>> = {
-  peaceful: '🌿', friend: '🤝', therapist: '🫧', executive: '▲', challenger: '⚡',
+  peaceful: '🌿', friend: '🤝', executive: '▲',
 }
 
-// Read straight from the real theme tokens instead of maintaining a second
-// hand-copied palette — the swatch always matches what the theme actually
-// looks like, and new themes need zero extra wiring here.
-function themeSwatch(id: string) {
-  const v = THEMES[id]
-  return { bg: v['--bg'], surface: v['--surface2'], text: v['--text'], accent: v['--gold'], accent2: v['--accent-2'] }
-}
-
-function customSwatch(seed: CustomThemeSeed) {
+function swatch(seed: CustomThemeSeed) {
   const v = buildCustomVars(seed)
   return { bg: v['--bg'], surface: v['--surface2'], text: v['--text'], accent: v['--gold'], accent2: v['--accent-2'] }
 }
@@ -34,11 +33,27 @@ interface ThemeModePickerProps {
   onCustomThemeChange: (seed: CustomThemeSeed) => void
 }
 
+// "Instead of themes, a light and dark mode where we can choose the accent
+// color — and then make some fully customizable themes too" (2026-08-21).
+// Six named presets (Bloom, Moonlight, …) are gone as a picker choice —
+// nobody picks a theme by name here anymore, they pick Light or Dark and one
+// accent color, which covers the actual daily decision in two taps instead
+// of comparing six near-identical swatches. "Fully custom" one level down
+// still exposes all six seed colors + font for anyone who wants more than
+// an accent to play with. Both paths write the exact same CustomThemeSeed
+// shape (theme='custom' + user_prefs.custom_theme) — simple mode just locks
+// bg/text/rose/emerald/amber/font to a neutral default per scheme and only
+// leaves accent open.
+//
+// Existing accounts still holding an old preset key (theme='bloom', etc.)
+// keep rendering correctly — resolveThemeVars/normalizeTheme in
+// lib/constants/themes.ts were never touched, so nothing forces a
+// migration. Only this picker stopped OFFERING presets as a fresh choice.
 export default function ThemeModePicker({ userId, currentTheme, currentMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange }: ThemeModePickerProps) {
   const lang = useLang()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'theme' | 'mode'>('theme')
-  const [editingCustom, setEditingCustom] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
   const [draft, setDraft] = useState<CustomThemeSeed>(customTheme ?? DEFAULT_CUSTOM_SEED)
   const ref = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -61,20 +76,12 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
     return () => window.removeEventListener('app:open-theme-picker', onOpenRequest)
   }, [])
 
-  async function setTheme(t: string) {
-    onThemeChange(t)
-    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, theme: t })
-    if (error) console.error('Failed to save theme:', error.message)
-  }
-
-  // Saves and activates in one step — there's no "preview without applying"
-  // state, same as picking any preset tile above.
-  async function saveCustomTheme(seed: CustomThemeSeed) {
+  // Saves and activates in one step — no "preview without applying" state.
+  async function saveTheme(seed: CustomThemeSeed) {
     onCustomThemeChange(seed)
     onThemeChange('custom')
-    setEditingCustom(false)
     const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, theme: 'custom', custom_theme: seed })
-    if (error) console.error('Failed to save custom theme:', error.message)
+    if (error) console.error('Failed to save theme:', error.message)
   }
 
   async function setMode(m: Mode) {
@@ -83,12 +90,32 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
     if (error) console.error('Failed to save mode:', error.message)
   }
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
+  // If there's no saved custom seed yet, derive a starting point from
+  // whatever preset the account is actually still on (an old bloom/
+  // moonlight/etc. value) rather than jumping to an unrelated default —
+  // same scheme, same accent, so the first change from here feels
+  // continuous instead of a random reset.
+  const legacyPreset = currentTheme !== 'custom' ? THEMES[currentTheme] : undefined
+  const active: CustomThemeSeed = customTheme ?? (legacyPreset
+    ? { ...(legacyPreset['--scheme'] === 'light' ? NEUTRAL_LIGHT : NEUTRAL_DARK), accent: legacyPreset['--gold'] }
+    : DEFAULT_CUSTOM_SEED)
+  const p = swatch(active)
+
+  function pickScheme(scheme: 'light' | 'dark') {
+    const base = scheme === 'light' ? NEUTRAL_LIGHT : NEUTRAL_DARK
+    saveTheme({ ...base, accent: active.accent })
+  }
+
+  function pickAccent(accent: string) {
+    saveTheme({ ...active, accent })
+  }
+
+  const tabStyle = (isActive: boolean): React.CSSProperties => ({
     fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase',
     padding: '0.35em 0.9em', borderRadius: '6px', cursor: 'pointer', border: 'none',
     fontFamily: 'var(--font-body)',
-    background: active ? 'var(--hover-bg)' : 'transparent',
-    color: active ? 'var(--text)' : 'var(--muted)',
+    background: isActive ? 'var(--hover-bg)' : 'transparent',
+    color: isActive ? 'var(--text)' : 'var(--muted)',
   })
 
   return (
@@ -117,93 +144,55 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
             <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>{t('Guide', lang)}</button>
           </div>
 
-          {tab === 'theme' && !editingCustom && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-              {Object.keys(THEMES).map(id => {
-                const p = themeSwatch(id)
-                const active = currentTheme === id
-                return (
-                  <button
-                    key={id}
-                    onClick={() => setTheme(id)}
-                    title={THEME_LABELS[id]}
-                    style={{
-                      borderRadius: '10px', cursor: 'pointer', padding: '0.4rem',
-                      border: active ? `2px solid ${p.accent}` : '2px solid var(--border)',
-                      background: p.bg, position: 'relative', overflow: 'hidden',
-                      transition: 'all 0.15s', boxShadow: active ? `0 0 12px ${p.accent}40` : 'none',
-                      display: 'flex', flexDirection: 'column', gap: '0.3rem',
-                    }}
-                  >
-                    {/* Mini surface card */}
-                    <div style={{
-                      background: p.surface, borderRadius: '6px', padding: '0.3rem 0.4rem',
-                      display: 'flex', flexDirection: 'column', gap: '0.25rem',
-                    }}>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent2 }} />
-                      </div>
-                      <div style={{ width: '70%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.85 }} />
-                      <div style={{ width: '45%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.4 }} />
-                    </div>
-                    <div style={{ textAlign: 'center', fontSize: '0.55rem', color: p.text, letterSpacing: '0.03em', opacity: active ? 1 : 0.75 }}>
-                      {THEME_LABELS[id]}
-                    </div>
-                  </button>
-                )
-              })}
+          {tab === 'theme' && !advanced && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              {/* Live preview */}
+              <div style={{
+                borderRadius: '10px', padding: '0.6rem', background: p.bg, border: '1px solid var(--border)',
+              }}>
+                <div style={{ background: p.surface, borderRadius: '6px', padding: '0.4rem 0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent2 }} />
+                  </div>
+                  <div style={{ width: '70%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.85 }} />
+                  <div style={{ width: '45%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.4 }} />
+                </div>
+              </div>
 
-              {/* Custom (2026-08-21) — a 7th tile, always last. Clicking it
-                  activates whatever custom palette was last saved (or opens
-                  the editor straight away if none exists yet); the pencil is
-                  the only way IN to the editor, so "activate" and "edit"
-                  stay two separate actions on the same tile. */}
-              {(() => {
-                const p = customSwatch(customTheme ?? DEFAULT_CUSTOM_SEED)
-                const active = currentTheme === 'custom'
-                return (
-                  <button
-                    onClick={() => (customTheme ? setTheme('custom') : setEditingCustom(true))}
-                    title="Custom"
-                    style={{
-                      borderRadius: '10px', cursor: 'pointer', padding: '0.4rem',
-                      border: active ? `2px solid ${p.accent}` : '2px dashed var(--border)',
-                      background: p.bg, position: 'relative', overflow: 'hidden',
-                      transition: 'all 0.15s', boxShadow: active ? `0 0 12px ${p.accent}40` : 'none',
-                      display: 'flex', flexDirection: 'column', gap: '0.3rem',
-                    }}
-                  >
-                    <button
-                      onClick={e => { e.stopPropagation(); setDraft(customTheme ?? DEFAULT_CUSTOM_SEED); setEditingCustom(true) }}
-                      title="Edit custom theme"
-                      aria-label="Edit custom theme"
-                      style={{
-                        position: 'absolute', top: 2, right: 2, background: 'none', border: 'none',
-                        cursor: 'pointer', color: p.text, opacity: 0.6, fontSize: '0.6rem', padding: '0.15rem',
-                      }}
-                    >✎</button>
-                    <div style={{
-                      background: p.surface, borderRadius: '6px', padding: '0.3rem 0.4rem',
-                      display: 'flex', flexDirection: 'column', gap: '0.25rem',
-                    }}>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent, boxShadow: `0 0 4px ${p.accent}` }} />
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.accent2 }} />
-                      </div>
-                      <div style={{ width: '70%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.85 }} />
-                      <div style={{ width: '45%', height: 3, borderRadius: '2px', background: p.text, opacity: 0.4 }} />
-                    </div>
-                    <div style={{ textAlign: 'center', fontSize: '0.55rem', color: p.text, letterSpacing: '0.03em', opacity: active ? 1 : 0.75 }}>
-                      {customTheme ? 'Custom' : '+ Custom'}
-                    </div>
-                  </button>
-                )
-              })()}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{t('Mode', lang)}</span>
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  {(['light', 'dark'] as const).map(s => (
+                    <button key={s} onClick={() => pickScheme(s)} style={tabStyle(active.scheme === s)}>{t(s, lang)}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{t('Accent color', lang)}</span>
+                <input
+                  type="color"
+                  value={active.accent ?? DEFAULT_ACCENT}
+                  onChange={e => pickAccent(e.target.value)}
+                  style={{ width: 32, height: 24, padding: 0, border: '1px solid var(--border)', borderRadius: '5px', cursor: 'pointer', background: 'none' }}
+                />
+              </div>
+
+              <button
+                onClick={() => { setDraft(active); setAdvanced(true) }}
+                className="press"
+                style={{
+                  background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.66rem',
+                  cursor: 'pointer', textAlign: 'left', padding: 0, opacity: 0.75,
+                }}
+              >
+                ▸ {t('Fully custom theme', lang)}
+              </button>
             </div>
           )}
 
-          {tab === 'theme' && editingCustom && (
+          {tab === 'theme' && advanced && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {([
                 ['bg', 'Background'], ['text', 'Text'], ['accent', 'Accent'],
@@ -245,11 +234,11 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
               </div>
 
               <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
-                <button onClick={() => setEditingCustom(false)} className="press" style={{
+                <button onClick={() => setAdvanced(false)} className="press" style={{
                   flex: 1, background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
                   color: 'var(--muted)', fontSize: '0.72rem', padding: '0.5rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
-                }}>Cancel</button>
-                <button onClick={() => saveCustomTheme(draft)} className="btn btn-primary press" style={{ flex: 1, fontSize: '0.72rem' }}>
+                }}>Back</button>
+                <button onClick={() => { saveTheme(draft); setAdvanced(false) }} className="btn btn-primary press" style={{ flex: 1, fontSize: '0.72rem' }}>
                   Apply
                 </button>
               </div>
@@ -259,7 +248,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
           {tab === 'mode' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {(Object.entries(MODES) as [Mode, typeof MODES[Mode]][]).map(([key, cfg]) => {
-                const active = currentMode === key
+                const isActive = currentMode === key
                 return (
                   <button
                     key={key}
@@ -267,11 +256,11 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
                     style={{
                       textAlign: 'left', padding: '0.55rem 0.7rem', borderRadius: '8px',
                       cursor: 'pointer', border: 'none', fontFamily: 'var(--font-body)',
-                      background: active ? 'var(--hover-bg)' : 'transparent',
+                      background: isActive ? 'var(--hover-bg)' : 'transparent',
                       transition: 'background 0.15s',
                     }}
                   >
-                    <div style={{ fontSize: '0.75rem', color: active ? 'var(--text)' : 'var(--muted)', fontWeight: active ? 500 : 300 }}>
+                    <div style={{ fontSize: '0.75rem', color: isActive ? 'var(--text)' : 'var(--muted)', fontWeight: isActive ? 500 : 300 }}>
                       {MODE_ICONS[key] ? `${MODE_ICONS[key]} ` : ''}{cfg.label}
                     </div>
                     <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.1rem', lineHeight: 1.4 }}>{cfg.description}</div>

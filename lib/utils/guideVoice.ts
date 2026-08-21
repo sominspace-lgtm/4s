@@ -19,9 +19,7 @@ export function guideGreeting(mode: Mode, hour: number): { prefix: string; suffi
   switch (mode) {
     case 'peaceful':   return { prefix: isNight ? 'Rest easy,' : 'Welcome back,' }
     case 'friend':     return { prefix: time === 'morning' ? 'Morning,' : time === 'afternoon' ? 'Hey,' : time === 'evening' ? 'Evening,' : 'Still up,' }
-    case 'therapist':  return { prefix: isNight ? 'Still with you,' : `Good ${time},`, suffix: '— how are you, really?' }
     case 'executive':  return { prefix: '' }
-    case 'challenger': return { prefix: time === 'morning' ? "Let's move," : time === 'afternoon' ? 'Still going,' : time === 'evening' ? 'Finish it,' : 'Late one,' }
     default:           return { prefix: `Good ${time},` }
   }
 }
@@ -34,9 +32,7 @@ export function guideGreetingLine(mode: Mode, hour: number): string {
   switch (mode) {
     case 'peaceful':   return time === 'night' ? 'Rest easy' : 'Welcome back'
     case 'friend':     return time === 'morning' ? 'Morning' : time === 'night' ? 'Still up' : 'Hey there'
-    case 'therapist':  return `Good ${time} — how are you, really?`
     case 'executive':  return time === 'morning' ? "Today's priorities" : 'Where things stand'
-    case 'challenger': return time === 'morning' ? "Let's move" : time === 'night' ? 'Late one' : 'Still going'
     default:           return `Good ${cap(time)}`
   }
 }
@@ -50,9 +46,7 @@ export function guideReviewPrompt(mode: Mode): string {
   switch (mode) {
     case 'peaceful':   return 'What would make next week feel gentle?'
     case 'friend':     return 'What do you want next week to feel like?'
-    case 'therapist':  return 'What felt heavy this week — and what helped?'
     case 'executive':  return "What are next week's top priorities?"
-    case 'challenger': return 'What will you do differently next week?'
     default:           return 'What should next week feel like?'
   }
 }

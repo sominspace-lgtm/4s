@@ -4,12 +4,16 @@
 // the TypeScript identifiers stay `Mode`/`MODES` even though the product calls
 // them Guides.
 //
-// Five Guides (down from nine, 2026-07): fewer, sharper voices beat a menu of
-// near-duplicates. Each survivor absorbed the best trait of a folded sibling —
-// see LEGACY_MODE_MAP for where the old ones went. Old stored values are
-// normalized at read time via normalizeMode(), so nobody's preference breaks.
+// Three Guides (down from five, then nine, 2026-08-21): fewer, sharper
+// voices beat a menu of near-duplicates. Therapist and Challenger read as
+// the same underlying disposition as Friend and Executive respectively,
+// just with different framing on top — reflective-and-warm vs.
+// direct-and-decisive is the actual axis, and three points cover it without
+// asking "who's talking to me today" to be a bigger decision than it needs
+// to be. Old stored values are normalized at read time via normalizeMode(),
+// so nobody's preference breaks — see LEGACY_MODE_MAP for where they land.
 
-export type Mode = 'peaceful' | 'friend' | 'therapist' | 'executive' | 'challenger'
+export type Mode = 'peaceful' | 'friend' | 'executive'
 
 export type Proactivity = 'low' | 'medium' | 'high'
 
@@ -43,17 +47,6 @@ export const MODES: Record<Mode, ModeConfig> = {
       return `${domain} is all good — nothing to worry about, I've got an eye on it`
     },
   },
-  therapist: {
-    label: 'Therapist',
-    // absorbed Teacher: explains the why when it actually helps
-    description: 'Reflective and emotionally aware. Notices patterns, and explains the why.',
-    proactivity: 'medium',
-    transform: (a, verdict, domain) => {
-      if (verdict === 'watch') return `${a} What\'s making this one hard to start?`
-      if (verdict === 'fine') return `${a} That steadiness is the whole system — notice how it feels.`
-      return `${domain} has been quiet. Low signal doesn\'t mean unimportant — what would feel supportive here?`
-    },
-  },
   executive: {
     label: 'Executive',
     // absorbed Navigator: forward-looking, aware of where things are heading
@@ -65,30 +58,24 @@ export const MODES: Record<Mode, ModeConfig> = {
       return `${tag} — ${domain}: ${a}${trend}`
     },
   },
-  challenger: {
-    label: 'Challenger',
-    description: 'Direct and accountable — but never shaming.',
-    proactivity: 'high',
-    transform: (a, verdict, domain) => {
-      if (verdict === 'watch') return a.replace(/consider|worth a|try to|maybe|perhaps/gi, 'commit to').replace(/\.$/, '. Pick the smallest real next step.')
-      if (verdict === 'fine') return `${a} Now hold the line.`
-      return `${domain} is quiet. If it matters, give it a real next step — if not, let it go.`
-    },
-  },
 }
 
 // Where every retired Guide (and the pre-Guides modes before them) lands.
 // Applied at read time — stored values never break, with or without the
 // cleanup migration (supabase/migrations/guides_five_modes.sql).
 export const LEGACY_MODE_MAP: Record<string, Mode> = {
+  // 5→3 consolidation (2026-08-21) — reflective-and-warm folds into Friend,
+  // direct-and-decisive folds into Executive.
+  therapist: 'friend',
+  challenger: 'executive',
   // 9→5 consolidation (2026-07)
   monk: 'peaceful',
-  teacher: 'therapist',
+  teacher: 'friend',
   navigator: 'executive',
   butler: 'friend',
   // original modes→Guides migration (kept so even never-migrated rows resolve)
   balanced: 'peaceful',
-  harsh: 'challenger',
+  harsh: 'executive',
   coach: 'executive',
   ceo: 'executive',
   hype: 'friend',

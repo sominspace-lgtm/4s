@@ -293,6 +293,25 @@ export const DEFAULT_CUSTOM_SEED: CustomThemeSeed = {
   fontPreset: 'elegant',
 }
 
+// Light/Dark + accent (2026-08-21) — "instead of themes, a light and dark
+// mode where we can choose the accent color". These are the same custom-seed
+// mechanism as DEFAULT_CUSTOM_SEED, just with bg/text/rose/emerald/amber
+// fixed to a calm neutral per scheme so the ONLY decision left is accent —
+// the picker's simple mode only ever changes `accent` on top of one of
+// these two. Fully-custom (all six colors) is still there for anyone who
+// wants deeper control, one level down.
+export const NEUTRAL_LIGHT: Omit<CustomThemeSeed, 'accent'> = {
+  scheme: 'light', bg: '#f3f2ee', text: '#2b2a27',
+  rose: '#b0605c', emerald: '#3f7d55', amber: '#8a7a2c',
+  fontPreset: 'botanical',
+}
+export const NEUTRAL_DARK: Omit<CustomThemeSeed, 'accent'> = {
+  scheme: 'dark', bg: '#0d0e14', text: '#eceef4',
+  rose: '#ff8080', emerald: '#5fd9bd', amber: '#f5c876',
+  fontPreset: 'elegant',
+}
+export const DEFAULT_ACCENT = '#8b9dff'
+
 // Each entry pairs two ALREADY-PRELOADED next/font variables (see
 // app/layout.tsx) — a custom theme can pick among real fonts, not name an
 // arbitrary one that was never loaded. Named by feel, not by the preset that

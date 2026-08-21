@@ -13,6 +13,7 @@ import { resolveThemeVars, DEFAULT_THEME, type CustomThemeSeed } from '@/lib/con
 export {
   THEMES, THEME_LABELS, LEGACY_THEME_MAP, normalizeTheme, DEFAULT_THEME,
   resolveThemeVars, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED,
+  NEUTRAL_LIGHT, NEUTRAL_DARK, DEFAULT_ACCENT,
   type CustomThemeSeed,
 } from '@/lib/constants/themes'
 
