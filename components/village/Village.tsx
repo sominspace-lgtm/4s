@@ -12,7 +12,7 @@ import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
-import { THEMES } from '@/lib/constants/themes'
+import { resolveThemeVars, type CustomThemeSeed } from '@/lib/constants/themes'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -34,9 +34,11 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, theme, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate }: {
+export default function Village({ userId, theme, customTheme = null, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate }: {
   userId: string
   theme: string
+  /** The active palette when theme === 'custom'. Ignored otherwise. */
+  customTheme?: CustomThemeSeed | null
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
   /** ISO string of the previous visit, frozen for the session by the caller. */
@@ -96,7 +98,11 @@ export default function Village({ userId, theme, accountCreatedAt = null, lastSe
   // Light vs dark comes from the theme's declared --scheme rather than from
   // reading computed styles off the DOM, so the palette stays a pure function
   // and there's nothing for the server and client to disagree about.
-  const isLight = THEMES[theme]?.['--scheme'] === 'light'
+  // resolveThemeVars (not a raw THEMES[theme] lookup) so this still resolves
+  // correctly for a custom theme, which has no THEMES entry at all — that
+  // used to silently read as undefined here and fall through to dark-mode
+  // snow/sky math regardless of what the custom palette's scheme actually was.
+  const isLight = resolveThemeVars(theme, customTheme)['--scheme'] === 'light'
   const palette = useMemo(() => seasonPalette(v.season, isLight), [v.season, isLight])
   const celestial = useMemo(() => (clock ? celestialOf(clock) : null), [clock])
 

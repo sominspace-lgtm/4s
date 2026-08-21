@@ -205,6 +205,13 @@ export const THEME_LABELS: Record<string, string> = {
   obsidian: 'Obsidian', ember: 'Ember', sage: 'Sage',
 }
 
+// --danger, added 2026-08-21 — three components already referenced it with a
+// hardcoded #c0554d fallback (var(--danger, #c0554d)) because it was never
+// actually in ALL_VARS or any theme, so that fallback was silently the only
+// value that ever rendered. Mapped to each theme's own --rose, which is
+// already that theme's "something's wrong" red.
+for (const t of Object.values(THEMES)) t['--danger'] = t['--rose']
+
 // Cut from 13 to 6 (2026-08-07), then re-cut to a different 6 (2026-08-11):
 // Bloom, Moonlight, Sunset, Obsidian, Ember, Sage. Same reasoning both times
 // — enough range for every mood without asking a new user to compare a dozen
@@ -247,7 +254,119 @@ export const LEGACY_THEME_MAP: Record<string, string> = {
 export const DEFAULT_THEME = 'bloom'
 
 export function normalizeTheme(raw: string | null | undefined): string {
+  // 'custom' isn't a THEMES key — it's a distinct third option alongside "a
+  // preset" and "nothing set", so it has to be recognised before the THEMES
+  // lookup below or it falls straight through to DEFAULT_THEME. Blocker #1
+  // from the 2026-08-21 customization work: this function used to return
+  // DEFAULT_THEME for literally any unknown string, silently discarding a
+  // real account's choice to go custom.
+  if (raw === 'custom') return 'custom'
   if (raw && raw in THEMES) return raw
   if (raw && raw in LEGACY_THEME_MAP) return LEGACY_THEME_MAP[raw]
   return DEFAULT_THEME
+}
+
+// Custom themes (2026-08-21) — "make everything completely customizable
+// instead of themes". A full 36-variable editor would work against the
+// product's own "calm premium" standard — most combinations of 36 free
+// colors look like nothing a person would choose on purpose. So the surface
+// is six colors and a font pairing; everything else (surface2, borders,
+// muted text, hover states, glow, the three aurora washes) is DERIVED from
+// those six via CSS color-mix() at the string level, so a browser evaluates
+// the actual blending — no color-math library needed, and the relationships
+// between tokens (e.g. surface2 is always "a bit more text mixed into bg")
+// stay the same ones the 6 hand-tuned presets already use.
+export interface CustomThemeSeed {
+  scheme: 'light' | 'dark'
+  bg: string
+  text: string
+  accent: string   // → --gold, the theme's signature color
+  rose: string
+  emerald: string
+  amber: string
+  fontPreset: string
+}
+
+export const DEFAULT_CUSTOM_SEED: CustomThemeSeed = {
+  scheme: 'dark', bg: '#0f1226', text: '#edf0fc',
+  accent: '#8b9dff', rose: '#ff8080', emerald: '#5fd9bd', amber: '#f5c876',
+  fontPreset: 'elegant',
+}
+
+// Each entry pairs two ALREADY-PRELOADED next/font variables (see
+// app/layout.tsx) — a custom theme can pick among real fonts, not name an
+// arbitrary one that was never loaded. Named by feel, not by the preset that
+// happens to use them, since a custom theme isn't "secretly Moonlight".
+export const FONT_PRESETS: Record<string, { label: string; display: string; body: string; mono: string }> = {
+  elegant: {
+    label: 'Elegant',
+    display: "var(--font-cormorant),'Cormorant Garamond',serif",
+    body: "var(--font-inter),'Inter',sans-serif",
+    mono: "var(--font-jetbrains),'JetBrains Mono',monospace",
+  },
+  botanical: {
+    label: 'Botanical',
+    display: "var(--font-lora),'Lora',Georgia,serif",
+    body: "var(--font-nunito),'Nunito Sans',sans-serif",
+    mono: "var(--font-ibm-plex-mono),'IBM Plex Mono',monospace",
+  },
+  modern: {
+    label: 'Modern',
+    display: "var(--font-dm-serif),'DM Serif Display',serif",
+    body: "var(--font-inter),'Inter',sans-serif",
+    mono: "var(--font-jetbrains),'JetBrains Mono',monospace",
+  },
+  warm: {
+    label: 'Warm',
+    display: "var(--font-fraunces),'Fraunces',serif",
+    body: "var(--font-work-sans),'Work Sans',sans-serif",
+    mono: "var(--font-jetbrains),'JetBrains Mono',monospace",
+  },
+}
+
+export function buildCustomVars(seed: CustomThemeSeed): Record<string, string> {
+  const mix = (a: string, b: string, pct: number) => `color-mix(in srgb, ${a} ${100 - pct}%, ${b} ${pct}%)`
+  const alpha = (c: string, pct: number) => `color-mix(in srgb, ${c} ${pct}%, transparent)`
+  const fonts = FONT_PRESETS[seed.fontPreset] ?? FONT_PRESETS.elegant
+  return {
+    '--scheme': seed.scheme,
+    '--bg': seed.bg,
+    '--surface': mix(seed.bg, seed.text, 6),
+    '--surface2': mix(seed.bg, seed.text, 12),
+    '--border': alpha(seed.text, 16),
+    '--text': seed.text,
+    '--muted': alpha(seed.text, 68),
+    '--faint': alpha(seed.text, 7),
+    '--gold': seed.accent,
+    '--purple': mix(seed.accent, seed.rose, 50),
+    '--emerald': seed.emerald,
+    '--rose': seed.rose,
+    '--danger': seed.rose,
+    '--blush': mix(seed.rose, seed.bg, 30),
+    '--amber': seed.amber,
+    '--slate': mix(seed.text, seed.accent, 30),
+    '--lavender': mix(seed.accent, seed.rose, 35),
+    '--accent-2': seed.rose,
+    '--shadow': seed.scheme === 'light' ? alpha(seed.text, 20) : 'rgba(0,0,0,0.7)',
+    '--glow': alpha(seed.accent, 24),
+    '--selection': alpha(seed.accent, 18),
+    '--hover-bg': alpha(seed.text, 7),
+    '--font-display': fonts.display, '--font-body': fonts.body, '--font-mono': fonts.mono,
+    '--aurora-1': alpha(seed.accent, 10), '--aurora-pos-1': 'top right',
+    '--aurora-2': alpha(seed.rose, 7), '--aurora-pos-2': 'bottom left',
+    '--aurora-3': alpha(seed.amber, 5), '--aurora-pos-3': 'center top',
+    '--radius': '16px', '--radius-sm': '9px',
+  }
+}
+
+// Single resolution point for "what are the actual CSS values for this
+// theme id" — every caller that used to do THEMES[normalizeTheme(x)]
+// directly (ThemeProvider, Village's light/dark check, the account Settings
+// page) goes through this instead, so 'custom' behaves correctly everywhere
+// at once rather than needing the same special case copy-pasted four times.
+// Blockers #2 and (structurally) #3 from the 2026-08-21 customization work.
+export function resolveThemeVars(themeId: string | null | undefined, customSeed?: CustomThemeSeed | null): Record<string, string> {
+  const norm = normalizeTheme(themeId)
+  if (norm === 'custom') return customSeed ? buildCustomVars(customSeed) : THEMES[DEFAULT_THEME]
+  return THEMES[norm]
 }

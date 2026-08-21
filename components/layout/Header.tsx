@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import ThemeModePicker from '@/components/ui/ThemeModePicker'
 import type { Mode } from '@/lib/constants/modes'
+import type { CustomThemeSeed } from '@/lib/constants/themes'
 import { guideGreeting } from '@/lib/utils/guideVoice'
 import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 
@@ -22,8 +23,10 @@ interface HeaderProps {
   onUnlock?: () => void
   initialTheme: string
   initialMode: Mode
+  customTheme: CustomThemeSeed | null
   onThemeChange: (t: string) => void
   onModeChange: (m: Mode) => void
+  onCustomThemeChange: (seed: CustomThemeSeed) => void
   onCustomize: () => void
   onCompanions: () => void
   onSearch: () => void
@@ -96,7 +99,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -254,8 +257,10 @@ export default function Header({ email, userId, initialName, sharedMode = false,
             userId={userId}
             currentTheme={theme}
             currentMode={mode}
+            customTheme={customTheme}
             onThemeChange={handleThemeChange}
             onModeChange={handleModeChange}
+            onCustomThemeChange={onCustomThemeChange}
           />
         )}
         <MoreMenu items={sharedMode ? [

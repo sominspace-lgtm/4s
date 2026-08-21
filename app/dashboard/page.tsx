@@ -49,6 +49,14 @@ export default async function DashboardPage() {
       initialUnlockAll={Boolean(prefs?.layout?.unlockAll)}
       initialName={prefs?.display_name ?? null}
       initialTheme={normalizeTheme(prefs?.theme)}
+      // Not read from `prefs` above (2026-08-21) — custom_theme is a new
+      // column (see supabase/migrations/user_prefs_custom_theme.sql) that
+      // may not exist in the database yet. This query gates the /onboard
+      // redirect, so it can never reference a column that might not be
+      // there; DashboardClient fetches custom_theme itself, client-side,
+      // where a missing-column error is just "stay on the preset theme"
+      // instead of breaking login for every user.
+      initialCustomTheme={null}
       initialMode={normalizeMode(prefs?.mode)}
       initialLayout={layout ?? null}
       initialFocusConfig={focusConfig ?? null}

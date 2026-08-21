@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
+import type { CustomThemeSeed } from '@/lib/constants/themes'
 import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, DEFAULT_FOCUS_CONFIG, type SectionConfig, type FocusConfig } from '@/components/ui/CustomizePanel'
 import FocusViewPanel from '@/components/ui/FocusViewPanel'
@@ -55,6 +56,8 @@ interface Props {
   initialUnlockAll: boolean
   initialName: string | null
   initialTheme: string
+  /** From user_prefs.custom_theme — only meaningful when initialTheme === 'custom'. */
+  initialCustomTheme: CustomThemeSeed | null
   initialMode: string
   initialLayout: SectionConfig[] | null
   initialFocusConfig: FocusConfig | null
@@ -109,8 +112,21 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
+  const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
+  // Fetched here instead of on the server (see page.tsx's initialCustomTheme
+  // comment) — this column may not exist yet if the migration hasn't been
+  // run, and a failed select here just means "no custom theme", not a
+  // broken dashboard for every user.
+  useEffect(() => {
+    if (theme !== 'custom') return
+    createClient().from('user_prefs').select('custom_theme').eq('user_id', userId).single()
+      .then(({ data, error }) => {
+        if (!error && data?.custom_theme) setCustomTheme(data.custom_theme as CustomThemeSeed)
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
   const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
@@ -335,7 +351,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} />
+        case 'village':  return <Village key="village" userId={userId} theme={theme} customTheme={customTheme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
@@ -350,7 +366,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
   return (
     <LangContext.Provider value={lang}>
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme} customTheme={customTheme}>
       {/* Guest space notice — honest, quiet, dismissed by saving the space.
           Sits above the header so it reads as environment, not content. */}
       {isAnonymous && (
@@ -368,8 +384,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
         onUnlock={() => setUnlockReason('')}
         onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-        initialTheme={theme} initialMode={mode}
-        onThemeChange={setTheme} onModeChange={setMode}
+        initialTheme={theme} initialMode={mode} customTheme={customTheme}
+        onThemeChange={setTheme} onModeChange={setMode} onCustomThemeChange={setCustomTheme}
         onCustomize={() => setCustomizeOpen(true)}
         onCompanions={() => setCompanionsOpen(true)}
         onSearch={() => setSearchOpen(true)}
