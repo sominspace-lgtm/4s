@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
 
 export interface Chore {
   id: string
@@ -20,6 +20,10 @@ export interface Meal {
   slot: 'breakfast' | 'lunch' | 'dinner'
   title: string
   cook: string | null
+  // Added 2026-08-21 — see supabase/migrations/household_meals_notes_recipe.sql.
+  // Both optional: a meal can stay just a title, same as before this existed.
+  notes: string | null
+  recipe_url: string | null
 }
 
 export interface ShoppingItem {
@@ -29,6 +33,11 @@ export interface ShoppingItem {
   qty: string | null
   category: string | null
   got: boolean
+  // Written on every add/toggle (see addShopping/toggleGot below) but never
+  // surfaced in the UI until now — who added it, and who actually bought it.
+  user_id: string
+  got_by: string | null
+  got_at: string | null
 }
 
 export interface HouseNote {
@@ -130,8 +139,21 @@ export function useHousehold(spaceId: string | null) {
   async function markChoreDone(id: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
+    const chore = chores.find(c => c.id === id)
+    // A late completion shouldn't push the whole future schedule later. If
+    // the chore was already overdue, anchor the new cycle to when it WAS
+    // due, not to today — otherwise a chore done 3 days late drifts 3 days
+    // later every time it runs late, and a "week apart" chore quietly
+    // becomes 10, then 14, then 20 days apart. Completing on time or early
+    // still anchors to today, same as before.
+    const today = new Date()
+    let anchor = format(today, 'yyyy-MM-dd')
+    if (chore?.last_done_at) {
+      const wasDue = addDays(parseISO(chore.last_done_at), chore.cadence_days)
+      if (wasDue < today) anchor = format(wasDue, 'yyyy-MM-dd')
+    }
     const { error } = await supabase.from('household_chores')
-      .update({ last_done_at: format(new Date(), 'yyyy-MM-dd'), last_done_by: user.id })
+      .update({ last_done_at: anchor, last_done_by: user.id })
       .eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
@@ -154,6 +176,12 @@ export function useHousehold(spaceId: string | null) {
 
   async function removeMeal(id: string) {
     const { error } = await supabase.from('household_meals').delete().eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function updateMeal(id: string, fields: Partial<Pick<Meal, 'notes' | 'recipe_url'>>) {
+    const { error } = await supabase.from('household_meals').update(fields).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
   }
@@ -268,7 +296,7 @@ export function useHousehold(spaceId: string | null) {
   return {
     chores, meals, shopping, notes, rules, moveinItems, loading, error,
     addChore, markChoreDone, removeChore,
-    addMeal, removeMeal,
+    addMeal, removeMeal, updateMeal,
     addShopping, toggleGot, clearGot, removeShopping,
     addNote, toggleNotePin, removeNote,
     addRule, toggleRuleActive, removeRule,

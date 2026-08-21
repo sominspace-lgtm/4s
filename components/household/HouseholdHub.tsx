@@ -12,11 +12,16 @@ import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
+import HouseholdAtAGlance from './HouseholdAtAGlance'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
+// slot was captured on every meal from the start but never shown or sorted
+// by (2026-08-21) — breakfast could render below dinner in the day's list.
+const SLOT_ORDER: Record<typeof SLOTS[number], number> = { breakfast: 0, lunch: 1, dinner: 2 }
+const SLOT_GLYPH: Record<typeof SLOTS[number], string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙' }
 
 type HouseholdTab = HouseholdTabId
 
@@ -99,6 +104,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
   const [mealTitle, setMealTitle] = useState('')
   const [mealCook, setMealCook] = useState('')
+  const [selectedMealId, setSelectedMealId] = useState<string | null>(null)
+  const [mealNotesDraft, setMealNotesDraft] = useState('')
+  const [mealRecipeDraft, setMealRecipeDraft] = useState('')
+  const selectedMeal = h.meals.find(m => m.id === selectedMealId) ?? null
   const [justDone, setJustDone] = useState<string | null>(null)
   const [shopName, setShopName] = useState('')
   const [shopQty, setShopQty] = useState('')
@@ -202,7 +211,11 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         {SHOP_CATEGORIES.map(cat => {
           // Uncategorised items fall into "Other" rather than getting their
           // own unlabelled group — one bucket, not two that mean the same.
-          const items = h.shopping.filter(s => (s.category || 'Other') === cat)
+          // Within the category, still-needed items lead and got ones sink
+          // to the bottom (2026-08-21) — a shop reads the list top-down, and
+          // a struck-through line at the top is just something to skip over.
+          const items = [...h.shopping.filter(s => (s.category || 'Other') === cat)]
+            .sort((a, b) => Number(a.got) - Number(b.got))
           if (items.length === 0) return null
           return (
             <div key={cat} style={{ marginBottom: '0.7rem' }}>
@@ -227,9 +240,19 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                       </svg>
                     )}
                   </button>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', textDecoration: s.got ? 'line-through' : 'none', opacity: s.got ? 0.5 : 1 }}>
-                    {s.name}
-                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text)', textDecoration: s.got ? 'line-through' : 'none', opacity: s.got ? 0.5 : 1 }}>
+                      {s.name}
+                    </span>
+                    {/* user_id/got_by/got_at were written on every add and
+                        toggle already — this is the first place anything
+                        reads them (2026-08-21). */}
+                    <div style={{ fontSize: '0.56rem', color: 'var(--muted)', opacity: 0.55 }}>
+                      {s.got && s.got_by
+                        ? `Got by ${nameFor(s.got_by) ?? 'someone'}${s.got_at ? `, ${daysAgo(s.got_at)}` : ''}`
+                        : nameFor(s.user_id) ? `Added by ${nameFor(s.user_id)}` : null}
+                    </div>
+                  </div>
                   {s.qty && <span style={{ fontSize: '0.64rem', color: 'var(--muted)', flexShrink: 0 }}>{s.qty}</span>}
                   <button onClick={() => h.removeShopping(s.id)} aria-label={`Remove ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
                 </div>
@@ -298,7 +321,18 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                   fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
                 }}
               >✓</button>
-              <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
+                {/* "Whose turn" heading never actually said whose turn it
+                    last was — last_done_by was written on every completion
+                    and never read. Same nameFor/daysAgo pattern Routines and
+                    Check-ins already use just below this block. */}
+                {c.last_done_at && nameFor(c.last_done_by) && (
+                  <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
+                    Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
               <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
               <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
@@ -330,7 +364,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem' }}>
           {week.map(day => {
-            const dayMeals = h.meals.filter(m => isSameDay(parseISO(m.meal_date), day))
+            const dayMeals = [...h.meals.filter(m => isSameDay(parseISO(m.meal_date), day))]
+              .sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot])
             const isToday = isSameDay(day, new Date())
             return (
               <div key={+day} style={{
@@ -344,7 +379,21 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 {dayMeals.length === 0 && <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.35, fontStyle: 'italic' }}>—</div>}
                 {dayMeals.map(m => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.15rem' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text)', flex: 1, minWidth: 0 }}>{m.title}</span>
+                    <span title={m.slot} aria-hidden style={{ fontSize: '0.62rem', flexShrink: 0, opacity: 0.8 }}>{SLOT_GLYPH[m.slot]}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedMealId(m.id)
+                        setMealNotesDraft(m.notes ?? '')
+                        setMealRecipeDraft(m.recipe_url ?? '')
+                      }}
+                      className="press"
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
+                        fontSize: '0.7rem', color: 'var(--text)', flex: 1, minWidth: 0,
+                        textDecoration: (m.notes || m.recipe_url) ? 'underline' : 'none',
+                        textDecorationColor: 'var(--faint)', textUnderlineOffset: '2px',
+                      }}
+                    >{m.title}</button>
                     {m.cook && <span style={{ fontSize: '0.56rem', color: 'var(--emerald)', flexShrink: 0 }}>{m.cook}</span>}
                     <button onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
                   </div>
@@ -577,6 +626,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 
       {tab === 'home' && (
         <>
+          {/* Fixed, not part of homeBlocks — this is the one section meant
+              to always be first, so it isn't reorderable or hideable like
+              the blocks below it (2026-08-21). */}
+          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines} />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={() => setHomeCustomizeOpen(true)} title="Customize Home" className="press" style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.68rem', padding: '0.2rem',
@@ -836,6 +889,59 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         onChange={onChangeHomeBlocks}
         onClose={() => setHomeCustomizeOpen(false)}
       />
+
+      {/* Meal detail sheet (2026-08-21) — notes and a recipe link, the thing
+          a meal title alone never had room for. Opens from clicking any meal
+          in the week grid above. */}
+      {selectedMeal && (
+        <div onClick={() => setSelectedMealId(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 500, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '1rem',
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+        }}>
+          <div onClick={e => e.stopPropagation()} className="organic" style={{
+            width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 18, padding: '1.3rem 1.4rem', boxShadow: 'var(--elev-3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.2rem' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>{selectedMeal.title}</span>
+              <button onClick={() => setSelectedMealId(null)} aria-label="Close" className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginBottom: '1rem' }}>
+              {selectedMeal.slot} · {format(parseISO(selectedMeal.meal_date), 'EEEE d MMM')}{selectedMeal.cook ? ` · ${selectedMeal.cook} cooking` : ''}
+            </div>
+
+            <label style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: '0.3rem' }}>Recipe link</label>
+            <input
+              value={mealRecipeDraft} onChange={e => setMealRecipeDraft(e.target.value)}
+              placeholder="https://…" style={{ ...input, width: '100%', marginBottom: '0.8rem' }}
+            />
+            {selectedMeal.recipe_url && (
+              <a href={selectedMeal.recipe_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: 'var(--gold)', display: 'block', marginTop: '-0.55rem', marginBottom: '0.8rem' }}>
+                Open recipe ↗
+              </a>
+            )}
+
+            <label style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: '0.3rem' }}>Notes</label>
+            <textarea
+              value={mealNotesDraft} onChange={e => setMealNotesDraft(e.target.value)}
+              placeholder="Substitutions, timing, whatever's worth remembering…" rows={3}
+              style={{ ...input, width: '100%', resize: 'vertical', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}
+            />
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setSelectedMealId(null)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
+              <button
+                onClick={async () => {
+                  await h.updateMeal(selectedMeal.id, { notes: mealNotesDraft.trim() || null, recipe_url: mealRecipeDraft.trim() || null })
+                  setSelectedMealId(null)
+                }}
+                className="btn btn-primary press" style={{ fontSize: '0.75rem' }}
+              >Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
