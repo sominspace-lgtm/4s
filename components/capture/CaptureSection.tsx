@@ -128,15 +128,19 @@ export default function CaptureSection({ userId }: { userId: string }) {
                 fontSize: '0.8rem', color: 'var(--muted)',
               }}>
                 <span style={{ flex: 1, color: 'var(--text)' }}>{c.text}</span>
+                {/* Text stayed 0.65rem — these read fine small — but the tap
+                    AREA grew (2026-08-21): padding and min-height push every
+                    action in this row closer to a real thumb target without
+                    widening the row itself. */}
                 <button onClick={() => makeTask(c.id, c.text)} title="Make this a task" style={{
                   fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
                   border: '1px solid var(--border)', borderRadius: '6px',
-                  padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  padding: '0.5em 0.7em', minHeight: '2.2rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>→ task</button>
                 <button onClick={() => makeWishlist(c.id, c.text)} title="Add to wishlist" style={{
                   fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
                   border: '1px solid var(--border)', borderRadius: '6px',
-                  padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  padding: '0.5em 0.7em', minHeight: '2.2rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
                 }}>→ wishlist</button>
                 <ShareMenu itemType="capture" itemId={c.id} userId={userId} />
                 {assigning === c.id ? (
@@ -158,14 +162,15 @@ export default function CaptureSection({ userId }: { userId: string }) {
                   <button onClick={() => setAssigning(c.id)} style={{
                     fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
                     border: '1px solid var(--border)', borderRadius: '6px',
-                    padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                    padding: '0.5em 0.7em', minHeight: '2.2rem', cursor: 'pointer', fontFamily: 'var(--font-body)',
                   }}>
                     {t('assign', lang)}
                   </button>
                 )}
                 <button onClick={() => remove(c.id)} aria-label="Delete" style={{
-                  fontSize: '0.65rem', color: 'var(--muted)', background: 'none',
+                  fontSize: '0.7rem', color: 'var(--muted)', background: 'none',
                   border: 'none', cursor: 'pointer', opacity: 0.5,
+                  padding: '0.5em 0.6em', minHeight: '2.2rem', minWidth: '2.2rem',
                 }}>✕</button>
               </div>
             ))}

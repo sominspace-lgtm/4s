@@ -27,6 +27,7 @@ interface HeaderProps {
   onCustomize: () => void
   onCompanions: () => void
   onSearch: () => void
+  onCapture: () => void
   onArchive: () => void
   onHelp: () => void
   onJarvis: () => void
@@ -95,7 +96,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -222,6 +223,14 @@ export default function Header({ email, userId, initialName, sharedMode = false,
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+        {/* Desktop's only visible entry to Quick Capture used to be ⌘K —
+            real, but undiscoverable. This is the same trigger MobileNav's
+            FAB already uses one level down. */}
+        <button onClick={onCapture} title="Quick capture" aria-label="Quick capture" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>✎</button>
         <button onClick={onSearch} title="Search everything" aria-label="Search" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',

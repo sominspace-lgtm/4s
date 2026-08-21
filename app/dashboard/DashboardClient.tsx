@@ -367,6 +367,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <Header
         email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
         onUnlock={() => setUnlockReason('')}
+        onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
         initialTheme={theme} initialMode={mode}
         onThemeChange={setTheme} onModeChange={setMode}
         onCustomize={() => setCustomizeOpen(true)}

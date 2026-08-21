@@ -84,13 +84,19 @@ export default function QuickCapture() {
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
         background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
       }}
     >
+      {/* Top-anchored, not centered (2026-08-21) — same fix as SearchModal.
+          A vertically centered dialog is the one place a phone keyboard
+          reliably covers: the keyboard eats the bottom half of the viewport
+          and takes the input with it. Anchoring near the top keeps the
+          textarea above the keyboard on every device, and reads fine on
+          desktop too — it's how every command palette does this. */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: '540px',
+          position: 'fixed', top: '12%', left: '50%', transform: 'translateX(-50%)',
+          width: 'min(540px, calc(100vw - 2rem))',
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: '20px', overflow: 'hidden',
           boxShadow: '0 32px 80px rgba(0,0,0,0.6)',

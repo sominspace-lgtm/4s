@@ -9,6 +9,7 @@ import LifeHub from '@/components/life/LifeHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import PreferencesHub from '@/components/personal/PreferencesHub'
+import PersonalOverview from '@/components/personal/PersonalOverview'
 import CouncilSection from '@/components/council/CouncilSection'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_PERSONAL_TABS } from '@/lib/utils/personalTabs'
@@ -77,6 +78,11 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
 
   return (
     <div>
+      {/* Control-center strip (2026-08-21) — glance-level state before you
+          pick a sub-tab. Own component, own hooks; nothing here reaches into
+          MasterDashboard/HabitTracker/GoalsSection's own state. */}
+      <PersonalOverview userId={userId} />
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
         <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
           {visibleTabs.map(tb => (
