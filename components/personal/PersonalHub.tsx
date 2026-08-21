@@ -41,11 +41,9 @@ import type { Mode } from '@/lib/constants/modes'
 // works, so goToPersonal('council') from the menu (and the Brief's Council
 // card) lands here exactly as before, and it never gets a customize-panel
 // row since it was never a visible tab to begin with.
-export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions, tabs, onChangeTabs }: {
+export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
   userId: string
-  userEmail: string
   mode: Mode
-  onOpenCompanions: () => void
   tabs: SectionConfig[]
   onChangeTabs: (next: SectionConfig[]) => void
 }) {
@@ -103,7 +101,7 @@ export default function PersonalHub({ userId, userEmail, mode, onOpenCompanions,
       {tab === 'habits'  && <><PersonalRoutines userId={userId} /><HabitTracker /></>}
       {tab === 'life'    && <LifeHub />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
-      {tab === 'people'  && <PeopleHub userId={userId} userEmail={userEmail} onOpenCompanions={onOpenCompanions} />}
+      {tab === 'people'  && <PeopleHub />}
       {tab === 'preferences' && <PreferencesHub userId={userId} />}
       {tab === 'council' && <CouncilSection mode={mode} userId={userId} calendarConnected />}
 

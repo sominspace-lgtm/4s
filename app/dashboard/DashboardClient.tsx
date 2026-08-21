@@ -352,7 +352,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} theme={theme} customTheme={customTheme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} />
-        case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
+        case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
