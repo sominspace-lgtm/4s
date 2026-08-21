@@ -9,11 +9,14 @@ import { STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
 
 // Plant silhouettes by stage. Each stage is a real change in shape, not just
 // scale — growth should read at a glance, from across the room.
-export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)' }: {
+export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)', selected = false, onClick }: {
   plant: Plant; x: number; y: number; scale?: number; changed?: boolean
   /** The season's green. Dormant plants ignore it: resting is resting in
    *  any weather, and it has to stay visually distinct from autumn. */
   foliage?: string
+  /** Tapped — keeps a styled callout open, see VillageScene's EntityCallout. */
+  selected?: boolean
+  onClick?: () => void
 }) {
   const i = STAGE_INDEX(plant.stage)
   const h = [8, 18, 34, 52, 72][i]
@@ -23,7 +26,11 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity}
-      className={changed ? 'village-changed' : undefined}>
+      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
+      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected'].filter(Boolean).join(' ') || undefined}>
+      {/* Native <title> stays as the a11y fallback (screen readers, and
+          anyone hovering without JS) — the STYLED callout that appears on
+          click lives in VillageScene, keyed off `selected`. */}
       <title>{`${plant.name} — ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
       {/* stem */}
       <rect x={-1.2} y={-h} width={2.4} height={h} rx={1.2} fill={color} opacity={0.75} />
@@ -48,8 +55,10 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   )
 }
 
-export function BuildingShape({ building, x, y, scale = 1, changed = false }: {
+export function BuildingShape({ building, x, y, scale = 1, changed = false, selected = false, onClick }: {
   building: Building; x: number; y: number; scale?: number; changed?: boolean
+  selected?: boolean
+  onClick?: () => void
 }) {
   const spec = {
     blueprint:    { h: 16, fill: 'transparent',        stroke: 'var(--slate)',  dash: '3 3' },
@@ -62,7 +71,8 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false }: {
 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}
-      className={changed ? 'village-changed' : undefined}>
+      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
+      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected'].filter(Boolean).join(' ') || undefined}>
       <title>{`${building.title} — ${building.phase}`}</title>
       <rect
         x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={2}
@@ -83,6 +93,30 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false }: {
       {building.phase === 'landmark' && (
         <text x={0} y={-spec.h - 17} textAnchor="middle" fontSize={11} fill="var(--gold)">◆</text>
       )}
+    </g>
+  )
+}
+
+// Styled callout for a selected plant/building (2026-08-21) — the native
+// SVG <title> tooltip on each shape still works (hover, no-JS, screen
+// readers), but it renders in the browser's own unstyled tooltip box, which
+// reads as a debug artifact next to everything else in the scene. Clicking a
+// shape opens this instead: same info, drawn in the scene's own visual
+// language. Positioned a fixed distance above the entity's slot — safely
+// clear of the tallest possible plant or building (~94px) without needing
+// each shape's exact rendered height at call time.
+export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number; title: string; subtitle: string }) {
+  const width = Math.max(90, Math.max(title.length, subtitle.length) * 5.4 + 20)
+  // Keep the whole callout on-canvas (viewBox is 800 wide) even for an
+  // entity slotted near either edge.
+  const cx = Math.min(800 - width / 2 - 8, Math.max(width / 2 + 8, x))
+  const top = y - 100
+  return (
+    <g transform={`translate(${cx} ${top})`} pointerEvents="none" className="village-fade">
+      <rect x={-width / 2} y={-34} width={width} height={32} rx={9} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} />
+      <path d={`M ${x - cx - 5} -3 L ${x - cx} 3 L ${x - cx + 5} -3 Z`} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} />
+      <text x={0} y={-19} textAnchor="middle" fontSize={9.5} fill="var(--text)" fontFamily="var(--font-body)">{title}</text>
+      <text x={0} y={-8} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{subtitle}</text>
     </g>
   )
 }

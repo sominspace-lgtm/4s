@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -48,12 +49,31 @@ export default function VillageScene({
   const grew = new Set(changes?.grownPlantIds ?? [])
   const planted = new Set(changes?.newPlantIds ?? [])
   const landmarked = new Set(changes?.newLandmarkIds ?? [])
+
+  // Per-entity selection (2026-08-21) — clicking a plant or building opens a
+  // styled callout with its actual name and stage, in place of the browser's
+  // unstyled native tooltip. In locked (shared-mode) view a plant's name IS
+  // personal data — a habit's title in someone's tooltip — so a click there
+  // routes through the same unlock prompt as the district labels rather than
+  // revealing it; see the `locked` branch below.
+  const [selected, setSelected] = useState<{ type: 'plant' | 'building'; id: string } | null>(null)
+  const selectPlant = (id: string) => () => {
+    if (locked) { onLockedNavigate?.('Growth Forest'); return }
+    setSelected(s => (s?.type === 'plant' && s.id === id ? null : { type: 'plant', id }))
+  }
+  const selectBuilding = (id: string) => () => {
+    if (locked) { onLockedNavigate?.('Projects'); return }
+    setSelected(s => (s?.type === 'building' && s.id === id ? null : { type: 'building', id }))
+  }
+  const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
+  const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
   return (
     <svg
       viewBox="0 0 800 440"
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
       style={{ width: '100%', height: 'auto', display: 'block' }}
+      onClick={() => setSelected(null)}
     >
       <defs>
         <radialGradient id="vlake">
@@ -119,7 +139,9 @@ export default function VillageScene({
         <g key={plant.id} opacity={back ? 0.55 : 1}>
           <PlantShape plant={plant} x={x} y={y} scale={scale}
             foliage={live ? palette.foliage : undefined}
-            changed={grew.has(plant.id) || planted.has(plant.id)} />
+            changed={grew.has(plant.id) || planted.has(plant.id)}
+            selected={selected?.type === 'plant' && selected.id === plant.id}
+            onClick={selectPlant(plant.id)} />
         </g>
       ))}
 
@@ -140,7 +162,9 @@ export default function VillageScene({
       {buildingSlots.map(({ building, x, y, scale, back }) => (
         <g key={building.id} opacity={back ? 0.55 : 1}>
           <BuildingShape building={building} x={x} y={y} scale={scale}
-            changed={landmarked.has(building.id)} />
+            changed={landmarked.has(building.id)}
+            selected={selected?.type === 'building' && selected.id === building.id}
+            onClick={selectBuilding(building.id)} />
         </g>
       ))}
 
@@ -188,6 +212,19 @@ export default function VillageScene({
         count={`${v.buildings.length} standing`} />
       <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`} />
+
+      {/* Styled callout for whichever plant/building is selected — see the
+          selection state and locked-mode guard set up above. */}
+      {selectedPlant && (
+        <EntityCallout x={selectedPlant.x} y={selectedPlant.y}
+          title={selectedPlant.plant.name}
+          subtitle={`${selectedPlant.plant.stage}${selectedPlant.plant.dormant ? ' · resting' : ''}`} />
+      )}
+      {selectedBuilding && (
+        <EntityCallout x={selectedBuilding.x} y={selectedBuilding.y}
+          title={selectedBuilding.building.title}
+          subtitle={selectedBuilding.building.phase} />
+      )}
 
       {/* Vignette — pulls the eye to the middle of the scene. Drawn in
           SVG rather than as a CSS overlay so it can't intercept the

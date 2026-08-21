@@ -414,6 +414,16 @@ select, option {
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
 
+/* Per-entity hover/selection (2026-08-21) — until now only the 5 district
+   labels were interactive at all; every individual plant and building sat
+   there inert except for a native, unstyled <title> tooltip on hover.
+   transform-box: fill-box makes the CSS scale below anchor on the shape's
+   own bounding box rather than the SVG viewport's (0,0) origin, which is
+   what "grow slightly toward the cursor" actually requires here. */
+.village-entity { cursor: pointer; transform-box: fill-box; transform-origin: 50% 100%; transition: filter 160ms ease, transform 160ms ease; }
+.village-entity:hover { filter: drop-shadow(0 0 3px var(--gold)); transform: scale(1.08); }
+.village-entity-selected { filter: drop-shadow(0 0 4px var(--gold)) drop-shadow(0 0 1px var(--gold)); }
+
 /* The sky eases between times of day rather than snapping. This is also the
    hydration fix: the scene renders a fixed daytime sky on the server and on
    the first client paint, then transitions to the real time once mounted, so
