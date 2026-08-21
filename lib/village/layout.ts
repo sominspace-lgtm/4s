@@ -34,6 +34,9 @@ interface Band {
 
 const FOREST: Band = { x0: 40, x1: 360, front: 10, cap: 28, jitter: 26 }
 const DISTRICT: Band = { x0: 430, x1: 780, front: 6, cap: 16, jitter: 20 }
+// Full-width, single band — the relationships garden isn't split into two
+// districts the way habits/tasks are, so it gets the whole canvas to itself.
+const GARDEN: Band = { x0: 50, x1: 750, front: 12, cap: 30, jitter: 24 }
 
 // Past about eight of a thing, everything shrinks a little so the extra ones
 // have somewhere to go. Floored, because a village of specks is worse than a
@@ -88,5 +91,13 @@ export function districtSlots(ids: string[], groundY: number): Slot[] {
   return slotsIn(DISTRICT, ids, groundY)
 }
 
+// Relationships-as-a-scene (2026-08-21) reuses this same placement math —
+// same reasoning applies unchanged: deterministic by id, no stored
+// positions, density scales down before anything gets dropped.
+export function gardenSlots(ids: string[], groundY: number): Slot[] {
+  return slotsIn(GARDEN, ids, groundY)
+}
+
 export const FOREST_CAP = FOREST.cap
 export const DISTRICT_CAP = DISTRICT.cap
+export const GARDEN_CAP = GARDEN.cap

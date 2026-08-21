@@ -27,11 +27,12 @@ function birthdayLine(p: Person): string | null {
   return null
 }
 
-function PersonCard({ person, onSave, onRemove, onContacted }: {
+function PersonCard({ person, onSave, onRemove, onContacted, innerRef }: {
   person: Person
   onSave: (patch: Partial<Person>) => void
   onRemove: () => void
   onContacted: () => void
+  innerRef?: (el: HTMLDivElement | null) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Person>(person)
@@ -52,7 +53,7 @@ function PersonCard({ person, onSave, onRemove, onContacted }: {
   }
 
   return (
-    <div style={{
+    <div ref={innerRef} style={{
       border: '1px solid var(--border)', borderRadius: '12px', padding: '0.9rem 1rem',
       background: contact.nudge ? 'color-mix(in srgb, var(--gold) 5%, var(--surface))' : 'var(--surface)',
       display: 'flex', flexDirection: 'column', gap: '0.4rem',
@@ -135,7 +136,7 @@ function PersonCard({ person, onSave, onRemove, onContacted }: {
   )
 }
 
-export default function RelationshipMemory() {
+export default function RelationshipMemory({ cardRef }: { cardRef?: (id: string, el: HTMLDivElement | null) => void }) {
   const { people, loading, add, update, remove, markContacted } = usePeople()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -186,6 +187,7 @@ export default function RelationshipMemory() {
               onSave={patch => update(p.id, patch)}
               onRemove={() => remove(p.id)}
               onContacted={() => markContacted(p.id)}
+              innerRef={el => cardRef?.(p.id, el)}
             />
           ))}
         </div>

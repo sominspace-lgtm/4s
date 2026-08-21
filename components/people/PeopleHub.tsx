@@ -1,6 +1,6 @@
 'use client'
 
-import RelationshipMemory from '@/components/relationships/RelationshipMemory'
+import RelationshipGarden from '@/components/relationships/RelationshipGarden'
 
 // Down to one thing (2026-08-21): the household is exactly two accounts,
 // Harry and Sylvia, and always will be — there is no "invite a friend" or
@@ -20,6 +20,14 @@ import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 // What's left is genuinely self-contained: RelationshipMemory reads people,
 // birthdays, last-contact and preferences straight from usePeople/
 // usePersonPreferences — it never depended on the friend/sharing system.
+//
+// "Make relationships into the systems like village" (2026-08-21): People
+// now opens on a garden — one tree per person, sized by how long you've
+// known them and what you've actually learned about them, same growth law
+// as the Village (never shrinks; a quiet stretch desaturates, it doesn't
+// wither). See lib/relationships/garden.ts for the full reasoning, in
+// particular why last_contact can't drive size the way it drives everything
+// else about "have I talked to this person lately".
 export default function PeopleHub() {
   return (
     <div className="card-interactive organic specimen" style={{
@@ -30,7 +38,7 @@ export default function PeopleHub() {
       <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400, marginBottom: '0.8rem' }}>
         People
       </div>
-      <RelationshipMemory />
+      <RelationshipGarden />
     </div>
   )
 }

@@ -16,6 +16,10 @@ export interface Person {
   notes: string | null
   gift_ideas: string | null
   gift_budget: number | null
+  // Existed in the DDL from the start but was never selected — added
+  // 2026-08-21 for the relationships garden, which needs "how long have you
+  // known them" the same way the Village needs accountCreated.
+  created_at: string
 }
 
 export type NewPerson = Omit<Person, 'id'>
@@ -49,7 +53,7 @@ export function usePeople() {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('people')
-      .select('id, name, relationship, birthday, last_contact, notes, gift_ideas')
+      .select('id, name, relationship, birthday, last_contact, notes, gift_ideas, created_at')
       .order('name')
     setPeople((data as Person[]) ?? [])
     setLoading(false)
