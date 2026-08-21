@@ -69,7 +69,6 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
     }
   }
 
-  const [pwCurrent, setPwCurrent] = useState('')
   const [pwNew, setPwNew] = useState('')
   const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
@@ -81,6 +80,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleteMsg, setDeleteMsg] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Alexa state/logic moved to components/ui/AlexaConnect.tsx (2026-08-11) so
   // it can render here AND in the header Connect panel without duplicating
@@ -97,7 +97,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
     if (!pwNew || pwNew.length < 8) { setPwMsg({ text: 'New password must be at least 8 characters.', ok: false }); return }
     const { error } = await supabase.auth.updateUser({ password: pwNew })
     if (error) { setPwMsg({ text: error.message, ok: false }); return }
-    setPwMsg({ text: 'Password updated.', ok: true }); setPwCurrent(''); setPwNew('')
+    setPwMsg({ text: 'Password updated.', ok: true }); setPwNew('')
   }
 
   async function requestNotifications() {
@@ -122,7 +122,15 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
 
   async function deleteAccount() {
     if (deleteInput.toLowerCase() !== 'delete') { setDeleteMsg('Type "delete" to confirm.'); return }
-    // Sign out; actual deletion requires service role — stub with note
+    setDeleteMsg(null)
+    setDeleting(true)
+    const res = await fetch('/api/account/delete', { method: 'POST' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setDeleteMsg(body.error ?? "Couldn't delete your account — try again.")
+      setDeleting(false)
+      return
+    }
     await supabase.auth.signOut()
     router.push('/login?deleted=1')
   }
@@ -248,8 +256,8 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
               <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Type <strong>delete</strong> to confirm. This is permanent and cannot be undone.</span>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input value={deleteInput} onChange={e => setDeleteInput(e.target.value)} placeholder='type "delete"' style={{ ...inputStyle, width: 'auto', flex: 1 }} />
-                <Btn onClick={deleteAccount} danger>Confirm</Btn>
-                <Btn onClick={() => { setDeleteConfirm(false); setDeleteInput(''); setDeleteMsg(null) }}>Cancel</Btn>
+                <Btn onClick={deleteAccount} danger disabled={deleting}>{deleting ? 'deleting…' : 'Confirm'}</Btn>
+                <Btn onClick={() => { setDeleteConfirm(false); setDeleteInput(''); setDeleteMsg(null) }} disabled={deleting}>Cancel</Btn>
               </div>
               {deleteMsg && <div style={{ fontSize: '0.68rem', color: 'var(--rose)' }}>{deleteMsg}</div>}
             </div>
