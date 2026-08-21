@@ -96,8 +96,13 @@ export default function VillageScene({
           <stop offset="100%" stopColor="var(--slate)" stopOpacity="0.15" />
         </radialGradient>
         <radialGradient id="vvignette" cx="50%" cy="45%" r="75%">
+          {/* Eased from 0.5 to 0.35 max opacity (2026-08-21) — on a theme
+              whose --bg itself reads as a strong, saturated color rather
+              than a deep neutral, a half-opacity wash of that same color
+              stacked on top of the sky rect compounded into an even more
+              oversaturated edge. */}
           <stop offset="55%" stopColor="var(--bg)" stopOpacity="0" />
-          <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.35" />
         </radialGradient>
         <clipPath id="vlakeClip">
           <ellipse cx={150} cy={410} rx={110} ry={22} />

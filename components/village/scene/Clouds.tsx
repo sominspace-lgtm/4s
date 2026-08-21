@@ -13,7 +13,12 @@ import type { VillageState } from '@/lib/village/state'
  */
 export default function Clouds({ timeOfDay }: { timeOfDay: VillageState['timeOfDay'] }) {
   const tint = timeOfDay === 'dawn' || timeOfDay === 'dusk' ? 'var(--amber)' : 'var(--text)'
-  const opacity = timeOfDay === 'night' ? 0.08 : timeOfDay === 'day' ? 0.16 : 0.22
+  // Raised across the board (2026-08-21) — at the old 0.08-0.22 range these
+  // were essentially invisible against any sky with real saturation (a
+  // custom theme's --bg is not necessarily the deep near-black the original
+  // values were tuned against), leaving the whole upper 80% of the canvas
+  // reading as one flat, textureless rectangle.
+  const opacity = timeOfDay === 'night' ? 0.16 : timeOfDay === 'day' ? 0.32 : 0.4
 
   return (
     <g opacity={opacity} pointerEvents="none">
