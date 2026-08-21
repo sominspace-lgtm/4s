@@ -1,12 +1,7 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'preferences'
+export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'preferences' | 'council'
 
-// council is deliberately NOT here. It's reachable only by deep link
-// (Brief's "Ask Council" card, the header ⋯ menu via goToPersonal('council'))
-// and was intentionally pulled off the visible tab bar (see
-// components/personal/PersonalHub.tsx's header comment) — customization must
-// not hand it a position or a hide toggle it was never meant to have.
 export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   // Folded in from the old top-level Tasks tab (2026-08-20) — tasks are
   // individual work, the same "mine" grouping DashboardClient's
@@ -24,6 +19,11 @@ export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   { id: 'money',  label: 'Money',  hidden: false },
   { id: 'people', label: 'People', hidden: false },
   { id: 'preferences', label: 'Preferences', hidden: false },
+  // Promoted from a header-menu-only deep link (2026-08-21) — "Convene the
+  // Council" lived in the ⋯ menu next to Ask Jarvis, which is now gone, and
+  // an occasional-use action deserves a real tab in the place it's about
+  // more than it deserves a permanent line in an overflow menu.
+  { id: 'council', label: 'Council', hidden: false },
 ]
 
 // Same merge shape as mergeTodayBlocks(): a saved list might predate a tab

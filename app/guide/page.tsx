@@ -179,11 +179,11 @@ export default function GuidePage() {
         </Card>
       </Section>
 
-      <Section id="shared" kicker="together, privately" title="Shared &amp; People">
+      <Section id="shared" kicker="together, privately" title="People">
         <Card>
-          Everything is private unless you share it. Under <strong style={{ color: 'var(--text)' }}>Shared</strong> you&rsquo;ll find what&rsquo;s been shared with you,
-          what you&rsquo;re sharing, shared spaces (Family, Couple, Trip…), and <strong style={{ color: 'var(--text)' }}>People</strong> — invite friends by email,
-          accept or decline, and only accepted people become share targets.
+          A garden, not a list — each person is a tree that grows with how long you&rsquo;ve known them and what you&rsquo;ve learned
+          about them, and it never shrinks. Click a tree to jump to their card for notes, birthdays, and preferences.
+          Everything here is private to you.
         </Card>
       </Section>
 
@@ -192,12 +192,7 @@ export default function GuidePage() {
           For the people you live with. <strong style={{ color: 'var(--text)' }}>Home</strong> groups Calendar, Shopping, Chores,
           and Meals — reorder or hide any of them from the ⊹ Customize button, the same as the top-level tabs.
           <strong style={{ color: 'var(--text)' }}> Reference</strong> is the fridge door: gate codes, the vet&rsquo;s number, notes
-          with no due date and no owner. <strong style={{ color: 'var(--text)' }}> Move-in</strong> tracks furniture and appliance
-          purchases for a shared move — its own tab so it doesn&rsquo;t get lost in weekly Shopping.
-        </Card>
-        <Card title="Setup">
-          Connect a partner, link a Discord server so chores/shopping/move-in sync both ways, and paste a shared Google Drive
-          folder or Google Photos album link for household and couple memories — opens in a new tab, no login through 4S required.
+          with no due date and no owner. Partner pairing and Discord linking live in Settings.
         </Card>
       </Section>
 
@@ -217,9 +212,8 @@ export default function GuidePage() {
 
       <Section id="ai" kicker="alive but quiet" title="AI features">
         <Card>
-          When an <code style={{ fontSize: '0.72rem' }}>ANTHROPIC_API_KEY</code> is configured, three things come to life:
-          <strong style={{ color: 'var(--text)' }}> Ask Jarvis</strong> (ask a free-text question about your day),
-          the <strong style={{ color: 'var(--text)' }}> Council</strong> AI review, and
+          When an <code style={{ fontSize: '0.72rem' }}>ANTHROPIC_API_KEY</code> is configured, two things come to life:
+          the <strong style={{ color: 'var(--text)' }}>Council</strong> AI review, and
           <strong style={{ color: 'var(--text)' }}> Refill</strong> photo/link extraction. Only a light summary of your dashboard —
           counts, titles, dates — is ever sent; never your note contents. Without a key, 4S falls back to its built-in rules automatically.
         </Card>
@@ -245,9 +239,7 @@ export default function GuidePage() {
           Tap these anywhere in 4S — they work the same on phone, Mac, and Windows.
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginTop: '0.8rem' }}>
             <IconRow icon="⌕">Search — find any task, habit, note, or item</IconRow>
-            <IconRow icon="＋">Quick add — jot anything down (＋ button, bottom-right on mobile)</IconRow>
-            <IconRow icon="✦">Ask Jarvis — a free-text question about your day</IconRow>
-            <IconRow icon="◎">Focus — a calm, distraction-free timer</IconRow>
+            <IconRow icon="✎">Quick capture — jot anything down instantly</IconRow>
             <IconRow icon="◐">Theme &amp; Guide — change the look and the voice</IconRow>
             <IconRow icon="⊹">Customize — reorder or hide any tab</IconRow>
             <IconRow icon="?">Guide — this page, any time</IconRow>
@@ -255,15 +247,14 @@ export default function GuidePage() {
         </Card>
       </Section>
 
-      <Section id="themes" kicker="make it yours" title="Themes &amp; modes">
+      <Section id="themes" kicker="make it yours" title="Themes &amp; Guides">
         <Card>
-          13 visual <strong style={{ color: 'var(--text)' }}>themes</strong> (dark and light) change only the look.
-          10 personality <strong style={{ color: 'var(--text)' }}>modes</strong> change only the tone and greetings.
-          Mix them freely — a calm theme with a coach&rsquo;s voice, or a bold theme kept peaceful.
+          Pick light or dark and one accent <strong style={{ color: 'var(--text)' }}>color</strong>, or go fully custom with
+          your own six colors and a font pairing. Three <strong style={{ color: 'var(--text)' }}>Guides</strong> — Peaceful,
+          Friend, Executive — change only the tone and greetings. Mix them freely.
         </Card>
         <Card>
-          <strong style={{ color: 'var(--text)' }}>Simple / Advanced:</strong> Simple mode trims the app to Brief, Tasks, Calendar and Shared.
-          <strong style={{ color: 'var(--text)' }}> Focus View</strong> hides everything but what matters today. Customize reorders or hides any tab.
+          <strong style={{ color: 'var(--text)' }}>Customize:</strong> reorder or hide any tab, from the ⊹ icon next to any tab bar.
         </Card>
       </Section>
 

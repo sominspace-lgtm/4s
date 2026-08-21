@@ -33,14 +33,10 @@ import type { Mode } from '@/lib/constants/modes'
 // DashboardClient (see its layoutState()/saveLayout wiring) and passed down
 // here, same relationship Today has with its own blocks.
 //
-// Council is deliberately NOT in `tabs` at all (2026-08-11, unchanged by the
-// customization work). It's an action you invoke occasionally, not a place
-// you live, and as a sixth tab it competed for attention with Goals and
-// Habits every single visit. It now lives in the header ⋯ menu next to Ask
-// Jarvis — same reasoning, same kind of thing. The 'council' tab id still
-// works, so goToPersonal('council') from the menu (and the Brief's Council
-// card) lands here exactly as before, and it never gets a customize-panel
-// row since it was never a visible tab to begin with.
+// Council is a real tab again as of 2026-08-21 — it used to live only in
+// the header ⋯ menu next to Ask Jarvis, both gone now. goToPersonal
+// ('council') from the Brief's "Ask Council" card still lands here exactly
+// as before; it's just also reachable by clicking the tab like anything else.
 export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
   userId: string
   mode: Mode
@@ -59,10 +55,8 @@ export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
   // DashboardClient already applies to top-level sections.
   function goTo(id: PersonalTab) {
     setTab(id)
-    if (id !== 'council') {
-      const entry = tabs.find(t => t.id === id)
-      if (entry?.hidden) onChangeTabs(tabs.map(t => (t.id === id ? { ...t, hidden: false } : t)))
-    }
+    const entry = tabs.find(t => t.id === id)
+    if (entry?.hidden) onChangeTabs(tabs.map(t => (t.id === id ? { ...t, hidden: false } : t)))
   }
 
   useEffect(() => {

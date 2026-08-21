@@ -7,8 +7,8 @@ import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
 // The layout column is one JSON blob holding several independent settings,
 // and `upsert` replaces the whole column. Every place that wrote it used to
 // build that object by hand, so any writer that forgot a key silently wiped
-// it for the user — reordering your sections could reset simpleMode, and so
-// on. There were five such writers.
+// it for the user — reordering your sections could reset an unrelated
+// setting, and so on. There were five such writers.
 //
 // Now there is one, and `current` is a complete LayoutState, so a forgotten
 // key is a type error instead of quiet data loss. Callers pass what they know
@@ -16,7 +16,6 @@ import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
 
 export interface LayoutState {
   sections: SectionConfig[]
-  simpleMode: boolean
   unlockAll: boolean
   // Today's own blocks (One thing, Capacity, Calendar, …) — hide/reorder one
   // level down from the top-level tabs. Optional in the type only so old

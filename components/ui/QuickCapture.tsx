@@ -30,19 +30,29 @@ export default function QuickCapture() {
   const supabase = createClient()
 
   useEffect(() => {
+    function openFresh() {
+      setOpen(o => !o)
+      setSaved(false)
+      setError(null)
+      setText('')
+      setDomain('')
+    }
     function handle(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setOpen(o => !o)
-        setSaved(false)
-        setError(null)
-        setText('')
-        setDomain('')
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openFresh() }
       if (e.key === 'Escape') setOpen(false)
     }
+    // The header button and MobileNav's FAB fire this directly instead of a
+    // synthetic ⌘K keydown (2026-08-21) — a fake keydown event bubbles to
+    // EVERY window keydown listener, not just this one, and DashboardClient
+    // had its own ⌘K binding for Search. A click that pretended to be a
+    // keypress was silently opening both, with Search winning the paint
+    // order — "quick capture opens search" from the outside.
     window.addEventListener('keydown', handle)
-    return () => window.removeEventListener('keydown', handle)
+    window.addEventListener('app:open-quick-capture', openFresh)
+    return () => {
+      window.removeEventListener('keydown', handle)
+      window.removeEventListener('app:open-quick-capture', openFresh)
+    }
   }, [])
 
   useEffect(() => {

@@ -27,7 +27,6 @@ export default async function DashboardPage() {
   if (prefs === null) redirect('/onboard')
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
-  const simpleMode = Boolean(prefs?.layout?.simpleMode)
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
   const personalTabs = prefs?.layout?.personalTabs as SectionConfig[] | null
   const householdTabs = prefs?.layout?.householdTabs as SectionConfig[] | null
@@ -58,7 +57,6 @@ export default async function DashboardPage() {
       initialCustomTheme={null}
       initialMode={normalizeMode(prefs?.mode)}
       initialLayout={layout ?? null}
-      initialSimpleMode={simpleMode}
       initialTodayBlocks={todayBlocks ?? null}
       initialPersonalTabs={personalTabs ?? null}
       initialHouseholdTabs={householdTabs ?? null}

@@ -6,9 +6,7 @@ import ThemeProvider from '@/components/ui/ThemeProvider'
 import type { CustomThemeSeed } from '@/lib/constants/themes'
 import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
-import AskJarvisPanel from '@/components/ui/AskJarvisPanel'
 import QuickCapture from '@/components/ui/QuickCapture'
-import CompanionPanel from '@/components/companion/CompanionPanel'
 import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
 import ArchivePanel from '@/components/archive/ArchivePanel'
@@ -28,7 +26,7 @@ import UnlockPanel from '@/components/ui/UnlockPanel'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
-import { scrollToAnchor, goToPersonal } from '@/lib/utils/navigate'
+import { scrollToAnchor } from '@/lib/utils/navigate'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergePersonalTabs } from '@/lib/utils/personalTabs'
@@ -58,19 +56,11 @@ interface Props {
   initialCustomTheme: CustomThemeSeed | null
   initialMode: string
   initialLayout: SectionConfig[] | null
-  initialSimpleMode: boolean
   initialTodayBlocks: TodayBlockConfig[] | null
   initialPersonalTabs: SectionConfig[] | null
   initialHouseholdTabs: SectionConfig[] | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
 }
-
-// Simple mode: Today · Personal · Village. Tasks folded into Personal
-// (2026-08-20), so the three-you-open-daily set now names Personal itself
-// rather than the sub-tab that used to be a top-level one; Household is
-// still "go there when you mean to", which is exactly what a simplified view
-// is meant to strip out.
-const SIMPLE_SECTION_IDS = new Set(['brief', 'personal', 'village'])
 
 // Folded into Personal / Today / Household — strip from any saved layout so
 // returning users don't see dangling, unrenderable section headings. Note
@@ -109,7 +99,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -134,7 +124,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [personalTabs, setPersonalTabs] = useState<SectionConfig[]>(mergePersonalTabs(initialPersonalTabs))
   const [householdTabs, setHouseholdTabs] = useState<SectionConfig[]>(mergeHouseholdTabs(initialHouseholdTabs))
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
-  const [simpleMode, setSimpleMode] = useState(initialSimpleMode)
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
 
   const lang = 'en' as const
@@ -151,12 +140,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [unlockReason, setUnlockReason] = useState<string | null>(null)
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
-  const [companionsOpen, setCompanionsOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
-  const [jarvisOpen, setJarvisOpen] = useState(false)
 
   // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
   // now" is a one-way choice, persisted in the layout JSON.
@@ -179,7 +166,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
+    return { sections, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
   }
 
   async function changePersonalTabs(next: SectionConfig[]) {
@@ -195,12 +182,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   async function changeHouseholdHomeBlocks(next: SectionConfig[]) {
     setHouseholdHomeBlocks(next)
     await saveLayout(userId, layoutState(), { householdHomeBlocks: next })
-  }
-
-  async function toggleSimpleMode() {
-    const next = !simpleMode
-    setSimpleMode(next)
-    await saveLayout(userId, layoutState(), { simpleMode: next })
   }
 
   // Guest mode's entire point is "experience the product before committing to
@@ -224,10 +205,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const openEverythingRef = useRef(openEverything)
   useEffect(() => { progRef.current = prog; openEverythingRef.current = openEverything })
 
-  // Tab navigation from anywhere (Today's summary cards, search, Jarvis).
+  // Tab navigation from anywhere (Today's summary cards, search).
   // 'week-review', 'brief-inbox' and 'brief-calendar' are anchors inside the
   // Today tab rather than tabs of their own.
-  // A direct request for a still-gated section (from search or Jarvis, say)
+  // A direct request for a still-gated section (from search, say)
   // must never silently fail to appear — progression is a suggested order,
   // not a wall. Honoring it by opening everything, same as the journey bar's
   // own "open everything now" — there's no reason to invent a second,
@@ -261,10 +242,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('4s:set-guide', onGuide)
   }, [userId])
 
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts — ⌘/ for Search only. ⌘K used to also open
+  // Search here, colliding with QuickCapture's own ⌘K binding: both fired
+  // on the same keypress, and Search rendered on top of Quick Capture,
+  // reading as "quick capture opens search". Now ⌘K is Quick Capture's
+  // alone.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && (e.key === '/' || e.key.toLowerCase() === 'k')) { e.preventDefault(); setSearchOpen(s => !s) }
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSearchOpen(s => !s) }
       if (e.key === 'Escape') setSearchOpen(false)
     }
     window.addEventListener('keydown', onKey)
@@ -281,7 +266,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const visible = sections.filter(s =>
     !s.hidden
     && prog.isUnlocked(s.id)
-    && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
     // Shared mode sees Household, the Village and Places. The Village is
     // drawn FROM personal data (plants are habits, buildings are tasks),
     // which is deliberate here: it's a shared household device, so seeing
@@ -356,19 +340,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <Header
         email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
         onUnlock={() => setUnlockReason('')}
-        onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+        onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))}
         initialTheme={theme} initialMode={mode} customTheme={customTheme}
         onThemeChange={setTheme} onModeChange={setMode} onCustomThemeChange={setCustomTheme}
         onCustomize={() => setCustomizeOpen(true)}
-        onCompanions={() => setCompanionsOpen(true)}
         onSearch={() => setSearchOpen(true)}
         onArchive={() => setArchiveOpen(true)}
         onHelp={() => setHelpOpen(true)}
-        onJarvis={() => setJarvisOpen(true)}
-        onCouncil={() => goToPersonal('council')}
         onConnect={() => setConnectOpen(true)}
-        simpleMode={simpleMode}
-        onToggleSimple={toggleSimpleMode}
       />
 
       <QuickCapture />
@@ -393,16 +372,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         />
       )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <AskJarvisPanel open={jarvisOpen} userId={userId} mode={mode} calendarConnected onClose={() => setJarvisOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
-      <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
-      <ConnectPanel
-        open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)}
-        onOpenCompanions={() => setCompanionsOpen(true)}
-      />
+      <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
@@ -425,7 +399,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           </div>
         )}
       </main>
-      <MobileNav onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))} />
+      <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />
       <BottomNav
         sections={visible}
         activeId={currentTab}

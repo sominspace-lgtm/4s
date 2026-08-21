@@ -37,19 +37,14 @@ const SECTIONS = [
     body: 'Convene your Council for a calm per-area review plus one suggested next action. Runs on rules instantly; upgrades to a real AI review when AI is enabled.',
   },
   {
-    icon: '✦',
-    title: 'Ask Jarvis & AI',
-    body: 'Ask a free-text question about your day, get an AI Council review, and scan refill labels — all powered by Claude when an API key is set. Only counts, titles, and dates are sent, never your notes.',
-  },
-  {
-    icon: '⇆',
-    title: 'Shared & People',
-    body: 'Invite friends by email; accept or decline. Only accepted people become share targets. Shared spaces (Family, Couple, Trip) let you share with a whole group. Private by default, always.',
+    icon: '♡',
+    title: 'People',
+    body: 'A garden — each person is a tree that grows with time and what you’ve learned about them, and never shrinks. Click a tree to jump to their card below for notes, birthdays, and preferences.',
   },
   {
     icon: '⌂',
     title: 'Household',
-    body: 'Chores, meals, shared shopping, and move-in purchases for the people you live with. Home groups Calendar, Shopping, Chores, and Meals — reorder or hide any of them. Reference is the fridge door — gate codes, the vet’s number. Setup connects a partner, Discord, and a link to a shared Google Drive or Photos album for household memories.',
+    body: 'Chores, meals, and shared shopping for the people you live with. Home groups Calendar, Shopping, Chores, and Meals — reorder or hide any of them. Reference is the fridge door — gate codes, the vet’s number. Partner pairing and Discord live in Settings.',
   },
   {
     icon: '◈',
@@ -57,9 +52,14 @@ const SECTIONS = [
     body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: want to go, 👍 good (go again), or 👎 not again. Add photos right on a pin, and share it to a household space to put it on both your maps. From Discord, no command needed — just post the name in #pins, and react 👍/👎 once you’ve been.',
   },
   {
+    icon: '□',
+    title: 'Notes',
+    body: 'Any title, any length, revisable — pin the ones you keep coming back to. Every note can stay private or be shared with your household, the same switch other lists already have.',
+  },
+  {
     icon: '◐',
-    title: 'Themes & modes',
-    body: '13 visual themes (dark & light) change only the look; 10 personality modes change only the tone. Mix freely. Gamer mode earns XP (+25 per task, +10 per habit).',
+    title: 'Themes & Guides',
+    body: 'Pick light or dark and one accent color, or build a fully custom theme with your own six colors and font. Three Guides change only the tone — Peaceful, Friend, Executive. Mix freely.',
   },
   {
     icon: '🎙',
@@ -72,13 +72,10 @@ const SECTIONS = [
 // Mac, or Windows, so tap targets matter more than key combos.
 const ACTIONS = [
   { icon: '⌕', desc: 'Search — find any task, habit, note, or item' },
-  { icon: '＋', desc: 'Quick add — jot anything down instantly (＋ button, bottom-right on mobile)' },
-  { icon: '◎', desc: 'Focus — a calm, distraction-free timer' },
+  { icon: '✎', desc: 'Quick capture — jot anything down instantly' },
   { icon: '◻', desc: 'Archive — everything you’ve completed' },
-  { icon: '⇆', desc: 'Friends & sharing' },
-  { icon: '◐', desc: 'Theme & mode — change the look and tone' },
+  { icon: '◐', desc: 'Theme & Guide — change the look and tone' },
   { icon: '⊹', desc: 'Customize — reorder or hide any tab' },
-  { icon: '✦', desc: 'Ask Jarvis — a free-text question about your day' },
 ]
 
 export default function HelpPanel({ open, onClose, lang = 'en' }: Props) {

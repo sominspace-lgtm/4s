@@ -28,16 +28,11 @@ interface HeaderProps {
   onModeChange: (m: Mode) => void
   onCustomThemeChange: (seed: CustomThemeSeed) => void
   onCustomize: () => void
-  onCompanions: () => void
   onSearch: () => void
   onCapture: () => void
   onArchive: () => void
   onHelp: () => void
-  onJarvis: () => void
-  onCouncil: () => void
   onConnect: () => void
-  simpleMode: boolean
-  onToggleSimple: () => void
 }
 
 // One quiet overflow menu instead of a row of icon-only buttons — every
@@ -96,7 +91,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onHelp, onConnect }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -258,16 +253,10 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           ...(onUnlock ? [{ icon: '🔓', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
+          { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },
         ] : [
-          { icon: '✦', label: 'Ask Jarvis', onClick: onJarvis },
-          // Council is an action you invoke, not a place you live — it was a
-          // sixth sub-tab under Personal competing with Goals and Habits for
-          // attention it only wants occasionally. Same reasoning that put
-          // Jarvis here rather than in the tab bar.
-          { icon: '◈', label: 'Convene the Council', onClick: onCouncil },
           { icon: '⇄', label: 'Connect', onClick: onConnect },
-          { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
           ...(push.status === 'unsupported' ? [] : [{
             icon: push.status === 'subscribed' ? '🔔' : '🔕',
             label: push.status === 'subscribed' ? 'Notifications on'
@@ -277,12 +266,19 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           }]),
           { divider: true, icon: '', label: '' },
           { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
-          { icon: '⇆', label: 'Friends', onClick: onCompanions },
           { icon: '◻', label: 'Archive', onClick: onArchive },
           { divider: true, icon: '', label: '' },
           { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '○', label: 'Account', href: '/account' },
+          // Same tiled-profile login every device uses — picking a different
+          // tile there IS switching accounts, so this just clears the
+          // current session and sends you back to that screen. Distinct
+          // label from Sign out even though the call underneath is
+          // identical (2026-08-21) — "leave the app" and "hand this device
+          // to someone else" read as two different intentions even when
+          // they're mechanically the same action here.
+          { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },
         ]} />
       </div>

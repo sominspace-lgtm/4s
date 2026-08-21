@@ -6,25 +6,26 @@ import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
 import CompanionSync from '@/components/relationships/CompanionSync'
 
-// One place for every external connection (2026-08-11), replacing three
-// scattered ones: Discord and Alexa each had their own home (Household →
-// Setup, Account respectively), and Friends had no "connect" framing at all
-// even though it's the same kind of action. This doesn't move Discord or
-// Alexa's actual settings — both stay reachable from their original spots
-// too — it's a second, faster entry point for "I want to connect something"
-// without having to remember which hub owns which integration.
+// One place for every external connection (2026-08-11): Discord and Alexa
+// each had their own home (Household → Setup, Account respectively) — this
+// doesn't move either's actual settings, both stay reachable from their
+// original spots too — it's a second, faster entry point for "I want to
+// connect something" without having to remember which hub owns which
+// integration.
 //
-// Same slide-in shell as CompanionPanel, so opening Connect from the header
-// feels like the same gesture as opening Friends.
+// Friends (the general-purpose "invite anyone, choose what to share" system)
+// was removed from here 2026-08-21 along with the rest of that feature —
+// the household is exactly two accounts and always will be. Partner below
+// is the real "connect Harry and Sylvia's two accounts" flow and is
+// unrelated to it.
 interface Props {
   open: boolean
   userId: string
   userEmail: string
   onClose: () => void
-  onOpenCompanions: () => void
 }
 
-export default function ConnectPanel({ open, userId, userEmail, onClose, onOpenCompanions }: Props) {
+export default function ConnectPanel({ open, userId, userEmail, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const { spaces } = useSharedSpaces(userId)
   const primarySpace = spaces[0]
@@ -79,20 +80,6 @@ export default function ConnectPanel({ open, userId, userEmail, onClose, onOpenC
         <div style={sectionStyle}>
           <div style={sectionLabel}>Alexa</div>
           <AlexaConnect userId={userId} />
-        </div>
-
-        <div style={sectionStyle}>
-          <div style={sectionLabel}>Friends</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.7rem' }}>
-            Invite someone and choose what to share with them.
-          </div>
-          <button
-            onClick={() => { onClose(); onOpenCompanions() }}
-            className="btn btn-secondary press"
-            style={{ fontSize: '0.72rem' }}
-          >
-            Manage Friends →
-          </button>
         </div>
 
         <div style={sectionStyle}>
