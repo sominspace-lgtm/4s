@@ -36,9 +36,6 @@ interface HeaderProps {
   onJarvis: () => void
   onCouncil: () => void
   onConnect: () => void
-  zenView: boolean
-  onToggleZen: () => void
-  onConfigureFocus: () => void
   simpleMode: boolean
   onToggleSimple: () => void
 }
@@ -99,7 +96,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onCompanions, onSearch, onCapture, onArchive, onHelp, onJarvis, onCouncil, onConnect, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -239,14 +236,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>⌕</button>
-        {!sharedMode && (
-          <button onClick={onToggleZen} title={zenView ? 'Exit Focus view' : 'Focus view'} aria-label="Focus view" aria-pressed={zenView} style={{
-            background: zenView ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
-            border: `1px solid ${zenView ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
-            borderRadius: '8px', padding: '0.4rem 0.7rem', cursor: 'pointer',
-            color: zenView ? 'var(--gold)' : 'var(--muted)', fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-          }}>⊙</button>
-        )}
         {/* Theme is a personal preference stored on the backing account
             (user_prefs.theme) — changing it from a shared-device session
             would silently change that person's real profile the next time
@@ -278,7 +267,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           // Jarvis here rather than in the tab bar.
           { icon: '◈', label: 'Convene the Council', onClick: onCouncil },
           { icon: '⇄', label: 'Connect', onClick: onConnect },
-          ...(zenView ? [{ icon: '⚙', label: 'Configure Focus view', onClick: onConfigureFocus }] : []),
           { icon: simpleMode ? '▦' : '▤', label: simpleMode ? 'Full view' : 'Simple view', onClick: onToggleSimple },
           ...(push.status === 'unsupported' ? [] : [{
             icon: push.status === 'subscribed' ? '🔔' : '🔕',

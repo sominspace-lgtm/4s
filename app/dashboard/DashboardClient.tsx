@@ -5,14 +5,12 @@ import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import type { CustomThemeSeed } from '@/lib/constants/themes'
 import SectionLabel from '@/components/ui/SectionLabel'
-import CustomizePanel, { DEFAULT_SECTIONS, DEFAULT_FOCUS_CONFIG, type SectionConfig, type FocusConfig } from '@/components/ui/CustomizePanel'
-import FocusViewPanel from '@/components/ui/FocusViewPanel'
+import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
 import AskJarvisPanel from '@/components/ui/AskJarvisPanel'
 import QuickCapture from '@/components/ui/QuickCapture'
 import CompanionPanel from '@/components/companion/CompanionPanel'
 import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
-import FocusMode from '@/components/focus/FocusMode'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import HelpPanel from '@/components/ui/HelpPanel'
@@ -60,7 +58,6 @@ interface Props {
   initialCustomTheme: CustomThemeSeed | null
   initialMode: string
   initialLayout: SectionConfig[] | null
-  initialFocusConfig: FocusConfig | null
   initialSimpleMode: boolean
   initialTodayBlocks: TodayBlockConfig[] | null
   initialPersonalTabs: SectionConfig[] | null
@@ -112,7 +109,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -129,7 +126,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   }, [])
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
-  const [focusConfig, setFocusConfig] = useState<FocusConfig>(initialFocusConfig ?? DEFAULT_FOCUS_CONFIG)
   // Personal/Household sub-tab and Home-block customization (2026-08-12) —
   // same reasoning as todayBlocks below: owned here because saveLayout()
   // needs the FULL LayoutState to avoid the five-writer bug its own header
@@ -160,8 +156,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
-  const [zenView, setZenView] = useState(false)
-  const [focusPanelOpen, setFocusPanelOpen] = useState(false)
   const [jarvisOpen, setJarvisOpen] = useState(false)
 
   // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
@@ -185,13 +179,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, focus: focusConfig, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
-  }
-
-  async function toggleCollapsed(id: string) {
-    const next = sections.map(s => s.id === id ? { ...s, collapsed: !s.collapsed } : s)
-    setSections(next)
-    await saveLayout(userId, layoutState(), { sections: next })
+    return { sections, simpleMode, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
   }
 
   async function changePersonalTabs(next: SectionConfig[]) {
@@ -273,13 +261,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('4s:set-guide', onGuide)
   }, [userId])
 
-  // Entering Focus view from anywhere (e.g. the Brief energy row / Recovery).
-  useEffect(() => {
-    function onFocus() { setZenView(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-    window.addEventListener('4s:enter-focus', onFocus)
-    return () => window.removeEventListener('4s:enter-focus', onFocus)
-  }, [])
-
   // Global keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -300,7 +281,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const visible = sections.filter(s =>
     !s.hidden
     && prog.isUnlocked(s.id)
-    && (!zenView || focusConfig.sections.includes(s.id))
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
     // Shared mode sees Household, the Village and Places. The Village is
     // drawn FROM personal data (plants are habits, buildings are tasks),
@@ -314,12 +294,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   )
 
   // Tab mode: only the active section renders. If the active tab was hidden
-  // (customize / simple mode / focus view), fall back to the first visible one.
+  // (customize / simple mode), fall back to the first visible one.
   const currentTab = visible.some(s => s.id === activeTab) ? activeTab : (visible[0]?.id ?? 'brief')
 
-  function sectionLabel(id: string, idx: number): { label: string; group?: string } {
+  // Tab mode only renders one section at a time, so its group header always
+  // shows — there's no neighbouring section above it to already be carrying
+  // the same group label the way a stacked scroll-through view would need.
+  function sectionLabel(id: string): { label: string; group?: string } {
     const group = SECTION_GROUPS[id]
-    const isFirstInGroup = idx === 0 || SECTION_GROUPS[visible[idx - 1]?.id] !== group
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang),
@@ -327,23 +309,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       places: t('Places', lang),
     }
 
-    return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
+    return { label: LABELS[id] ?? id, group }
   }
 
-  // Collapse only applies in Focus View's stacked layout — in tab mode the
-  // active section is always expanded and the toggle is hidden.
-  function renderSection(id: string, idx: number, collapsed: boolean, stacked: boolean) {
-    const { label, group } = sectionLabel(id, idx)
-    const isFirst = !stacked || idx === 0
+  function renderSection(id: string) {
+    const { label, group } = sectionLabel(id)
 
     const heading = (
-      <SectionLabel
-        key={`lbl-${id}`}
-        style={isFirst ? { marginTop: 0 } : undefined}
-        group={group}
-        collapsed={stacked ? collapsed : false}
-        onToggleCollapse={stacked ? () => toggleCollapsed(id) : undefined}
-      >
+      <SectionLabel key={`lbl-${id}`} style={{ marginTop: 0 }} group={group}>
         {label}
       </SectionLabel>
     )
@@ -361,7 +334,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       }
     })()
 
-    return <>{heading}<div style={{ display: stacked && collapsed ? 'none' : undefined }}>{body}</div></>
+    return <>{heading}{body}</>
   }
 
   return (
@@ -394,27 +367,22 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         onJarvis={() => setJarvisOpen(true)}
         onCouncil={() => goToPersonal('council')}
         onConnect={() => setConnectOpen(true)}
-        zenView={zenView}
-        onToggleZen={() => setZenView(z => !z)}
-        onConfigureFocus={() => setFocusPanelOpen(true)}
         simpleMode={simpleMode}
         onToggleSimple={toggleSimpleMode}
       />
 
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
-      {!zenView && (
-        <SectionNav
-          sections={visible}
-          activeId={currentTab}
-          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-        />
-      )}
+      <SectionNav
+        sections={visible}
+        activeId={currentTab}
+        onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+      />
 
       {/* Journey bar — progress + a one-click tutorial. Quiet, disappears
           forever once everything is open. Not XP: no levels, no streaks,
           just "your OS grows as you use it" plus an unlock-now choice. */}
-      {!zenView && !prog.loading && !prog.done && (
+      {!prog.loading && !prog.done && (
         <JourneyBar
           unlockedCount={prog.unlockedCount}
           total={prog.total}
@@ -430,7 +398,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
-      <FocusViewPanel open={focusPanelOpen} sections={sections} focusConfig={focusConfig} current={layoutState()} userId={userId} onChange={setFocusConfig} onClose={() => setFocusPanelOpen(false)} />
       <CompanionPanel open={companionsOpen} userId={userId} userEmail={email} onClose={() => setCompanionsOpen(false)} />
       <ConnectPanel
         open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)}
@@ -438,40 +405,32 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       />
 
       <main style={{ maxWidth: 'min(1080px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
-        {!zenView && currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
-        {zenView && <FocusMode />}
-        {zenView
-          ? visible.map((s, i) => (
-              <div key={s.id} id={`section-${s.id}`}>{renderSection(s.id, i, !!s.collapsed, true)}</div>
-            ))
-          : (() => {
-              const s = visible.find(v => v.id === currentTab)
-              // key + .tab-in means React remounts on every tab change, so
-              // the entrance animation replays instead of firing once on
-              // first render and never again.
-              return s ? <div key={s.id} id={`section-${s.id}`} className="tab-in">{renderSection(s.id, 0, false, false)}</div> : null
-            })()
-        }
+        {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
+        {(() => {
+          const s = visible.find(v => v.id === currentTab)
+          // key + .tab-in means React remounts on every tab change, so
+          // the entrance animation replays instead of firing once on
+          // first render and never again.
+          return s ? <div key={s.id} id={`section-${s.id}`} className="tab-in">{renderSection(s.id)}</div> : null
+        })()}
         {/* The calendar lives inside Today rather than owning a tab — it's
             something you check, not a place you go to live. Rendered after
             the Brief so the day reads top-down: what's happening, what's
             waiting, then the month around it. Hideable via Customize Today
             (its position here stays fixed — see REORDERABLE in
             lib/utils/todayBlocks.ts for why). */}
-        {!zenView && currentTab === 'brief' && !todayBlocks.find(b => b.id === 'calendar')?.hidden && (
+        {currentTab === 'brief' && !todayBlocks.find(b => b.id === 'calendar')?.hidden && (
           <div id="brief-calendar" style={{ marginTop: '1.2rem' }}>
             <CalendarEmbed />
           </div>
         )}
       </main>
       <MobileNav onCapture={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))} />
-      {!zenView && (
-        <BottomNav
-          sections={visible}
-          activeId={currentTab}
-          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-        />
-      )}
+      <BottomNav
+        sections={visible}
+        activeId={currentTab}
+        onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+      />
     </ThemeProvider>
     </LangContext.Provider>
   )

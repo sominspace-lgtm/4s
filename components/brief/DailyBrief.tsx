@@ -138,7 +138,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   function enterRecovery() { localStorage.setItem('4s-recovery', '1'); setRecovery(true); pickQuote() }
   function exitRecovery() { localStorage.removeItem('4s-recovery'); setRecovery(false) }
   // Enter Focus view (the timer + decluttered layout) from anywhere in Brief.
-  function enterFocus() { window.dispatchEvent(new CustomEvent('4s:enter-focus')) }
   const lowDay = recovery || energy === 'low'
 
   // Adaptive Guide suggestion — dismissible per week so it never nags.
@@ -372,7 +371,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           <Breathing />
           <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.2rem' }}>
-            <button onClick={enterFocus} className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>⊙ Focus view</button>
             <button onClick={exitRecovery} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>I&apos;m okay now</button>
           </div>
         </div>
@@ -389,7 +387,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
             }}>{v}</button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <button onClick={enterFocus} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><span aria-hidden>◎</span> Focus</button>
             <button onClick={enterRecovery} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Overwhelmed?</button>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { normalizeMode } from '@/lib/constants/modes'
 import { normalizeTheme } from '@/lib/constants/themes'
 import DashboardClient from './DashboardClient'
-import type { SectionConfig, FocusConfig } from '@/components/ui/CustomizePanel'
+import type { SectionConfig } from '@/components/ui/CustomizePanel'
 import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
 
 export default async function DashboardPage() {
@@ -27,7 +27,6 @@ export default async function DashboardPage() {
   if (prefs === null) redirect('/onboard')
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
-  const focusConfig = prefs?.layout?.focus as FocusConfig | null
   const simpleMode = Boolean(prefs?.layout?.simpleMode)
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
   const personalTabs = prefs?.layout?.personalTabs as SectionConfig[] | null
@@ -59,7 +58,6 @@ export default async function DashboardPage() {
       initialCustomTheme={null}
       initialMode={normalizeMode(prefs?.mode)}
       initialLayout={layout ?? null}
-      initialFocusConfig={focusConfig ?? null}
       initialSimpleMode={simpleMode}
       initialTodayBlocks={todayBlocks ?? null}
       initialPersonalTabs={personalTabs ?? null}

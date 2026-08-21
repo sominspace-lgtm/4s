@@ -4,19 +4,10 @@ import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCu
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 
 // Re-exported so every existing importer (DashboardClient, app/dashboard/
-// page.tsx, saveLayout.ts, FocusViewPanel) keeps working unchanged — the
-// type itself now lives in SectionCustomizer.tsx, the shared drawer this
-// file wraps. See that file's header for why it's shared rather than
-// hand-copied per screen.
+// page.tsx, saveLayout.ts) keeps working unchanged — the type itself now
+// lives in SectionCustomizer.tsx, the shared drawer this file wraps. See
+// that file's header for why it's shared rather than hand-copied per screen.
 export type { SectionConfig }
-
-export interface FocusConfig {
-  sections: string[]
-}
-
-export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
-  sections: ['brief', 'work'],
-}
 
 // Today · Tasks · Village · Personal · Household · Places
 //
