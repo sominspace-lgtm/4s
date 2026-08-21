@@ -5,22 +5,25 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import Celestial from './Celestial'
 
-// Sky colour by time of day — three stops now, not two (2026-08-21). At 20%
-// mixed into --bg, the old two-stop gradient was so close to flat --bg at
-// both ends that any theme whose --bg itself reads as a strong, saturated
-// color (a custom theme's light bg, an Ember/Sunset dark one) rendered as
-// one undifferentiated block covering 85% of the canvas — no visible
-// gradient, just a wall of --bg with a tint too faint to read as weather.
-// Zenith mixes in more of the time-of-day color (a real accent, not a
-// whisper of one); horizon stays closer to --bg the way a real sky
-// lightens toward the ground; the middle stop is what actually produces a
-// gradient banding effect instead of two colors that are each ~80% the
-// same base.
+// Real atmospheric colors, not theme-derived ones (2026-08-21) — the
+// previous version mixed the time-of-day tint into --bg for every stop,
+// which means the sky was never actually blue, orange, or navy; it was
+// whatever --bg is, faintly tinted. That's backwards. Sky is a weather
+// concept, not a themeable UI surface — the app doesn't let you recolor
+// the moon either. A day sky should look like a day sky regardless of
+// which theme or custom accent color is active.
+//
+// Zenith is a literal, fixed hex — always genuinely blue at midday,
+// genuinely navy at night, no theme mixed in at all. Horizon blends
+// partway toward --bg so the sky still meets the ground (rendered in
+// theme colors) without a hard seam; mid bridges the two. This is the one
+// place in the whole scene that deliberately ignores the active theme's
+// palette on purpose.
 const SKY: Record<VillageState['timeOfDay'], [string, string, string]> = {
-  dawn:  ['color-mix(in srgb, var(--amber) 40%, var(--bg))', 'color-mix(in srgb, var(--amber) 22%, var(--bg))', 'var(--bg)'],
-  day:   ['color-mix(in srgb, var(--slate) 38%, var(--bg))', 'color-mix(in srgb, var(--slate) 18%, var(--bg))', 'var(--bg)'],
-  dusk:  ['color-mix(in srgb, var(--rose) 40%, var(--bg))', 'color-mix(in srgb, var(--rose) 20%, var(--bg))', 'var(--bg)'],
-  night: ['color-mix(in srgb, var(--purple) 32%, var(--bg))', 'color-mix(in srgb, var(--purple) 14%, var(--bg))', 'var(--bg)'],
+  dawn:  ['#7fb3e0', 'color-mix(in srgb, #f2b5a0 75%, var(--bg))', 'color-mix(in srgb, #f7d9b8 40%, var(--bg))'],
+  day:   ['#4a90d9', 'color-mix(in srgb, #8ec5ea 75%, var(--bg))', 'color-mix(in srgb, #cfe8f7 40%, var(--bg))'],
+  dusk:  ['#3d4f7a', 'color-mix(in srgb, #d97b56 78%, var(--bg))', 'color-mix(in srgb, #f0a868 40%, var(--bg))'],
+  night: ['#0c1226', 'color-mix(in srgb, #1c2544 82%, var(--bg))', 'color-mix(in srgb, #2a3358 45%, var(--bg))'],
 }
 
 /**
