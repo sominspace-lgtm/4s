@@ -1,22 +1,18 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type HouseholdTabId = 'home' | 'reference' | 'movein' | 'places' | 'setup'
+// Three tabs (2026-08-21), down from five. Places went back to top level;
+// Move-in retired (its household_movein_items rows are NOT deleted — the tab
+// is just gone, so re-adding it here brings the data straight back); Setup
+// moved into Settings, where account-level configuration already lives.
+export type HouseholdTabId = 'home' | 'calendar' | 'reference'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
+  // Promoted from a Home block to its own tab (2026-08-21) — a shared
+  // calendar is a thing you go and look at, not one card among six competing
+  // for the top of a scroll.
+  { id: 'calendar',  label: 'Calendar' },
   { id: 'reference', label: 'Reference' },
-  // Move-in (2026-08-12) — furniture/appliance purchases for a shared move,
-  // deliberately its own tab rather than folded into the Shopping block
-  // inside Home: it's a different rhythm (big one-off purchases vs weekly
-  // groceries) and, right when a move is actually happening, it deserves to
-  // not be buried under everything else.
-  { id: 'movein',    label: 'Move-in' },
-  // Folded in from the old top-level Places tab (2026-08-20) — pins and
-  // trips were already the "ours" group in DashboardClient's SECTION_GROUPS,
-  // same as Household; this just makes that literal instead of two tabs
-  // that happened to share a label.
-  { id: 'places',    label: 'Places' },
-  { id: 'setup',     label: 'Setup' },
 ].map(s => ({ ...s, hidden: false }))
 
 export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): SectionConfig[] {
@@ -34,7 +30,10 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // in HouseholdHub.tsx; pulling them into one ordered array is what makes
 // reordering/hiding possible at all, the same refactor todayBlocks.ts already
 // did for Today.
-export type HomeBlockId = 'thisWeek' | 'calendar' | 'shopping' | 'chores' | 'routines' | 'meals' | 'lists'
+// `calendar` left this list on 2026-08-21 — it's a tab of its own now, see
+// DEFAULT_HOUSEHOLD_TABS above. mergeHomeBlocks drops unknown saved ids, so
+// anyone whose layout still names it is cleaned up automatically.
+export type HomeBlockId = 'thisWeek' | 'shopping' | 'chores' | 'routines' | 'meals' | 'lists'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // The week in review (2026-08-18) — same computation the bot posts on
@@ -42,7 +41,6 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   // it's the one block that's about what already happened rather than
   // what's coming up, so it reads best before the forward-looking ones.
   thisWeek: { label: 'This week',         hint: 'What got done, in one glance' },
-  calendar: { label: 'Calendar',          hint: 'Everything the house has on' },
   shopping: { label: 'Shopping list',     hint: 'What to buy' },
   chores:   { label: 'Whose turn',        hint: 'Chores and who’s due' },
   // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" containing
@@ -55,7 +53,7 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   lists:    { label: 'Lists',             hint: 'Anything else worth a checklist' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'calendar', 'shopping', 'chores', 'routines', 'meals', 'lists'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'shopping', 'chores', 'routines', 'meals', 'lists'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

@@ -63,11 +63,12 @@ export function consumePersonalTab(): PersonalTab | null {
   return t
 }
 
-export type HouseholdTab = 'home' | 'reference' | 'movein' | 'setup' | 'places'
+// Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two
+// must not drift, or a deep link can land on a tab that no longer renders.
+export type HouseholdTab = 'home' | 'calendar' | 'reference'
 
-// Same reasoning and shape as goToPersonal/consumePersonalTab above — Places
-// folded into Household as a sub-tab (2026-08-20), so reaching it from
-// outside needs the same "tab + specific sub-view" carrier a bare
+// Same reasoning and shape as goToPersonal/consumePersonalTab above: lets a
+// caller land on a SPECIFIC Household sub-tab, which a bare
 // goToSection('household') can't express.
 let pendingHouseholdTab: HouseholdTab | null = null
 

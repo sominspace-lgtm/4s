@@ -38,13 +38,12 @@ export const DEFAULT_FOCUS_CONFIG: FocusConfig = {
 // to live, it's something you check — and once it was 4S's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
 // twice. It's a panel inside Today now.
-// Four top-level tabs (2026-08-20), down from six: Tasks folded into
-// Personal as a sub-tab, Places folded into Household (now labeled "Shared")
-// as a sub-tab. Both used to be their own top-level entries that happened to
-// share a SECTION_GROUPS grouping ('now' with Today, 'ours' with Household)
-// with something else — this just makes that grouping literal instead of
-// two same-labeled tabs sitting side by side. See personalTabs.ts and
-// householdLayout.ts for where they actually live now.
+// Five top-level tabs (2026-08-21). Tasks stays folded into Personal as a
+// sub-tab, but Places came back out to top level — a map, pins and trips is a
+// destination you go to deliberately, not something you reach through the
+// household's chore list, and burying it cost more clicks than the tidier tab
+// bar was worth. See personalTabs.ts and householdLayout.ts for what still
+// lives one level down.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
@@ -58,10 +57,12 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'personal', label: 'Personal', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
-  // Shared (id stays 'household' — see the label-vs-id note in
-  // DashboardClient.tsx's LABELS map) — chores, meals, and now Places, for
-  // the people you live with.
-  { id: 'household', label: 'Shared', hidden: false },
+  // Household — chores, meals and the shared calendar, for the people you
+  // live with. Briefly labeled "Shared" (2026-08-20); reverted because
+  // "Household" is what the space itself is called everywhere else.
+  { id: 'household', label: 'Household', hidden: false },
+  // Places — saved pins and trips, on a themed map.
+  { id: 'places',   label: 'Places',   hidden: false },
 ]
 
 interface CustomizePanelProps {

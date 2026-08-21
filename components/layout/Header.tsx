@@ -18,6 +18,8 @@ interface HeaderProps {
    *  menu — this session is backed by one real account under the hood, but
    *  it must never present as, or let you edit, that account's identity. */
   sharedMode?: boolean
+  /** Shared mode only — opens the PIN prompt to switch to a personal session. */
+  onUnlock?: () => void
   initialTheme: string
   initialMode: Mode
   onThemeChange: (t: string) => void
@@ -93,7 +95,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, onThemeChange, onModeChange, onCustomize, onCompanions, onSearch, onArchive, onHelp, onJarvis, onCouncil, onConnect, zenView, onToggleZen, onConfigureFocus, simpleMode, onToggleSimple }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -248,6 +250,9 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           />
         )}
         <MoreMenu items={sharedMode ? [
+          // The shared view is deliberately read-mostly; this is the way out
+          // of it without signing out and back in.
+          ...(onUnlock ? [{ icon: '🔓', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '←', label: 'Sign out', onClick: signOut },

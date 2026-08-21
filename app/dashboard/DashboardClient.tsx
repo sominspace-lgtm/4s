@@ -24,6 +24,8 @@ import Village from '@/components/village/Village'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
+import PlacesHub from '@/components/places/PlacesHub'
+import UnlockPanel from '@/components/ui/UnlockPanel'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
@@ -82,7 +84,10 @@ const DEPRECATED_SECTION_IDS = new Set([
   'people', 'money',                                 // → Personal sub-tabs
   'calendar',                                        // → a panel inside Today
   'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
-  'places',                                          // → Household sub-tab 'places' (2026-08-20)
+  // NOTE: 'places' was briefly deprecated here (2026-08-20) when it folded
+  // into Household, and came back out to top level a day later. Anyone whose
+  // layout was saved during that window had it stripped; mergeLayout appends
+  // missing DEFAULT_SECTIONS entries, so it returns on next load by itself.
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -101,6 +106,7 @@ const SECTION_GROUPS: Record<string, string> = {
   village:   'your world',
   personal:  'mine',
   household: 'ours',
+  places:    'ours',
 }
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialMode, initialLayout, initialFocusConfig, initialSimpleMode, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
@@ -120,7 +126,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
 
   const lang = 'en' as const
-  const [activeTab, setActiveTab] = useState('brief')
+  // Landing view depends on who's here (2026-08-21). A shared-device session
+  // opens on the Village — it's the ambient household view, the thing worth
+  // glancing at from across the room. A personal login opens on Today, which
+  // is where your own actual day is. Note `visible` filters shared mode to
+  // Household only, so this is overridden there until Village is allowed
+  // through — see the sharedMode clause in the filter below.
+  const [activeTab, setActiveTab] = useState(sharedMode ? 'village' : 'brief')
+  // Non-null = the unlock prompt is open. The value is what they tried to
+  // reach ("Growth Forest") so the prompt can say why it's asking; an empty
+  // string opens it with no specific destination (the header's own entry).
+  const [unlockReason, setUnlockReason] = useState<string | null>(null)
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [companionsOpen, setCompanionsOpen] = useState(false)
@@ -270,7 +286,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     && prog.isUnlocked(s.id)
     && (!zenView || focusConfig.sections.includes(s.id))
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
-    && (!sharedMode || s.id === 'household')
+    // Shared mode sees Household and the Village — the two ambient,
+    // glanceable surfaces. The Village is drawn FROM personal data (plants
+    // are habits, buildings are tasks), which is deliberate here: it's a
+    // shared household device, so seeing each other's shape-of-the-week is
+    // the point. Going from that picture into the actual data still requires
+    // a PIN — see UnlockPanel and the `locked` prop on Village.
+    && (!sharedMode || s.id === 'household' || s.id === 'village')
   )
 
   // Tab mode: only the active section renders. If the active tab was hidden
@@ -283,12 +305,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang),
-      // "Shared" (2026-08-20), not "Household" — the id stays 'household'
-      // (every saved layout, goToSection call and RLS-adjacent check names
-      // it), but the label now matches the vocabulary the PIN login screen
-      // already uses: Personal vs Shared is the one split that runs through
-      // the whole app now, not a name that happens to mean the same thing.
-      personal: t('Personal', lang), household: t('Shared', lang),
+      personal: t('Personal', lang), household: t('Household', lang),
+      places: t('Places', lang),
     }
 
     return { label: LABELS[id] ?? id, group: isFirstInGroup ? group : undefined }
@@ -315,11 +333,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} />
+        case 'village':  return <Village key="village" userId={userId} theme={theme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} />
         case 'personal': return <PersonalHub key="personal" userId={userId} userEmail={email} mode={mode} onOpenCompanions={() => setCompanionsOpen(true)} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
-        // Tasks and Places both fold in as sub-tabs now (2026-08-20) — see
-        // components/personal/PersonalHub.tsx and components/household/HouseholdHub.tsx.
-        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} theme={theme} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
+        // Tasks still folds into Personal as a sub-tab (see PersonalHub);
+        // Places came back out to top level (2026-08-21).
+        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
+        case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} />
         default: return null
       }
     })()
@@ -345,6 +364,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       )}
       <Header
         email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
+        onUnlock={() => setUnlockReason('')}
         initialTheme={theme} initialMode={mode}
         onThemeChange={setTheme} onModeChange={setMode}
         onCustomize={() => setCustomizeOpen(true)}
@@ -363,6 +383,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       />
 
       <QuickCapture />
+      <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
       {!zenView && (
         <SectionNav
           sections={visible}

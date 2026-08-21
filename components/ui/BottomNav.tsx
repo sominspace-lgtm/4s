@@ -4,11 +4,11 @@ interface Section { id: string; label?: string }
 
 const NAV_LABELS: Record<string, string> = {
   brief: 'Today', village: 'Village',
-  personal: 'Personal', household: 'Shared',
+  personal: 'Personal', household: 'Household', places: 'Places',
 }
 const ICONS: Record<string, string> = {
   brief: '◒', village: '⌂',
-  personal: '◉', household: '◫',
+  personal: '◉', household: '◫', places: '◇',
 }
 
 // Thumb-first bottom navigation for mobile. Shows the first few core tabs and

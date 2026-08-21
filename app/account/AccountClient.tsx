@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AlexaConnect from '@/components/ui/AlexaConnect'
+import HouseholdSetup from '@/components/household/HouseholdSetup'
 
 interface Props {
   email: string
@@ -217,6 +218,15 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
             <Btn onClick={exportData} disabled={exporting}>{exporting ? 'exporting…' : 'Export'}</Btn>
           </div>
         </Row>
+      </div>
+
+      {/* Household setup — moved here from a Household tab (2026-08-21).
+          Partner pairing, Discord and memory links are all configure-once
+          settings; they were making the day-to-day Household surface carry a
+          permanent tab you'd open twice a year. */}
+      <div style={{ marginBottom: '1.2rem' }}>
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0 0 0.5rem' }}>Household</div>
+        <HouseholdSetup userId={userId} userEmail={email} />
       </div>
 
       {/* Alexa — same component the header Connect panel uses. */}

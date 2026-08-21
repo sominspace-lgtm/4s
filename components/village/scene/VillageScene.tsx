@@ -24,7 +24,7 @@ export type { Slot } from '@/lib/village/layout'
  */
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
-  horizon = [], changes,
+  horizon = [], changes, locked = false, onLockedNavigate,
 }: {
   village: VillageState
   live: boolean
@@ -34,7 +34,17 @@ export default function VillageScene({
   buildingSlots: (Slot & { building: VillageState['buildings'][number] })[]
   horizon?: HorizonPlace[]
   changes?: VillageChanges
+  /** Shared-mode: the scene is visible, but the districts lead into personal
+   *  spaces, so tapping one asks for a PIN instead of navigating. */
+  locked?: boolean
+  onLockedNavigate?: (label: string) => void
 }) {
+  // One wrapper so every district gets the same treatment — a locked click
+  // never silently no-ops, it always explains itself via the unlock prompt.
+  const nav = (label: string, go: () => void) => () => {
+    if (locked) onLockedNavigate?.(label)
+    else go()
+  }
   const grew = new Set(changes?.grownPlantIds ?? [])
   const planted = new Set(changes?.newPlantIds ?? [])
   const landmarked = new Set(changes?.newLandmarkIds ?? [])
@@ -169,14 +179,14 @@ export default function VillageScene({
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
 
       {/* District labels — the actual navigation */}
-      <DistrictLabel x={150} y={130} glyph="🌊" label="Rest Lake" onClick={() => goToSection('brief')}
+      <DistrictLabel x={150} y={130} glyph="🌊" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
         count={v.stillness > 0.5 ? 'still' : 'ready when you are'} />
-      <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={() => goToPersonal('habits')}
+      <DistrictLabel x={175} y={250} glyph="🌲" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
         count={`${v.plants.length} growing`} />
-      <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={() => goToSection('brief')} count="today" />
-      <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={() => goToPersonal('tasks')}
+      <DistrictLabel x={400} y={250} glyph="🏡" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today" />
+      <DistrictLabel x={620} y={250} glyph="🏗️" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
         count={`${v.buildings.length} standing`} />
-      <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={() => goToSection('brief')}
+      <DistrictLabel x={725} y={190} glyph="📚" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`} />
 
       {/* Vignette — pulls the eye to the middle of the scene. Drawn in

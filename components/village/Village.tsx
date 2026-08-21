@@ -34,7 +34,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, theme, accountCreatedAt = null, lastSeen = null, onSeen }: {
+export default function Village({ userId, theme, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate }: {
   userId: string
   theme: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
@@ -42,6 +42,9 @@ export default function Village({ userId, theme, accountCreatedAt = null, lastSe
   /** ISO string of the previous visit, frozen for the session by the caller. */
   lastSeen?: string | null
   onSeen?: () => void
+  /** Shared mode: show the scene, but require a PIN to walk into it. */
+  locked?: boolean
+  onLockedNavigate?: (label: string) => void
 }) {
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
@@ -131,7 +134,8 @@ export default function Village({ userId, theme, accountCreatedAt = null, lastSe
       >
         <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
           plantSlots={plantSlots} buildingSlots={buildingSlots}
-          horizon={horizon} changes={changes} />
+          horizon={horizon} changes={changes}
+          locked={locked} onLockedNavigate={onLockedNavigate} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

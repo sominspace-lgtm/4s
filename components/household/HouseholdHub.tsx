@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useLists } from '@/lib/hooks/useLists'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
@@ -13,15 +12,11 @@ import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
-import DiscordConnect from './DiscordConnect'
-import CompanionSync from '@/components/relationships/CompanionSync'
-import PlacesHub from '@/components/places/PlacesHub'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
-const MOVEIN_CATEGORIES = ['Furniture', 'Appliances', 'Kitchen', 'Bedroom', 'Living room', 'Bathroom', 'Other']
 
 type HouseholdTab = HouseholdTabId
 
@@ -35,18 +30,15 @@ type HouseholdTab = HouseholdTabId
 // a household worse, and the product's whole premise is reducing guilt
 // rather than redistributing it.
 //
-// Three top tabs (2026-08-11), organised by why you opened the app rather
-// than by database table — Home (the weekly stuff), Reference (what you
-// look up), Setup (touched once). Both the tab bar and, as of 2026-08-12,
-// what's INSIDE Home (Calendar/Shopping/Chores/Meals) are reorderable and
-// hideable — `tabs`/`homeBlocks` are owned by DashboardClient, same
-// relationship Today has with its own blocks.
-export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
+// Three top tabs (2026-08-21), organised by why you opened the app rather
+// than by database table — Home (the weekly stuff), Calendar (what's coming),
+// Reference (what you look up). Setup moved to Settings and Move-in retired;
+// Places went back to being its own top-level tab. Both the tab bar and
+// what's INSIDE Home are reorderable and hideable — `tabs`/`homeBlocks` are
+// owned by DashboardClient, same relationship Today has with its own blocks.
+export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
   userId: string
   userEmail: string
-  /** Passed through to Places — its map re-skin needs the active theme's
-   *  colors, same as when Places was its own top-level tab. */
-  theme: string
   tabs: SectionConfig[]
   onChangeTabs: (next: SectionConfig[]) => void
   homeBlocks: SectionConfig[]
@@ -69,10 +61,8 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
   }, [spaces, spaceId])
   const { checkins, loading: checkinsLoading } = useCheckins()
   // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
-  // Places folding into Household as a sub-tab means reaching it from
-  // outside (search, a future Archive Grove deep link) needs a specific
-  // sub-tab, not just goToSection('household'). A pending deep link wins
-  // over sharedMode's own Reference default.
+  // lets a caller land on a SPECIFIC sub-tab rather than whichever one was
+  // open last. A pending deep link wins over sharedMode's Reference default.
   const [tab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
   useEffect(() => {
     function onTab(e: Event) { setTab((e as CustomEvent<HouseholdTab>).detail) }
@@ -80,7 +70,6 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
     return () => window.removeEventListener('4s:household-tab', onTab)
   }, [])
   const h = useHousehold(spaceId)
-  const memories = useMemoryLinks(spaceId)
   const listsHook = useLists(spaceId)
   const [newListName, setNewListName] = useState('')
   const [listItemDrafts, setListItemDrafts] = useState<Record<string, string>>({})
@@ -103,9 +92,6 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
   const [addingMaintenance, setAddingMaintenance] = useState(false)
   const [maintName, setMaintName] = useState('')
   const [maintCadence, setMaintCadence] = useState('90')
-  const [addingMemoryLink, setAddingMemoryLink] = useState(false)
-  const [memoryLabel, setMemoryLabel] = useState('')
-  const [memoryUrl, setMemoryUrl] = useState('')
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
@@ -120,8 +106,6 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
   const [noteBody, setNoteBody] = useState('')
   const [ruleText, setRuleText] = useState('')
   const [ruleCategory, setRuleCategory] = useState('')
-  const [moveinName, setMoveinName] = useState('')
-  const [moveinCat, setMoveinCat] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
   const [tabsCustomizeOpen, setTabsCustomizeOpen] = useState(false)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
@@ -190,7 +174,6 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
     // I have on", this answers "what does this house have on", and your
     // dentist appointment isn't household business any more than the bins
     // are personal business.
-    calendar: () => <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} />,
 
     // The highest-friction shared list there is: the one thing everyone
     // needs to write to from a different room, where "did you get milk"
@@ -614,192 +597,11 @@ export default function HouseholdHub({ userId, userEmail, theme, tabs, onChangeT
           household exactly like they do. */}
       {tab === 'reference' && <HomeBrain />}
 
-      {/* ── Move-in ────────────────────────────────────────────────
-          Furniture and appliances for a shared move — its own tab, its own
-          table (household_movein_items), deliberately separate from the
-          Shopping block inside Home. See the migration header for why:
-          different rhythm, different question, and it deserves not to be
-          buried right when a move is actually happening. Reachable from
-          Discord too — a message in the configured move-in channel becomes
-          a row here directly. */}
-      {tab === 'movein' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
-            <div className="t-card">Move-in list</div>
-            {h.moveinItems.some(i => i.got) && (
-              <button
-                onClick={() => Promise.all(h.moveinItems.filter(i => i.got).map(i => h.removeMoveinItem(i.id)))}
-                className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}
-              >
-                Clear {h.moveinItems.filter(i => i.got).length} got
-              </button>
-            )}
-          </div>
-
-          {h.moveinItems.length === 0 && !h.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-              Nothing on the list yet. Add what the new place still needs — furniture, appliances, whatever&rsquo;s on your mind.
-            </div>
-          )}
-
-          {MOVEIN_CATEGORIES.map(cat => {
-            const items = h.moveinItems.filter(i => (i.category || 'Other') === cat)
-            if (items.length === 0) return null
-            return (
-              <div key={cat} style={{ marginBottom: '0.7rem' }}>
-                <div className="t-label" style={{ marginBottom: '0.25rem' }}>{cat}</div>
-                {items.map(i => (
-                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
-                    <button
-                      onClick={() => h.toggleMoveinGot(i.id, !i.got)}
-                      aria-pressed={i.got}
-                      aria-label={`${i.name}${i.got ? ', got it' : ''}`}
-                      className="press"
-                      style={{
-                        width: 20, height: 20, borderRadius: '5px', flexShrink: 0, cursor: 'pointer', padding: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: `1px solid ${i.got ? 'var(--emerald)' : 'var(--border)'}`,
-                        background: i.got ? 'color-mix(in srgb, var(--emerald) 30%, transparent)' : 'transparent',
-                      }}
-                    >
-                      {i.got && (
-                        <svg className="tick" width={11} height={11} viewBox="0 0 12 12" aria-hidden>
-                          <path d="M2.5 6.2 L4.9 8.6 L9.5 3.6" fill="none" stroke="var(--emerald)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', textDecoration: i.got ? 'line-through' : 'none', opacity: i.got ? 0.5 : 1 }}>
-                      {i.name}
-                    </span>
-                    <button onClick={() => h.removeMoveinItem(i.id)} aria-label={`Remove ${i.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-
-          <form
-            onSubmit={async e => {
-              e.preventDefault()
-              if (!moveinName.trim()) return
-              await h.addMoveinItem(moveinName.trim(), moveinCat || null)
-              setMoveinName('')
-            }}
-            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
-          >
-            <input value={moveinName} onChange={e => setMoveinName(e.target.value)} placeholder="Add something for the new place" style={{ ...input, flex: 1, minWidth: '160px' }} />
-            <select value={moveinCat} onChange={e => setMoveinCat(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
-              <option value="">Category</option>
-              {MOVEIN_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-          </form>
-        </section>
-      )}
-
-      {/* Folded in from the old top-level Places tab (2026-08-20) — see the
-          DEFAULT_HOUSEHOLD_TABS comment in lib/utils/householdLayout.ts.
-          PlacesHub is a complete, self-contained hub (its own internal
-          Pins/Trips/Photos sub-navigation), so this is a straight mount, not
-          a rebuild — same component, same props, just reached one level
-          deeper than before. */}
-      {tab === 'places' && <PlacesHub userId={userId} theme={theme} />}
-
-      {tab === 'setup' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Moved from People → Close (2026-08-11): confirming a partner and
-              the Google Photos/checkin feed that comes with it is pair-scoped
-              shared-living data, and its Discord counterpart already lived
-              right here. Same tab, same "who else is in this household". */}
-          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Partner</div>
-            <CompanionSync userId={userId} userEmail={userEmail} />
-          </div>
-          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Discord</div>
-            <DiscordConnect spaceId={spaceId} spaceName={spaces.find(s => s.id === spaceId)?.name} />
-          </div>
-          <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Memories</div>
-            {!spaceId ? (
-              <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-                Pick a shared space above first — memories are attached to the space, not to you alone.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-                {/* Each source (Google Photos, iCloud, a Drive folder...) is its
-                    own tile — a couple usually has more than one photo home,
-                    and the old single-link field could only ever hold one. */}
-                {memories.links.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {memories.links.map(link => (
-                      <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.4rem 0.4rem 0.4rem 0.7rem' }}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--text)', textDecoration: 'none' }}>
-                          📷 {link.label}
-                        </a>
-                        <button
-                          onClick={() => memories.removeLink(link.id)}
-                          aria-label={`Remove ${link.label}`}
-                          className="press"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {addingMemoryLink ? (
-                  <form
-                    onSubmit={async e => {
-                      e.preventDefault()
-                      if (!memoryLabel.trim() || !memoryUrl.trim()) return
-                      await memories.addLink(memoryLabel.trim(), memoryUrl.trim())
-                      setMemoryLabel(''); setMemoryUrl(''); setAddingMemoryLink(false)
-                    }}
-                    style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}
-                  >
-                    <input
-                      value={memoryLabel} onChange={e => setMemoryLabel(e.target.value)}
-                      placeholder="Label (e.g. Google Photos, iCloud)" style={{ ...input, width: '180px' }} autoFocus
-                    />
-                    <input
-                      value={memoryUrl} onChange={e => setMemoryUrl(e.target.value)}
-                      placeholder="Paste the album/folder link" style={{ ...input, flex: 1, minWidth: '220px' }}
-                    />
-                    <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-                    <button type="button" onClick={() => setAddingMemoryLink(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.7rem', cursor: 'pointer' }}>Cancel</button>
-                  </form>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {memories.links.length === 0 && (
-                      <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-                        No albums linked yet. Paste a Google Photos, iCloud, or Drive link — opens in a new tab, no login through 4S OS required.
-                      </div>
-                    )}
-                    <button
-                      onClick={() => setAddingMemoryLink(true)}
-                      className="btn btn-secondary press"
-                      style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}
-                    >
-                      + Add a memories link
-                    </button>
-                  </div>
-                )}
-
-                {/* Distinct from the link-outs above: photos actually
-                    uploaded through a Places pin (Discord attachment or the
-                    "+ Add" button in 4S OS) live in the pin's own Photos
-                    section, not here — this is the album-link home, not a
-                    gallery of hosted photos. */}
-                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, borderTop: '1px solid var(--faint)', paddingTop: '0.5rem' }}>
-                  Photos you&rsquo;ve uploaded to a specific pin live on that pin, under Places → Photos — not here.
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Its own tab as of 2026-08-21 — was a Home block competing with five
+          others for the top of a scroll. Same component, same data, just
+          given the room a calendar actually needs. */}
+      {tab === 'calendar' && (
+        <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} />
       )}
 
       {/* ── Notes ──────────────────────────────────────────────────
