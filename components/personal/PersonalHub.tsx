@@ -5,7 +5,7 @@ import MasterDashboard from '@/components/work/MasterDashboard'
 import GoalsSection from '@/components/goals/GoalsSection'
 import HabitTracker from '@/components/habits/HabitTracker'
 import PersonalRoutines from '@/components/habits/PersonalRoutines'
-import LifeHub from '@/components/life/LifeHub'
+import NotesHub from '@/components/notes/NotesHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import PreferencesHub from '@/components/personal/PreferencesHub'
@@ -99,7 +99,7 @@ export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
       {tab === 'tasks'   && <MasterDashboard userId={userId} />}
       {tab === 'goals'   && <GoalsSection userId={userId} />}
       {tab === 'habits'  && <><PersonalRoutines userId={userId} /><HabitTracker /></>}
-      {tab === 'life'    && <LifeHub />}
+      {tab === 'notes'   && <NotesHub userId={userId} />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub />}
       {tab === 'preferences' && <PreferencesHub userId={userId} />}

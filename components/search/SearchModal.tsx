@@ -5,7 +5,6 @@ import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
-import { DOMAINS } from '@/lib/constants/domains'
 
 const TYPE_ICON: Record<string, string> = {
   capture:  '○',
@@ -77,7 +76,7 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-brief',    label: 'Go to Brief',       icon: '◒', keywords: ['home', 'overview', 'start', 'today', 'morning'], run: () => goTo('brief') },
     { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goToPersonal('tasks') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goToPersonal('habits') },
-    { id: 'go-domains',  label: 'Go to Life',        icon: '◇', keywords: ['life', 'domain', 'area', 'balance', 'decision', 'decisions'], run: () => goToPersonal('life') },
+    { id: 'go-notes',    label: 'Go to Notes',       icon: '◇', keywords: ['notes', 'note', 'jot', 'write', 'memo'], run: () => goToPersonal('notes') },
     // Home Brain moved to Household, so its keywords have to move with it —
     // searching "wifi password" landing on Life would be a dead end.
     { id: 'go-household', label: 'Go to Household',  icon: '◫', keywords: ['household', 'shared', 'home brain', 'wifi', 'password', 'serial', 'manual', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'partner'], run: () => goTo('household') },
@@ -93,19 +92,7 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'switch-mode',  label: 'Switch mode',      icon: '◐', keywords: ['mode', 'personality', 'tone', 'guide', 'voice'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
   ]
 
-  // A "Review <domain>" command per life domain, so "review health" or just
-  // "health" jumps straight to Life. Hidden from the default list (only base
-  // commands show when the query is empty) so they never clutter.
-  const domainCommands: Command[] = DOMAINS.filter(d => !d.hidden).map(d => ({
-    id: `review-${d.id}`,
-    label: `Review ${d.label}`,
-    hint: d.sublabel,
-    icon: d.icon,
-    keywords: ['review', 'check', d.label.toLowerCase(), d.sublabel.toLowerCase()],
-    run: () => goToPersonal('life'),
-  }))
-
-  const allCommands = [...baseCommands, ...domainCommands]
+  const allCommands = baseCommands
 
   const matchedCommands = query.trim()
     ? allCommands

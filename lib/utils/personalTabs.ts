@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences'
+export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'preferences'
 
 // council is deliberately NOT here. It's reachable only by deep link
 // (Brief's "Ask Council" card, the header ⋯ menu via goToPersonal('council'))
@@ -16,7 +16,11 @@ export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   { id: 'tasks',  label: 'Tasks',  hidden: false },
   { id: 'goals',  label: 'Goals',  hidden: false },
   { id: 'habits', label: 'Habits', hidden: false },
-  { id: 'life',   label: 'Life',   hidden: false },
+  // Replaced Life/Domains (2026-08-21) — nine fixed categories that only
+  // ever held one-line captures, no titles, no real editing. Notes is a
+  // proper Apple-Notes-style list instead: any title, any length, revisable,
+  // shareable per-note. Same tab slot, same position in the bar.
+  { id: 'notes',  label: 'Notes',  hidden: false },
   { id: 'money',  label: 'Money',  hidden: false },
   { id: 'people', label: 'People', hidden: false },
   { id: 'preferences', label: 'Preferences', hidden: false },

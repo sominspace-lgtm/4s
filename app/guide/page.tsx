@@ -44,7 +44,7 @@ const NAV = [
   ['brief', 'Today'],
   ['tasks', 'Tasks'],
   ['habits', 'Habits'],
-  ['life', 'Life'],
+  ['notes', 'Notes'],
   ['money', 'Money'],
   ['calendar', 'Calendar'],
   ['council', 'Council'],
@@ -142,11 +142,11 @@ export default function GuidePage() {
         </Card>
       </Section>
 
-      <Section id="life" kicker="the bigger picture" title="Life">
+      <Section id="notes" kicker="write it down" title="Notes">
         <Card>
-          Eight life domains — Business, Health, Relationship, Creative, Home, Self and more — each with its own notes.
-          New domains simply read &ldquo;not reviewed yet&rdquo; rather than nagging you; a gentle status only turns to
-          &ldquo;review due&rdquo; once a domain has real history that&rsquo;s gone quiet.
+          A real note — title, body, as long or short as it needs to be. Pin the ones you keep coming back to.
+          Every note can be kept private or shared with your household, the same switch chores, meals and goals
+          already have.
         </Card>
       </Section>
 

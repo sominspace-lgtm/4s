@@ -1,19 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { format, differenceInDays, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useCaptures } from '@/lib/hooks/useCaptures'
-import { useDomainTouched } from '@/lib/hooks/useDomainTouched'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
-import { useGiftOccasions } from '@/lib/hooks/usePeople'
+import { useGiftOccasions, usePeople, daysSinceContact } from '@/lib/hooks/usePeople'
+import { useNotes } from '@/lib/hooks/useNotes'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
-import { DOMAINS } from '@/lib/constants/domains'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -92,9 +91,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
   const { habits, completions } = useHabits()
   const { captures } = useCaptures()
-  const { touched } = useDomainTouched()
   const { subs, total: monthlyTotal } = useSubscriptions()
   const giftItems = useGiftOccasions()
+  const { people } = usePeople()
+  const { notes } = useNotes(null)
   const { items: wishItems } = useWatchItems()
   const { items: buyItems } = useBuyItems()
   const { received } = useCompanions(userId)
@@ -185,9 +185,12 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     }, 0) / (habitsTotal * week.length) * 100
   )
 
-  const domainsNeedingReview = DOMAINS.filter(d => {
-    const last = touched[d.id]
-    return !last || differenceInDays(new Date(), parseISO(last)) > 7
+  // Replaces the old domainsNeedingReview signal (2026-08-21) — Life/Domains
+  // is gone, so "who hasn't been contacted in a while" comes straight from
+  // real relationship data instead of a proxy category-review heuristic.
+  const peopleQuiet = people.filter(p => {
+    const since = daysSinceContact(p.last_contact)
+    return since !== null && since > 30
   })
   const refillsDue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
   const moneyDueSoon = subs.filter(s => subUrgency(s.renewal_date) === 'soon').length
@@ -200,9 +203,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   if (pendingShares > 0) summaryParts.push(`${pendingShares} shared invite${pendingShares > 1 ? 's' : ''}`)
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
-  // Only nag about domain reviews once the user has actually started reviewing —
-  // a fresh account with zero history shouldn't open on a warning.
-  if (domainsNeedingReview.length > 0 && DOMAINS.some(d => touched[d.id])) summaryParts.push(`${domainsNeedingReview[0].label} review due`)
+  if (peopleQuiet.length > 0) summaryParts.push(`${peopleQuiet.length} hello${peopleQuiet.length > 1 ? 's' : ''} overdue`)
   if (moneyDueSoon > 0) summaryParts.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
   if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
 
@@ -228,7 +229,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   // First-time states read as quiet setup notes, never as alarms —
   // "not reviewed yet" / "nothing tracked yet" instead of "needs review".
-  const lifeReviewedOnce = DOMAINS.some(d => touched[d.id])
   const moneyTracksAnything = subs.length > 0 || wishItems.length > 0 || buyItems.length > 0 || giftItems.length > 0
 
   // Whisper — one gentle, timely nudge. Quiet Guides (low proactivity) stay
@@ -253,7 +253,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     // to say once there's enough of a pile that naming a real next step
     // (one focused stretch, not "catch up on everything") actually helps.
     if (overdue >= 3) return `${overdue} things are overdue — one focused stretch might clear more than piecemeal would.`
-    if (domainsNeedingReview.some(d => d.id === 'relationship')) return 'Someone may deserve a hello today.'
+    if (peopleQuiet.length > 0) return 'Someone may deserve a hello today.'
     if (giftSoon > 0) return 'A gift moment is coming up — worth a thought.'
     if (refillsDue > 0) return 'You may be running low on something.'
     if (dormantHabits.length > 0) {
@@ -261,7 +261,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         ? `${dormantHabits[0].name} has gone quiet — it's still yours whenever you come back to it.`
         : `${dormantHabits.length} habits have gone quiet — still yours, whenever.`
     }
-    if (lifeReviewedOnce && domainsNeedingReview.length > 0) return `${domainsNeedingReview[0].label} could use a quiet check-in.`
     if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
     if (inboxCount > 4) return 'A few notes are waiting whenever you\'re ready.'
     return null
@@ -272,7 +271,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   // surfaces a Guide different from the current one; the user always chooses.
   function suggestGuide(): { guide: Mode; reason: string } | null {
     if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue — Executive keeps things to the essentials.' }
-    const maintenance = (lifeReviewedOnce ? domainsNeedingReview.length : 0) + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
+    const maintenance = peopleQuiet.length + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
     if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up — Friend keeps an eye on them with you.' }
     if (overdue === 0 && dueToday === 0 && habitsDueCount === 0 && inboxCount <= 2) return { guide: 'peaceful', reason: 'Things look calm — Peaceful keeps it light.' }
     return null
@@ -290,10 +289,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       line: habitsTotal > 0 ? `${habitsDoneToday}/${habitsTotal} done today` : habits.length > 0 ? 'No habits due today' : 'No habits yet',
     },
     {
-      label: 'Life', action: 'Open Life', onAction: () => goToPersonal('life'),
-      line: !lifeReviewedOnce
-        ? `${DOMAINS.length} domains · not reviewed yet`
-        : domainsNeedingReview.length > 0 ? `${domainsNeedingReview.length} of ${DOMAINS.length} · review due` : `${DOMAINS.length} domains · all steady`,
+      label: 'Notes', action: 'Open Notes', onAction: () => goToPersonal('notes'),
+      line: notes.length > 0 ? `${notes.length} note${notes.length === 1 ? '' : 's'}` : 'Nothing jotted down yet',
     },
     {
       // Calendar is a panel further down this same tab now, so this scrolls

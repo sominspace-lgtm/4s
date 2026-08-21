@@ -36,7 +36,7 @@ export function scrollToAnchor(id: string, attempt = 0) {
   }, 350)
 }
 
-export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'life' | 'money' | 'people' | 'preferences' | 'council'
+export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'preferences' | 'council'
 
 // Personal holds Habits/Life/Money/People/Council as sub-tabs (see
 // components/personal/PersonalHub.tsx) — plain goToSection('personal')
