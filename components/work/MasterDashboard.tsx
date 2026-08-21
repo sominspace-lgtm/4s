@@ -39,7 +39,21 @@ const RECUR_OPTIONS = [
   { label: 'Monthly', value: '30' },
 ]
 
-type Filter = 'all' | 'today' | 'overdue' | 'done'
+type Filter = 'all' | 'today' | 'upcoming' | 'overdue' | 'done'
+
+// One source for both views' empty states, so board and list can't drift
+// apart. Every line names something to do next rather than reporting a void —
+// an empty queue is a good outcome, not a failure to have tasks.
+const EMPTY_GLYPH: Record<Filter, string> = {
+  all: '✓', today: '✓', upcoming: '◔', overdue: '🎉', done: '📋',
+}
+const EMPTY_LINE: Record<Filter, string> = {
+  all:      'Queue clear. Add one thing worth finishing.',
+  today:    'Nothing due today. A good day to start something small.',
+  upcoming: 'Nothing scheduled ahead. Add a date to something and it lands here.',
+  overdue:  'Nothing overdue. Nice.',
+  done:     'No completed items yet. The first one counts.',
+}
 
 export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
   item: WorkItem
@@ -406,14 +420,22 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const filtered = items.filter(i => {
     if (filter === 'overdue') return dueUrgency(i.due_date) === 'overdue' && i.status !== 'done'
     if (filter === 'today')   return dueUrgency(i.due_date) === 'today'   && i.status !== 'done'
+    // Upcoming = dated, still open, and NOT already today or overdue — the
+    // "what's coming at me" view, deliberately excluding the two buckets
+    // that have their own chips. Undated tasks are excluded too: a task with
+    // no due date isn't upcoming, it's just unscheduled.
+    if (filter === 'upcoming') {
+      return i.status !== 'done' && !!i.due_date && ['soon', 'fine'].includes(dueUrgency(i.due_date))
+    }
     if (filter === 'done')    return i.status === 'done'
     return i.status !== 'done'
   })
 
-  // Board view has no status filter of its own — it always shows active
-  // work, grouped by column instead of by due-date urgency. Done items stay
-  // reachable via List → Done, and permanently via the Archive.
-  const activeItems = items.filter(i => i.status !== 'done')
+  // The board respects the same filter the list does (2026-08-21). 'all' is
+  // the normal case and shows every active item grouped by column; any other
+  // filter narrows what lands in those columns, so "show me what's overdue"
+  // works without having to switch to list first.
+  const boardItems = filter === 'all' ? items.filter(i => i.status !== 'done') : filtered
 
   const inputStyle: React.CSSProperties = {
     background: 'transparent', borderWidth: '1px', borderStyle: 'solid', borderColor: 'var(--border)',
@@ -442,16 +464,17 @@ export default function MasterDashboard({ userId }: { userId: string }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          {/* The notice board replaces status-based filtering with columns —
-              so the today/overdue/done chips only make sense in list view,
-              where you're scanning a flat queue instead of browsing groups. */}
-          {view === 'list' && (
-            <div style={{ display: 'flex', gap: '0.2rem' }} className="tabs-wrap">
-              {(['all', 'today', 'overdue', 'done'] as Filter[]).map(f => (
-                <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{t(f, lang)}</button>
-              ))}
-            </div>
-          )}
+          {/* Filter chips show in BOTH views now (2026-08-21). They used to
+              be list-only, on the reasoning that the board groups by column
+              rather than urgency — but that left no way to ask "just show me
+              what's overdue" without first switching view, which is exactly
+              the moment you want it. Picking a filter on the board narrows
+              the columns; 'all' restores the full board. */}
+          <div style={{ display: 'flex', gap: '0.2rem' }} className="tabs-wrap">
+            {(['all', 'today', 'upcoming', 'overdue', 'done'] as Filter[]).map(f => (
+              <button key={f} style={tabStyle(filter === f)} onClick={() => setFilter(f)}>{t(f, lang)}</button>
+            ))}
+          </div>
           <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '7px', padding: '0.15rem' }}>
             <button onClick={() => setView('board')} style={tabStyle(view === 'board')}>Board</button>
             <button onClick={() => setView('list')} style={tabStyle(view === 'list')}>List</button>
@@ -468,14 +491,14 @@ export default function MasterDashboard({ userId }: { userId: string }) {
 
       {view === 'board' ? (
         <>
-          {!loading && activeItems.length === 0 && (
+          {!loading && boardItems.length === 0 && (
             <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>✓</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>Queue clear. Add one thing worth finishing.</div>
+              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{EMPTY_GLYPH[filter]}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>{EMPTY_LINE[filter]}</div>
             </div>
           )}
-          {!loading && activeItems.length > 0 && (
-            <NoticeBoard items={activeItems} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+          {!loading && boardItems.length > 0 && (
+            <NoticeBoard items={boardItems} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
           )}
         </>
       ) : (
@@ -483,13 +506,8 @@ export default function MasterDashboard({ userId }: { userId: string }) {
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{filter === 'overdue' ? '🎉' : filter === 'done' ? '📋' : '✓'}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>
-                {filter === 'all'     && 'Queue clear. Add one thing worth finishing.'}
-                {filter === 'today'   && 'Nothing due today.'}
-                {filter === 'overdue' && 'Nothing overdue. Nice.'}
-                {filter === 'done'    && 'No completed items yet.'}
-              </div>
+              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{EMPTY_GLYPH[filter]}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>{EMPTY_LINE[filter]}</div>
             </div>
           )}
 
