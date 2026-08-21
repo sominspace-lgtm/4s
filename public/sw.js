@@ -1,4 +1,10 @@
-const CACHE = '4s-v1'
+// Bumped 2026-08-21 — a byte-different sw.js is what makes the browser
+// notice there's an update at all and run the install/activate cycle below,
+// which is what actually clears out anything the old worker cached. Without
+// this, a tab that was already open (or a browser that hadn't rechecked
+// sw.js yet) could keep serving stale JS/HTML through the fetch handler's
+// cache fallback indefinitely, even after a real deploy shipped a fix.
+const CACHE = '4s-v2'
 const SHELL = ['/', '/dashboard', '/login']
 
 self.addEventListener('install', e => {

@@ -8,10 +8,23 @@ import { hashPos } from './state'
 // 500-750, so more than half of an 800-wide canvas was empty sky while someone
 // with 20 habits saw six of them silently dropped.
 //
-// Placement is still a pure function of the id — no stored positions, nothing
-// the user arranges. That's the same constraint the rest of the village runs
-// under, and it's why the back row is derived from a hash rather than from
-// whatever order the rows came back in.
+// Placement is still a pure function of the id for every PLANT and BUILDING
+// — no stored positions there, and that's staying: those are tied to real
+// habits and tasks, come and go with them, and would need re-arranging every
+// time the underlying data changed if a position were ever saved for one.
+// It's why the back row is derived from a hash rather than from whatever
+// order the rows came back in.
+//
+// The five fixed LANDMARKS (Rest Lake, Growth Forest, Home, Projects,
+// Archive) are a different case as of 2026-08-21 — they never move on their
+// own regardless of data, so a saved position is actually meaningful and
+// stable. See VillageLayout below and VillageScene's arrange mode.
+
+export const LANDMARK_IDS = ['lake', 'forest', 'home', 'projects', 'archive'] as const
+export type LandmarkId = typeof LANDMARK_IDS[number]
+/** Custom x/y per landmark, only for the ones a user has actually dragged —
+ *  anything missing falls back to its default position below. */
+export type VillageLayout = Partial<Record<LandmarkId, { x: number; y: number }>>
 
 export interface Slot {
   id: string

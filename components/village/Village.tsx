@@ -9,7 +9,7 @@ import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
-import { forestSlots, districtSlots } from '@/lib/village/layout'
+import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
 import { resolveThemeVars, type CustomThemeSeed } from '@/lib/constants/themes'
@@ -34,7 +34,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, theme, customTheme = null, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate }: {
+export default function Village({ userId, theme, customTheme = null, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout }: {
   userId: string
   theme: string
   /** The active palette when theme === 'custom'. Ignored otherwise. */
@@ -47,7 +47,11 @@ export default function Village({ userId, theme, customTheme = null, accountCrea
   /** Shared mode: show the scene, but require a PIN to walk into it. */
   locked?: boolean
   onLockedNavigate?: (label: string) => void
+  /** Dragged positions for the five fixed landmarks. */
+  layout?: VillageLayout
+  onChangeLayout?: (next: VillageLayout) => void
 }) {
+  const [arranging, setArranging] = useState(false)
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
   // Finished work, which useWorkItems deliberately excludes. Without this the
@@ -141,19 +145,62 @@ export default function Village({ userId, theme, customTheme = null, accountCrea
         <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
           plantSlots={plantSlots} buildingSlots={buildingSlots}
           horizon={horizon} changes={changes}
-          locked={locked} onLockedNavigate={onLockedNavigate} />
+          locked={locked} onLockedNavigate={onLockedNavigate}
+          layout={layout} arranging={arranging}
+          onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked
-            at rather than used. */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            background: 'linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 12%)',
-          }}
-        />
+            at rather than used. Skipped while arranging so it can't be
+            mistaken for a drag-catching overlay. */}
+        {!arranging && (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 12%)',
+            }}
+          />
+        )}
+
+        {/* Arrange toggle — same "⚙ arrange" convention Household's Home
+            tab already uses for its own drag-reorderable blocks. Available
+            even in shared/locked mode: repositioning a landmark doesn't
+            reveal anything, it's purely cosmetic. */}
+        {onChangeLayout && (
+          <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
+            {arranging && Object.keys(layout).length > 0 && (
+              <button
+                onClick={() => onChangeLayout({})}
+                className="press"
+                style={{
+                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                  borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                }}
+              >Reset positions</button>
+            )}
+            <button
+              onClick={() => setArranging(a => !a)}
+              title={arranging ? 'Done arranging' : 'Arrange the village'}
+              className="press"
+              style={{
+                background: arranging ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
+                border: `1px solid ${arranging ? 'var(--gold)' : 'var(--border)'}`,
+                borderRadius: '8px', padding: '0.3rem 0.6rem',
+                color: arranging ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
+                fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+              }}
+            >{arranging ? '✓ Done' : '⚙ Arrange'}</button>
+          </div>
+        )}
       </div>
+
+      {arranging && (
+        <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
+          Drag any landmark to move it. Your layout is saved automatically.
+        </p>
+      )}
 
       <VillageArrival caption={changes?.caption ?? null} />
       <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />

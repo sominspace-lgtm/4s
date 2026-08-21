@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
@@ -14,6 +14,7 @@ import Horizon from './Horizon'
 import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
 import type { VillageChanges } from '@/lib/village/state'
 import { hashPos } from '@/lib/village/state'
+import type { VillageLayout, LandmarkId } from '@/lib/village/layout'
 
 export const GROUND_Y = 372
 
@@ -38,9 +39,22 @@ export type { Slot } from '@/lib/village/layout'
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
  * `village`, so this file can be read top to bottom as a draw order.
  */
+// Default landmark-label positions — the ones every account starts with,
+// and what "Reset positions" (see Village.tsx) restores. Pulled out as a
+// named map (rather than left as literal props on each DistrictLabel call)
+// so arrangeable() below has one place to fall back to.
+const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
+  lake: { x: 150, y: 130 },
+  forest: { x: 175, y: 250 },
+  home: { x: 400, y: 250 },
+  projects: { x: 620, y: 250 },
+  archive: { x: 725, y: 190 },
+}
+
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
+  layout = {}, arranging = false, onMoveLandmark,
 }: {
   village: VillageState
   live: boolean
@@ -54,13 +68,54 @@ export default function VillageScene({
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
   onLockedNavigate?: (label: string) => void
+  /** Dragged positions for the five landmark labels — only the pins move,
+   *  not the scenery underneath them (see Village.tsx's own header comment
+   *  on why: labels already float above their district as independent map
+   *  pins, they were never glued to the art). */
+  layout?: VillageLayout
+  arranging?: boolean
+  onMoveLandmark?: (id: LandmarkId, x: number, y: number) => void
 }) {
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
+  // Also the arranging guard: a click shouldn't navigate away mid-drag-mode.
   const nav = (label: string, go: () => void) => () => {
+    if (arranging) return
     if (locked) onLockedNavigate?.(label)
     else go()
   }
+
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [draggingId, setDraggingId] = useState<LandmarkId | null>(null)
+  const pos = (id: LandmarkId) => layout[id] ?? DEFAULT_LANDMARK_POS[id]
+
+  // Screen coordinates → the SVG's own 800×440 user space, so a drag tracks
+  // correctly regardless of how large the scene is actually rendered on the
+  // page (viewBox scaling means CSS pixels and SVG units are never 1:1).
+  function toSvgPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+    const svg = svgRef.current
+    const ctm = svg?.getScreenCTM()
+    if (!svg || !ctm) return null
+    const pt = svg.createSVGPoint()
+    pt.x = clientX; pt.y = clientY
+    const local = pt.matrixTransform(ctm.inverse())
+    return { x: Math.max(15, Math.min(785, local.x)), y: Math.max(15, Math.min(410, local.y)) }
+  }
+
+  function startDrag(id: LandmarkId) {
+    return (e: React.PointerEvent) => {
+      if (!arranging) return
+      e.stopPropagation()
+      ;(e.target as Element).setPointerCapture(e.pointerId)
+      setDraggingId(id)
+    }
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!draggingId || !onMoveLandmark) return
+    const p = toSvgPoint(e.clientX, e.clientY)
+    if (p) onMoveLandmark(draggingId, Math.round(p.x), Math.round(p.y))
+  }
+  function endDrag() { setDraggingId(null) }
   const grew = new Set(changes?.grownPlantIds ?? [])
   const planted = new Set(changes?.newPlantIds ?? [])
   const landmarked = new Set(changes?.newLandmarkIds ?? [])
@@ -84,11 +139,16 @@ export default function VillageScene({
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
   return (
     <svg
+      ref={svgRef}
       viewBox="0 0 800 440"
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
-      style={{ width: '100%', height: 'auto', display: 'block' }}
+      style={{ width: '100%', height: 'auto', display: 'block', touchAction: arranging ? 'none' : undefined }}
       onClick={() => setSelected(null)}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerLeave={endDrag}
+      onPointerCancel={endDrag}
     >
       <defs>
         <radialGradient id="vlake">
@@ -191,6 +251,15 @@ export default function VillageScene({
             onClick={selectPlant(plant.id)} />
         </g>
       ))}
+      {/* A zero-habit account leaves this whole band of ground bare — the
+          same "quiet setup note, never an alarm" treatment the rest of the
+          app gives an empty state, drawn small enough not to compete with a
+          real plant once one exists. */}
+      {plantSlots.length === 0 && (
+        <g transform={`translate(200 ${GROUND_Y - 2})`} opacity={0.35}>
+          <circle r={3} fill="none" stroke="var(--emerald)" strokeWidth={1} strokeDasharray="2 2" />
+        </g>
+      )}
 
       {/* Home — always present, grows detail with activity */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
@@ -215,6 +284,11 @@ export default function VillageScene({
             onClick={selectBuilding(building.id)} />
         </g>
       ))}
+      {buildingSlots.length === 0 && (
+        <g transform={`translate(600 ${GROUND_Y - 2})`} opacity={0.35}>
+          <rect x={-3} y={-6} width={6} height={6} fill="none" stroke="var(--slate)" strokeWidth={1} strokeDasharray="2 2" />
+        </g>
+      )}
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
           canopy is the continuum underneath, so the tree visibly thickens
@@ -252,16 +326,23 @@ export default function VillageScene({
 
       {/* District labels — the actual navigation. Glyphs match the app's
           existing SectionNav icon set (◒ = Today, ⌂ = Home/Village, ◻ =
-          Archive elsewhere) rather than inventing a new vocabulary. */}
-      <DistrictLabel x={150} y={130} glyph="◡" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
-        count={v.stillness > 0.5 ? 'still' : 'ready when you are'} />
-      <DistrictLabel x={175} y={250} glyph="◉" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
-        count={`${v.plants.length} growing`} />
-      <DistrictLabel x={400} y={250} glyph="⌂" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today" />
-      <DistrictLabel x={620} y={250} glyph="◫" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
-        count={`${v.buildings.length} standing`} />
-      <DistrictLabel x={725} y={190} glyph="◻" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
-        count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`} />
+          Archive elsewhere) rather than inventing a new vocabulary.
+          Positions come from pos(id) — layout[id] if it's been dragged,
+          otherwise the same defaults as always. */}
+      <DistrictLabel {...pos('lake')} glyph="◡" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
+        count={v.stillness > 0.5 ? 'still' : 'ready when you are'}
+        draggable={arranging} dragging={draggingId === 'lake'} onPointerDown={startDrag('lake')} />
+      <DistrictLabel {...pos('forest')} glyph="◉" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
+        count={`${v.plants.length} growing`}
+        draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
+      <DistrictLabel {...pos('home')} glyph="⌂" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today"
+        draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
+      <DistrictLabel {...pos('projects')} glyph="◫" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
+        count={`${v.buildings.length} standing`}
+        draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
+      <DistrictLabel {...pos('archive')} glyph="◻" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
+        count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
+        draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
 
       {/* Styled callout for whichever plant/building is selected — see the
           selection state and locked-mode guard set up above. */}

@@ -136,12 +136,24 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
 // rest of the scene's restrained SVG-drawn palette. A text glyph is a real
 // shape the theme can color, and the soft badge behind it gives an
 // otherwise-thin single character some actual presence.
-export function DistrictLabel({ x, y, glyph, label, count, onClick }: {
+export function DistrictLabel({ x, y, glyph, label, count, onClick, draggable = false, dragging = false, onPointerDown }: {
   x: number; y: number; glyph: string; label: string; count: string; onClick: () => void
+  /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
+  draggable?: boolean
+  dragging?: boolean
+  onPointerDown?: (e: React.PointerEvent) => void
 }) {
   return (
-    <g transform={`translate(${x} ${y})`} onClick={onClick} className="village-district" style={{ cursor: 'pointer' }}>
-      <title>{`${label} — ${count}. Click to open.`}</title>
+    <g transform={`translate(${x} ${y})`} onClick={onClick} onPointerDown={onPointerDown}
+      className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
+      <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Click to open.`}</title>
+      {/* A dashed ring while arranging — the same visual language blueprint-
+          phase buildings already use for "not settled yet" — so a landmark
+          reads as movable without needing separate instructional copy on
+          every pin. */}
+      {draggable && (
+        <circle cy={-14} r={18} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
+      )}
       <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.8} opacity={0.9} />
       <circle cy={-14} r={14} fill="none" stroke="var(--border)" strokeWidth={0.6} />
       <text textAnchor="middle" dominantBaseline="central" fontSize={13} y={-14} fill="var(--gold)">{glyph}</text>

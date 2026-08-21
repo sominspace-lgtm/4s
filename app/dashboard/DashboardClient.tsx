@@ -18,6 +18,7 @@ import SectionNav from '@/components/ui/SectionNav'
 import { useProgression } from '@/lib/hooks/useProgression'
 import JourneyBar from '@/components/ui/JourneyBar'
 import Village from '@/components/village/Village'
+import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
@@ -60,6 +61,7 @@ interface Props {
   initialPersonalTabs: SectionConfig[] | null
   initialHouseholdTabs: SectionConfig[] | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
+  initialVillageLayout: VillageLayout | null
 }
 
 // Folded into Personal / Today / Household — strip from any saved layout so
@@ -99,7 +101,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
 }
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -125,6 +127,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [householdTabs, setHouseholdTabs] = useState<SectionConfig[]>(mergeHouseholdTabs(initialHouseholdTabs))
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
+  const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
 
   const lang = 'en' as const
   // Landing view depends on who's here (2026-08-21). A shared-device session
@@ -166,12 +169,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined }
+    return { sections, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
   }
 
   async function changePersonalTabs(next: SectionConfig[]) {
     setPersonalTabs(next)
     await saveLayout(userId, layoutState(), { personalTabs: next })
+  }
+
+  async function changeVillageLayout(next: VillageLayout) {
+    setVillageLayout(next)
+    await saveLayout(userId, layoutState(), { villageLayout: next })
   }
 
   async function changeHouseholdTabs(next: SectionConfig[]) {
@@ -308,7 +316,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} theme={theme} customTheme={customTheme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} />
+        case 'village':  return <Village key="village" userId={userId} theme={theme} customTheme={customTheme} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={villageLayout} onChangeLayout={changeVillageLayout} />
         case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).

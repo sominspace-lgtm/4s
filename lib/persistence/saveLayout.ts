@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
 import type { SectionConfig } from '@/components/ui/CustomizePanel'
 import type { TodayBlockConfig } from '@/lib/utils/todayBlocks'
+import type { VillageLayout } from '@/lib/village/layout'
 
 // THE single writer for user_prefs.layout.
 //
@@ -41,6 +42,11 @@ export interface LayoutState {
   // unrelated write and TypeScript stays quiet about it. It IS in layoutState()
   // in DashboardClient. Keep it there.
   villageLastSeen?: string
+  // Dragged positions for the Village's five fixed landmarks — see
+  // lib/village/layout.ts's own header comment for why only the landmarks
+  // (not individual plants/buildings) get this. Optional for the same
+  // reason villageLastSeen is: old saved rows predate it.
+  villageLayout?: VillageLayout
 }
 
 export async function saveLayout(
