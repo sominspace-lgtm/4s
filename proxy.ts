@@ -46,6 +46,12 @@ export async function proxy(request: NextRequest) {
     || pathname === '/api/auth/pin-login'
     || pathname === '/api/auth/pin-setup'
     || pathname === '/api/auth/pin-status'
+    // Vercel Cron calls this server-to-server with no browser session at
+    // all — it does its own bearer-token check (CRON_SECRET) inside the
+    // route itself, same shape as /api/alexa and /api/household above. Without
+    // this the cron request never reaches that check; it just gets bounced
+    // to /login, and the route's own auth logic never runs.
+    || pathname === '/api/cron/waiting-notice'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands
