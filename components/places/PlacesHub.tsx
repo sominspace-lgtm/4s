@@ -41,10 +41,25 @@ const TABS: { id: SubTab; label: string }[] = [
 // Deliberately its own top-level tab rather than a Household sub-tab: a
 // full-bleed map needs the room, and burying it three levels down would mean
 // nobody opens it casually.
-export default function PlacesHub({ userId, theme }: { userId: string; theme: string }) {
+export default function PlacesHub({ userId, theme, sharedOnly = false }: {
+  userId: string
+  theme: string
+  /** Shared-device mode: show only pins and trips actually shared with the
+   *  household, never personal ones. usePlaces/useTrips both return
+   *  mine-or-a-space-I'm-in by RLS, so without this a private pin would
+   *  surface on a screen anyone in the house can see. Same boundary the
+   *  Household calendar already draws for trips. */
+  sharedOnly?: boolean
+}) {
   const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
-  const { places, withLocation, withoutLocation, loading } = usePlaces()
+  const { places: allPlaces, withLocation: allWithLocation, withoutLocation: allWithoutLocation, loading } = usePlaces()
+
+  const shared = <T extends { space_id: string | null }>(rows: T[]) =>
+    sharedOnly ? rows.filter(r => r.space_id !== null) : rows
+  const places = useMemo(() => shared(allPlaces), [allPlaces, sharedOnly])
+  const withLocation = useMemo(() => shared(allWithLocation), [allWithLocation, sharedOnly])
+  const withoutLocation = useMemo(() => shared(allWithoutLocation), [allWithoutLocation, sharedOnly])
 
   const [tab, setTab] = useState<SubTab>('map')
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
@@ -57,7 +72,8 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
   const [adding, setAdding] = useState(false)
   const selected = useMemo(() => places.find(p => p.id === selectedId) ?? null, [places, selectedId])
 
-  const { trips } = useTrips()
+  const { trips: allTrips } = useTrips()
+  const trips = useMemo(() => shared(allTrips), [allTrips, sharedOnly])
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
   const selectedTrip = useMemo(() => trips.find(t => t.id === selectedTripId) ?? null, [trips, selectedTripId])
 
@@ -108,7 +124,7 @@ export default function PlacesHub({ userId, theme }: { userId: string; theme: st
       )}
 
       {tab === 'trips' && (
-        <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} />
+        <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} sharedOnly={sharedOnly} />
       )}
 
       <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} />

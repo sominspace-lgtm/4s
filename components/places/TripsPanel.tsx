@@ -22,12 +22,15 @@ const input: React.CSSProperties = {
 // we care about (Pins) vs. where should we go next (Trips): different
 // question, same tab, because they share the same "places" mental model and
 // a trip's shortlist IS a set of pins.
-export default function TripsPanel({ spaceId, hasSpace, onSelect }: {
+export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = false }: {
   spaceId: string | null
   hasSpace: boolean
   onSelect: (trip: Trip) => void
+  /** Shared-device mode — hide personal trips. See PlacesHub. */
+  sharedOnly?: boolean
 }) {
-  const { trips, loading, addTrip } = useTrips()
+  const { trips: allTrips, loading, addTrip } = useTrips()
+  const trips = sharedOnly ? allTrips.filter(t => t.space_id !== null) : allTrips
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [destination, setDestination] = useState('')

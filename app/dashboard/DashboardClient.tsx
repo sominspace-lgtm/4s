@@ -286,13 +286,15 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     && prog.isUnlocked(s.id)
     && (!zenView || focusConfig.sections.includes(s.id))
     && (!simpleMode || SIMPLE_SECTION_IDS.has(s.id))
-    // Shared mode sees Household and the Village — the two ambient,
-    // glanceable surfaces. The Village is drawn FROM personal data (plants
-    // are habits, buildings are tasks), which is deliberate here: it's a
-    // shared household device, so seeing each other's shape-of-the-week is
-    // the point. Going from that picture into the actual data still requires
-    // a PIN — see UnlockPanel and the `locked` prop on Village.
-    && (!sharedMode || s.id === 'household' || s.id === 'village')
+    // Shared mode sees Household, the Village and Places. The Village is
+    // drawn FROM personal data (plants are habits, buildings are tasks),
+    // which is deliberate here: it's a shared household device, so seeing
+    // each other's shape-of-the-week is the point. Going from that picture
+    // into the actual data still requires a PIN — see UnlockPanel and the
+    // `locked` prop on Village. Places is different: it's a real working
+    // surface, not a picture, so instead of locking it we scope it to
+    // shared-only content (see PlacesHub's sharedOnly).
+    && (!sharedMode || s.id === 'household' || s.id === 'village' || s.id === 'places')
   )
 
   // Tab mode: only the active section renders. If the active tab was hidden
@@ -338,7 +340,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} />
-        case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} />
+        case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
         default: return null
       }
     })()
