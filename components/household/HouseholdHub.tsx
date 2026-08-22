@@ -61,9 +61,20 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // reason to make either of them pick "Couple" from a dropdown every visit.
   // Still overridable via the picker below (e.g. back to "Just me"), this
   // only changes the DEFAULT, once spaces have actually loaded.
+  //
+  // Prefer a space that actually HAS an accepted member (2026-08-22) — the
+  // account turned out to have two spaces (an old solo "Family" space with
+  // nobody else in it, and "Couple", the one Harry actually accepted and the
+  // one the Discord bot is linked to). Plain spaces[0] picks whichever was
+  // created first, which landed on the empty one — everything in Household
+  // silently pointed at a space with no data and no partner in it. Falls
+  // back to spaces[0] if no space has an accepted member yet (a fresh
+  // account, before anyone's joined).
   useEffect(() => {
-    if (!spaceId && spaces.length > 0) setSpaceId(spaces[0].id)
-  }, [spaces, spaceId])
+    if (spaceId || spaces.length === 0) return
+    const shared = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))
+    setSpaceId((shared ?? spaces[0]).id)
+  }, [spaces, members, spaceId])
   const { checkins, loading: checkinsLoading } = useCheckins()
   // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
   // lets a caller land on a SPECIFIC sub-tab rather than whichever one was

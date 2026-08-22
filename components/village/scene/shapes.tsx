@@ -135,49 +135,61 @@ export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book'
 // rest by, a leaf for the forest that grows, the house for home, a small
 // building for the projects going up, a book for the archive next to its own
 // tree. Plain SVG paths, not emoji, for the same reason the glyphs they
-// replace were plain characters and not emoji either — see the removed
-// comment below: fill has to stay themeable. Drawn in the same 14-radius
-// badge slot the old glyph occupied, centered on (0, -14).
-function DistrictIcon({ kind }: { kind: DistrictIconKind }) {
-  switch (kind) {
-    case 'fish':
-      return (
-        <g transform="translate(0 -14)" fill="var(--gold)">
-          <path d="M -7 0 C -7 -4.2 -2.5 -6.5 2 -5.2 C 5.5 -4.2 8 -1.8 9.5 0 C 8 1.8 5.5 4.2 2 5.2 C -2.5 6.5 -7 4.2 -7 0 Z" />
-          <path d="M 9.5 0 L 13.5 -3.5 L 13 0 L 13.5 3.5 Z" />
-          <circle cx={-3.8} cy={-1.2} r={0.9} fill="var(--surface)" />
-        </g>
-      )
-    case 'leaf':
-      return (
-        <g transform="translate(0 -14)" fill="var(--gold)">
-          <path d="M 0 7 C -8 5 -8.5 -5.5 0 -8 C 8.5 -5.5 8 5 0 7 Z" />
-          <path d="M 0 6.5 L 0 -6.5" stroke="var(--surface)" strokeWidth={0.9} fill="none" strokeLinecap="round" />
-        </g>
-      )
-    case 'home':
-      return (
-        <g transform="translate(0 -14)" fill="var(--gold)">
-          <path d="M -8 6 L -8 -1 L 0 -9 L 8 -1 L 8 6 L 3 6 L 3 -0.5 L -3 -0.5 L -3 6 Z" />
-        </g>
-      )
-    case 'building':
-      return (
-        <g transform="translate(0 -14)">
-          <rect x={-6.5} y={-5} width={13} height={11} rx={1} fill="var(--gold)" fillOpacity={0.85} />
-          <path d="M -7.5 -5 L 0 -10 L 7.5 -5" fill="none" stroke="var(--gold)" strokeWidth={1.1} strokeLinejoin="round" />
-          <rect x={-3.5} y={-2} width={2.4} height={3} fill="var(--surface)" />
-          <rect x={1.1} y={-2} width={2.4} height={3} fill="var(--surface)" />
-        </g>
-      )
-    case 'book':
-      return (
-        <g transform="translate(0 -14)" fill="var(--gold)">
-          <path d="M -7.5 -4.5 C -4.8 -6 -1.8 -6 0 -4.2 C 1.8 -6 4.8 -6 7.5 -4.5 L 7.5 5 C 4.8 3.5 1.8 3.5 0 5.2 C -1.8 3.5 -4.8 3.5 -7.5 5 Z" />
-          <path d="M 0 -4.2 L 0 5.2" stroke="var(--surface)" strokeWidth={0.8} fill="none" />
-        </g>
-      )
-  }
+// replace were plain characters and not emoji either — fill has to stay
+// themeable.
+//
+// Exported (2026-08-22) so the same silhouette can be drawn twice: once on
+// the district's nav badge (which floats free and can be dragged anywhere —
+// see DistrictLabel below), and once fixed directly on the scenery itself —
+// a fish actually in the lake, a leaf actually by the forest's plants — so
+// the icon reads as "this is what's here" even when the badge has been
+// dragged somewhere else. `x`/`y` place it directly (not badge-relative);
+// callers pass the scene's own coordinates.
+export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
+  kind: DistrictIconKind; x?: number; y?: number; scale?: number; opacity?: number
+}) {
+  const body = (() => {
+    switch (kind) {
+      case 'fish':
+        return (
+          <g fill="var(--gold)">
+            <path d="M -7 0 C -7 -4.2 -2.5 -6.5 2 -5.2 C 5.5 -4.2 8 -1.8 9.5 0 C 8 1.8 5.5 4.2 2 5.2 C -2.5 6.5 -7 4.2 -7 0 Z" />
+            <path d="M 9.5 0 L 13.5 -3.5 L 13 0 L 13.5 3.5 Z" />
+            <circle cx={-3.8} cy={-1.2} r={0.9} fill="var(--surface)" />
+          </g>
+        )
+      case 'leaf':
+        return (
+          <g fill="var(--gold)">
+            <path d="M 0 7 C -8 5 -8.5 -5.5 0 -8 C 8.5 -5.5 8 5 0 7 Z" />
+            <path d="M 0 6.5 L 0 -6.5" stroke="var(--surface)" strokeWidth={0.9} fill="none" strokeLinecap="round" />
+          </g>
+        )
+      case 'home':
+        return (
+          <g fill="var(--gold)">
+            <path d="M -8 6 L -8 -1 L 0 -9 L 8 -1 L 8 6 L 3 6 L 3 -0.5 L -3 -0.5 L -3 6 Z" />
+          </g>
+        )
+      case 'building':
+        return (
+          <g>
+            <rect x={-6.5} y={-5} width={13} height={11} rx={1} fill="var(--gold)" fillOpacity={0.85} />
+            <path d="M -7.5 -5 L 0 -10 L 7.5 -5" fill="none" stroke="var(--gold)" strokeWidth={1.1} strokeLinejoin="round" />
+            <rect x={-3.5} y={-2} width={2.4} height={3} fill="var(--surface)" />
+            <rect x={1.1} y={-2} width={2.4} height={3} fill="var(--surface)" />
+          </g>
+        )
+      case 'book':
+        return (
+          <g fill="var(--gold)">
+            <path d="M -7.5 -4.5 C -4.8 -6 -1.8 -6 0 -4.2 C 1.8 -6 4.8 -6 7.5 -4.5 L 7.5 5 C 4.8 3.5 1.8 3.5 0 5.2 C -1.8 3.5 -4.8 3.5 -7.5 5 Z" />
+            <path d="M 0 -4.2 L 0 5.2" stroke="var(--surface)" strokeWidth={0.8} fill="none" />
+          </g>
+        )
+    }
+  })()
+  return <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">{body}</g>
 }
 
 // Badge circles carry a soft dashed stroke (2026-08-22) — a small, cheap
@@ -205,7 +217,7 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
       )}
       <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.9} strokeDasharray="1.5 1.8" opacity={0.9} />
       <circle cy={-14} r={14} fill="none" stroke="var(--border)" strokeWidth={0.6} />
-      <DistrictIcon kind={icon} />
+      <FeatureIcon kind={icon} y={-14} />
       <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" letterSpacing="0.06em" y={10}>{label.toUpperCase()}</text>
       <text textAnchor="middle" fontSize={7.5} fill="var(--muted)" opacity={0.6} y={21}>{count}</text>
     </g>

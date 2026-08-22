@@ -6,7 +6,7 @@ import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -262,6 +262,11 @@ export default function VillageScene({
         <ellipse cx={120} cy={406} rx={26} ry={3} fill="var(--text)" opacity={0.07} />
         <ellipse cx={186} cy={414} rx={18} ry={2.4} fill="var(--text)" opacity={0.05} />
       </g>
+      {/* A fish, literally in the lake (2026-08-22) — the district's nav
+          badge carries the same silhouette, but that badge floats free and
+          can be dragged anywhere in arrange mode; this one is fixed to the
+          water itself so "this is what's here" survives regardless. */}
+      <FeatureIcon kind="fish" x={195} y={402} scale={0.85} opacity={0.55} />
 
       {/* Growth Forest */}
       {plantSlots.map(({ plant, x, y, scale, back }) => (
@@ -282,6 +287,11 @@ export default function VillageScene({
           <circle r={3} fill="none" stroke="var(--emerald)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
+      {/* A leaf, literally among the plants (2026-08-22) — same reasoning as
+          the lake's fish above: fixed to the forest band (x 40-360, see
+          FOREST in lib/village/layout.ts) regardless of where the district's
+          own draggable nav badge has been moved to. */}
+      <FeatureIcon kind="leaf" x={90} y={GROUND_Y - 6} scale={0.8} opacity={0.5} />
 
       {/* Home — always present, grows detail with activity */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
@@ -311,6 +321,10 @@ export default function VillageScene({
           <rect x={-3} y={-6} width={6} height={6} fill="none" stroke="var(--slate)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
+      {/* A building, literally among the projects (2026-08-22) — fixed to
+          the district band (x 430-780, see DISTRICT in layout.ts), same
+          reasoning as the lake's fish and the forest's leaf above. */}
+      <FeatureIcon kind="building" x={470} y={GROUND_Y - 6} scale={0.8} opacity={0.5} />
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
           canopy is the continuum underneath, so the tree visibly thickens
@@ -329,6 +343,10 @@ export default function VillageScene({
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
           <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
+        {/* A book, literally beside the Life Tree (2026-08-22) — same
+            reasoning as the lake's fish, the forest's leaf, and the
+            district's building above, fixed right next to the tree itself. */}
+        <FeatureIcon kind="book" x={26} y={-6} scale={0.75} opacity={0.55} />
       </g>
 
       {/* Bloom Garden — waiting on BloomScan */}
