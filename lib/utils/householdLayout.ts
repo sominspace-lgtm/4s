@@ -31,9 +31,11 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // reordering/hiding possible at all, the same refactor todayBlocks.ts already
 // did for Today.
 // `calendar` left this list on 2026-08-21 — it's a tab of its own now, see
-// DEFAULT_HOUSEHOLD_TABS above. mergeHomeBlocks drops unknown saved ids, so
-// anyone whose layout still names it is cleaned up automatically.
-export type HomeBlockId = 'thisWeek' | 'shopping' | 'chores' | 'routines' | 'meals' | 'lists'
+// DEFAULT_HOUSEHOLD_TABS above. `lists` left it the same day, moved into the
+// Reference tab (a generic checklist reads more like reference material than
+// a weekly home-screen block). mergeHomeBlocks drops unknown saved ids, so
+// anyone whose layout still names either is cleaned up automatically.
+export type HomeBlockId = 'thisWeek' | 'shopping' | 'chores' | 'routines' | 'meals'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // The week in review (2026-08-18) — same computation the bot posts on
@@ -42,18 +44,15 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   // what's coming up, so it reads best before the forward-looking ones.
   thisWeek: { label: 'This week',         hint: 'What got done, in one glance' },
   shopping: { label: 'Shopping list',     hint: 'What to buy' },
-  chores:   { label: 'Whose turn',        hint: 'Chores and who’s due' },
+  chores:   { label: 'Chores',            hint: 'Chores and who’s due' },
   // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" containing
   // Bathroom/Kitchen/Laundry/Trash/Sheets — separate from the flat chores
-  // list above, which stays the lightweight single-item "whose turn" list.
+  // list above, which stays the lightweight single-item list.
   routines: { label: 'Routines',          hint: 'Multi-step chores, done together' },
   meals:    { label: 'This week’s meals', hint: 'What we’re eating' },
-  // Generic ad-hoc lists (2026-08-13) — anything that isn't groceries,
-  // move-in, or a watchlist: "things to research", "gift ideas for Mom".
-  lists:    { label: 'Lists',             hint: 'Anything else worth a checklist' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'shopping', 'chores', 'routines', 'meals', 'lists'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'shopping', 'chores', 'routines', 'meals'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

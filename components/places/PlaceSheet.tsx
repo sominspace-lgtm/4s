@@ -17,10 +17,14 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 // actions as a tertiary link at the bottom. No rating anywhere — see
 // supabase/migrations/places_travel.sql for why. Google/lookup refresh isn't
 // here yet; place lookup (Phase 3) adds that block.
-export default function PlaceSheet({ place, open, onClose }: {
+export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: {
   place: Place | null
   open: boolean
   onClose: () => void
+  /** For the private/share toggle — the household space to share into, and
+   *  whether one actually exists (a solo account has neither). */
+  spaceId?: string | null
+  hasSpace?: boolean
 }) {
   const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
   const [editingName, setEditingName] = useState(false)
@@ -162,6 +166,20 @@ export default function PlaceSheet({ place, open, onClose }: {
             </button>
           ))}
         </div>
+
+        {/* Auto-shared by default at creation (2026-08-21) — this is the
+            post-creation opt-out/opt-back-in, added because AddPlacePanel's
+            toggle only ever applied once, at save time. */}
+        {hasSpace && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={place.space_id === null}
+              onChange={e => updatePlace(place!.id, { space_id: e.target.checked ? null : spaceId ?? null })}
+            />
+            Keep this private
+          </label>
+        )}
 
         {mapsHref && (
           <a href={mapsHref} target="_blank" rel="noreferrer" className="btn btn-primary press" style={{ fontSize: '0.74rem', textAlign: 'center', textDecoration: 'none' }}>

@@ -9,10 +9,10 @@ import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
-import HomeBrain from '@/components/home/HomeBrain'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
+import HouseholdNotes from './HouseholdNotes'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
@@ -284,7 +284,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     chores: () => (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
-          Whose turn
+          Chores
         </div>
 
         {sortedChores.length === 0 && !h.loading && (
@@ -419,73 +419,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <input value={mealTitle} onChange={e => setMealTitle(e.target.value)} placeholder="What's cooking?" style={{ ...input, flex: 1, minWidth: '130px' }} />
           <input value={mealCook} onChange={e => setMealCook(e.target.value)} placeholder="Who cooks" style={{ ...input, width: '100px' }} />
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-        </form>
-      </section>
-    ),
-
-    // Anything that isn't groceries, move-in, or a watchlist — generic,
-    // additive, not a replacement for those (2026-08-13).
-    lists: () => (
-      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-        <div className="t-card">Lists</div>
-
-        {listsHook.lists.length === 0 && !listsHook.loading && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-            Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, or a watchlist — &ldquo;things to research&rdquo;, gift ideas, whatever.
-          </div>
-        )}
-
-        {listsHook.lists.map(l => (
-          <div key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
-              <button onClick={() => listsHook.removeList(l.id)} aria-label={`Remove list ${l.name}`} className="press"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
-            </div>
-            {l.items.map(i => (
-              <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
-                <button onClick={() => listsHook.toggleItem(l.id, i.id)} className="press" style={{
-                  width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                  background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                }} />
-                <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
-                  {i.label}
-                </span>
-                <button onClick={() => listsHook.removeItem(l.id, i.id)} aria-label={`Remove ${i.label}`} className="press"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
-              </div>
-            ))}
-            <form
-              onSubmit={async e => {
-                e.preventDefault()
-                const val = listItemDrafts[l.id]?.trim()
-                if (!val) return
-                await listsHook.addItem(l.id, val)
-                setListItemDrafts(d => ({ ...d, [l.id]: '' }))
-              }}
-              style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem' }}
-            >
-              <input
-                value={listItemDrafts[l.id] ?? ''}
-                onChange={e => setListItemDrafts(d => ({ ...d, [l.id]: e.target.value }))}
-                placeholder="Add an item" style={{ ...input, flex: 1, fontSize: '0.72rem' }}
-              />
-              <button type="submit" className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>Add</button>
-            </form>
-          </div>
-        ))}
-
-        <form
-          onSubmit={async e => {
-            e.preventDefault()
-            if (!newListName.trim()) return
-            await listsHook.addList(newListName.trim())
-            setNewListName('')
-          }}
-          style={{ display: 'flex', gap: '0.4rem' }}
-        >
-          <input value={newListName} onChange={e => setNewListName(e.target.value)} placeholder="New list name" style={{ ...input, flex: 1, minWidth: '140px' }} />
-          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>+ New list</button>
         </form>
       </section>
     ),
@@ -641,14 +574,73 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </>
       )}
 
-      {/* Home Brain — the household's memory: wifi passwords, serial
-          numbers, which filter the fridge takes. Moved here from Personal →
-          Life (2026-08-07), where it never belonged: none of it is personal
-          and all of it is the sort of thing the OTHER people in the house
-          need at 9pm when you're not home. It sits under the same space
-          picker as chores and meals, so it follows "just me" vs a shared
-          household exactly like they do. */}
-      {tab === 'reference' && <HomeBrain />}
+      {/* Lists — moved here from a Home block (2026-08-21). A generic
+          checklist ("things to research", gift ideas) reads more like
+          reference material you check than a weekly home-screen card. */}
+      {tab === 'reference' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          <div className="t-card">Lists</div>
+
+          {listsHook.lists.length === 0 && !listsHook.loading && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+              Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, or a watchlist — &ldquo;things to research&rdquo;, gift ideas, whatever.
+            </div>
+          )}
+
+          {listsHook.lists.map(l => (
+            <div key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
+                <button onClick={() => listsHook.removeList(l.id)} aria-label={`Remove list ${l.name}`} className="press"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
+              </div>
+              {l.items.map(i => (
+                <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
+                  <button onClick={() => listsHook.toggleItem(l.id, i.id)} className="press" style={{
+                    width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+                    background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
+                  }} />
+                  <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
+                    {i.label}
+                  </span>
+                  <button onClick={() => listsHook.removeItem(l.id, i.id)} aria-label={`Remove ${i.label}`} className="press"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
+                </div>
+              ))}
+              <form
+                onSubmit={async e => {
+                  e.preventDefault()
+                  const val = listItemDrafts[l.id]?.trim()
+                  if (!val) return
+                  await listsHook.addItem(l.id, val)
+                  setListItemDrafts(d => ({ ...d, [l.id]: '' }))
+                }}
+                style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem' }}
+              >
+                <input
+                  value={listItemDrafts[l.id] ?? ''}
+                  onChange={e => setListItemDrafts(d => ({ ...d, [l.id]: e.target.value }))}
+                  placeholder="Add an item" style={{ ...input, flex: 1, fontSize: '0.72rem' }}
+                />
+                <button type="submit" className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>Add</button>
+              </form>
+            </div>
+          ))}
+
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!newListName.trim()) return
+              await listsHook.addList(newListName.trim())
+              setNewListName('')
+            }}
+            style={{ display: 'flex', gap: '0.4rem' }}
+          >
+            <input value={newListName} onChange={e => setNewListName(e.target.value)} placeholder="New list name" style={{ ...input, flex: 1, minWidth: '140px' }} />
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>+ New list</button>
+          </form>
+        </section>
+      )}
 
       {/* Its own tab as of 2026-08-21 — was a Home block competing with five
           others for the top of a scroll. Same component, same data, just
@@ -700,6 +692,12 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           </form>
         </section>
       )}
+
+      {/* Notes — the space-shared Notes feature (2026-08-21), same table
+          Personal's Notes tab writes to, scoped to this household's space.
+          Additive to the fridge door above, not a replacement: the fridge
+          door is quick pinned one-liners, this is a real title+body note. */}
+      {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
 
       {/* ── Rules ──────────────────────────────────────────────────
           Standing conventions, not one-off tasks: "no shoes inside", not

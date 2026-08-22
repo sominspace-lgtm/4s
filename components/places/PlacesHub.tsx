@@ -127,7 +127,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
         <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} sharedOnly={sharedOnly} />
       )}
 
-      <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} />
+      <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} spaceId={spaceId} hasSpace={spaces.length > 0} />
       <AddPlacePanel open={adding} spaceId={spaceId} hasSpace={spaces.length > 0} onClose={() => setAdding(false)} />
       <TripDetail trip={selectedTrip} open={!!selectedTrip} onClose={() => setSelectedTripId(null)} />
     </div>

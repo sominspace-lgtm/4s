@@ -181,9 +181,8 @@ export default function GuidePage() {
 
       <Section id="shared" kicker="together, privately" title="People">
         <Card>
-          A garden, not a list — each person is a tree that grows with how long you&rsquo;ve known them and what you&rsquo;ve learned
-          about them, and it never shrinks. Click a tree to jump to their card for notes, birthdays, and preferences.
-          Everything here is private to you.
+          The people who matter — birthdays, when you last said hello, and whatever you want to
+          remember about them. Everything here is private to you.
         </Card>
       </Section>
 

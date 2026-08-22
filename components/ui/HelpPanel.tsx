@@ -39,7 +39,7 @@ const SECTIONS = [
   {
     icon: '♡',
     title: 'People',
-    body: 'A garden — each person is a tree that grows with time and what you’ve learned about them, and never shrinks. Click a tree to jump to their card below for notes, birthdays, and preferences.',
+    body: 'The people who matter — birthdays, when you last said hello, and whatever you want to remember about them.',
   },
   {
     icon: '⌂',

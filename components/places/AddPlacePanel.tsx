@@ -20,11 +20,17 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
   const [kind, setKind] = useState('place')
   const [note, setNote] = useState('')
   const [address, setAddress] = useState('')
-  const [shared, setShared] = useState(false)
+  // Auto-shared by default (2026-08-21) — a pin is household business the
+  // same way a chore or a shopping item already is; opting OUT (private) is
+  // the exception now, not opting in. Only meaningful when hasSpace is
+  // true — usePlaces.addPlace still resolves `shared: true` with no real
+  // space to `space_id: null` regardless, so a solo account stays private
+  // by construction even though this defaults true.
+  const [isPrivate, setIsPrivate] = useState(false)
   const [saving, setSaving] = useState(false)
 
   function reset() {
-    setName(''); setKind('place'); setNote(''); setAddress(''); setShared(false)
+    setName(''); setKind('place'); setNote(''); setAddress(''); setIsPrivate(false)
   }
 
   async function submit(e: React.FormEvent) {
@@ -36,7 +42,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
       kind,
       note: note.trim() || null,
       address: address.trim() || null,
-      shared,
+      shared: !isPrivate,
     }, spaceId)
     setSaving(false)
     if (!error) { reset(); onClose() }
@@ -63,8 +69,8 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
 
         {hasSpace && (
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={shared} onChange={e => setShared(e.target.checked)} />
-            Share with household
+            <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
+            Keep this private
           </label>
         )}
 

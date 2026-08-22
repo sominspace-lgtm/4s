@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+// The `4s:person-preferences-changed` event dispatched by add()/remove()
+// below used to also drive usePersonPreferenceCounts() (removed 2026-08-21
+// with the relationships garden, its only consumer) — left firing here in
+// case another cross-instance-sync consumer wants it later; it's a no-op
+// event with no listeners today, not dead code in the sense of doing harm.
+
 export type PersonPreferenceCategory = 'preference' | 'like' | 'dislike' | 'idea' | 'general'
 
 export interface PersonPreference {
@@ -15,36 +21,6 @@ export interface PersonPreference {
 
 export const PERSON_CATEGORY_LABEL: Record<PersonPreferenceCategory, string> = {
   preference: '💛 Preference', like: '👍 Like', dislike: '👎 Dislike', idea: '💡 Idea', general: '🧠 General',
-}
-
-// One count per person, across everyone at once — for the relationships
-// garden (2026-08-21), which needs every person's preference count to size
-// their tree and can't reasonably run one query per person. RLS already
-// scopes rows to the caller's own people, so no explicit filter is needed
-// here the way usePersonPreferences needs `.eq('person_id', personId)`.
-export function usePersonPreferenceCounts(): Record<string, number> {
-  const supabase = createClient()
-  const [counts, setCounts] = useState<Record<string, number>>({})
-
-  const load = useCallback(async () => {
-    const { data } = await supabase.from('person_preferences').select('person_id')
-    const next: Record<string, number> = {}
-    for (const row of (data as { person_id: string }[] | null) ?? []) {
-      next[row.person_id] = (next[row.person_id] ?? 0) + 1
-    }
-    setCounts(next)
-  }, [supabase])
-
-  useEffect(() => {
-    load()
-    // Same cross-instance sync every other hook in this file's family uses —
-    // adding/removing a preference on one person's card should update this
-    // person's tree size without a full page reload.
-    window.addEventListener('4s:person-preferences-changed', load)
-    return () => window.removeEventListener('4s:person-preferences-changed', load)
-  }, [load])
-
-  return counts
 }
 
 // One instance per person card — each person's list is small (a handful of

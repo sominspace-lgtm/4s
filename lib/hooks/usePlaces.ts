@@ -100,7 +100,7 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on'
+    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on' | 'space_id'
   >>) {
     // First time a place is marked good/hmm/bad, stamp today as the visit
     // date automatically — but never overwrite one already set (manual edits

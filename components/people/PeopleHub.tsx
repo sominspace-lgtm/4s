@@ -1,6 +1,6 @@
 'use client'
 
-import RelationshipGarden from '@/components/relationships/RelationshipGarden'
+import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 
 // Down to one thing (2026-08-21): the household is exactly two accounts,
 // Harry and Sylvia, and always will be — there is no "invite a friend" or
@@ -17,17 +17,12 @@ import RelationshipGarden from '@/components/relationships/RelationshipGarden'
 // entirely) still lives in the header's Companions panel and Household →
 // Setup, both untouched by this change.
 //
-// What's left is genuinely self-contained: RelationshipMemory reads people,
-// birthdays, last-contact and preferences straight from usePeople/
-// usePersonPreferences — it never depended on the friend/sharing system.
-//
-// "Make relationships into the systems like village" (2026-08-21): People
-// now opens on a garden — one tree per person, sized by how long you've
-// known them and what you've actually learned about them, same growth law
-// as the Village (never shrinks; a quiet stretch desaturates, it doesn't
-// wither). See lib/relationships/garden.ts for the full reasoning, in
-// particular why last_contact can't drive size the way it drives everything
-// else about "have I talked to this person lately".
+// A garden visualization (people as trees, sized by history) lived here
+// briefly (2026-08-21) and was reverted the same day — back to a plain
+// contact list, which is what this was asked for. RelationshipMemory
+// genuinely never depended on the garden; it reads people, birthdays,
+// last-contact and preferences straight from usePeople/usePersonPreferences
+// and is unchanged by either the addition or the removal.
 export default function PeopleHub() {
   return (
     <div className="card-interactive organic specimen" style={{
@@ -38,7 +33,7 @@ export default function PeopleHub() {
       <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400, marginBottom: '0.8rem' }}>
         People
       </div>
-      <RelationshipGarden />
+      <RelationshipMemory />
     </div>
   )
 }

@@ -8,7 +8,6 @@ import PersonalRoutines from '@/components/habits/PersonalRoutines'
 import NotesHub from '@/components/notes/NotesHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
-import PreferencesHub from '@/components/personal/PreferencesHub'
 import PersonalOverview from '@/components/personal/PersonalOverview'
 import CouncilSection from '@/components/council/CouncilSection'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
@@ -96,7 +95,6 @@ export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
       {tab === 'notes'   && <NotesHub userId={userId} />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub />}
-      {tab === 'preferences' && <PreferencesHub userId={userId} />}
       {tab === 'council' && <CouncilSection mode={mode} userId={userId} calendarConnected />}
 
       <SectionCustomizer

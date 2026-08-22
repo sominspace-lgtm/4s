@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'preferences' | 'council'
+export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'council'
 
 export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   // Folded in from the old top-level Tasks tab (2026-08-20) — tasks are
@@ -18,7 +18,11 @@ export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   { id: 'notes',  label: 'Notes',  hidden: false },
   { id: 'money',  label: 'Money',  hidden: false },
   { id: 'people', label: 'People', hidden: false },
-  { id: 'preferences', label: 'Preferences', hidden: false },
+  // Preferences removed (2026-08-21) — also took the unrelated "What you
+  // need" (Needs) feature down with it, which lived in the same tab and had
+  // no other home. The underlying `preferences` table and its Discord write
+  // path (lib/household/resources.ts) are untouched; only this in-app tab
+  // is gone.
   // Promoted from a header-menu-only deep link (2026-08-21) — "Convene the
   // Council" lived in the ⋯ menu next to Ask Jarvis, which is now gone, and
   // an occasional-use action deserves a real tab in the place it's about
