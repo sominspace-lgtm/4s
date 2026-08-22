@@ -222,12 +222,18 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
-      {/* Grass — texture along the ground line, see GRASS_TUFTS above */}
-      <g opacity={0.5}>
+      {/* Grass — texture along the ground line, see GRASS_TUFTS above.
+          Fixed --emerald at near-full strength regardless of season
+          (2026-08-22): grass reading as green is a baseline expectation
+          independent of what the trees are doing this season, and the old
+          0.5 opacity plus the diluted seasonal palette.foliage (which mixes
+          toward blush/amber/slate) was a large part of why the whole scene
+          read muted, like a vintage filter, rather than like a living lawn. */}
+      <g opacity={0.9}>
         {GRASS_TUFTS.map(t => (
           <path key={t.id}
             d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
-            fill="none" stroke={live ? palette.foliage : 'var(--emerald)'} strokeWidth={1} strokeLinecap="round" />
+            fill="none" stroke="var(--emerald)" strokeWidth={1.2} strokeLinecap="round" />
         ))}
       </g>
 
@@ -340,23 +346,26 @@ export default function VillageScene({
           front of the house, below the labels so it never fights the text. */}
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
 
-      {/* District labels — the actual navigation. Glyphs match the app's
-          existing SectionNav icon set (◒ = Today, ⌂ = Home/Village, ◻ =
-          Archive elsewhere) rather than inventing a new vocabulary.
-          Positions come from pos(id) — layout[id] if it's been dragged,
-          otherwise the same defaults as always. */}
-      <DistrictLabel {...pos('lake')} glyph="◡" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
+      {/* District labels — the actual navigation. Icons are real silhouettes
+          of what's actually in each district (a fish for the lake, a leaf
+          for the forest, a building for projects, a book for the archive
+          next to its own tree — see shapes.tsx's DistrictIcon) rather than
+          the app's abstract SectionNav glyph set, which shared no visual
+          logic with the scene around it. Positions come from pos(id) —
+          layout[id] if it's been dragged, otherwise the same defaults as
+          always. */}
+      <DistrictLabel {...pos('lake')} icon="fish" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
         count={v.stillness > 0.5 ? 'still' : 'ready when you are'}
         draggable={arranging} dragging={draggingId === 'lake'} onPointerDown={startDrag('lake')} />
-      <DistrictLabel {...pos('forest')} glyph="◉" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
         count={`${v.plants.length} growing`}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
-      <DistrictLabel {...pos('home')} glyph="⌂" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today"
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today"
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
-      <DistrictLabel {...pos('projects')} glyph="◫" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
         count={`${v.buildings.length} standing`}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
-      <DistrictLabel {...pos('archive')} glyph="◻" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
+      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
 

@@ -128,16 +128,65 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-// Glyphs are plain geometric characters from the app's own icon vocabulary
-// (the same ones SectionNav uses — ◒ ⌂ ◫ etc.), not emoji (2026-08-21).
-// Emoji render as fixed, fully-saturated pictographs that ignore `fill` —
-// they can't take the theme's gold, so every district glyph looked the same
-// regardless of theme and read as a foreign, cartoonish accent against the
-// rest of the scene's restrained SVG-drawn palette. A text glyph is a real
-// shape the theme can color, and the soft badge behind it gives an
-// otherwise-thin single character some actual presence.
-export function DistrictLabel({ x, y, glyph, label, count, onClick, draggable = false, dragging = false, onPointerDown }: {
-  x: number; y: number; glyph: string; label: string; count: string; onClick: () => void
+export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book'
+
+// Real silhouettes instead of abstract geometric glyphs (2026-08-22) — a
+// district's icon should say what's actually there: a fish for the lake you
+// rest by, a leaf for the forest that grows, the house for home, a small
+// building for the projects going up, a book for the archive next to its own
+// tree. Plain SVG paths, not emoji, for the same reason the glyphs they
+// replace were plain characters and not emoji either — see the removed
+// comment below: fill has to stay themeable. Drawn in the same 14-radius
+// badge slot the old glyph occupied, centered on (0, -14).
+function DistrictIcon({ kind }: { kind: DistrictIconKind }) {
+  switch (kind) {
+    case 'fish':
+      return (
+        <g transform="translate(0 -14)" fill="var(--gold)">
+          <path d="M -7 0 C -7 -4.2 -2.5 -6.5 2 -5.2 C 5.5 -4.2 8 -1.8 9.5 0 C 8 1.8 5.5 4.2 2 5.2 C -2.5 6.5 -7 4.2 -7 0 Z" />
+          <path d="M 9.5 0 L 13.5 -3.5 L 13 0 L 13.5 3.5 Z" />
+          <circle cx={-3.8} cy={-1.2} r={0.9} fill="var(--surface)" />
+        </g>
+      )
+    case 'leaf':
+      return (
+        <g transform="translate(0 -14)" fill="var(--gold)">
+          <path d="M 0 7 C -8 5 -8.5 -5.5 0 -8 C 8.5 -5.5 8 5 0 7 Z" />
+          <path d="M 0 6.5 L 0 -6.5" stroke="var(--surface)" strokeWidth={0.9} fill="none" strokeLinecap="round" />
+        </g>
+      )
+    case 'home':
+      return (
+        <g transform="translate(0 -14)" fill="var(--gold)">
+          <path d="M -8 6 L -8 -1 L 0 -9 L 8 -1 L 8 6 L 3 6 L 3 -0.5 L -3 -0.5 L -3 6 Z" />
+        </g>
+      )
+    case 'building':
+      return (
+        <g transform="translate(0 -14)">
+          <rect x={-6.5} y={-5} width={13} height={11} rx={1} fill="var(--gold)" fillOpacity={0.85} />
+          <path d="M -7.5 -5 L 0 -10 L 7.5 -5" fill="none" stroke="var(--gold)" strokeWidth={1.1} strokeLinejoin="round" />
+          <rect x={-3.5} y={-2} width={2.4} height={3} fill="var(--surface)" />
+          <rect x={1.1} y={-2} width={2.4} height={3} fill="var(--surface)" />
+        </g>
+      )
+    case 'book':
+      return (
+        <g transform="translate(0 -14)" fill="var(--gold)">
+          <path d="M -7.5 -4.5 C -4.8 -6 -1.8 -6 0 -4.2 C 1.8 -6 4.8 -6 7.5 -4.5 L 7.5 5 C 4.8 3.5 1.8 3.5 0 5.2 C -1.8 3.5 -4.8 3.5 -7.5 5 Z" />
+          <path d="M 0 -4.2 L 0 5.2" stroke="var(--surface)" strokeWidth={0.8} fill="none" />
+        </g>
+      )
+  }
+}
+
+// Badge circles carry a soft dashed stroke (2026-08-22) — a small, cheap
+// echo of Bloom's "every card is a little wonky" dashed-border language,
+// applied to shape rather than to the theme's own fill colors, which stay
+// exactly what the active theme says (per the design-language decision made
+// alongside this batch — Bloom's hand-drawn *feel*, not its literal palette).
+export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown }: {
+  x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
   /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
   draggable?: boolean
   dragging?: boolean
@@ -154,9 +203,9 @@ export function DistrictLabel({ x, y, glyph, label, count, onClick, draggable = 
       {draggable && (
         <circle cy={-14} r={18} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
       )}
-      <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.8} opacity={0.9} />
+      <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.9} strokeDasharray="1.5 1.8" opacity={0.9} />
       <circle cy={-14} r={14} fill="none" stroke="var(--border)" strokeWidth={0.6} />
-      <text textAnchor="middle" dominantBaseline="central" fontSize={13} y={-14} fill="var(--gold)">{glyph}</text>
+      <DistrictIcon kind={icon} />
       <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" letterSpacing="0.06em" y={10}>{label.toUpperCase()}</text>
       <text textAnchor="middle" fontSize={7.5} fill="var(--muted)" opacity={0.6} y={21}>{count}</text>
     </g>
