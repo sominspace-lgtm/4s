@@ -61,10 +61,27 @@ export default function Sky({ timeOfDay, live, palette, celestial }: {
       <rect width="800" height="440" fill="url(#vsky)" />
 
       {/* The season's own wash over the whole sky. Barely there on purpose:
-          it should change how the picture feels, not announce itself. */}
+          it should change how the picture feels, not announce itself.
+          Real bug, found 2026-08-21 from a live report of a solid opaque
+          amber sky: .village-fade's keyframes animate opacity 0→1, which
+          OVERRIDES an element's own opacity attribute once the animation
+          finishes — the rect was combining opacity={skyWashOpacity} (e.g.
+          0.026) directly with className="village-fade" on the SAME
+          element, so ~400ms after mount it settled at the animation's own
+          end state (1), not the intended near-invisible wash. Fully opaque
+          --amber over the whole canvas is exactly the "flat yellow sky"
+          that was reported, and it explains "correct for a split second,
+          then yellow" precisely: before the animation finishes, actual
+          opacity is near the fade's own current keyframe value, which is
+          still close to 0. Fixed by putting the REAL target opacity on a
+          static outer <g> (never touched by the animation) and letting
+          only the inner rect's own opacity animate — SVG opacity
+          multiplies through the tree, so the effective final opacity is
+          skyWashOpacity × 1, not 1 alone. */}
       {live && (
-        <rect width="800" height="440" fill={palette.skyWash} opacity={palette.skyWashOpacity}
-          className="village-fade" />
+        <g opacity={palette.skyWashOpacity}>
+          <rect width="800" height="440" fill={palette.skyWash} className="village-fade" />
+        </g>
       )}
 
       {/* Night sky — quiet, never twinkling into a distraction */}

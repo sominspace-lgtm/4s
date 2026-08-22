@@ -11,12 +11,21 @@
 // Nothing renders on a first-ever visit, or on a quiet week.
 export default function VillageArrival({ caption }: { caption: string | null }) {
   if (!caption) return null
+  // Real opacity on a static outer span, fade animation on the inner one —
+  // same fix as Sky.tsx's skyWash bug. .village-fade's keyframes animate to
+  // opacity:1, which wins the cascade over an inline opacity on the SAME
+  // element once the 400ms animation finishes (CSS animations sit above
+  // normal author declarations, inline style included, unless !important).
+  // The visible effect here was small (0.85 vs 1, a caption barely more
+  // opaque than intended) rather than the sky's fully-opaque wash, but it's
+  // the identical bug and worth fixing the same way for consistency.
   return (
-    <div className="village-fade" style={{
-      fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.85,
-      marginTop: '0.6rem', lineHeight: 1.5,
-    }}>
-      {caption}
+    <div style={{ opacity: 0.85, marginTop: '0.6rem' }}>
+      <div className="village-fade" style={{
+        fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5,
+      }}>
+        {caption}
+      </div>
     </div>
   )
 }

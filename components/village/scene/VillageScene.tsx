@@ -205,10 +205,15 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
         fill="url(#vground)" opacity={0.95} />
       {/* The season, laid over the ground rather than replacing it: the land
-          keeps its shape, it just goes gold or goes cold. */}
+          keeps its shape, it just goes gold or goes cold. Same opacity bug
+          as Sky.tsx's skyWash, same fix: real target opacity on a static
+          outer <g>, animation only on the inner path, so the animation's
+          own opacity:1 end-state can't override the intended low wash. */}
       {live && palette.ground && (
-        <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
-          fill={palette.ground} opacity={palette.groundOpacity} className="village-fade" />
+        <g opacity={palette.groundOpacity}>
+          <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+            fill={palette.ground} className="village-fade" />
+        </g>
       )}
       {/* Behind the ground line and above the sky: places you've both been.
           Drawn before the ground stroke so the hills sit properly behind it. */}
