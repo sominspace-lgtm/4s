@@ -156,13 +156,24 @@ export default function VillageScene({
           <stop offset="100%" stopColor="var(--slate)" stopOpacity="0.15" />
         </radialGradient>
         <radialGradient id="vvignette" cx="50%" cy="45%" r="75%">
-          {/* Eased from 0.5 to 0.35 max opacity (2026-08-21) — on a theme
-              whose --bg itself reads as a strong, saturated color rather
-              than a deep neutral, a half-opacity wash of that same color
-              stacked on top of the sky rect compounded into an even more
-              oversaturated edge. */}
-          <stop offset="55%" stopColor="var(--bg)" stopOpacity="0" />
-          <stop offset="100%" stopColor="var(--bg)" stopOpacity="0.35" />
+          {/* Switched from var(--bg) to a fixed neutral black (2026-08-21) —
+              a vignette is conventionally a darkening at the edges, not a
+              wash of the theme's own background color, and using --bg meant
+              this covered the ENTIRE 800×440 canvas (drawn last, on top of
+              literally everything including the sky) with up to 35% of
+              whatever --bg happens to be. On a theme whose --bg reads as a
+              strong, saturated color rather than a deep neutral, that's not
+              a subtle edge darkening, it's a second full-canvas color wash
+              stacked on top of the sky gradient — enough to shift a genuinely
+              blue sky toward whatever hue --bg carries. Pure black at low
+              opacity can only ever darken, never re-hue, so this is no
+              longer a variable that can fight the sky's own colors regardless
+              of which theme or custom palette is active.
+              Also: reach eased in from 75% (see the r attribute above is
+              unchanged, but the stop offsets below now cover less of the
+              canvas — 68% is where darkening starts instead of 55%. */}
+          <stop offset="68%" stopColor="#000" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0.22" />
         </radialGradient>
         <clipPath id="vlakeClip">
           <ellipse cx={150} cy={410} rx={110} ry={22} />
