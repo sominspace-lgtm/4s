@@ -22,6 +22,49 @@ export interface WorkItem {
   board_column: 'small' | 'growing' | 'projects' | 'later' | null
 }
 
+// Tasks shared into a household space via the ⇆ ShareMenu on a task row
+// (components/ui/ShareMenu.tsx, backed by shared_item_links — see its own
+// header comment). Two round trips because shared_item_links.item_id is a
+// loose polymorphic reference, not a foreign key, so PostgREST can't embed
+// work_items directly off it. Both queries are already covered by existing
+// RLS (item_links_select, work_items_select_if_shared) — no schema change
+// needed for the Household calendar to read a partner's shared tasks.
+export function useSharedWorkItems(spaceId: string | null) {
+  const supabase = createClient()
+  const [items, setItems] = useState<WorkItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    if (!spaceId) { setItems([]); setLoading(false); return }
+    setLoading(true)
+    const { data: links } = await supabase
+      .from('shared_item_links')
+      .select('item_id')
+      .eq('item_type', 'work_item')
+      .eq('space_id', spaceId)
+    const ids = (links ?? []).map(l => l.item_id as string)
+    if (ids.length === 0) { setItems([]); setLoading(false); return }
+    const { data, error } = await supabase.from('work_items').select('*').in('id', ids)
+    if (error) { setItems([]); setLoading(false); return }
+    setItems(data as WorkItem[])
+    setLoading(false)
+  }, [supabase, spaceId])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    function onChanged() { load() }
+    window.addEventListener('4s:work-items-changed', onChanged)
+    window.addEventListener('4s:item-sharing-changed:work_item', onChanged)
+    return () => {
+      window.removeEventListener('4s:work-items-changed', onChanged)
+      window.removeEventListener('4s:item-sharing-changed:work_item', onChanged)
+    }
+  }, [load])
+
+  return { items, loading }
+}
+
 export function dueUrgency(due: string | null): 'overdue' | 'today' | 'soon' | 'fine' | 'none' {
   if (!due) return 'none'
   const days = differenceInCalendarDays(parseISO(due), new Date())

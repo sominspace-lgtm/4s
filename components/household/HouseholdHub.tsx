@@ -646,7 +646,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           others for the top of a scroll. Same component, same data, just
           given the room a calendar actually needs. */}
       {tab === 'calendar' && (
-        <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} />
+        <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} spaceId={spaceId} />
       )}
 
       {/* ── Notes ──────────────────────────────────────────────────

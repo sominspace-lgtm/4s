@@ -13,6 +13,13 @@ export interface ShareLink {
   permission: 'view' | 'edit'
 }
 
+// `4s:item-sharing-changed:<itemType>` fires on share/unshare so any other
+// hook reading shared_item_links for that item_type (e.g. the Household
+// calendar's useSharedWorkItems) picks up the change without a remount.
+function notifySharingChanged(itemType: string) {
+  window.dispatchEvent(new CustomEvent(`4s:item-sharing-changed:${itemType}`))
+}
+
 // Generic per-item sharing, backed by shared_item_links (see
 // supabase/migrations/shared_spaces_and_item_sharing.sql). Works for any
 // item_type — currently wired into Work Hub tasks ('work_item').
@@ -38,6 +45,7 @@ export function useItemSharing(itemType: string, itemId: string) {
       .select().single()
     if (error) return error.message
     setLinks(prev => [...prev, data])
+    notifySharingChanged(itemType)
     return null
   }
 
@@ -49,6 +57,7 @@ export function useItemSharing(itemType: string, itemId: string) {
       .select().single()
     if (error) return error.message
     setLinks(prev => [...prev, data])
+    notifySharingChanged(itemType)
     return null
   }
 
@@ -60,6 +69,7 @@ export function useItemSharing(itemType: string, itemId: string) {
       await supabase.from('shared_item_links').delete().eq('item_type', itemType).eq('item_id', itemId)
       setLinks([])
     }
+    notifySharingChanged(itemType)
   }
 
   return { links, loading, shareWithPerson, shareWithSpace, stopSharing }
