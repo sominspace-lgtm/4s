@@ -13,6 +13,7 @@ import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
+import HouseholdWatchlist from './HouseholdWatchlist'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
@@ -721,6 +722,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           Additive to the fridge door above, not a replacement: the fridge
           door is quick pinned one-liners, this is a real title+body note. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
+      {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 
       {/* ── Rules ──────────────────────────────────────────────────
           Standing conventions, not one-off tasks: "no shoes inside", not
