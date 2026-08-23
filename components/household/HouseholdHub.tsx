@@ -290,81 +290,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
       </section>
     ),
 
-    chores: () => (
-      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
-          Chores
-        </div>
-
-        {sortedChores.length === 0 && !h.loading && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-            Nothing tracked yet. Add the one chore you argue about most.
-          </div>
-        )}
-
-        {sortedChores.map(c => {
-          const due = dueLabel(c)
-          return (
-            <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
-              display: 'flex', alignItems: 'center', gap: '0.6rem',
-              padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
-              background: 'var(--hover-bg)', border: '1px solid var(--border)',
-              position: 'relative',
-            }}>
-              {/* A chore done is a small thing, but it's a small thing
-                  somebody in this house actually did — so it says so, once,
-                  and then gets out of the way. */}
-              {justDone === c.id && (
-                <span className="praise" aria-hidden style={{
-                  position: 'absolute', right: '0.6rem', top: '-0.4rem',
-                  fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
-                }}>done ✓</span>
-              )}
-              <button
-                onClick={() => doneChore(c)}
-                className={`press ${justDone === c.id ? 'settle' : ''}`}
-                title="Mark done — resets the clock"
-                style={{
-                  background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
-                  width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
-                  fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
-                }}
-              >✓</button>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
-                {/* "Whose turn" heading never actually said whose turn it
-                    last was — last_done_by was written on every completion
-                    and never read. Same nameFor/daysAgo pattern Routines and
-                    Check-ins already use just below this block. */}
-                {c.last_done_at && nameFor(c.last_done_by) && (
-                  <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
-                    Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
-                  </div>
-                )}
-              </div>
-              <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
-              <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
-              <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-            </div>
-          )
-        })}
-
-        <form
-          onSubmit={async e => {
-            e.preventDefault()
-            if (!choreName.trim()) return
-            await h.addChore(choreName.trim(), Math.max(1, parseInt(choreCadence) || 7))
-            setChoreName('')
-          }}
-          style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
-        >
-          <input value={choreName} onChange={e => setChoreName(e.target.value)} placeholder="Add a chore" style={{ ...input, flex: 1, minWidth: '140px' }} />
-          <input type="number" min={1} value={choreCadence} onChange={e => setChoreCadence(e.target.value)} title="Every N days" style={{ ...input, width: '70px' }} />
-          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-        </form>
-      </section>
-    ),
-
     meals: () => (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
@@ -432,81 +357,157 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
       </section>
     ),
 
-    // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" with
-    // sub-tasks, separate from the flat single-item chores block above.
-    routines: () => {
-      const routines = routinesHook.routines.filter(r => r.kind === 'routine')
-      return (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-          <div className="t-card">Routines</div>
+  }
 
-          {routines.length === 0 && !routinesHook.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-              Nothing yet. A routine is a named group of steps — &ldquo;Sunday Home Reset&rdquo;: Bathroom, Kitchen, Laundry, Trash, Sheets.
-            </div>
-          )}
+  // Chores, Routines, and Maintenance — pulled out of homeBlockRenderers
+  // and Reference (2026-08-22) into their own functions, rendered together
+  // under the new Routines tab below. Same JSX as before, just no longer
+  // tied to Home's customizable-block system (there's nothing to hide or
+  // reorder here — one tab, three sections, always all three).
+  function renderChores() {
+    return (
+      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
+          Chores
+        </div>
 
-          {[...routines].sort((a, b) => routineDue(a) - routineDue(b)).map(r => {
-            const done = r.items.filter(i => i.done).length
-            const due = routineDue(r)
-            return (
-              <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
-                  <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
-                    {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
-                  </span>
-                </div>
-                {r.last_done_at && nameFor(r.last_done_by) && (
-                  <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.3rem' }}>
-                    Last done by {nameFor(r.last_done_by)}, {daysAgo(r.last_done_at)}
+        {sortedChores.length === 0 && !h.loading && (
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+            Nothing tracked yet. Add the one chore you argue about most.
+          </div>
+        )}
+
+        {sortedChores.map(c => {
+          const due = dueLabel(c)
+          return (
+            <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
+              background: 'var(--hover-bg)', border: '1px solid var(--border)',
+              position: 'relative',
+            }}>
+              {justDone === c.id && (
+                <span className="praise" aria-hidden style={{
+                  position: 'absolute', right: '0.6rem', top: '-0.4rem',
+                  fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
+                }}>done ✓</span>
+              )}
+              <button
+                onClick={() => doneChore(c)}
+                className={`press ${justDone === c.id ? 'settle' : ''}`}
+                title="Mark done — resets the clock"
+                style={{
+                  background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
+                  width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
+                  fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
+                }}
+              >✓</button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
+                {c.last_done_at && nameFor(c.last_done_by) && (
+                  <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
+                    Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
                   </div>
                 )}
-                {r.items.map(i => (
-                  <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
-                    <button onClick={() => routinesHook.toggleRoutineItem(r.id, i.id)} className="press" style={{
-                      width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                      background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                    }} />
-                    <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
-                      {i.label}
-                    </span>
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-                  <button onClick={() => routinesHook.markRoutineDone(r.id)} className="btn btn-secondary press" style={{ fontSize: '0.66rem' }}>Mark whole thing done</button>
-                  <button onClick={() => routinesHook.removeRoutine(r.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', cursor: 'pointer' }}>Remove</button>
-                </div>
               </div>
-            )
-          })}
+              <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
+              <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+            </div>
+          )
+        })}
 
-          {addingRoutine ? (
-            <form
-              onSubmit={async e => {
-                e.preventDefault()
-                if (!routineName.trim()) return
-                await routinesHook.addRoutine('routine', routineName.trim(), Number(routineCadence) || 7, routineSteps.split(',').map(s => s.trim()).filter(Boolean))
-                setRoutineName(''); setRoutineSteps(''); setRoutineCadence('7'); setAddingRoutine(false)
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
-            >
-              <input value={routineName} onChange={e => setRoutineName(e.target.value)} placeholder="Routine name (e.g. Sunday Home Reset)" style={input} autoFocus />
-              <input value={routineSteps} onChange={e => setRoutineSteps(e.target.value)} placeholder="Steps, comma-separated (Bathroom, Kitchen, Laundry...)" style={input} />
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Every</span>
-                <input type="number" min="1" value={routineCadence} onChange={e => setRoutineCadence(e.target.value)} style={{ ...input, width: '60px' }} />
-                <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days</span>
-                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-                <button type="button" onClick={() => setAddingRoutine(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
+        <form
+          onSubmit={async e => {
+            e.preventDefault()
+            if (!choreName.trim()) return
+            await h.addChore(choreName.trim(), Math.max(1, parseInt(choreCadence) || 7))
+            setChoreName('')
+          }}
+          style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
+        >
+          <input value={choreName} onChange={e => setChoreName(e.target.value)} placeholder="Add a chore" style={{ ...input, flex: 1, minWidth: '140px' }} />
+          <input type="number" min={1} value={choreCadence} onChange={e => setChoreCadence(e.target.value)} title="Every N days" style={{ ...input, width: '70px' }} />
+          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+        </form>
+      </section>
+    )
+  }
+
+  // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" with
+  // sub-tasks, separate from the flat single-item chores block above.
+  function renderRoutines() {
+    const routines = routinesHook.routines.filter(r => r.kind === 'routine')
+    return (
+      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        <div className="t-card">Routines</div>
+
+        {routines.length === 0 && !routinesHook.loading && (
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+            Nothing yet. A routine is a named group of steps — &ldquo;Sunday Home Reset&rdquo;: Bathroom, Kitchen, Laundry, Trash, Sheets.
+          </div>
+        )}
+
+        {[...routines].sort((a, b) => routineDue(a) - routineDue(b)).map(r => {
+          const done = r.items.filter(i => i.done).length
+          const due = routineDue(r)
+          return (
+            <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
+                <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
+                  {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
+                </span>
               </div>
-            </form>
-          ) : (
-            <button onClick={() => setAddingRoutine(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New routine</button>
-          )}
-        </section>
-      )
-    },
+              {r.last_done_at && nameFor(r.last_done_by) && (
+                <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.3rem' }}>
+                  Last done by {nameFor(r.last_done_by)}, {daysAgo(r.last_done_at)}
+                </div>
+              )}
+              {r.items.map(i => (
+                <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
+                  <button onClick={() => routinesHook.toggleRoutineItem(r.id, i.id)} className="press" style={{
+                    width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+                    background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
+                  }} />
+                  <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
+                    {i.label}
+                  </span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
+                <button onClick={() => routinesHook.markRoutineDone(r.id)} className="btn btn-secondary press" style={{ fontSize: '0.66rem' }}>Mark whole thing done</button>
+                <button onClick={() => routinesHook.removeRoutine(r.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', cursor: 'pointer' }}>Remove</button>
+              </div>
+            </div>
+          )
+        })}
+
+        {addingRoutine ? (
+          <form
+            onSubmit={async e => {
+              e.preventDefault()
+              if (!routineName.trim()) return
+              await routinesHook.addRoutine('routine', routineName.trim(), Number(routineCadence) || 7, routineSteps.split(',').map(s => s.trim()).filter(Boolean))
+              setRoutineName(''); setRoutineSteps(''); setRoutineCadence('7'); setAddingRoutine(false)
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+          >
+            <input value={routineName} onChange={e => setRoutineName(e.target.value)} placeholder="Routine name (e.g. Sunday Home Reset)" style={input} autoFocus />
+            <input value={routineSteps} onChange={e => setRoutineSteps(e.target.value)} placeholder="Steps, comma-separated (Bathroom, Kitchen, Laundry...)" style={input} />
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Every</span>
+              <input type="number" min="1" value={routineCadence} onChange={e => setRoutineCadence(e.target.value)} style={{ ...input, width: '60px' }} />
+              <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days</span>
+              <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+              <button type="button" onClick={() => setAddingRoutine(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </form>
+        ) : (
+          <button onClick={() => setAddingRoutine(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New routine</button>
+        )}
+      </section>
+    )
   }
 
   return (
@@ -601,6 +602,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
       {tab === 'calendar' && (
         <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} spaceId={spaceId} />
       )}
+
+      {/* Routines tab (2026-08-22) — Chores, Routines, and Maintenance
+          together: all three are "the cleaning and upkeep stuff", just
+          different granularities (a single recurring item, a named group of
+          steps, a long-cadence one-off). Previously scattered: Chores and
+          Routines were Home blocks, Maintenance was already in Reference. */}
+      {tab === 'routines' && renderChores()}
+      {tab === 'routines' && renderRoutines()}
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space.
@@ -724,8 +733,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 
       {/* Maintenance (2026-08-13) — long-cadence items ("HVAC filter every 3
           months") that would get lost in a weekly chore/routine list. Same
-          household_routines table as Routines, kind='maintenance'. */}
-      {tab === 'reference' && (() => {
+          household_routines table as Routines, kind='maintenance'. Moved
+          from Reference into Routines (2026-08-22), alongside Chores and
+          Routines above. */}
+      {tab === 'routines' && (() => {
         const maint = [...routinesHook.routines.filter(r => r.kind === 'maintenance')].sort((a, b) => routineDue(a) - routineDue(b))
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
