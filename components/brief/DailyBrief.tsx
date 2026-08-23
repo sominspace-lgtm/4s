@@ -442,7 +442,15 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
       {/* Two quiet actions — the inbox lives one scroll below, sharing lives in Shared */}
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-        <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-add-task'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
+        {/* Both used to just dispatch the event directly — a no-op unless
+            you happened to already be on the tab that mounts the listener
+            (Personal > Tasks for the first, Brief's own CaptureSection for
+            the second, which IS this page, so that one worked by accident).
+            "+ Add task" never navigated anywhere first, so clicking it here
+            silently did nothing. Same fix JourneyBar's runAction() already
+            uses: navigate, then dispatch after the target has had a moment
+            to mount (2026-08-22). */}
+        <button onClick={() => { goToPersonal('tasks'); setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-task')), 80) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:focus-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Capture thought</button>
       </div>
     </div>
