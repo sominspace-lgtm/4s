@@ -517,10 +517,18 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
       {/* Which household */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', opacity: 0.7 }}>Household</span>
-        <select value={spaceId ?? ''} onChange={e => setSpaceId(e.target.value || null)} style={{ ...input, cursor: 'pointer' }}>
-          <option value="">Just me</option>
-          {spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        {/* "Just me" (spaceId=null, unshared) removed from the picker
+            (2026-08-22) — there's exactly one real household here, so a
+            private/unshared mode was a choice nobody wanted to make every
+            visit. A single real space renders as plain text; the dropdown
+            only comes back if a second space is ever created. */}
+        {spaces.length <= 1 ? (
+          spaces[0] && <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{spaces[0].name}</span>
+        ) : (
+          <select value={spaceId ?? ''} onChange={e => setSpaceId(e.target.value || null)} style={{ ...input, cursor: 'pointer' }}>
+            {spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        )}
         {/* Presence — "is my partner using this right now", not a chat-style
             read receipt. Absent entirely when there's nothing to say (no
             space, or presence has never been recorded), same as every other

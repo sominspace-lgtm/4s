@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  THEMES, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED, NEUTRAL_LIGHT, NEUTRAL_DARK, DEFAULT_ACCENT,
+  THEMES, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED, NEUTRAL_LIGHT, NEUTRAL_DARK, DEFAULT_ACCENT, DEFAULT_THEME,
   type CustomThemeSeed,
 } from './ThemeProvider'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -82,6 +82,17 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
     onThemeChange('custom')
     const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, theme: 'custom', custom_theme: seed })
     if (error) console.error('Failed to save theme:', error.message)
+  }
+
+  // "Reset to original" (2026-08-22) — every account, once it's picked
+  // anything, has no way back to the actual shipped default (Bloom) short
+  // of manually re-matching its exact light+green values by hand in the
+  // color pickers. This just re-applies DEFAULT_THEME and drops any custom
+  // seed — same one-step save-and-activate shape as saveTheme() above.
+  async function resetToDefault() {
+    onThemeChange(DEFAULT_THEME)
+    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, theme: DEFAULT_THEME, custom_theme: null })
+    if (error) console.error('Failed to reset theme:', error.message)
   }
 
   async function setMode(m: Mode) {
@@ -179,16 +190,28 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
                 />
               </div>
 
-              <button
-                onClick={() => { setDraft(active); setAdvanced(true) }}
-                className="press"
-                style={{
-                  background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.66rem',
-                  cursor: 'pointer', textAlign: 'left', padding: 0, opacity: 0.75,
-                }}
-              >
-                ▸ {t('Fully custom theme', lang)}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <button
+                  onClick={() => { setDraft(active); setAdvanced(true) }}
+                  className="press"
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.66rem',
+                    cursor: 'pointer', textAlign: 'left', padding: 0, opacity: 0.75,
+                  }}
+                >
+                  ▸ {t('Fully custom theme', lang)}
+                </button>
+                <button
+                  onClick={resetToDefault}
+                  className="press"
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.66rem',
+                    cursor: 'pointer', textAlign: 'right', padding: 0, opacity: 0.75,
+                  }}
+                >
+                  {t('Reset to original', lang)}
+                </button>
+              </div>
             </div>
           )}
 
