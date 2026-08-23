@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { useLists } from '@/lib/hooks/useLists'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
@@ -89,9 +88,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     return () => window.removeEventListener('4s:household-tab', onTab)
   }, [])
   const h = useHousehold(spaceId)
-  const listsHook = useLists(spaceId)
-  const [newListName, setNewListName] = useState('')
-  const [listItemDrafts, setListItemDrafts] = useState<Record<string, string>>({})
   const routinesHook = useRoutines(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
   // I'm-in), so a personal solo-trip daydream would otherwise show up on
@@ -126,7 +122,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [shopName, setShopName] = useState('')
   const [shopQty, setShopQty] = useState('')
   const [shopCat, setShopCat] = useState('')
-  const [noteBody, setNoteBody] = useState('')
   const [ruleText, setRuleText] = useState('')
   const [ruleCategory, setRuleCategory] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
@@ -600,88 +595,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           see HouseholdDateIdeas's own header comment for why. */}
       {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
 
-      {/* Lists — moved here from a Home block (2026-08-21). A generic
-          checklist ("things to research", gift ideas) reads more like
-          reference material you check than a weekly home-screen card.
-          Date Ideas split out into its own section above (2026-08-22) —
-          this is quick ad-hoc lists only now. */}
-      {tab === 'reference' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-          <div className="t-card">Quick Lists</div>
-
-          {listsHook.lists.length === 0 && !listsHook.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-              Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, a watchlist, or a date idea — &ldquo;things to research&rdquo;, gift ideas, whatever.
-            </div>
-          )}
-
-          {listsHook.lists.map(l => (
-            <details key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-              {/* Collapsed by default (2026-08-22) — a list like Date Bank can
-                  hold dozens of items; leaving every list fully expanded made
-                  Reference an unscannable wall of text the moment more than a
-                  couple of lists existed. Same <details>/<summary> pattern as
-                  Check-ins below. */}
-              <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
-                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
-                    {l.items.filter(i => !i.done).length}/{l.items.length} left
-                  </span>
-                </span>
-                <button onClick={e => { e.preventDefault(); listsHook.removeList(l.id) }} aria-label={`Remove list ${l.name}`} className="press"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
-              </summary>
-              <div style={{ marginTop: '0.5rem' }}>
-              {l.items.map(i => (
-                <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
-                  <button onClick={() => listsHook.toggleItem(l.id, i.id)} className="press" style={{
-                    width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                    background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                  }} />
-                  <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
-                    {i.label}
-                  </span>
-                  <button onClick={() => listsHook.removeItem(l.id, i.id)} aria-label={`Remove ${i.label}`} className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
-                </div>
-              ))}
-              <form
-                onSubmit={async e => {
-                  e.preventDefault()
-                  const val = listItemDrafts[l.id]?.trim()
-                  if (!val) return
-                  await listsHook.addItem(l.id, val)
-                  setListItemDrafts(d => ({ ...d, [l.id]: '' }))
-                }}
-                style={{ display: 'flex', gap: '0.35rem', marginTop: '0.4rem' }}
-              >
-                <input
-                  value={listItemDrafts[l.id] ?? ''}
-                  onChange={e => setListItemDrafts(d => ({ ...d, [l.id]: e.target.value }))}
-                  placeholder="Add an item" style={{ ...input, flex: 1, fontSize: '0.72rem' }}
-                />
-                <button type="submit" className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>Add</button>
-              </form>
-              </div>
-            </details>
-          ))}
-
-          <form
-            onSubmit={async e => {
-              e.preventDefault()
-              if (!newListName.trim()) return
-              await listsHook.addList(newListName.trim())
-              setNewListName('')
-            }}
-            style={{ display: 'flex', gap: '0.4rem' }}
-          >
-            <input value={newListName} onChange={e => setNewListName(e.target.value)} placeholder="New list name" style={{ ...input, flex: 1, minWidth: '140px' }} />
-            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>+ New list</button>
-          </form>
-        </section>
-      )}
-
       {/* Its own tab as of 2026-08-21 — was a Home block competing with five
           others for the top of a scroll. Same component, same data, just
           given the room a calendar actually needs. */}
@@ -689,54 +602,12 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} spaceId={spaceId} />
       )}
 
-      {/* ── Notes ──────────────────────────────────────────────────
-          The fridge door. Not tasks and not chores — the gate code, the
-          vet's number, "back late Tuesday". Things you'd write on a magnet
-          pad, which is exactly why they have no due date and no owner. */}
-      {tab === 'reference' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <div className="t-card" style={{ marginBottom: '0.7rem' }}>The fridge door</div>
-
-          {h.notes.length === 0 && !h.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-              Nothing pinned up. Gate codes, the vet&rsquo;s number, &ldquo;back late Tuesday&rdquo;.
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.6rem' }}>
-            {h.notes.map(n => (
-              <div key={n.id} className="organic" style={{
-                background: n.pinned ? 'color-mix(in srgb, var(--amber) 12%, var(--surface2))' : 'var(--surface2)',
-                border: `1px solid ${n.pinned ? 'color-mix(in srgb, var(--amber) 35%, var(--border))' : 'var(--border)'}`,
-                padding: '0.7rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem',
-              }}>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: 'auto' }}>
-                  <button onClick={() => h.toggleNotePin(n.id, !n.pinned)} title={n.pinned ? 'Unpin' : 'Pin to top'} className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.66rem', color: n.pinned ? 'var(--amber)' : 'var(--muted)', opacity: n.pinned ? 1 : 0.5, padding: 0 }}>
-                    {n.pinned ? '📌' : '📍'}
-                  </button>
-                  <button onClick={() => h.removeNote(n.id)} aria-label="Remove note" className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, marginLeft: 'auto', padding: 0 }}>✕</button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <form
-            onSubmit={async e => { e.preventDefault(); if (!noteBody.trim()) return; await h.addNote(noteBody.trim()); setNoteBody('') }}
-            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
-          >
-            <input value={noteBody} onChange={e => setNoteBody(e.target.value)} placeholder="Pin something up" style={{ ...input, flex: 1, minWidth: '160px' }} />
-            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Pin</button>
-          </form>
-        </section>
-      )}
-
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space.
-          Additive to the fridge door above, not a replacement: the fridge
-          door is quick pinned one-liners, this is a real title+body note. */}
+          The old "fridge door" (household_notes, pinned one-liners) and
+          "Quick Lists" (household_lists) sections were both removed
+          2026-08-22 -- neither had real content, and this one shared Notes
+          feature covers what both were for. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
       {tab === 'reference' && <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} />}
