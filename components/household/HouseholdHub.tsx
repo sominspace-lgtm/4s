@@ -599,12 +599,23 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           )}
 
           {listsHook.lists.map(l => (
-            <div key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
-                <button onClick={() => listsHook.removeList(l.id)} aria-label={`Remove list ${l.name}`} className="press"
+            <details key={l.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+              {/* Collapsed by default (2026-08-22) — a list like Date Bank can
+                  hold dozens of items; leaving every list fully expanded made
+                  Reference an unscannable wall of text the moment more than a
+                  couple of lists existed. Same <details>/<summary> pattern as
+                  Check-ins below. */}
+              <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{l.name}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
+                    {l.items.filter(i => !i.done).length}/{l.items.length} left
+                  </span>
+                </span>
+                <button onClick={e => { e.preventDefault(); listsHook.removeList(l.id) }} aria-label={`Remove list ${l.name}`} className="press"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
-              </div>
+              </summary>
+              <div style={{ marginTop: '0.5rem' }}>
               {l.items.map(i => (
                 <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
                   <button onClick={() => listsHook.toggleItem(l.id, i.id)} className="press" style={{
@@ -635,7 +646,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 />
                 <button type="submit" className="btn btn-ghost press" style={{ fontSize: '0.66rem' }}>Add</button>
               </form>
-            </div>
+              </div>
+            </details>
           ))}
 
           <form
