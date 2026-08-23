@@ -1,41 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --bg:       #080a18;
-  --surface:  #0e1028;
-  --surface2: #141638;
-  --border:   rgba(120,130,240,0.11);
-  --text:     #eaebfc;
-  --muted:    rgba(234,235,252,0.72);
-  --faint:    rgba(234,235,252,0.07);
+  /* Matches THEMES.bloom in lib/constants/themes.ts (2026-08-22) — this
+     block is the pre-hydration fallback ThemeProvider's useEffect overwrites
+     once it runs, so whatever's here is what actually paints first on every
+     load, for every account, regardless of theme. It used to be a leftover
+     dark navy/blue-purple palette that had nothing to do with
+     DEFAULT_THEME ('bloom', light) — so every load flashed dark blue-purple
+     before snapping to the real theme a moment later. Keeping this in sync
+     with bloom's actual values means the flash (for anyone not already on
+     Bloom) is at worst a light neutral, not a jarring dark-mode flicker. */
+  --scheme:   light;
+  --bg:       #f7f0df;
+  --surface:  #fffaf0;
+  --surface2: #e8dfcd;
+  --border:   rgba(91,76,59,0.20);
+  --text:     #493f35;
+  --muted:    rgba(73,63,53,0.72);
+  --faint:    rgba(91,76,59,0.09);
 
-  --gold:     #8fa0f0;
-  --purple:   #a090e8;
-  --emerald:  #7ad4c0;
-  --rose:     #f08080;
-  --blush:    #b0b8f8;
-  --amber:    #eac070;
-  --slate:    #7080c8;
-  --lavender: #c0a8ff;
+  --gold:     #4f6350;
+  --purple:   #7a6d94;
+  --emerald:  #54704f;
+  --rose:     #b05c62;
+  --blush:    #c98f91;
+  --amber:    #96701f;
+  --slate:    #5d7780;
+  --lavender: #7a6d94;
 
   /* Extended theme tokens */
-  --accent-2:  #c8a8ff;
-  --shadow:    rgba(8,10,32,0.65);
-  --glow:      rgba(143,160,240,0.22);
-  --selection: rgba(143,160,240,0.20);
-  --hover-bg:  rgba(120,130,240,0.06);
+  --accent-2:  #b05c62;
+  --shadow:    rgba(99,78,52,0.20);
+  --glow:      rgba(79,99,80,0.18);
+  --selection: rgba(79,99,80,0.15);
+  --hover-bg:  rgba(116,99,76,0.08);
 
-  --font-display: var(--font-cormorant), 'Cormorant Garamond', serif;
-  --font-body:    var(--font-inter), 'Inter', sans-serif;
-  --font-mono:    var(--font-jetbrains), 'JetBrains Mono', monospace;
+  --font-display: var(--font-lora), 'Lora', Georgia, serif;
+  --font-body:    var(--font-nunito), 'Nunito Sans', sans-serif;
+  --font-mono:    var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
 
   /* Aurora — overridden per theme */
-  --aurora-1: rgba(80,90,240,0.12);
-  --aurora-2: rgba(100,60,220,0.08);
-  --aurora-3: rgba(140,100,255,0.05);
+  --aurora-1: rgba(160,140,90,0.07);
+  --aurora-2: rgba(120,140,110,0.06);
+  --aurora-3: rgba(200,180,130,0.05);
   --aurora-pos-1: top right;
   --aurora-pos-2: bottom left;
-  --aurora-pos-3: 60% 20%;
+  --aurora-pos-3: center top;
 
   /* Motion */
   --t-fast: 150ms ease;
