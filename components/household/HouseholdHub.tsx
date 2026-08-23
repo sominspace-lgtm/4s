@@ -15,6 +15,7 @@ import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
+import HouseholdDateIdeas from './HouseholdDateIdeas'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
@@ -595,16 +596,22 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </>
       )}
 
+      {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),
+          see HouseholdDateIdeas's own header comment for why. */}
+      {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
+
       {/* Lists — moved here from a Home block (2026-08-21). A generic
           checklist ("things to research", gift ideas) reads more like
-          reference material you check than a weekly home-screen card. */}
+          reference material you check than a weekly home-screen card.
+          Date Ideas split out into its own section above (2026-08-22) —
+          this is quick ad-hoc lists only now. */}
       {tab === 'reference' && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-          <div className="t-card">Lists</div>
+          <div className="t-card">Quick Lists</div>
 
           {listsHook.lists.length === 0 && !listsHook.loading && (
             <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-              Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, or a watchlist — &ldquo;things to research&rdquo;, gift ideas, whatever.
+              Nothing yet. Make a list for anything that isn&rsquo;t groceries, move-in, a watchlist, or a date idea — &ldquo;things to research&rdquo;, gift ideas, whatever.
             </div>
           )}
 
