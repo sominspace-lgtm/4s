@@ -90,8 +90,8 @@ export default function HouseholdWatchlist({ spaceId }: { spaceId: string | null
   return (
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       <div className="t-card">Watchlist</div>
-      <DomainBacklog domain="game" label="🎮 Games" verb="play" spaceId={spaceId} />
-      <DomainBacklog domain="media" label="📺 Shows" verb="watch" spaceId={spaceId} />
+      <DomainBacklog domain="game" label="🎮 Game list" verb="play" spaceId={spaceId} />
+      <DomainBacklog domain="media" label="📺 Watch list" verb="watch" spaceId={spaceId} />
     </section>
   )
 }
