@@ -6,6 +6,8 @@ import type { Energy } from './useWorkItems'
 
 export type DateIdeaStatus = 'idea' | 'planned' | 'done'
 
+export type PriceRange = '$' | '$$' | '$$$' | '$$$$'
+
 export interface DateIdea {
   id: string
   space_id: string | null
@@ -15,6 +17,11 @@ export interface DateIdea {
   place_id: string | null
   tags: string[]
   notes: string | null
+  /** Free-text grouping — "Special Days", "Monterey Day", whatever. Same
+   *  collapsible-group idea Watchlist uses for games/shows, just open-ended
+   *  instead of a fixed domain. */
+  area: string | null
+  price_range: PriceRange | null
   created_at: string
   updated_at: string
 }
@@ -43,18 +50,18 @@ export function useDateIdeas(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addIdea(title: string): Promise<string | null> {
+  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags'>>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('date_ideas')
-      .insert({ user_id: user.id, space_id: spaceId, title })
+      .insert({ user_id: user.id, space_id: spaceId, title, ...extra })
       .select().single()
     if (error) return error.message
     setIdeas(prev => [...prev, data as DateIdea])
     return null
   }
 
-  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes'>>) {
+  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range'>>) {
     const { error } = await supabase.from('date_ideas')
       .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
     if (!error) setIdeas(prev => prev.map(i => (i.id === id ? { ...i, ...fields } : i)))

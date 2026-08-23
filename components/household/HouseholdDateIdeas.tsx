@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useDateIdeas, type DateIdea, type DateIdeaStatus } from '@/lib/hooks/useDateIdeas'
+import { useDateIdeas, type DateIdea, type DateIdeaStatus, type PriceRange } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import type { Energy } from '@/lib/hooks/useWorkItems'
 
@@ -13,71 +13,82 @@ const inputStyle: React.CSSProperties = {
 const STATUS_LABEL: Record<DateIdeaStatus, string> = { idea: 'Idea', planned: 'Planned', done: 'Done' }
 const STATUS_ORDER: DateIdeaStatus[] = ['planned', 'idea', 'done']
 const ENERGY_LABEL: Record<Energy, string> = { light: '🌤️ Light', medium: '⛅ Medium', deep: '🌧️ Deep' }
+const PRICE_RANGES: PriceRange[] = ['$', '$$', '$$$', '$$$$']
+const NO_AREA = 'Unsorted'
 
-// Split out of the generic Lists checklist (2026-08-22) — a date idea is a
-// real little plan, not just a checkbox: what stage it's at, how much
-// energy it takes, and (optionally) which saved pin it's actually at. See
-// useDateIdeas's own header comment for the full reasoning.
-export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null }) {
-  const { ideas, loading, addIdea, update, removeIdea } = useDateIdeas(spaceId)
-  const { places } = usePlaces()
-  const [title, setTitle] = useState('')
-  const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({})
-
+// Split out of the generic Lists checklist (2026-08-22), then grouped by
+// area the same way Watchlist groups games/shows (2026-08-22, round 2) —
+// "Special Days", "Monterey Day", whatever grouping makes sense, collapsible
+// per area. An idea can also carry an address, which creates a real Places
+// pin (status 'idea' — "want to go", same as adding one from Places
+// directly) rather than storing a redundant address field here; once
+// linked, that pin is what "where" actually means for the idea.
+function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAddTagDraft }: {
+  area: string
+  ideas: DateIdea[]
+  places: ReturnType<typeof usePlaces>['places']
+  update: ReturnType<typeof useDateIdeas>['update']
+  removeIdea: ReturnType<typeof useDateIdeas>['removeIdea']
+  addTagDraft: Record<string, string>
+  setAddTagDraft: React.Dispatch<React.SetStateAction<Record<string, string>>>
+}) {
   const placeName = (id: string | null) => (id ? places.find(p => p.id === id)?.name ?? null : null)
   const grouped = STATUS_ORDER.map(s => ({ status: s, ideas: ideas.filter(i => i.status === s) })).filter(g => g.ideas.length > 0)
 
   async function addTag(idea: DateIdea) {
-    const val = (tagDrafts[idea.id] ?? '').trim()
+    const val = (addTagDraft[idea.id] ?? '').trim()
     if (!val) return
     await update(idea.id, { tags: [...idea.tags, val] })
-    setTagDrafts(d => ({ ...d, [idea.id]: '' }))
+    setAddTagDraft(d => ({ ...d, [idea.id]: '' }))
   }
 
   return (
-    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-      <div className="t-card">Date Ideas</div>
+    <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+      <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{area}</span>
+        <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{ideas.length}</span>
+      </summary>
 
-      {ideas.length === 0 && !loading && (
-        <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-          Nothing yet. Add an idea — pair it with a pin or an energy level whenever you want.
-        </div>
-      )}
+      <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+        {grouped.map(g => (
+          <div key={g.status}>
+            <div style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.35rem' }}>
+              {STATUS_LABEL[g.status]}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {g.ideas.map(idea => (
+                <div key={idea.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text)' }}>{idea.title}</span>
+                    <button onClick={() => removeIdea(idea.id)} aria-label={`Remove ${idea.title}`} className="press"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
+                  </div>
 
-      {grouped.map(g => (
-        <div key={g.status}>
-          <div style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.35rem' }}>
-            {STATUS_LABEL[g.status]} · {g.ideas.length}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {g.ideas.map(idea => (
-              <div key={idea.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text)' }}>{idea.title}</span>
-                  <button onClick={() => removeIdea(idea.id)} aria-label={`Remove ${idea.title}`} className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
-                </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                    <select value={idea.status} onChange={e => update(idea.id, { status: e.target.value as DateIdeaStatus })}
+                      style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+                      {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                    </select>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-                  <select value={idea.status} onChange={e => update(idea.id, { status: e.target.value as DateIdeaStatus })}
-                    style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
-                    {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                  </select>
+                    <select value={idea.energy ?? ''} onChange={e => update(idea.id, { energy: (e.target.value || null) as Energy | null })}
+                      style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+                      <option value="">No energy set</option>
+                      {(['light', 'medium', 'deep'] as Energy[]).map(e => <option key={e} value={e}>{ENERGY_LABEL[e]}</option>)}
+                    </select>
 
-                  <select value={idea.energy ?? ''} onChange={e => update(idea.id, { energy: (e.target.value || null) as Energy | null })}
-                    style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
-                    <option value="">No energy set</option>
-                    {(['light', 'medium', 'deep'] as Energy[]).map(e => <option key={e} value={e}>{ENERGY_LABEL[e]}</option>)}
-                  </select>
+                    <select value={idea.price_range ?? ''} onChange={e => update(idea.id, { price_range: (e.target.value || null) as PriceRange | null })}
+                      style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+                      <option value="">No price set</option>
+                      {PRICE_RANGES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
 
-                  <select value={idea.place_id ?? ''} onChange={e => update(idea.id, { place_id: e.target.value || null })}
-                    style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer', maxWidth: '160px' }}>
-                    <option value="">No pin</option>
-                    {places.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
+                    <select value={idea.place_id ?? ''} onChange={e => update(idea.id, { place_id: e.target.value || null })}
+                      style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer', maxWidth: '160px' }}>
+                      <option value="">No pin</option>
+                      {places.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
 
-                {(idea.tags.length > 0 || true) && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
                     {idea.tags.map((tag, i) => (
                       <span key={i} style={{
@@ -91,36 +102,136 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
                       </span>
                     ))}
                     <input
-                      value={tagDrafts[idea.id] ?? ''}
-                      onChange={e => setTagDrafts(d => ({ ...d, [idea.id]: e.target.value }))}
+                      value={addTagDraft[idea.id] ?? ''}
+                      onChange={e => setAddTagDraft(d => ({ ...d, [idea.id]: e.target.value }))}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(idea) } }}
                       placeholder="+ tag"
                       style={{ ...inputStyle, width: '70px', padding: '0.15em 0.4em', fontSize: '0.6rem' }}
                     />
                   </div>
-                )}
 
-                {placeName(idea.place_id) && (
-                  <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>📍 {placeName(idea.place_id)}</div>
-                )}
-              </div>
-            ))}
+                  {placeName(idea.place_id) && (
+                    <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>📍 {placeName(idea.place_id)}</div>
+                  )}
+                  {idea.notes && (
+                    <div style={{ fontSize: '0.68rem', color: 'var(--muted)', lineHeight: 1.4 }}>{idea.notes}</div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+        ))}
+      </div>
+    </details>
+  )
+}
+
+export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null }) {
+  const { ideas, loading, addIdea, update, removeIdea } = useDateIdeas(spaceId)
+  const { places, addPlace } = usePlaces()
+  const [addTagDraft, setAddTagDraft] = useState<Record<string, string>>({})
+
+  const [adding, setAdding] = useState(false)
+  const [title, setTitle] = useState('')
+  const [area, setArea] = useState('')
+  const [energy, setEnergy] = useState<Energy | ''>('')
+  const [price, setPrice] = useState<PriceRange | ''>('')
+  const [address, setAddress] = useState('')
+  const [existingPlaceId, setExistingPlaceId] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const areaNames = [...new Set(ideas.map(i => i.area || NO_AREA))].sort((a, b) => (a === NO_AREA ? 1 : b === NO_AREA ? -1 : a.localeCompare(b)))
+  const existingAreas = [...new Set(ideas.map(i => i.area).filter((a): a is string => !!a))]
+
+  function resetForm() {
+    setTitle(''); setArea(''); setEnergy(''); setPrice(''); setAddress(''); setExistingPlaceId(''); setNotes(''); setAdding(false)
+  }
+
+  async function save() {
+    if (!title.trim()) return
+    let placeId: string | null = existingPlaceId || null
+    if (!placeId && address.trim()) {
+      // A typed address with no existing pin selected creates a real Places
+      // pin — status 'idea' ("want to go"), same default a pin added from
+      // Places itself gets — rather than storing the address redundantly here.
+      const { place, error } = await addPlace({ name: title.trim(), address: address.trim(), shared: !!spaceId, status: 'idea' }, spaceId)
+      if (error) { console.error('Failed to create pin:', error); return }
+      placeId = place?.id ?? null
+    }
+    await addIdea(title.trim(), {
+      area: area.trim() || null,
+      energy: energy || null,
+      price_range: price || null,
+      place_id: placeId,
+      notes: notes.trim() || null,
+    })
+    resetForm()
+  }
+
+  return (
+    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+      <div className="t-card">Date Ideas</div>
+
+      {ideas.length === 0 && !loading && !adding && (
+        <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+          Nothing yet. Add an idea — group it under an area or special day, pair it with a pin, energy level, or price range.
         </div>
+      )}
+
+      {areaNames.map(a => (
+        <AreaGroup
+          key={a}
+          area={a}
+          ideas={ideas.filter(i => (i.area || NO_AREA) === a)}
+          places={places}
+          update={update}
+          removeIdea={removeIdea}
+          addTagDraft={addTagDraft}
+          setAddTagDraft={setAddTagDraft}
+        />
       ))}
 
-      <form
-        onSubmit={async e => {
-          e.preventDefault()
-          if (!title.trim()) return
-          await addIdea(title.trim())
-          setTitle('')
-        }}
-        style={{ display: 'flex', gap: '0.4rem' }}
-      >
-        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="New date idea" style={{ ...inputStyle, flex: 1, fontSize: '0.75rem' }} />
-        <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-      </form>
+      {adding ? (
+        <form
+          onSubmit={e => { e.preventDefault(); save() }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}
+        >
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Idea title" style={inputStyle} autoFocus />
+
+          <input value={area} onChange={e => setArea(e.target.value)} placeholder="Area / special day (e.g. Monterey Day, Anniversary)" style={inputStyle} list="date-idea-areas" />
+          <datalist id="date-idea-areas">
+            {existingAreas.map(a => <option key={a} value={a} />)}
+          </datalist>
+
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <select value={energy} onChange={e => setEnergy(e.target.value as Energy | '')} style={{ ...inputStyle, cursor: 'pointer' }}>
+              <option value="">No energy set</option>
+              {(['light', 'medium', 'deep'] as Energy[]).map(en => <option key={en} value={en}>{ENERGY_LABEL[en]}</option>)}
+            </select>
+            <select value={price} onChange={e => setPrice(e.target.value as PriceRange | '')} style={{ ...inputStyle, cursor: 'pointer' }}>
+              <option value="">No price set</option>
+              {PRICE_RANGES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          <select value={existingPlaceId} onChange={e => { setExistingPlaceId(e.target.value); if (e.target.value) setAddress('') }} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <option value="">Link an existing pin…</option>
+            {places.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {!existingPlaceId && (
+            <input value={address} onChange={e => setAddress(e.target.value)} placeholder="…or type an address to create a new pin (want to go)" style={inputStyle} />
+          )}
+
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+
+          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={resetForm} className="press" style={{ fontSize: '0.68rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}>Cancel</button>
+            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
+          </div>
+        </form>
+      ) : (
+        <button onClick={() => setAdding(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New date idea</button>
+      )}
     </section>
   )
 }
