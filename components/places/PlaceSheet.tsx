@@ -6,6 +6,7 @@ import PlaceKindFields from '@/components/places/PlaceKindFields'
 import ProvenanceBadge from '@/components/places/ProvenanceBadge'
 import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
+import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
@@ -27,6 +28,10 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
   hasSpace?: boolean
 }) {
   const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
+  // Date ideas share this pin rather than copying it — see the "Save as a
+  // date idea" action below.
+  const { ideas, addIdea } = useDateIdeas(spaceId ?? null)
+  const [savingIdea, setSavingIdea] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [editingNote, setEditingNote] = useState(false)
@@ -52,6 +57,7 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
   if (!place) return <PlacesSheet open={open} onClose={onClose} title="Place">{null}</PlacesSheet>
 
   const spec = kindSpec(place.kind)
+  const linkedIdea = ideas.find(i => i.place_id === place.id) ?? null
   const mapsHref = place.maps_url
     ?? (place.lat != null && place.lng != null ? `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}` : null)
 
@@ -179,6 +185,29 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
             />
             Keep this private
           </label>
+        )}
+
+        {/* Save this pin as a date idea (2026-08-24) — creates a date_ideas
+            row LINKED to this place rather than re-typing its name into a
+            second list, which is the whole point: one place, one row, two
+            views of it. Already-linked shows as a statement, not a button,
+            so there's no way to create a duplicate from here. */}
+        {linkedIdea ? (
+          <div style={{ fontSize: '0.7rem', color: 'var(--blush)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span aria-hidden>♡</span> Saved as a date idea
+            {linkedIdea.status !== 'idea' && <span style={{ color: 'var(--muted)', opacity: 0.8 }}>· {linkedIdea.status}</span>}
+          </div>
+        ) : (
+          <button
+            onClick={async () => {
+              setSavingIdea(true)
+              await addIdea(place!.name, { place_id: place!.id, notes: place!.note ?? null })
+              setSavingIdea(false)
+            }}
+            disabled={savingIdea}
+            className="btn btn-ghost press"
+            style={{ fontSize: '0.72rem' }}
+          >{savingIdea ? 'Saving…' : '♡ Save as a date idea'}</button>
         )}
 
         {mapsHref && (

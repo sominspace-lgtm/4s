@@ -1,0 +1,171 @@
+'use client'
+
+import { addDays, format, isSameDay, parseISO } from 'date-fns'
+import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
+import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
+import { usePlaces } from '@/lib/hooks/usePlaces'
+import { goToSection, goToHousehold } from '@/lib/utils/navigate'
+import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
+
+// The widgets under the village scene (2026-08-24). Village used to be the
+// picture and nothing else — lovely, but you couldn't DO anything from it, so
+// it got looked at once and then skipped. These are the few things worth a
+// glance from "our little world": what we're eating tonight, the week ahead,
+// ideas for something to do, what's around the new place, and how the move is
+// going.
+//
+// Deliberately NOT one widget per feature. Chores, shopping, routines,
+// watchlist, notes and the rest all already have a real home in Household and
+// gain nothing from a second, smaller, read-only copy here — a dashboard of
+// every feature is exactly the "productivity-heavy" thing this shouldn't be.
+// Every widget below reads an existing hook; none introduces its own storage.
+export default function VillageWidgets({ userId, spaceId }: { userId: string; spaceId: string | null }) {
+  const h = useHousehold(spaceId)
+  const { ideas } = useDateIdeas(spaceId)
+  const { places } = usePlaces()
+
+  const today = new Date()
+  const week = [...Array(7)].map((_, i) => addDays(today, i))
+
+  const tonight = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), today))
+  const choresToday = h.chores.filter(c => choreDue(c) <= 0)
+  const nearbyCount = places.filter(p => p.tags?.includes(NEARBY_TAG)).length
+  const moveinLeft = h.moveinItems.filter(i => !i.got).length
+  const moveinDone = h.moveinItems.length - moveinLeft
+
+  // Planned first — a date that's actually been decided on is more useful at
+  // a glance than the back half of a 40-item wishlist.
+  const shownIdeas = [...ideas]
+    .filter(i => i.status !== 'done')
+    .sort((a, b) => (a.status === 'planned' ? -1 : 0) - (b.status === 'planned' ? -1 : 0))
+    .slice(0, 4)
+
+  return (
+    <div style={{
+      display: 'grid', gap: '0.8rem', marginTop: '1rem',
+      // Widgets reflow from a single mobile column up to three on a desktop
+      // without a breakpoint — auto-fit + minmax is what keeps this working
+      // on an iPhone and an iPad in the same rule.
+      gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+    }}>
+      {/* Tonight — the single most-asked household question there is */}
+      <Widget title="Tonight" onOpen={() => goToHousehold('home')}>
+        {tonight ? (
+          <>
+            <Line strong>
+              {tonight.kind === 'eating_out' ? '🍴 ' : ''}{tonight.title}
+            </Line>
+            {tonight.cook && <Line dim>{tonight.cook} is cooking</Line>}
+            {tonight.kind === 'eating_out' && <Line dim>not cooking tonight</Line>}
+          </>
+        ) : (
+          <Line dim italic>No dinner planned yet.</Line>
+        )}
+        {choresToday.length > 0 && (
+          <Line dim>{choresToday.length} chore{choresToday.length > 1 ? 's' : ''} due</Line>
+        )}
+      </Widget>
+
+      {/* This week's meals — the compact strip, not the full planner */}
+      <Widget title="This week’s meals" onOpen={() => goToHousehold('home')}>
+        {h.meals.length === 0 && !h.loading && <Line dim italic>Nothing planned.</Line>}
+        {week.map(day => {
+          const dinner = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))
+          if (!dinner) return null
+          return (
+            <div key={+day} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
+              <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>
+                {format(day, 'EEE')}
+              </span>
+              <span style={{
+                fontSize: '0.7rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)',
+                fontStyle: dinner.kind === 'eating_out' ? 'italic' : 'normal',
+              }}>{dinner.title}</span>
+            </div>
+          )
+        })}
+      </Widget>
+
+      {/* Date ideas — glance + a door, the full editor stays in Household */}
+      <Widget title="Date ideas" onOpen={() => goToHousehold('reference')} count={ideas.filter(i => i.status !== 'done').length}>
+        {shownIdeas.length === 0 && <Line dim italic>Nothing saved yet.</Line>}
+        {shownIdeas.map(i => (
+          <div key={i.id} style={{ display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
+            {i.status === 'planned' && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--emerald)', flexShrink: 0 }}>●</span>}
+            <span style={{ fontSize: '0.7rem', color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {i.title}
+            </span>
+          </div>
+        ))}
+      </Widget>
+
+      {/* Nearby — pins around the new place */}
+      <Widget title={`Near ${NEW_HOME.label}`} onOpen={() => goToSection('places')} count={nearbyCount}>
+        {nearbyCount === 0
+          ? <Line dim italic>No pins tagged nearby yet.</Line>
+          : <Line dim>{nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved around {NEW_HOME.city}</Line>}
+      </Widget>
+
+      {/* Move-in — only while it's actually relevant */}
+      {h.moveinItems.length > 0 && (
+        <Widget title="Move-in" onOpen={() => goToHousehold('movein')}>
+          <Line strong>{moveinLeft} still to get</Line>
+          <Line dim>{moveinDone} sorted</Line>
+          {/* A thin progress bar reads faster than the two numbers alone. */}
+          <div style={{ height: 4, borderRadius: 2, background: 'var(--surface2)', overflow: 'hidden', marginTop: '0.2rem' }}>
+            <div style={{
+              height: '100%', borderRadius: 2, background: 'var(--emerald)',
+              width: `${h.moveinItems.length ? (moveinDone / h.moveinItems.length) * 100 : 0}%`,
+            }} />
+          </div>
+        </Widget>
+      )}
+    </div>
+  )
+}
+
+function Widget({ title, count, onOpen, children }: {
+  title: string
+  count?: number
+  onOpen: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onOpen}
+      className="lift organic press"
+      style={{
+        textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-body)',
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        padding: '0.75rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.25rem',
+        minHeight: '88px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.4rem', marginBottom: '0.15rem' }}>
+        <span style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.8 }}>
+          {title}
+        </span>
+        {count !== undefined && count > 0 && (
+          <span style={{ fontSize: '0.6rem', color: 'var(--gold)', opacity: 0.9 }}>{count}</span>
+        )}
+      </div>
+      {children}
+    </button>
+  )
+}
+
+function Line({ children, strong, dim, italic }: {
+  children: React.ReactNode; strong?: boolean; dim?: boolean; italic?: boolean
+}) {
+  return (
+    <div style={{
+      fontSize: strong ? '0.82rem' : '0.68rem',
+      color: dim ? 'var(--muted)' : 'var(--text)',
+      opacity: dim ? 0.8 : 1,
+      fontStyle: italic ? 'italic' : 'normal',
+      lineHeight: 1.4,
+      minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+    }}>{children}</div>
+  )
+}

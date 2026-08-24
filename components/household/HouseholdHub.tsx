@@ -15,6 +15,7 @@ import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
+import HouseholdMoveIn from './HouseholdMoveIn'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
@@ -114,6 +115,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
   const [mealTitle, setMealTitle] = useState('')
   const [mealCook, setMealCook] = useState('')
+  // "Eating out" as a first-class option (2026-08-24) — previously the only
+  // way to record a night out was to type it as if it were a recipe.
+  const [mealKind, setMealKind] = useState<'cooking' | 'eating_out'>('cooking')
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null)
   const [mealNotesDraft, setMealNotesDraft] = useState('')
   const [mealRecipeDraft, setMealRecipeDraft] = useState('')
@@ -313,7 +317,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                 {dayMeals.length === 0 && <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.35, fontStyle: 'italic' }}>—</div>}
                 {dayMeals.map(m => (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.15rem' }}>
-                    <span title={m.slot} aria-hidden style={{ fontSize: '0.62rem', flexShrink: 0, opacity: 0.8 }}>{SLOT_GLYPH[m.slot]}</span>
+                    {/* An eating-out night is marked by its own glyph rather
+                        than the slot's (2026-08-24) — the useful thing to see
+                        scanning the week is "we're not cooking that night",
+                        which the meal-time icon can't say. */}
+                    <span title={m.kind === 'eating_out' ? `${m.slot} · eating out` : m.slot} aria-hidden
+                      style={{ fontSize: '0.62rem', flexShrink: 0, opacity: 0.8 }}>
+                      {m.kind === 'eating_out' ? '🍴' : SLOT_GLYPH[m.slot]}
+                    </span>
                     <button
                       onClick={() => {
                         setSelectedMealId(m.id)
@@ -323,7 +334,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                       className="press"
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
-                        fontSize: '0.7rem', color: 'var(--text)', flex: 1, minWidth: 0,
+                        fontSize: '0.7rem', flex: 1, minWidth: 0,
+                        color: m.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)',
+                        fontStyle: m.kind === 'eating_out' ? 'italic' : 'normal',
                         textDecoration: (m.notes || m.recipe_url) ? 'underline' : 'none',
                         textDecorationColor: 'var(--faint)', textUnderlineOffset: '2px',
                       }}
@@ -340,8 +353,12 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         <form
           onSubmit={async e => {
             e.preventDefault()
-            if (!mealTitle.trim()) return
-            await h.addMeal(mealDay, mealSlot, mealTitle.trim(), mealCook.trim() || null)
+            const eatingOut = mealKind === 'eating_out'
+            // Eating out doesn't need a title — "Eating out" IS the plan. A
+            // typed one still wins, so "Eating out — that ramen place" works.
+            const title = mealTitle.trim() || (eatingOut ? 'Eating out' : '')
+            if (!title) return
+            await h.addMeal(mealDay, mealSlot, title, eatingOut ? null : mealCook.trim() || null, { kind: mealKind })
             setMealTitle(''); setMealCook('')
           }}
           style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
@@ -350,8 +367,16 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <select value={mealSlot} onChange={e => setMealSlot(e.target.value as typeof SLOTS[number])} style={{ ...input, cursor: 'pointer' }}>
             {SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <input value={mealTitle} onChange={e => setMealTitle(e.target.value)} placeholder="What's cooking?" style={{ ...input, flex: 1, minWidth: '130px' }} />
-          <input value={mealCook} onChange={e => setMealCook(e.target.value)} placeholder="Who cooks" style={{ ...input, width: '100px' }} />
+          <select value={mealKind} onChange={e => setMealKind(e.target.value as 'cooking' | 'eating_out')} style={{ ...input, cursor: 'pointer' }}>
+            <option value="cooking">Cooking</option>
+            <option value="eating_out">Eating out</option>
+          </select>
+          <input value={mealTitle} onChange={e => setMealTitle(e.target.value)}
+            placeholder={mealKind === 'eating_out' ? 'Where? (optional)' : "What's cooking?"}
+            style={{ ...input, flex: 1, minWidth: '130px' }} />
+          {mealKind === 'cooking' && (
+            <input value={mealCook} onChange={e => setMealCook(e.target.value)} placeholder="Who cooks" style={{ ...input, width: '100px' }} />
+          )}
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
       </section>
@@ -610,6 +635,11 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           Routines were Home blocks, Maintenance was already in Reference. */}
       {tab === 'routines' && renderChores()}
       {tab === 'routines' && renderRoutines()}
+
+      {/* Move-In (restored 2026-08-24) — a temporary hub for the move into
+          The Millton. Hide the tab via customize once it's done; the rows
+          stay in household_movein_items either way. */}
+      {tab === 'movein' && <HouseholdMoveIn spaceId={spaceId} />}
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space.

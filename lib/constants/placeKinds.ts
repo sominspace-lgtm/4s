@@ -106,6 +106,19 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
       { key: 'booking_url', label: 'Booking link', type: 'url' },
     ],
   },
+  // A pin whose whole point is "we should go here together" (2026-08-24).
+  // Distinct from the date_ideas table rather than a duplicate of it: an
+  // idea can exist with no location at all (date_ideas row, place_id null),
+  // and a pin can exist that isn't a date idea. This kind is for when the
+  // PLACE is the thing you saved — PlaceSheet's "save as date idea" creates
+  // the linked date_ideas row so the two stay one thing, never two.
+  'date-idea': {
+    label: 'Date idea', icon: '♡', color: '--blush',
+    fields: [
+      { key: 'indoor_outdoor', label: 'Indoor / outdoor', type: 'select', options: ['indoor', 'outdoor', 'either'] },
+      { key: 'cost', label: 'Cost', type: 'select', options: ['$', '$$', '$$$', '$$$$'] },
+    ],
+  },
   // The fallback for anything not listed above, and the default for a new
   // pin nobody has categorised yet.
   place: {
@@ -121,6 +134,6 @@ export function kindSpec(kind: string): KindSpec {
 // Order used by the kind picker and the filter chips — most-used first,
 // 'place' last since it's the "none of these" option.
 export const KIND_ORDER = [
-  'place', 'restaurant', 'cafe', 'bar', 'court', 'park', 'beach', 'trail',
+  'place', 'restaurant', 'cafe', 'bar', 'date-idea', 'court', 'park', 'beach', 'trail',
   'hotel', 'shop', 'activity',
 ]

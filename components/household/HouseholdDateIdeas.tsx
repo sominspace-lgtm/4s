@@ -82,6 +82,14 @@ function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAd
                       {PRICE_RANGES.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
 
+                    <select value={idea.indoor_outdoor ?? ''} onChange={e => update(idea.id, { indoor_outdoor: (e.target.value || null) as 'indoor' | 'outdoor' | 'either' | null })}
+                      style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+                      <option value="">Indoor/outdoor</option>
+                      <option value="indoor">🏠 Indoor</option>
+                      <option value="outdoor">🌳 Outdoor</option>
+                      <option value="either">Either</option>
+                    </select>
+
                     <select value={idea.place_id ?? ''} onChange={e => update(idea.id, { place_id: e.target.value || null })}
                       style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer', maxWidth: '160px' }}>
                       <option value="">No pin</option>

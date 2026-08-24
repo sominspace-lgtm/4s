@@ -17,6 +17,7 @@ import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
+import VillageWidgets from './VillageWidgets'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -208,6 +209,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       )}
 
       <VillageArrival caption={changes?.caption ?? null} />
+
+      {/* Widgets (2026-08-24) — the useful half of Village. Hidden in
+          shared/locked mode: they read real household and date-idea content,
+          which is exactly what the PIN gate exists to keep behind a lock. */}
+      {!locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} />}
+
       <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />
     </div>
   )

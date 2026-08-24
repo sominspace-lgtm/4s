@@ -22,6 +22,10 @@ export interface DateIdea {
    *  instead of a fixed domain. */
   area: string | null
   price_range: PriceRange | null
+  /** 2026-08-24 — the one field from the spec's wishlist the table didn't
+   *  already cover. Everything else maps to a column that exists: name=title,
+   *  location=place_id, description=notes, category=area/tags, cost=price_range. */
+  indoor_outdoor: 'indoor' | 'outdoor' | 'either' | null
   created_at: string
   updated_at: string
 }
@@ -50,7 +54,7 @@ export function useDateIdeas(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags'>>): Promise<string | null> {
+  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags' | 'indoor_outdoor'>>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('date_ideas')
@@ -61,7 +65,7 @@ export function useDateIdeas(spaceId: string | null) {
     return null
   }
 
-  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range'>>) {
+  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range' | 'indoor_outdoor'>>) {
     const { error } = await supabase.from('date_ideas')
       .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
     if (!error) setIdeas(prev => prev.map(i => (i.id === id ? { ...i, ...fields } : i)))

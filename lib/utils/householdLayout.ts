@@ -1,10 +1,14 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-// Four tabs (2026-08-22, was three). Places went back to top level;
-// Move-in retired (its household_movein_items rows are NOT deleted — the tab
-// is just gone, so re-adding it here brings the data straight back); Setup
-// moved into Settings, where account-level configuration already lives.
-export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'reference'
+// Five tabs (2026-08-24). Places went back to top level; Setup moved into
+// Settings, where account-level configuration already lives.
+//
+// Move-in is BACK (2026-08-24) — retiring it never deleted a single
+// household_movein_items row, exactly as that removal's own note predicted,
+// so restoring the tab brought the real data straight back with it. It is
+// deliberately a temporary hub: hide it from the tab bar (customize) once
+// the move is done and the rows stay put, same as last time.
+export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'movein' | 'reference'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
@@ -17,6 +21,7 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // scattered: Chores and Routines were Home blocks, Maintenance was
   // already in Reference. One place for all of it instead of three.
   { id: 'routines',  label: 'Routines' },
+  { id: 'movein',    label: 'Move-In' },
   { id: 'reference', label: 'Reference' },
 ].map(s => ({ ...s, hidden: false }))
 

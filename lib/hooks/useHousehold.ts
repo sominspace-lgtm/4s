@@ -24,6 +24,12 @@ export interface Meal {
   // Both optional: a meal can stay just a title, same as before this existed.
   notes: string | null
   recipe_url: string | null
+  // "Eating out" as a real option rather than a fake recipe title
+  // (2026-08-24). Defaults to 'cooking' in the DB, so every row that existed
+  // before this keeps its exact previous meaning. place_id optionally points
+  // at the restaurant's real pin instead of storing its name a second time.
+  kind: 'cooking' | 'eating_out'
+  place_id: string | null
 }
 
 export interface ShoppingItem {
@@ -165,11 +171,17 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  async function addMeal(meal_date: string, slot: Meal['slot'], title: string, cook: string | null) {
+  async function addMeal(
+    meal_date: string, slot: Meal['slot'], title: string, cook: string | null,
+    extra?: { kind?: Meal['kind']; place_id?: string | null },
+  ) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
     const { error } = await supabase.from('household_meals')
-      .insert({ user_id: user.id, space_id: spaceId, meal_date, slot, title, cook })
+      .insert({
+        user_id: user.id, space_id: spaceId, meal_date, slot, title, cook,
+        kind: extra?.kind ?? 'cooking', place_id: extra?.place_id ?? null,
+      })
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
   }
@@ -180,7 +192,7 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  async function updateMeal(id: string, fields: Partial<Pick<Meal, 'notes' | 'recipe_url'>>) {
+  async function updateMeal(id: string, fields: Partial<Pick<Meal, 'notes' | 'recipe_url' | 'kind' | 'place_id' | 'title'>>) {
     const { error } = await supabase.from('household_meals').update(fields).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
