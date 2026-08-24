@@ -184,6 +184,23 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
   )
 }
 
+// A memory-map marker (2026-08-24) — one small dot per date-idea area (SLO,
+// Santa Cruz, whatever), scattered along the path. Deliberately smaller and
+// quieter than a full DistrictLabel tile: these are secondary, browsable
+// content, not another top-level section — clicking opens Household's Date
+// Ideas, already grouped "By Area" there (see HouseholdDateIdeas.tsx).
+export function MemoryMarker({ x, y, label, count, onClick }: {
+  x: number; y: number; label: string; count: number; onClick?: () => void
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      <title>{`${label} — ${count} idea${count === 1 ? '' : 's'}`}</title>
+      <circle r={10} fill="transparent" style={{ pointerEvents: 'all' }} />
+      <circle r={3.2} fill="var(--blush)" stroke="var(--surface)" strokeWidth={1} opacity={0.9} />
+    </g>
+  )
+}
+
 // Styled callout for a selected plant/building (2026-08-21) — the native
 // SVG <title> tooltip on each shape still works (hover, no-JS, screen
 // readers), but it renders in the browser's own unstyled tooltip box, which

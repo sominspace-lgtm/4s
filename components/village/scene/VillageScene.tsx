@@ -5,8 +5,9 @@ import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
-import { goToSection, goToPersonal } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape } from './shapes'
+import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
+import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -114,7 +115,8 @@ export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
-  placesCount = 0, peopleCount = 0, soonestBirthdayDays = null,
+  placesCount = 0, peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
+  timeLabel = null, dateLabel = null, moonLabel = null,
 }: {
   village: VillageState
   live: boolean
@@ -130,6 +132,16 @@ export default function VillageScene({
   peopleCount?: number
   /** Days until the soonest upcoming birthday, if any — see usePeople's daysUntilBirthday. */
   soonestBirthdayDays?: number | null
+  /** Date ideas grouped by area (SLO, Santa Cruz, …) — the memory map, see MemoryMarker. */
+  dateIdeaAreas?: { area: string; count: number }[]
+  /** Real weather, from lib/village/weather.ts. null while loading/unavailable — the scene never blocks on it. */
+  weather?: { tempF: number; condition: WeatherCondition } | null
+  /** Pre-formatted, real — this component stays a pure function of props,
+   *  no dates computed in here (see the file's own header comment). */
+  timeLabel?: string | null
+  dateLabel?: string | null
+  /** Only meaningful (and only ever passed) at night — see Village.tsx. */
+  moonLabel?: string | null
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -362,6 +374,19 @@ export default function VillageScene({
       {PROPS.benches.map((b, i) => <BenchShape key={i} x={b.x} y={b.y} />)}
       {PROPS.flowerBeds.map((f, i) => <FlowerBedShape key={i} x={f.x} y={f.y} hue={f.hue} />)}
 
+      {/* Memory map (2026-08-24) — one small marker per date-idea area,
+          scattered near the path via the same hashPos-by-id determinism
+          everything else in the scene uses, so a given area always lands in
+          the same spot rather than reshuffling. Quieter than a district on
+          purpose — see MemoryMarker's own header comment. */}
+      {dateIdeaAreas.map(({ area, count }) => (
+        <MemoryMarker key={area}
+          x={70 + hashPos(area) * 660}
+          y={GROUND_Y - 36 + hashPos(area + 'y') * 24}
+          label={area} count={count}
+          onClick={nav(area, () => goToHousehold('reference'))} />
+      ))}
+
       {/* Pollen motes — pure atmosphere, see POLLEN above. */}
       <g opacity={0.3}>
         {POLLEN.map((p, i) => (
@@ -475,6 +500,15 @@ export default function VillageScene({
             ? `Archive Grove, Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`
             : `Archive Grove, Life Tree in its first year, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
         }</title>
+        {/* Greenhouse frame, behind the tree (2026-08-24 reskin) — Archive
+            reads as a generic tree in a plain spot without this; a small
+            glass-roofed frame around it reframes the whole thing as a
+            library/greenhouse for what you've finished and kept, not just
+            another district. Drawn first so the tree stands inside it. */}
+        <path d="M -28 4 L -28 -30 L 0 -46 L 28 -30 L 28 4"
+          fill="var(--surface2)" fillOpacity={0.22} stroke="var(--border)" strokeWidth={1} />
+        <path d="M -28 -30 L 0 -46 L 28 -30" fill="none" stroke="var(--gold)" strokeWidth={0.8} opacity={0.5} />
+        <path d="M -14 -38 L -14 4 M 14 -38 L 14 4" stroke="var(--border)" strokeWidth={0.6} opacity={0.45} />
         <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
           transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />
         <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.35} />
@@ -483,6 +517,11 @@ export default function VillageScene({
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
           <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
+        {/* A small stack of books at the base — library, not just glasshouse. */}
+        <g transform="translate(-20 2)">
+          <rect x={-4} y={-3} width={8} height={3} rx={0.5} fill="var(--gold)" opacity={0.55} />
+          <rect x={-3.5} y={-6} width={7} height={3} rx={0.5} fill="var(--slate)" opacity={0.55} />
+        </g>
         {/* A book, literally beside the Life Tree (2026-08-22) — same
             reasoning as the lake's fish, the forest's leaf, and the
             district's building above, fixed right next to the tree itself. */}
@@ -502,7 +541,7 @@ export default function VillageScene({
 
       {/* The things that move. Above the scenery so smoke reads as being in
           front of the house, below the labels so it never fights the text. */}
-      {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
+      {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} weatherCondition={weather?.condition} />}
 
       {/* Click-to-care sparkles — see careFor() above. Self-removing via its
           own setTimeout, so this array is only ever non-empty for ~650ms. */}
@@ -574,6 +613,23 @@ export default function VillageScene({
         <EntityCallout x={selectedBuilding.x} y={selectedBuilding.y}
           title={selectedBuilding.building.title}
           subtitle={selectedBuilding.building.phase} />
+      )}
+
+      {/* Time/season/weather readout (2026-08-24) — small, top-left, purely
+          informational: what the sky/palette are already reacting to, put
+          into words. Real values only (see the props' own comments); never
+          shown if the caller has nothing real to say yet. */}
+      {(timeLabel || weather) && (
+        <g transform="translate(16 22)" opacity={0.8} pointerEvents="none">
+          <text fontSize={9} fill="var(--text)" fontFamily="var(--font-body)">
+            {[timeLabel, weather ? `${weatherMeta(weather.condition).emoji} ${weather.tempF}°` : null]
+              .filter(Boolean).join('   ')}
+          </text>
+          <text y={12} fontSize={7} fill="var(--muted)" fontFamily="var(--font-body)">
+            {[dateLabel, weather ? weatherMeta(weather.condition).label : null, moonLabel]
+              .filter(Boolean).join(' · ')}
+          </text>
+        </g>
       )}
 
       {/* Vignette — pulls the eye to the middle of the scene. Drawn in

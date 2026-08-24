@@ -497,6 +497,17 @@ select, option {
 .village-fall-1 { animation-delay: -7s; }
 .village-fall-2 { animation-delay: -14s; }
 
+/* Real rain (2026-08-24) — straight down, fast, no rotation: rain streaks
+   rather than drifts. Short duration + a handful of stagger classes so five
+   fixed streaks don't obviously fall in lockstep. */
+@keyframes village-rain {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-4px, 430px); }
+}
+.village-rain { animation: village-rain 0.9s linear infinite; }
+.village-rain-1 { animation-delay: -0.3s; }
+.village-rain-2 { animation-delay: -0.6s; }
+
 /* Clouds drift the width of the whole sky and loop — slow enough that you'd
    have to watch for a minute to catch it moving, which is the point. */
 @keyframes village-cloud-drift {
@@ -627,7 +638,7 @@ select, option {
 @media (prefers-reduced-motion: reduce) {
   .village-drift, .village-glow, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
-  .village-petal, .village-leaf, .village-snow, .village-changed, .village-cloud,
+  .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,
   .village-tapped, .village-sparkle,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,

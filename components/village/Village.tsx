@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
@@ -10,10 +10,12 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
+import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
-import { celestialOf } from '@/lib/village/sky'
+import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
+import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
@@ -67,6 +69,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     const upcoming = people.map(p => daysUntilBirthday(p.birthday)).filter((d): d is number => d != null)
     return upcoming.length ? Math.min(...upcoming) : null
   }, [people])
+  const { ideas } = useDateIdeas(spaces[0]?.id ?? null)
+  const dateIdeaAreas = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const idea of ideas) {
+      if (!idea.area) continue
+      counts.set(idea.area, (counts.get(idea.area) ?? 0) + 1)
+    }
+    return [...counts.entries()].map(([area, count]) => ({ area, count }))
+  }, [ideas])
 
   const accountCreated = useMemo(
     () => (accountCreatedAt ? parseISO(accountCreatedAt) : null),
@@ -116,6 +127,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const palette = useMemo(() => seasonPalette(v.season, isLight), [v.season, isLight])
   const celestial = useMemo(() => (clock ? celestialOf(clock) : null), [clock])
 
+  // Real weather (2026-08-24) — fetched once per mount, not tied to the
+  // render-triggering minute clock below. See lib/village/weather.ts for
+  // why a failed fetch doesn't get stuck as "no weather" for the rest of
+  // the session.
+  const [weather, setWeather] = useState<WeatherNow | null>(null)
+  useEffect(() => { loadWeather().then(setWeather) }, [])
+
+  // Pre-formatted here, not in the (hookless, dateless) scene — see
+  // VillageScene's own prop comments.
+  const timeLabel = clock ? format(clock, 'h:mm a') : null
+  const dateLabel = clock ? format(clock, 'EEEE, MMMM d') : null
+  const moonLabel = clock && celestial?.body === 'moon' ? moonPhaseLabel(celestial.phase) : null
+
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
   const plantSlots = useMemo(() => {
@@ -162,7 +186,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           locked={locked} onLockedNavigate={onLockedNavigate}
           layout={layout} arranging={arranging}
           onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
-          placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays} />
+          placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
+          dateIdeaAreas={dateIdeaAreas} weather={weather}
+          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

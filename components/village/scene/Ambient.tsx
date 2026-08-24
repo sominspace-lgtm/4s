@@ -2,6 +2,7 @@
 
 import type { VillageState } from '@/lib/village/state'
 import type { SeasonPalette } from '@/lib/village/palette'
+import type { WeatherCondition } from '@/lib/village/weather'
 
 /**
  * The things that move.
@@ -16,10 +17,14 @@ import type { SeasonPalette } from '@/lib/village/palette'
  * reads as a bug; fireflies only when there's actually a forest for them to be
  * over, because an empty village shouldn't be decorated to look less empty.
  */
-export default function Ambient({ village: v, palette, groundY }: {
+export default function Ambient({ village: v, palette, groundY, weatherCondition }: {
   village: VillageState
   palette: SeasonPalette
   groundY: number
+  /** Real weather, from lib/village/weather.ts — only 'rain'/'storm' get a
+   *  visual today (see the rain-streak note below); everything else is just
+   *  the text readout in VillageText/wherever the caller shows it. */
+  weatherCondition?: WeatherCondition | null
 }) {
   const cold = v.season === 'winter' || v.season === 'autumn'
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
@@ -51,6 +56,21 @@ export default function Ambient({ village: v, palette, groundY }: {
           {[[92, 336], [148, 320], [214, 344], [268, 328]].map(([cx, cy], i) => (
             <circle key={i} cx={cx} cy={cy} r={1.7} fill="var(--amber)"
               className={`village-firefly village-firefly-${i % 3}`} />
+          ))}
+        </g>
+      )}
+
+      {/* Real rain, when it's actually raining out (2026-08-24) — the one
+          weather condition worth a visual per the plan: cheap, obvious, and
+          it doesn't fight the season's own falling-particle effect below
+          since real rain and season are independent (it can rain in any
+          season). Five short streaks, same fixed-position + staggered-delay
+          trick as the snow/leaf/petal particles above. */}
+      {(weatherCondition === 'rain' || weatherCondition === 'storm') && (
+        <g opacity={0.35} stroke="var(--text)" strokeWidth={1.1} strokeLinecap="round">
+          {[[70, 20], [210, 4], [350, 30], [500, 10], [640, 26], [720, 0]].map(([cx, cy], i) => (
+            <line key={i} x1={cx} y1={cy} x2={cx - 3} y2={cy + 14}
+              className={`village-rain village-rain-${i % 3}`} />
           ))}
         </g>
       )}
