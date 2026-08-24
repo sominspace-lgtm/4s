@@ -127,13 +127,31 @@ export default function VillageScene({
   // routes through the same unlock prompt as the district labels rather than
   // revealing it; see the `locked` branch below.
   const [selected, setSelected] = useState<{ type: 'plant' | 'building'; id: string } | null>(null)
-  const selectPlant = (id: string) => () => {
+
+  // Click-to-care (2026-08-24) — a tap already opened the name/stage
+  // callout; this is the tactile half. careFor() bounces the tapped shape
+  // (village-tapped, see shapes.tsx) and throws a few sparkles from its
+  // spot, both self-clearing so the state stays a pure "is this happening
+  // right now" flag rather than something that needs manual reset.
+  const [caredId, setCaredId] = useState<string | null>(null)
+  const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number }[]>([])
+  function careFor(id: string, x: number, y: number) {
+    setCaredId(id)
+    setTimeout(() => setCaredId(c => (c === id ? null : c)), 480)
+    const burst = Array.from({ length: 5 }, (_, i) => ({ id: `${id}-${Date.now()}-${i}`, x, y }))
+    setSparkles(prev => [...prev, ...burst])
+    setTimeout(() => setSparkles(prev => prev.filter(s => !burst.some(b => b.id === s.id))), 650)
+  }
+
+  const selectPlant = (id: string, x: number, y: number) => () => {
     if (locked) { onLockedNavigate?.('Growth Forest'); return }
     setSelected(s => (s?.type === 'plant' && s.id === id ? null : { type: 'plant', id }))
+    careFor(id, x, y)
   }
-  const selectBuilding = (id: string) => () => {
+  const selectBuilding = (id: string, x: number, y: number) => () => {
     if (locked) { onLockedNavigate?.('Projects'); return }
     setSelected(s => (s?.type === 'building' && s.id === id ? null : { type: 'building', id }))
+    careFor(id, x, y)
   }
   const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
@@ -275,7 +293,8 @@ export default function VillageScene({
             foliage={live ? palette.foliage : undefined}
             changed={grew.has(plant.id) || planted.has(plant.id)}
             selected={selected?.type === 'plant' && selected.id === plant.id}
-            onClick={selectPlant(plant.id)} />
+            cared={caredId === plant.id}
+            onClick={selectPlant(plant.id, x, y)} />
         </g>
       ))}
       {/* A zero-habit account leaves this whole band of ground bare — the
@@ -287,11 +306,12 @@ export default function VillageScene({
           <circle r={3} fill="none" stroke="var(--emerald)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
-      {/* A leaf, literally among the plants (2026-08-22) — same reasoning as
-          the lake's fish above: fixed to the forest band (x 40-360, see
-          FOREST in lib/village/layout.ts) regardless of where the district's
-          own draggable nav badge has been moved to. */}
-      <FeatureIcon kind="leaf" x={90} y={GROUND_Y - 6} scale={0.8} opacity={0.5} />
+      {/* A leaf, literally next to a real plant (2026-08-24, was a fixed
+          spot in the forest band) — anchored to the first plant slot's
+          actual (x, y) so the icon marks something real growing there, not
+          an arbitrary decorative position. Falls back near the empty-state
+          dashed circle when there are no plants yet. */}
+      <FeatureIcon kind="leaf" x={(plantSlots[0]?.x ?? 200) - 16} y={(plantSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
 
       {/* Home — always present, grows detail with activity */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
@@ -313,7 +333,8 @@ export default function VillageScene({
           <BuildingShape building={building} x={x} y={y} scale={scale}
             changed={landmarked.has(building.id)}
             selected={selected?.type === 'building' && selected.id === building.id}
-            onClick={selectBuilding(building.id)} />
+            cared={caredId === building.id}
+            onClick={selectBuilding(building.id, x, y)} />
         </g>
       ))}
       {buildingSlots.length === 0 && (
@@ -321,10 +342,12 @@ export default function VillageScene({
           <rect x={-3} y={-6} width={6} height={6} fill="none" stroke="var(--slate)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
-      {/* A building, literally among the projects (2026-08-22) — fixed to
-          the district band (x 430-780, see DISTRICT in layout.ts), same
-          reasoning as the lake's fish and the forest's leaf above. */}
-      <FeatureIcon kind="building" x={470} y={GROUND_Y - 6} scale={0.8} opacity={0.5} />
+      {/* A building marker, literally next to a real building (2026-08-24,
+          was a fixed spot in the district band) — anchored to the first
+          building slot's actual (x, y), same reasoning as the forest's leaf
+          above. Falls back near the empty-state dashed square when there
+          are no buildings yet. */}
+      <FeatureIcon kind="building" x={(buildingSlots[0]?.x ?? 600) - 16} y={(buildingSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
           canopy is the continuum underneath, so the tree visibly thickens
@@ -363,6 +386,18 @@ export default function VillageScene({
       {/* The things that move. Above the scenery so smoke reads as being in
           front of the house, below the labels so it never fights the text. */}
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} />}
+
+      {/* Click-to-care sparkles — see careFor() above. Self-removing via its
+          own setTimeout, so this array is only ever non-empty for ~650ms. */}
+      {sparkles.map((s, i) => {
+        const angle = (i / 5) * Math.PI * 2 + (i * 0.7)
+        const dist = 18 + (i % 3) * 6
+        return (
+          <circle key={s.id} cx={s.x} cy={s.y} r={2} fill="var(--gold)" className="village-sparkle"
+            style={{ '--sx': `${Math.cos(angle) * dist}px`, '--sy': `${Math.sin(angle) * dist - 10}px` } as React.CSSProperties}
+            pointerEvents="none" />
+        )
+      })}
 
       {/* District labels — the actual navigation. Icons are real silhouettes
           of what's actually in each district (a fish for the lake, a leaf

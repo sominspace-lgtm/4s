@@ -510,6 +510,27 @@ select, option {
 .village-changed { filter: drop-shadow(0 0 1.5px var(--gold)); }
 .village-changed { animation: village-arrive 1200ms ease-out both; }
 
+/* Click-to-care (2026-08-24) — tapping a plant or building already opened a
+   name/stage callout; this is the tactile half, a quick happy bounce plus a
+   few sparkles thrown outward, so a tap reads as "you did something to it"
+   rather than just "a label appeared". Bounce overshoots past 1 and settles
+   back, distinct from the steady 1.08 hover scale so the two don't blur
+   together on a device with both mouse and touch. */
+@keyframes village-bounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.28); }
+  60%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.village-tapped { animation: village-bounce 480ms cubic-bezier(.34,1.56,.64,1) both; }
+
+@keyframes village-sparkle {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1); }
+}
+.village-sparkle { animation: village-sparkle 650ms ease-out forwards; }
+
 /* Checking something off should feel like it landed. The box fills, the
    tick draws itself in — one beat, then still. */
 @keyframes tick-in { from { stroke-dashoffset: 20; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
@@ -596,6 +617,7 @@ select, option {
   .village-drift, .village-glow, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-petal, .village-leaf, .village-snow, .village-changed, .village-cloud,
+  .village-tapped, .village-sparkle,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }

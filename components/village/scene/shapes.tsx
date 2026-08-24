@@ -9,13 +9,16 @@ import { STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
 
 // Plant silhouettes by stage. Each stage is a real change in shape, not just
 // scale — growth should read at a glance, from across the room.
-export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)', selected = false, onClick }: {
+export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)', selected = false, cared = false, onClick }: {
   plant: Plant; x: number; y: number; scale?: number; changed?: boolean
   /** The season's green. Dormant plants ignore it: resting is resting in
    *  any weather, and it has to stay visually distinct from autumn. */
   foliage?: string
   /** Tapped — keeps a styled callout open, see VillageScene's EntityCallout. */
   selected?: boolean
+  /** Click-to-care bounce (2026-08-24) — true for a brief window right
+   *  after a click, see VillageScene's careFor(). */
+  cared?: boolean
   onClick?: () => void
 }) {
   const i = STAGE_INDEX(plant.stage)
@@ -27,11 +30,17 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity}
       onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
-      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected'].filter(Boolean).join(' ') || undefined}>
+      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
       {/* Native <title> stays as the a11y fallback (screen readers, and
           anyone hovering without JS) — the STYLED callout that appears on
           click lives in VillageScene, keyed off `selected`. */}
       <title>{`${plant.name} — ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
+      {/* Invisible, generously-sized hit area (2026-08-24) — a sprout is
+          only ~7 SVG units wide, which on a phone-width render of the whole
+          800-unit scene is a couple of physical pixels: functionally
+          untappable without this. Doesn't grow the visible shape, only what
+          registers a tap. */}
+      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       {/* stem */}
       <rect x={-1.2} y={-h} width={2.4} height={h} rx={1.2} fill={color} opacity={0.75} />
       {i === 0 && <circle cy={-h - 2} r={3.5} fill={color} />}
@@ -58,9 +67,11 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   )
 }
 
-export function BuildingShape({ building, x, y, scale = 1, changed = false, selected = false, onClick }: {
+export function BuildingShape({ building, x, y, scale = 1, changed = false, selected = false, cared = false, onClick }: {
   building: Building; x: number; y: number; scale?: number; changed?: boolean
   selected?: boolean
+  /** Click-to-care bounce (2026-08-24) — see PlantShape's own doc. */
+  cared?: boolean
   onClick?: () => void
 }) {
   const spec = {
@@ -75,8 +86,11 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}
       onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
-      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected'].filter(Boolean).join(' ') || undefined}>
+      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
       <title>{`${building.title} — ${building.phase}`}</title>
+      {/* Same invisible hit-area reasoning as PlantShape — a blueprint-phase
+          building is a thin 26x16 outline, easy to miss on a phone. */}
+      {onClick && <circle cx={0} cy={-spec.h / 2} r={Math.max(18, spec.h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <rect
         x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={2}
         fill={spec.fill} fillOpacity={building.phase === 'blueprint' ? 0 : 0.55}
@@ -208,6 +222,12 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
     <g transform={`translate(${x} ${y})`} onClick={onClick} onPointerDown={onPointerDown}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
       <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Click to open.`}</title>
+      {/* Invisible hit area covering the whole badge + label stack, not
+          just the painted circle (2026-08-24) — the gaps between the
+          circle, icon, and the two text lines below it don't register taps
+          in SVG on their own, and the visible badge alone is a small target
+          on a phone-width render. */}
+      <rect x={-22} y={-30} width={44} height={54} fill="transparent" style={{ pointerEvents: 'all' }} />
       {/* A dashed ring while arranging — the same visual language blueprint-
           phase buildings already use for "not settled yet" — so a landmark
           reads as movable without needing separate instructional copy on
