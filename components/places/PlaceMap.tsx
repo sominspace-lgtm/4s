@@ -58,19 +58,39 @@ export default function PlaceMap({ places, theme, onSelect }: {
         center: bounds ? [(bounds.west + bounds.east) / 2, (bounds.south + bounds.north) / 2] : [0, 20],
         zoom: bounds ? 11 : 1.5,
       })
-      // Belt and suspenders: if 'load' never fires (OpenFreeMap hangs
-      // instead of erroring, a tile request stalls, whatever) the map was
-      // previously stuck showing a blank box forever with no explanation.
-      // 12s is generous for a vector style + first tile batch; past that,
-      // fail honest instead of failing silent.
+      // Belt and suspenders: if the style never finishes loading (OpenFreeMap
+      // hangs instead of erroring, a style/sprite request stalls, whatever)
+      // the map was previously stuck showing a blank box forever with no
+      // explanation. 12s is generous; past that, fail honest instead of
+      // failing silent.
       const loadTimeout = setTimeout(() => { if (!cancelled) setUnavailable(true) }, 12_000)
       map.on('error', () => { clearTimeout(loadTimeout); setUnavailable(true) })
-      map.on('load', () => {
+      // Ready when the STYLE itself is parsed and applied — not 'load',
+      // which waits for the FULL map (every tile the current viewport
+      // touches) and can hang indefinitely on one stalled/rate-limited tile
+      // request even though the map is already visually usable and the
+      // style has long since been ready to accept our own source/layers.
+      // That hang was the actual cause of "map shows but pins don't" — the
+      // base map paints from tiles that did arrive, while our own
+      // addSource/addLayer code sat forever behind a 'load' that never came.
+      //
+      // Checking isStyleLoaded() first (2026-08-24, second fix) rather than
+      // only listening for 'style.load' — the style here is a pre-built
+      // object, not a URL, so MapLibre can finish applying it synchronously
+      // inside the Map constructor itself. If that happens, 'style.load'
+      // fires and is gone before this next line even runs, and a bare
+      // `.on('style.load', ...)` would then wait forever for an event that
+      // already happened — the same class of "waiting on something already
+      // missed" bug as the 'load' hang, just at construction time instead
+      // of tile-load time.
+      function onStyleReady() {
         clearTimeout(loadTimeout)
         if (bounds) map.fitBounds([[bounds.west, bounds.south], [bounds.east, bounds.north]], { padding: 40, duration: 0 })
         setReady(true)
         setMapInstance(map)
-      })
+      }
+      if (map.isStyleLoaded()) onStyleReady()
+      else map.once('style.load', onStyleReady)
       mapRef.current = map
     })()
 
