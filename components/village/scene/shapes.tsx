@@ -170,13 +170,17 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
 
 export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book'
 
-// Real silhouettes instead of abstract geometric glyphs (2026-08-22) — a
-// district's icon should say what's actually there: a fish for the lake you
-// rest by, a leaf for the forest that grows, the house for home, a small
-// building for the projects going up, a book for the archive next to its own
-// tree. Plain SVG paths, not emoji, for the same reason the glyphs they
-// replace were plain characters and not emoji either — fill has to stay
-// themeable.
+// Illustrated figures instead of abstract/object glyphs (2026-08-24) — a
+// district should feel inhabited, not labeled: someone resting at the lake,
+// someone tending the forest, someone waving you home, someone building the
+// projects going up, someone reading in the archive. Same visual language as
+// BloomScan's garden characters (a simple standing/seated silhouette, head +
+// body + a gesture that says what they're doing) but drawn flat in a single
+// themeable fill instead of BloomScan's fixed multi-color palette, so these
+// stay in step with the rest of the icon system. `kind` keeps its original
+// district-content names (fish/leaf/home/building/book) even though each now
+// draws a figure, to avoid a wide rename through every call site — it's an
+// internal id, not user-facing.
 //
 // Exported (2026-08-22) so the same silhouette can be drawn twice: once on
 // the district's nav badge (which floats free and can be dragged anywhere —
@@ -190,41 +194,46 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
 }) {
   const body = (() => {
     switch (kind) {
-      case 'fish':
+      case 'fish': // Rest Lake — a figure sitting still, resting
         return (
           <g fill="var(--gold)">
-            <path d="M -7 0 C -7 -4.2 -2.5 -6.5 2 -5.2 C 5.5 -4.2 8 -1.8 9.5 0 C 8 1.8 5.5 4.2 2 5.2 C -2.5 6.5 -7 4.2 -7 0 Z" />
-            <path d="M 9.5 0 L 13.5 -3.5 L 13 0 L 13.5 3.5 Z" />
-            <circle cx={-3.8} cy={-1.2} r={0.9} fill="var(--surface)" />
+            <circle cx={0} cy={-9.5} r={2.3} />
+            <path d="M -5 4.5 Q -5.2 -3.5 0 -3 Q 5.2 -3.5 5 4.5 Z" />
           </g>
         )
-      case 'leaf':
+      case 'leaf': // Growth Forest — a figure bent over, tending the ground
+        return (
+          <g fill="none" stroke="var(--gold)" strokeWidth={1.6} strokeLinecap="round">
+            <circle cx={1.5} cy={-8.5} r={2.1} fill="var(--gold)" stroke="none" />
+            <path d="M -1.5 5 L -0.8 -3 L 3 -3.3 L 4 4.5 Z" fill="var(--gold)" stroke="none" />
+            <path d="M 2.5 -2 Q -2.5 1 -4 5" />
+          </g>
+        )
+      case 'home': // Home — a figure standing, waving you in
         return (
           <g fill="var(--gold)">
-            <path d="M 0 7 C -8 5 -8.5 -5.5 0 -8 C 8.5 -5.5 8 5 0 7 Z" />
-            <path d="M 0 6.5 L 0 -6.5" stroke="var(--surface)" strokeWidth={0.9} fill="none" strokeLinecap="round" />
+            <circle cx={0} cy={-9.3} r={2.3} />
+            <path d="M -3 5 L -2.6 -3.3 L 2.6 -3.3 L 3 5 Z" />
+            <path d="M -2.2 -1.5 L -5.5 3" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+            <path d="M 2.2 -2.5 L 6 -6.8" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
           </g>
         )
-      case 'home':
+      case 'building': // Projects — a figure building, tool raised
         return (
           <g fill="var(--gold)">
-            <path d="M -8 6 L -8 -1 L 0 -9 L 8 -1 L 8 6 L 3 6 L 3 -0.5 L -3 -0.5 L -3 6 Z" />
+            <circle cx={0} cy={-9.3} r={2.2} />
+            <path d="M -2.8 5 L -2.4 -3.3 L 2.4 -3.3 L 2.8 5 Z" />
+            <path d="M 2 -2.5 L 5 -6.5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+            <rect x={3.8} y={-9.2} width={3.2} height={2.4} rx={0.6} transform="rotate(-32 5.4 -8)" />
+            <path d="M -2 -1.5 L -4.5 2.5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
           </g>
         )
-      case 'building':
-        return (
-          <g>
-            <rect x={-6.5} y={-5} width={13} height={11} rx={1} fill="var(--gold)" fillOpacity={0.85} />
-            <path d="M -7.5 -5 L 0 -10 L 7.5 -5" fill="none" stroke="var(--gold)" strokeWidth={1.1} strokeLinejoin="round" />
-            <rect x={-3.5} y={-2} width={2.4} height={3} fill="var(--surface)" />
-            <rect x={1.1} y={-2} width={2.4} height={3} fill="var(--surface)" />
-          </g>
-        )
-      case 'book':
+      case 'book': // Archive — a figure sitting, reading
         return (
           <g fill="var(--gold)">
-            <path d="M -7.5 -4.5 C -4.8 -6 -1.8 -6 0 -4.2 C 1.8 -6 4.8 -6 7.5 -4.5 L 7.5 5 C 4.8 3.5 1.8 3.5 0 5.2 C -1.8 3.5 -4.8 3.5 -7.5 5 Z" />
-            <path d="M 0 -4.2 L 0 5.2" stroke="var(--surface)" strokeWidth={0.8} fill="none" />
+            <circle cx={0} cy={-8.3} r={2.2} />
+            <path d="M -4.3 4.5 Q -4.5 -2.5 0 -1.8 Q 4.5 -2.5 4.3 4.5 Z" />
+            <path d="M -3.2 0.8 L 0 -0.1 L 3.2 0.8 L 3.2 2.3 L 0 1.4 L -3.2 2.3 Z" fill="var(--surface)" />
           </g>
         )
     }
