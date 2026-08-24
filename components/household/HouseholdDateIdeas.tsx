@@ -23,7 +23,7 @@ const NO_AREA = 'Unsorted'
 // pin (status 'idea' — "want to go", same as adding one from Places
 // directly) rather than storing a redundant address field here; once
 // linked, that pin is what "where" actually means for the idea.
-function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAddTagDraft }: {
+function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAddTagDraft, spaceId, addPlace }: {
   area: string
   ideas: DateIdea[]
   places: ReturnType<typeof usePlaces>['places']
@@ -31,15 +31,33 @@ function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAd
   removeIdea: ReturnType<typeof useDateIdeas>['removeIdea']
   addTagDraft: Record<string, string>
   setAddTagDraft: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  spaceId: string | null
+  addPlace: ReturnType<typeof usePlaces>['addPlace']
 }) {
   const placeName = (id: string | null) => (id ? places.find(p => p.id === id)?.name ?? null : null)
   const grouped = STATUS_ORDER.map(s => ({ status: s, ideas: ideas.filter(i => i.status === s) })).filter(g => g.ideas.length > 0)
+
+  // Retrofitting an address onto an idea that already exists (2026-08-24) —
+  // the "type an address to create a pin" flow previously only ran at
+  // creation time; most ideas here were bulk-added with no address at all.
+  const [addressDraft, setAddressDraft] = useState<Record<string, string>>({})
+  const [addingAddress, setAddingAddress] = useState<Record<string, boolean>>({})
 
   async function addTag(idea: DateIdea) {
     const val = (addTagDraft[idea.id] ?? '').trim()
     if (!val) return
     await update(idea.id, { tags: [...idea.tags, val] })
     setAddTagDraft(d => ({ ...d, [idea.id]: '' }))
+  }
+
+  async function saveAddress(idea: DateIdea) {
+    const val = (addressDraft[idea.id] ?? '').trim()
+    if (!val) return
+    const { place, error } = await addPlace({ name: idea.title, address: val, shared: !!spaceId, status: 'idea' }, spaceId)
+    if (error) { console.error('Failed to create pin:', error); return }
+    if (place) await update(idea.id, { place_id: place.id })
+    setAddressDraft(d => ({ ...d, [idea.id]: '' }))
+    setAddingAddress(d => ({ ...d, [idea.id]: false }))
   }
 
   return (
@@ -95,6 +113,32 @@ function AreaGroup({ area, ideas, places, update, removeIdea, addTagDraft, setAd
                       <option value="">No pin</option>
                       {places.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
+
+                    {/* Type an address for an idea that has no pin yet
+                        (2026-08-24) — most ideas here were bulk-added with
+                        no location at all; this is the retrofit path,
+                        same "creates a real want-to-go pin" mechanism the
+                        add-new-idea form already uses. */}
+                    {!idea.place_id && (
+                      addingAddress[idea.id] ? (
+                        <>
+                          <input
+                            value={addressDraft[idea.id] ?? ''}
+                            onChange={e => setAddressDraft(d => ({ ...d, [idea.id]: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveAddress(idea) } }}
+                            placeholder="Address"
+                            style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', width: '130px' }}
+                            autoFocus
+                          />
+                          <button onClick={() => saveAddress(idea)} className="btn btn-ghost press" style={{ fontSize: '0.6rem', padding: '0.2rem 0.5rem' }}>Save</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setAddingAddress(d => ({ ...d, [idea.id]: true }))} className="press"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.7, fontSize: '0.62rem' }}>
+                          + address
+                        </button>
+                      )
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
@@ -196,6 +240,8 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
           removeIdea={removeIdea}
           addTagDraft={addTagDraft}
           setAddTagDraft={setAddTagDraft}
+          spaceId={spaceId}
+          addPlace={addPlace}
         />
       ))}
 

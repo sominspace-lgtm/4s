@@ -114,7 +114,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [mealDay, setMealDay] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
   const [mealTitle, setMealTitle] = useState('')
-  const [mealCook, setMealCook] = useState('')
   // "Eating out" as a first-class option (2026-08-24) — previously the only
   // way to record a night out was to type it as if it were a recipe.
   const [mealKind, setMealKind] = useState<'cooking' | 'eating_out'>('cooking')
@@ -341,7 +340,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                         textDecorationColor: 'var(--faint)', textUnderlineOffset: '2px',
                       }}
                     >{m.title}</button>
-                    {m.cook && <span style={{ fontSize: '0.56rem', color: 'var(--emerald)', flexShrink: 0 }}>{m.cook}</span>}
                     <button onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
                   </div>
                 ))}
@@ -358,8 +356,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             // typed one still wins, so "Eating out — that ramen place" works.
             const title = mealTitle.trim() || (eatingOut ? 'Eating out' : '')
             if (!title) return
-            await h.addMeal(mealDay, mealSlot, title, eatingOut ? null : mealCook.trim() || null, { kind: mealKind })
-            setMealTitle(''); setMealCook('')
+            // "Who cooks" removed entirely (2026-08-24) — was tracked for
+            // both meal kinds, now tracked for neither.
+            await h.addMeal(mealDay, mealSlot, title, null, { kind: mealKind })
+            setMealTitle('')
           }}
           style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
         >
@@ -374,9 +374,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <input value={mealTitle} onChange={e => setMealTitle(e.target.value)}
             placeholder={mealKind === 'eating_out' ? 'Where? (optional)' : "What's cooking?"}
             style={{ ...input, flex: 1, minWidth: '130px' }} />
-          {mealKind === 'cooking' && (
-            <input value={mealCook} onChange={e => setMealCook(e.target.value)} placeholder="Who cooks" style={{ ...input, width: '100px' }} />
-          )}
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
       </section>
@@ -860,7 +857,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
               <button onClick={() => setSelectedMealId(null)} aria-label="Close" className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
             </div>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginBottom: '1rem' }}>
-              {selectedMeal.slot} · {format(parseISO(selectedMeal.meal_date), 'EEEE d MMM')}{selectedMeal.cook ? ` · ${selectedMeal.cook} cooking` : ''}
+              {selectedMeal.slot} · {format(parseISO(selectedMeal.meal_date), 'EEEE d MMM')}
             </div>
 
             <label style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: '0.3rem' }}>Recipe link</label>

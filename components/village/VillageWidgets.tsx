@@ -55,7 +55,6 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
             <Line strong>
               {tonight.kind === 'eating_out' ? '🍴 ' : ''}{tonight.title}
             </Line>
-            {tonight.cook && <Line dim>{tonight.cook} is cooking</Line>}
             {tonight.kind === 'eating_out' && <Line dim>not cooking tonight</Line>}
           </>
         ) : (

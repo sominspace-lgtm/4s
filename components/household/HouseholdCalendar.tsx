@@ -78,7 +78,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
 
     for (const m of meals) {
       if (isSameDay(parseISO(m.meal_date), day)) {
-        out.push({ kind: 'meal', label: m.title, sub: m.cook ? `${m.slot} · ${m.cook}` : m.slot })
+        out.push({ kind: 'meal', label: m.title, sub: m.slot })
       }
     }
 
