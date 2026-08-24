@@ -291,82 +291,86 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
 
 export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people'
 
-// Illustrated figures instead of abstract/object glyphs (2026-08-24) — a
-// district should feel inhabited, not labeled: someone resting at the lake,
-// someone tending the forest, someone waving you home, someone building the
-// projects going up, someone reading in the archive. Same visual language as
-// BloomScan's garden characters (a simple standing/seated silhouette, head +
-// body + a gesture that says what they're doing) but drawn flat in a single
-// themeable fill instead of BloomScan's fixed multi-color palette, so these
-// stay in step with the rest of the icon system. `kind` keeps its original
-// district-content names (fish/leaf/home/building/book) even though each now
-// draws a figure, to avoid a wide rename through every call site — it's an
-// internal id, not user-facing.
+// Small illustrated objects, not figures (2026-08-24, replaces the
+// illustrated-figure pass from earlier the same day) — the same "real prop,
+// small grounding shadow, flat gold-family fill, one surface/blush accent
+// detail" construction as MailboxShape/SignpostShape/PondShape/BenchShape,
+// so every small thing in the scene — nav badge icon or standalone prop —
+// reads as one consistent object language instead of two (people-figures
+// for districts, objects for everything added since). A sprout in a pot for
+// the forest, a house for Home, a small building for Projects, a stack of
+// books for the Archive, a planted map pin for Places, a wrapped gift for
+// People (not a second person-figure — the district is already named
+// "People"; the icon says what you'd bring them). `kind` keeps its
+// original district-content names even though none of these are people
+// anymore — internal id, not user-facing.
 //
-// Exported (2026-08-22) so the same silhouette can be drawn twice: once on
-// the district's nav badge (which floats free and can be dragged anywhere —
-// see DistrictLabel below), and once fixed directly on the scenery itself —
-// a fish actually in the lake, a leaf actually by the forest's plants — so
-// the icon reads as "this is what's here" even when the badge has been
-// dragged somewhere else. `x`/`y` place it directly (not badge-relative);
-// callers pass the scene's own coordinates.
+// Exported (2026-08-22) so the same icon can be drawn twice: once on the
+// district's nav badge (which floats free and can be dragged anywhere — see
+// DistrictLabel below), and once fixed directly on the scenery itself, so
+// it reads as "this is what's here" even when the badge has been dragged
+// somewhere else. `x`/`y` place it directly (not badge-relative); callers
+// pass the scene's own coordinates.
 export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
   kind: DistrictIconKind; x?: number; y?: number; scale?: number; opacity?: number
 }) {
   const body = (() => {
     switch (kind) {
-      case 'leaf': // Growth Forest — a figure bent over, tending the ground
+      case 'leaf': // Growth Forest — a sprout in a pot
         return (
-          <g fill="none" stroke="var(--gold)" strokeWidth={1.6} strokeLinecap="round">
-            <circle cx={1.5} cy={-8.5} r={2.1} fill="var(--gold)" stroke="none" />
-            <path d="M -1.5 5 L -0.8 -3 L 3 -3.3 L 4 4.5 Z" fill="var(--gold)" stroke="none" />
-            <path d="M 2.5 -2 Q -2.5 1 -4 5" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
+            <path d="M -3.5 4 L -2.8 -1 L 2.8 -1 L 3.5 4 Z" fill="var(--gold)" opacity={0.55} />
+            <path d="M 0 -1 Q -4 -6 -1 -10 Q 2 -8 0 -1 Z" fill="var(--gold)" />
+            <path d="M 0 -1 Q 4 -5 2 -9 Q -1 -7 0 -1 Z" fill="var(--gold)" opacity={0.8} />
           </g>
         )
-      case 'home': // Home — a figure standing, waving you in
+      case 'home': // Home — a small house
         return (
-          <g fill="var(--gold)">
-            <circle cx={0} cy={-9.3} r={2.3} />
-            <path d="M -3 5 L -2.6 -3.3 L 2.6 -3.3 L 3 5 Z" />
-            <path d="M -2.2 -1.5 L -5.5 3" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
-            <path d="M 2.2 -2.5 L 6 -6.8" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={7} ry={1.4} fill="var(--text)" opacity={0.12} />
+            <path d="M -6 4 L -6 -3 L 0 -9 L 6 -3 L 6 4 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={0.8} />
+            <rect x={-2} y={-1.5} width={4} height={5.5} fill="var(--surface)" opacity={0.85} />
           </g>
         )
-      case 'building': // Projects — a figure building, tool raised
+      case 'building': // Projects — a small building, crane beside it
         return (
-          <g fill="var(--gold)">
-            <circle cx={0} cy={-9.3} r={2.2} />
-            <path d="M -2.8 5 L -2.4 -3.3 L 2.4 -3.3 L 2.8 5 Z" />
-            <path d="M 2 -2.5 L 5 -6.5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
-            <rect x={3.8} y={-9.2} width={3.2} height={2.4} rx={0.6} transform="rotate(-32 5.4 -8)" />
-            <path d="M -2 -1.5 L -4.5 2.5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={6.5} ry={1.3} fill="var(--text)" opacity={0.12} />
+            <rect x={-5} y={-8} width={10} height={12} rx={1} fill="var(--gold)" fillOpacity={0.6} stroke="var(--gold)" strokeWidth={0.7} />
+            <rect x={-3} y={-5.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
+            <rect x={1} y={-5.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
+            <rect x={-3} y={-1.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
+            <rect x={1} y={-1.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
+            <path d="M 5 -8 L 8 -13" stroke="var(--gold)" strokeWidth={1} fill="none" strokeLinecap="round" />
           </g>
         )
-      case 'book': // Archive — a figure sitting, reading
+      case 'book': // Archive — a small stack of books
         return (
-          <g fill="var(--gold)">
-            <circle cx={0} cy={-8.3} r={2.2} />
-            <path d="M -4.3 4.5 Q -4.5 -2.5 0 -1.8 Q 4.5 -2.5 4.3 4.5 Z" />
-            <path d="M -3.2 0.8 L 0 -0.1 L 3.2 0.8 L 3.2 2.3 L 0 1.4 L -3.2 2.3 Z" fill="var(--surface)" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={6.5} ry={1.3} fill="var(--text)" opacity={0.12} />
+            <rect x={-6} y={0.5} width={12} height={3} rx={0.6} fill="var(--gold)" opacity={0.55} />
+            <rect x={-5} y={-2.5} width={10} height={3} rx={0.6} fill="var(--gold)" opacity={0.7} />
+            <rect x={-4} y={-5.5} width={8} height={3} rx={0.6} fill="var(--gold)" opacity={0.85} />
           </g>
         )
-      case 'places': // Places — a figure out exploring, holding up a pin
+      case 'places': // Places — a map pin, planted
         return (
-          <g fill="var(--gold)">
-            <circle cx={0} cy={-9.3} r={2.2} />
-            <path d="M -2.6 5 L -2.2 -3.3 L 2.2 -3.3 L 2.6 5 Z" />
-            <path d="M 2 -2.5 L 5 -5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
-            <path d="M 5 -6.4 L 6.3 -4.2 L 5 -2.9 L 3.7 -4.2 Z" />
-            <path d="M -2 -1.5 L -4.5 2" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
+            <path d="M 0 -12 C 4 -12 6 -9 6 -6 C 6 -2 0 4 0 4 C 0 4 -6 -2 -6 -6 C -6 -9 -4 -12 0 -12 Z" fill="var(--gold)" opacity={0.75} />
+            <circle cx={0} cy={-6} r={2} fill="var(--surface)" opacity={0.85} />
           </g>
         )
-      case 'people': // People — two figures standing together
+      case 'people': // People — a wrapped gift, not another figure
         return (
-          <g fill="var(--gold)">
-            <circle cx={-3} cy={-7.8} r={1.9} />
-            <path d="M -4.9 5 L -4.6 -2.3 L -1.4 -2.3 L -1.1 5 Z" />
-            <circle cx={3.2} cy={-9.3} r={2.1} />
-            <path d="M 1.2 5 L 1.5 -3.2 L 4.9 -3.2 L 5.2 5 Z" />
+          <g>
+            <ellipse cx={0} cy={4.5} rx={5.5} ry={1.2} fill="var(--text)" opacity={0.12} />
+            <rect x={-5} y={-3} width={10} height={7} rx={1} fill="var(--gold)" opacity={0.6} />
+            <rect x={-5.5} y={-5} width={11} height={2.5} rx={0.8} fill="var(--gold)" opacity={0.8} />
+            <rect x={-1} y={-5} width={2} height={9} fill="var(--surface)" opacity={0.85} />
+            <path d="M -1.5 -5 Q -4 -8 -1 -9 Q 0 -7 -1.5 -5 Z" fill="var(--blush)" opacity={0.85} />
+            <path d="M 1.5 -5 Q 4 -8 1 -9 Q 0 -7 1.5 -5 Z" fill="var(--blush)" opacity={0.85} />
           </g>
         )
     }
