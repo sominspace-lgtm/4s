@@ -6,7 +6,7 @@ import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -25,7 +25,7 @@ export const GROUND_Y = 372
 // tuft's position and height stable across renders — same "pure function of
 // an id" rule the rest of the village runs under, just with a literal index
 // standing in for a real entity id since these aren't tied to any data.
-const GRASS_TUFTS = Array.from({ length: 34 }, (_, i) => {
+const GRASS_TUFTS = Array.from({ length: 44 }, (_, i) => {
   const seed = `grass-${i}`
   const x = 20 + hashPos(seed) * 760
   const h = 4 + hashPos(seed + 'h') * 5
@@ -37,7 +37,7 @@ const GRASS_TUFTS = Array.from({ length: 34 }, (_, i) => {
 // 14 stones AND a distant treeline AND pollen motes, where Village had only
 // the grass. Stones sit a little further from the path line than the grass
 // does, low opacity, so they read as texture rather than as things.
-const STONES = Array.from({ length: 16 }, (_, i) => {
+const STONES = Array.from({ length: 22 }, (_, i) => {
   const seed = `stone-${i}`
   const x = 15 + hashPos(seed) * 770
   const r = 1.4 + hashPos(seed + 'r') * 2.2
@@ -48,7 +48,7 @@ const STONES = Array.from({ length: 16 }, (_, i) => {
 // empty gap between horizon and ground that made the scene read as flat.
 // A little more here than one flat band: two overlapping rows at slightly
 // different heights, same trick BloomScan's own treeline uses.
-const DISTANT_TREES = Array.from({ length: 13 }, (_, i) => {
+const DISTANT_TREES = Array.from({ length: 17 }, (_, i) => {
   const seed = `dtree-${i}`
   const x = 10 + hashPos(seed) * 780
   const h = 8 + hashPos(seed + 'h') * 7
@@ -62,6 +62,32 @@ const POLLEN = [
   { x: 176, y: 185 }, { x: 248, y: 240 }, { x: 496, y: 165 }, { x: 680, y: 350 },
   { x: 340, y: 300 }, { x: 590, y: 220 },
 ]
+
+// A path through the ground, and a few small props along it (2026-08-24) —
+// "less empty, more composed": a dirt path implies the districts are places
+// you actually walk between, rather than icons floating over bare ground. It
+// deliberately does NOT try to touch every district label's exact
+// coordinate — those float freely as draggable UI badges (see arrange mode
+// above) and a path wired to their literal position would tear the moment
+// someone rearranges one. This is scenery, not wiring: one gentle curve
+// through the ground band, fixed regardless of layout.
+const PATH_D = `M 60 ${GROUND_Y - 28} Q 220 ${GROUND_Y - 44} 380 ${GROUND_Y - 26} T 740 ${GROUND_Y - 34}`
+
+// A pond, two benches, three flower beds — small fixed props scattered near
+// the path, same "pure atmosphere, deterministic position" rule as
+// STONES/POLLEN above.
+const PROPS = {
+  pond: { x: 460, y: GROUND_Y + 30 },
+  benches: [
+    { x: 260, y: GROUND_Y - 6 },
+    { x: 660, y: GROUND_Y + 4 },
+  ],
+  flowerBeds: [
+    { x: 90, y: GROUND_Y + 14, hue: 'var(--blush)' },
+    { x: 340, y: GROUND_Y - 30, hue: 'var(--gold)' },
+    { x: 570, y: GROUND_Y + 20, hue: 'var(--blush)' },
+  ],
+}
 
 export type { Slot } from '@/lib/village/layout'
 
@@ -80,12 +106,15 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   home: { x: 400, y: 250 },
   projects: { x: 620, y: 250 },
   archive: { x: 725, y: 190 },
+  people: { x: 265, y: 165 },
+  places: { x: 505, y: 165 },
 }
 
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
+  placesCount = 0, peopleCount = 0, soonestBirthdayDays = null,
 }: {
   village: VillageState
   live: boolean
@@ -95,6 +124,12 @@ export default function VillageScene({
   buildingSlots: (Slot & { building: VillageState['buildings'][number] })[]
   horizon?: HorizonPlace[]
   changes?: VillageChanges
+  /** Saved pins, for the Places district's count badge. */
+  placesCount?: number
+  /** Contacts, for the People district's count badge. */
+  peopleCount?: number
+  /** Days until the soonest upcoming birthday, if any — see usePeople's daysUntilBirthday. */
+  soonestBirthdayDays?: number | null
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -295,6 +330,10 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
+      {/* The path — see PATH_D above. */}
+      <path d={PATH_D} fill="none" stroke="var(--surface2)" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
+      <path d={PATH_D} fill="none" stroke="var(--border)" strokeWidth={5} strokeDasharray="1 7" strokeLinecap="round" opacity={0.6} />
+
       {/* Grass — texture along the ground line, see GRASS_TUFTS above.
           Fixed BloomScan grass greens (#8CA57C/#94AD84, same two tones its
           own tufts alternate between) instead of the theme's --emerald
@@ -317,6 +356,11 @@ export default function VillageScene({
           <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
         ))}
       </g>
+
+      {/* Small props along the path — see PROPS above. */}
+      <PondShape x={PROPS.pond.x} y={PROPS.pond.y} />
+      {PROPS.benches.map((b, i) => <BenchShape key={i} x={b.x} y={b.y} />)}
+      {PROPS.flowerBeds.map((f, i) => <FlowerBedShape key={i} x={f.x} y={f.y} hue={f.hue} />)}
 
       {/* Pollen motes — pure atmosphere, see POLLEN above. */}
       <g opacity={0.3}>
@@ -507,6 +551,17 @@ export default function VillageScene({
       <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={nav('Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
+      {/* Places and People (2026-08-24) — the same real-district mechanism
+          as the five above, extended to the two other things 4S already
+          tracks that had no presence in the village at all: your saved pins
+          and the people in your life. Counts come straight from
+          usePlaces()/usePeople() in Village.tsx, no new data model. */}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={nav('Places', () => goToSection('places'))}
+        count={`${placesCount} saved`}
+        draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={nav('People', () => goToPersonal('people'))}
+        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${soonestBirthdayDays}d`) : `${peopleCount} close`}
+        draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
 
       {/* Styled callout for whichever plant/building is selected — see the
           selection state and locked-mode guard set up above. */}

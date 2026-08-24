@@ -8,6 +8,8 @@ import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
+import { usePlaces } from '@/lib/hooks/usePlaces'
+import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -59,6 +61,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const clock = useVillageClock()
   const { spaces } = useSharedSpaces(userId)
   const horizon = useSharedHorizon(spaces.length > 0)
+  const { places } = usePlaces()
+  const { people } = usePeople()
+  const soonestBirthdayDays = useMemo(() => {
+    const upcoming = people.map(p => daysUntilBirthday(p.birthday)).filter((d): d is number => d != null)
+    return upcoming.length ? Math.min(...upcoming) : null
+  }, [people])
 
   const accountCreated = useMemo(
     () => (accountCreatedAt ? parseISO(accountCreatedAt) : null),
@@ -153,7 +161,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           horizon={horizon} changes={changes}
           locked={locked} onLockedNavigate={onLockedNavigate}
           layout={layout} arranging={arranging}
-          onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined} />
+          onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
+          placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

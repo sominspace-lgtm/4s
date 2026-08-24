@@ -144,6 +144,46 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
   )
 }
 
+// Small ambient scenery — pond, bench, flower bed (2026-08-24) — pure
+// decoration, no data behind any of it, same as GRASS_TUFTS/STONES/POLLEN in
+// VillageScene. These are what make the composed area between districts read
+// as "a place" rather than "the gaps between the things that matter" — the
+// goal is Animal Crossing × stationery, not more UI. Flat shapes, theme-
+// colored via CSS vars, same idiom as every other scene element.
+export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8}>
+      <ellipse cx={0} cy={0} rx={22} ry={7} fill="var(--slate)" opacity={0.28} />
+      <ellipse cx={0} cy={0} rx={22} ry={7} fill="none" stroke="var(--slate)" strokeWidth={0.7} opacity={0.35} />
+      <ellipse cx={-5} cy={-1.5} rx={6} ry={1.6} fill="var(--surface)" opacity={0.25} />
+    </g>
+  )
+}
+
+export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <ellipse cx={0} cy={2} rx={9} ry={1.6} fill="var(--text)" opacity={0.1} />
+      <rect x={-8} y={-4} width={16} height={2} rx={0.8} fill="var(--slate)" opacity={0.75} />
+      <rect x={-8} y={-1} width={16} height={1.6} rx={0.6} fill="var(--slate)" opacity={0.6} />
+      <rect x={-7} y={-4} width={1.4} height={6} fill="var(--slate)" opacity={0.6} />
+      <rect x={5.6} y={-4} width={1.4} height={6} fill="var(--slate)" opacity={0.6} />
+    </g>
+  )
+}
+
+export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: number; y: number; scale?: number; hue?: string }) {
+  const petals = [-8, -3, 3, 8]
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <ellipse cx={0} cy={2} rx={13} ry={3.4} fill="var(--emerald)" opacity={0.18} />
+      {petals.map((dx, i) => (
+        <circle key={i} cx={dx} cy={-0.5 - (i % 2)} r={2} fill={hue} opacity={0.8} />
+      ))}
+    </g>
+  )
+}
+
 // Styled callout for a selected plant/building (2026-08-21) — the native
 // SVG <title> tooltip on each shape still works (hover, no-JS, screen
 // readers), but it renders in the browser's own unstyled tooltip box, which
@@ -168,7 +208,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book'
+export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people'
 
 // Illustrated figures instead of abstract/object glyphs (2026-08-24) — a
 // district should feel inhabited, not labeled: someone resting at the lake,
@@ -234,6 +274,25 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
             <circle cx={0} cy={-8.3} r={2.2} />
             <path d="M -4.3 4.5 Q -4.5 -2.5 0 -1.8 Q 4.5 -2.5 4.3 4.5 Z" />
             <path d="M -3.2 0.8 L 0 -0.1 L 3.2 0.8 L 3.2 2.3 L 0 1.4 L -3.2 2.3 Z" fill="var(--surface)" />
+          </g>
+        )
+      case 'places': // Places — a figure out exploring, holding up a pin
+        return (
+          <g fill="var(--gold)">
+            <circle cx={0} cy={-9.3} r={2.2} />
+            <path d="M -2.6 5 L -2.2 -3.3 L 2.2 -3.3 L 2.6 5 Z" />
+            <path d="M 2 -2.5 L 5 -5" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+            <path d="M 5 -6.4 L 6.3 -4.2 L 5 -2.9 L 3.7 -4.2 Z" />
+            <path d="M -2 -1.5 L -4.5 2" stroke="var(--gold)" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+          </g>
+        )
+      case 'people': // People — two figures standing together
+        return (
+          <g fill="var(--gold)">
+            <circle cx={-3} cy={-7.8} r={1.9} />
+            <path d="M -4.9 5 L -4.6 -2.3 L -1.4 -2.3 L -1.1 5 Z" />
+            <circle cx={3.2} cy={-9.3} r={2.1} />
+            <path d="M 1.2 5 L 1.5 -3.2 L 4.9 -3.2 L 5.2 5 Z" />
           </g>
         )
     }
