@@ -81,6 +81,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
   const selectedTrip = useMemo(() => trips.find(t => t.id === selectedTripId) ?? null, [trips, selectedTripId])
 
   const kindsInUse = useMemo(() => Array.from(new Set(places.map(p => p.kind))), [places])
+  const tagsInUse = useMemo(() => Array.from(new Set(places.flatMap(p => p.tags))).sort(), [places])
 
   // Resolve the active saved radius filter (if any) to a center point —
   // looked up from allPlaces, not the already-filtered `places`, so a
@@ -122,6 +123,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
         <PinFilters
           filters={filters}
           kindsInUse={kindsInUse}
+          tagsInUse={tagsInUse}
           onChange={setFilters}
           savedFilters={savedFilters}
           placesWithLocation={withLocation}

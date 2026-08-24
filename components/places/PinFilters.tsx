@@ -10,11 +10,13 @@ export interface PinFilterState {
   query: string
   kind: string | null
   status: PlaceStatus | null
+  /** Multi-select — 'nearby', 'hidden-gem', or any freeform tag a pin carries. Matches if a pin has ANY of these (2026-08-24). */
+  tags: string[]
   /** Active saved radius filter's id (see PlaceFilter) — 'null' means show everything. */
   radiusFilterId: string | null
 }
 
-export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, status: null, radiusFilterId: null }
+export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, status: null, tags: [], radiusFilterId: null }
 
 const STATUS_CHIPS: { id: PlaceStatus; label: string }[] = [
   { id: 'idea', label: 'Want to go' },
@@ -28,9 +30,10 @@ const inputStyle: React.CSSProperties = {
   padding: '0.3rem 0.55rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.72rem', outline: 'none',
 }
 
-export default function PinFilters({ filters, kindsInUse, onChange, savedFilters, placesWithLocation, onAddFilter, onRemoveFilter }: {
+export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, savedFilters, placesWithLocation, onAddFilter, onRemoveFilter }: {
   filters: PinFilterState
   kindsInUse: string[]
+  tagsInUse: string[]
   onChange: (next: PinFilterState) => void
   /** Custom named radius filters ("Near Our Home", "Downtown SLO", …), see usePlaceFilters. */
   savedFilters: PlaceFilter[]
@@ -103,6 +106,24 @@ export default function PinFilters({ filters, kindsInUse, onChange, savedFilters
         </div>
       )}
 
+      {tagsInUse.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+          {tagsInUse.map(t => {
+            const active = filters.tags.includes(t)
+            return (
+              <button
+                key={t}
+                onClick={() => onChange({ ...filters, tags: active ? filters.tags.filter(x => x !== t) : [...filters.tags, t] })}
+                className="btn press"
+                style={chipStyle(active)}
+              >
+                #{t}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Custom "near a place" filters (2026-08-24) — e.g. "Near Our Home":
           a saved radius around an existing pin, so the map/list can be
           switched to show only what falls inside it. */}
@@ -150,13 +171,14 @@ export default function PinFilters({ filters, kindsInUse, onChange, savedFilters
   )
 }
 
-export function applyPinFilters<T extends { name: string; kind: string; status: PlaceStatus; note: string | null; city: string | null; lat: number | null; lng: number | null }>(
+export function applyPinFilters<T extends { name: string; kind: string; status: PlaceStatus; note: string | null; city: string | null; lat: number | null; lng: number | null; tags: string[] }>(
   places: T[], filters: PinFilterState, radius: { lat: number; lng: number; km: number } | null = null,
 ): T[] {
   const q = filters.query.trim().toLowerCase()
   return places.filter(p => {
     if (filters.kind && p.kind !== filters.kind) return false
     if (filters.status && p.status !== filters.status) return false
+    if (filters.tags.length > 0 && !filters.tags.some(t => p.tags.includes(t))) return false
     if (q && !p.name.toLowerCase().includes(q) && !(p.note ?? '').toLowerCase().includes(q) && !(p.city ?? '').toLowerCase().includes(q)) return false
     if (radius) {
       if (p.lat == null || p.lng == null) return false
