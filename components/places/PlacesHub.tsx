@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { usePlaces } from '@/lib/hooks/usePlaces'
+import { usePlaceFilters } from '@/lib/hooks/usePlaceFilters'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import PinList from '@/components/places/PinList'
 import PinFilters, { DEFAULT_PIN_FILTERS, applyPinFilters, type PinFilterState } from '@/components/places/PinFilters'
@@ -61,6 +62,8 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
   const withLocation = useMemo(() => shared(allWithLocation), [allWithLocation, sharedOnly])
   const withoutLocation = useMemo(() => shared(allWithoutLocation), [allWithoutLocation, sharedOnly])
 
+  const { filters: savedFilters, addFilter, removeFilter } = usePlaceFilters(spaceId)
+
   const [tab, setTab] = useState<SubTab>('map')
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
   // An id, not a Place object — a stored object snapshot would go stale the
@@ -78,9 +81,23 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
   const selectedTrip = useMemo(() => trips.find(t => t.id === selectedTripId) ?? null, [trips, selectedTripId])
 
   const kindsInUse = useMemo(() => Array.from(new Set(places.map(p => p.kind))), [places])
-  const filtered = useMemo(() => applyPinFilters(places, filters), [places, filters])
-  const filteredWithLocation = useMemo(() => applyPinFilters(withLocation, filters), [withLocation, filters])
-  const filteredWithoutLocation = useMemo(() => applyPinFilters(withoutLocation, filters), [withoutLocation, filters])
+
+  // Resolve the active saved radius filter (if any) to a center point —
+  // looked up from allPlaces, not the already-filtered `places`, so a
+  // filter's center pin still resolves even while other filters are narrowing
+  // the visible set.
+  const activeRadius = useMemo(() => {
+    if (!filters.radiusFilterId) return null
+    const f = savedFilters.find(sf => sf.id === filters.radiusFilterId)
+    if (!f) return null
+    const center = allPlaces.find(p => p.id === f.center_place_id)
+    if (!center || center.lat == null || center.lng == null) return null
+    return { lat: center.lat, lng: center.lng, km: f.radius_km }
+  }, [filters.radiusFilterId, savedFilters, allPlaces])
+
+  const filtered = useMemo(() => applyPinFilters(places, filters, activeRadius), [places, filters, activeRadius])
+  const filteredWithLocation = useMemo(() => applyPinFilters(withLocation, filters, activeRadius), [withLocation, filters, activeRadius])
+  const filteredWithoutLocation = useMemo(() => applyPinFilters(withoutLocation, filters, activeRadius), [withoutLocation, filters, activeRadius])
 
   return (
     <div>
@@ -101,7 +118,20 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
         )}
       </div>
 
-      {tab !== 'trips' && <PinFilters filters={filters} kindsInUse={kindsInUse} onChange={setFilters} />}
+      {tab !== 'trips' && (
+        <PinFilters
+          filters={filters}
+          kindsInUse={kindsInUse}
+          onChange={setFilters}
+          savedFilters={savedFilters}
+          placesWithLocation={withLocation}
+          onAddFilter={(label, centerPlaceId, radiusKm) => addFilter(label, centerPlaceId, radiusKm)}
+          onRemoveFilter={id => {
+            if (filters.radiusFilterId === id) setFilters(f => ({ ...f, radiusFilterId: null }))
+            removeFilter(id)
+          }}
+        />
+      )}
 
       {tab === 'map' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
