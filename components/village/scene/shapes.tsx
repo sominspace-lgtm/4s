@@ -27,42 +27,58 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   const color = plant.dormant ? 'var(--muted)' : foliage
   const opacity = plant.dormant ? 0.4 : 1
 
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity}
-      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
-      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
-      {/* Native <title> stays as the a11y fallback (screen readers, and
-          anyone hovering without JS) — the STYLED callout that appears on
-          click lives in VillageScene, keyed off `selected`. */}
-      <title>{`${plant.name} — ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity}>
       {/* Invisible, generously-sized hit area (2026-08-24) — a sprout is
           only ~7 SVG units wide, which on a phone-width render of the whole
           800-unit scene is a couple of physical pixels: functionally
-          untappable without this. Doesn't grow the visible shape, only what
-          registers a tap. */}
-      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      {/* stem */}
-      <rect x={-1.2} y={-h} width={2.4} height={h} rx={1.2} fill={color} opacity={0.75} />
-      {i === 0 && <circle cy={-h - 2} r={3.5} fill={color} />}
-      {i === 1 && (
-        <>
-          <ellipse cx={-5} cy={-h + 2} rx={5.5} ry={3.4} fill={color} transform="rotate(-24 -5 0)" />
-          <ellipse cx={5} cy={-h - 1} rx={5.5} ry={3.4} fill={color} transform="rotate(24 5 0)" />
-        </>
-      )}
-      {i >= 2 && (
-        <>
-          <circle cx={0} cy={-h} r={w / 2} fill={color} opacity={0.92} />
-          <circle cx={-w / 3.2} cy={-h + w / 5} r={w / 3.4} fill={color} opacity={0.75} />
-          <circle cx={w / 3.2} cy={-h + w / 5.5} r={w / 3.8} fill={color} opacity={0.7} />
-          {/* Sheen — a plain flat-filled circle reads as a paper cutout;
-              this makes it read as lit from above instead. */}
-          {!plant.dormant && <circle cx={0} cy={-h} r={w / 2} fill="url(#vsheen)" />}
-        </>
-      )}
-      {plant.dormant && i >= 1 && (
-        <circle cx={0} cy={-h - w / 2 - 6} r={1.6} fill="var(--muted)" opacity={0.5} />
-      )}
+          untappable without this. A SIBLING of the visual group below, not
+          a child of it — `transform-box: fill-box` (on .village-entity)
+          computes its box from ALL descendant geometry regardless of
+          paint/opacity, so nesting the hit circle inside that group threw
+          off the scale animation's anchor point and made every bounce and
+          hover visibly wobble/jump (2026-08-24 regression, fixed same day
+          it shipped). Keeping it as a sibling means the visual group's own
+          fill-box — and therefore its scale origin — only ever reflects the
+          shape that's actually drawn. */}
+      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      <g onClick={handleClick}
+        className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
+        {/* Native <title> stays as the a11y fallback (screen readers, and
+            anyone hovering without JS) — the STYLED callout that appears on
+            click lives in VillageScene, keyed off `selected`. */}
+        <title>{`${plant.name} — ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
+        {/* A soft grounding shadow (2026-08-24) — every piece in BloomScan's
+            garden sits on one of these, and its absence here was a real part
+            of why the village read flatter/less charming: nothing looked
+            like it was actually standing on the ground, just pasted onto
+            it. */}
+        <ellipse cx={0} cy={1.5} rx={Math.max(4, w / 2.3)} ry={1.6} fill="var(--text)" opacity={0.12} />
+        {/* stem */}
+        <rect x={-1.2} y={-h} width={2.4} height={h} rx={1.2} fill={color} opacity={0.75} />
+        {i === 0 && <circle cy={-h - 2} r={3.5} fill={color} />}
+        {i === 1 && (
+          <>
+            <ellipse cx={-5} cy={-h + 2} rx={5.5} ry={3.4} fill={color} transform="rotate(-24 -5 0)" />
+            <ellipse cx={5} cy={-h - 1} rx={5.5} ry={3.4} fill={color} transform="rotate(24 5 0)" />
+          </>
+        )}
+        {i >= 2 && (
+          <>
+            <circle cx={0} cy={-h} r={w / 2} fill={color} opacity={0.92} />
+            <circle cx={-w / 3.2} cy={-h + w / 5} r={w / 3.4} fill={color} opacity={0.75} />
+            <circle cx={w / 3.2} cy={-h + w / 5.5} r={w / 3.8} fill={color} opacity={0.7} />
+            {/* Sheen — a plain flat-filled circle reads as a paper cutout;
+                this makes it read as lit from above instead. */}
+            {!plant.dormant && <circle cx={0} cy={-h} r={w / 2} fill="url(#vsheen)" />}
+          </>
+        )}
+        {plant.dormant && i >= 1 && (
+          <circle cx={0} cy={-h - w / 2 - 6} r={1.6} fill="var(--muted)" opacity={0.5} />
+        )}
+      </g>
     </g>
   )
 }
@@ -83,37 +99,47 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
   }[building.phase]
   const w = 26
 
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}
-      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined}
-      className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
-      <title>{`${building.title} — ${building.phase}`}</title>
-      {/* Same invisible hit-area reasoning as PlantShape — a blueprint-phase
-          building is a thin 26x16 outline, easy to miss on a phone. */}
-      {onClick && <circle cx={0} cy={-spec.h / 2} r={Math.max(18, spec.h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <rect
-        x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={2}
-        fill={spec.fill} fillOpacity={building.phase === 'blueprint' ? 0 : 0.55}
-        stroke={spec.stroke} strokeWidth={1.2} strokeDasharray={spec.dash} strokeOpacity={0.9}
-      />
-      {/* Sheen on the body — same reasoning as PlantShape's */}
-      {building.phase !== 'blueprint' && (
-        <rect x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={2} fill="url(#vsheen)" />
-      )}
-      {/* roof, once it's actually a building */}
-      {(building.phase === 'complete' || building.phase === 'landmark') && (
-        <path d={`M ${-w / 2 - 3} ${-spec.h} L 0 ${-spec.h - 12} L ${w / 2 + 3} ${-spec.h} Z`} fill={spec.stroke} fillOpacity={0.7} />
-      )}
-      {/* lit windows — a finished thing has someone in it */}
-      {(building.phase === 'complete' || building.phase === 'landmark') && (
-        <>
-          <rect x={-7} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.8} />
-          <rect x={2} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.6} />
-        </>
-      )}
-      {building.phase === 'landmark' && (
-        <text x={0} y={-spec.h - 17} textAnchor="middle" fontSize={11} fill="var(--gold)">◆</text>
-      )}
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      {/* Sibling, not a child of the .village-entity group — see PlantShape's
+          own comment on why (fill-box's scale-origin calculation includes
+          this circle's geometry if nested inside, throwing off every
+          bounce/hover animation). */}
+      {onClick && <circle cx={0} cy={-spec.h / 2} r={Math.max(18, spec.h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      <g onClick={handleClick}
+        className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
+        <title>{`${building.title} — ${building.phase}`}</title>
+        {/* Grounding shadow — same reasoning as PlantShape's own. */}
+        <ellipse cx={0} cy={1.5} rx={w / 2 + 3} ry={2} fill="var(--text)" opacity={0.12} />
+        {/* Corners rounded up from 2 to 5 (2026-08-24) — a softer, more
+            BloomScan-like silhouette; still reads as a building, just not a
+            hard-edged box. */}
+        <rect
+          x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={5}
+          fill={spec.fill} fillOpacity={building.phase === 'blueprint' ? 0 : 0.55}
+          stroke={spec.stroke} strokeWidth={1.2} strokeDasharray={spec.dash} strokeOpacity={0.9}
+        />
+        {/* Sheen on the body — same reasoning as PlantShape's */}
+        {building.phase !== 'blueprint' && (
+          <rect x={-w / 2} y={-spec.h} width={w} height={spec.h} rx={5} fill="url(#vsheen)" />
+        )}
+        {/* roof, once it's actually a building — corners softened to match */}
+        {(building.phase === 'complete' || building.phase === 'landmark') && (
+          <path d={`M ${-w / 2 - 3} ${-spec.h} Q 0 ${-spec.h - 15} ${w / 2 + 3} ${-spec.h} Z`} fill={spec.stroke} fillOpacity={0.7} />
+        )}
+        {/* lit windows — a finished thing has someone in it */}
+        {(building.phase === 'complete' || building.phase === 'landmark') && (
+          <>
+            <rect x={-7} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.8} />
+            <rect x={2} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.6} />
+          </>
+        )}
+        {building.phase === 'landmark' && (
+          <text x={0} y={-spec.h - 17} textAnchor="middle" fontSize={11} fill="var(--gold)">◆</text>
+        )}
+      </g>
     </g>
   )
 }

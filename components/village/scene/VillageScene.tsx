@@ -316,12 +316,15 @@ export default function VillageScene({
       {/* Home — always present, grows detail with activity */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
         <title>Home — your Brief and today</title>
-        <rect x={-30} y={-44} width={60} height={44} rx={3} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.2} />
-        <rect x={-30} y={-44} width={60} height={44} rx={3} fill="url(#vsheen)" />
-        <path d="M -36 -44 L 0 -68 L 36 -44 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.7} />
-        <rect x={-8} y={-24} width={16} height={24} rx={1.5} fill="var(--gold)" opacity={0.35} />
-        <rect x={-22} y={-34} width={10} height={10} rx={1} fill="var(--amber)" opacity={0.75} className="village-glow" />
-        <rect x={12} y={-34} width={10} height={10} rx={1} fill="var(--amber)" opacity={0.55} />
+        {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
+            BuildingShape's own (2026-08-24). */}
+        <ellipse cx={0} cy={1.5} rx={34} ry={3} fill="var(--text)" opacity={0.12} />
+        <rect x={-30} y={-44} width={60} height={44} rx={6} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.2} />
+        <rect x={-30} y={-44} width={60} height={44} rx={6} fill="url(#vsheen)" />
+        <path d="M -36 -44 Q 0 -70 36 -44 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.7} />
+        <rect x={-8} y={-24} width={16} height={24} rx={3} fill="var(--gold)" opacity={0.35} />
+        <rect x={-22} y={-34} width={10} height={10} rx={2.5} fill="var(--amber)" opacity={0.75} className="village-glow" />
+        <rect x={12} y={-34} width={10} height={10} rx={2.5} fill="var(--amber)" opacity={0.55} />
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 18 -68 L 18 -80 L 25 -80 L 25 -68" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
