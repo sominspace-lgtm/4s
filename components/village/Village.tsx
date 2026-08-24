@@ -11,6 +11,7 @@ import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
+import { useTrips } from '@/lib/hooks/useTrips'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -70,6 +71,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return upcoming.length ? Math.min(...upcoming) : null
   }, [people])
   const { ideas } = useDateIdeas(spaces[0]?.id ?? null)
+  const { trips } = useTrips()
+  const tripCount = trips.filter(t => t.status !== 'done' && t.status !== 'cancelled').length
   const dateIdeaAreas = useMemo(() => {
     const counts = new Map<string, number>()
     for (const idea of ideas) {
@@ -188,7 +191,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
           placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
           dateIdeaAreas={dateIdeaAreas} weather={weather}
-          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} />
+          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

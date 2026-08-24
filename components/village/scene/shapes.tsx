@@ -83,12 +83,16 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   )
 }
 
-export function BuildingShape({ building, x, y, scale = 1, changed = false, selected = false, cared = false, onClick }: {
+export function BuildingShape({ building, x, y, scale = 1, changed = false, selected = false, cared = false, onClick, dark = false }: {
   building: Building; x: number; y: number; scale?: number; changed?: boolean
   selected?: boolean
   /** Click-to-care bounce (2026-08-24) — see PlantShape's own doc. */
   cared?: boolean
   onClick?: () => void
+  /** Dusk/night (2026-08-24) — windows glow when it's actually dark out
+   *  instead of unconditionally, same idea as Home's own windows below in
+   *  VillageScene. During the day they read as plain, sun-lit glass. */
+  dark?: boolean
 }) {
   const spec = {
     blueprint:    { h: 16, fill: 'transparent',        stroke: 'var(--slate)',  dash: '3 3' },
@@ -129,11 +133,16 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
         {(building.phase === 'complete' || building.phase === 'landmark') && (
           <path d={`M ${-w / 2 - 3} ${-spec.h} Q 0 ${-spec.h - 15} ${w / 2 + 3} ${-spec.h} Z`} fill={spec.stroke} fillOpacity={0.7} />
         )}
-        {/* lit windows — a finished thing has someone in it */}
+        {/* Windows — a finished thing has someone in it. Glow amber after
+            dark; by day they're just glass (2026-08-24, was unconditionally
+            lit before). */}
         {(building.phase === 'complete' || building.phase === 'landmark') && (
           <>
-            <rect x={-7} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.8} />
-            <rect x={2} y={-spec.h + 10} width={5} height={6} rx={1} fill="var(--amber)" opacity={0.6} />
+            <rect x={-7} y={-spec.h + 10} width={5} height={6} rx={1}
+              fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.8 : 0.5}
+              className={dark ? 'village-glow' : undefined} />
+            <rect x={2} y={-spec.h + 10} width={5} height={6} rx={1}
+              fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.6 : 0.4} />
           </>
         )}
         {building.phase === 'landmark' && (
@@ -180,6 +189,61 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
       {petals.map((dx, i) => (
         <circle key={i} cx={dx} cy={-0.5 - (i % 2)} r={2} fill={hue} opacity={0.8} />
       ))}
+    </g>
+  )
+}
+
+// A mailbox, standing in for capture (2026-08-24) — Rest Lake's click used
+// to open the Brief and focus the capture box; removing the lake removed
+// that entry point too. This gives "jot something down" a small, real place
+// in the scene again without needing a whole district for it.
+export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {onClick && <circle cx={0} cy={-8} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
+        <title>Jot something down</title>
+        <ellipse cx={0} cy={1.5} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
+        <rect x={-1} y={-14} width={2} height={14} fill="var(--slate)" opacity={0.7} />
+        <path d="M -5 -14 L -5 -20 Q -5 -23 0 -23 Q 5 -23 5 -20 L 5 -14 Z" fill="var(--gold)" fillOpacity={0.7} stroke="var(--gold)" strokeWidth={0.8} />
+        <rect x={-3.5} y={-19.5} width={3} height={2} rx={0.5} fill="var(--surface)" opacity={0.8} />
+      </g>
+    </g>
+  )
+}
+
+// A signpost toward Trips (2026-08-24) — Places' Trips sub-tab has no
+// district of its own; a signpost at the village edge, pointing off-canvas,
+// gives "somewhere else" a presence without inventing an eighth district.
+export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {onClick && <circle cx={8} cy={-14} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
+        <title>{label}</title>
+        <ellipse cx={0} cy={1.5} rx={4} ry={1.3} fill="var(--text)" opacity={0.12} />
+        <rect x={-1} y={-22} width={2} height={22} fill="var(--slate)" opacity={0.75} />
+        <path d="M 0 -20 L 20 -17 L 0 -14 Z" fill="var(--gold)" fillOpacity={0.75} stroke="var(--gold)" strokeWidth={0.7} />
+      </g>
+    </g>
+  )
+}
+
+// Birthday bunting (2026-08-24) — a small flag string over the People
+// district, only on the actual day (see VillageScene's use of
+// soonestBirthdayDays === 0). No new data: the same daysUntilBirthday
+// already driving the district's count badge.
+export function BuntingShape({ x, y }: { x: number; y: number }) {
+  const flags = [-14, -7, 0, 7, 14]
+  return (
+    <g transform={`translate(${x} ${y})`} opacity={0.85} pointerEvents="none">
+      <path d={`M ${flags[0]} -30 Q 0 -36 ${flags[flags.length - 1]} -30`} fill="none" stroke="var(--border)" strokeWidth={0.6} />
+      {flags.map((fx, i) => {
+        const fy = -30 - Math.sin((i / (flags.length - 1)) * Math.PI) * 6
+        return <path key={i} d={`M ${fx} ${fy} l 3 4 l -6 0 Z`} fill={i % 2 === 0 ? 'var(--gold)' : 'var(--blush)'} />
+      })}
     </g>
   )
 }

@@ -1,13 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -15,7 +15,7 @@ import Horizon from './Horizon'
 import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
 import type { VillageChanges } from '@/lib/village/state'
 import { hashPos } from '@/lib/village/state'
-import type { VillageLayout, LandmarkId } from '@/lib/village/layout'
+import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 
 export const GROUND_Y = 372
 
@@ -115,7 +115,7 @@ export default function VillageScene({
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
   placesCount = 0, peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  timeLabel = null, dateLabel = null, moonLabel = null,
+  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0,
 }: {
   village: VillageState
   live: boolean
@@ -141,6 +141,8 @@ export default function VillageScene({
   dateLabel?: string | null
   /** Only meaningful (and only ever passed) at night — see Village.tsx. */
   moonLabel?: string | null
+  /** Trips not done/cancelled — drives the Trips signpost, see useTrips(). */
+  tripCount?: number
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -158,6 +160,44 @@ export default function VillageScene({
   // Also the arranging guard: a click shouldn't navigate away mid-drag-mode.
   const nav = (label: string, go: () => void) => () => {
     if (arranging) return
+    if (locked) onLockedNavigate?.(label)
+    else go()
+  }
+
+  // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
+  const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
+
+  // A worn path near wherever you actually go (2026-08-24) — the one
+  // "attention" cue in the scene, deliberately not a number or a
+  // leaderboard, just a soft warm patch of ground under whichever landmark
+  // has the most clicks. Counted locally (this browser, this account) via
+  // localStorage — real interaction, not a stored village (see state.ts's
+  // own rule against that): nothing here is stored ABOUT the village, it's
+  // stored about which door you tend to walk through.
+  const [visitCounts, setVisitCounts] = useState<Record<string, number>>({})
+  useEffect(() => {
+    try { setVisitCounts(JSON.parse(localStorage.getItem('4s-village-visits') ?? '{}')) } catch { /* ignore */ }
+  }, [])
+  function recordVisit(id: string) {
+    setVisitCounts(prev => {
+      const next = { ...prev, [id]: (prev[id] ?? 0) + 1 }
+      try { localStorage.setItem('4s-village-visits', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
+  // Filtered to CURRENT landmark ids — a browser that clicked "lake" before
+  // it was removed still has that key in localStorage, and it must never be
+  // treated as a real landmark again (DEFAULT_LANDMARK_POS has no entry for
+  // it any more, so looking it up would throw).
+  const visitEntries = Object.entries(visitCounts).filter(([id]) => (LANDMARK_IDS as readonly string[]).includes(id))
+  const totalVisits = visitEntries.reduce((s, [, n]) => s + n, 0)
+  // Only shown once there's a real pattern (5+ clicks) — a single early tap
+  // shouldn't already look like a favorite spot.
+  const wornPath = totalVisits >= 5 ? visitEntries.sort((a, b) => b[1] - a[1])[0]?.[0] : null
+
+  const navLandmark = (id: LandmarkId, label: string, go: () => void) => () => {
+    if (arranging) return
+    recordVisit(id)
     if (locked) onLockedNavigate?.(label)
     else go()
   }
@@ -424,12 +464,22 @@ export default function VillageScene({
         <rect x={-30} y={-44} width={60} height={44} rx={6} fill="url(#vsheen)" />
         <path d="M -36 -44 Q 0 -70 36 -44 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.7} />
         <rect x={-8} y={-24} width={16} height={24} rx={3} fill="var(--gold)" opacity={0.35} />
-        <rect x={-22} y={-34} width={10} height={10} rx={2.5} fill="var(--amber)" opacity={0.75} className="village-glow" />
-        <rect x={12} y={-34} width={10} height={10} rx={2.5} fill="var(--amber)" opacity={0.55} />
+        {/* Windows glow after dark, same reasoning as BuildingShape's own
+            (2026-08-24, were unconditionally lit before). */}
+        <rect x={-22} y={-34} width={10} height={10} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.75 : 0.5} className={dark ? 'village-glow' : undefined} />
+        <rect x={12} y={-34} width={10} height={10} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.55 : 0.4} />
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 18 -68 L 18 -80 L 25 -80 L 25 -68" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
       </g>
+
+      {/* Mailbox, beside Home (2026-08-24) — see MailboxShape's own comment:
+          Rest Lake used to be where "jot something down" lived; this is its
+          new, smaller home. */}
+      <MailboxShape x={444} y={GROUND_Y - 4} onClick={nav('Capture', () => {
+        goToSection('brief')
+        setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
+      })} />
 
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
@@ -438,7 +488,8 @@ export default function VillageScene({
             changed={landmarked.has(building.id)}
             selected={selected?.type === 'building' && selected.id === building.id}
             cared={caredId === building.id}
-            onClick={selectBuilding(building.id, x, y)} />
+            onClick={selectBuilding(building.id, x, y)}
+            dark={dark} />
         </g>
       ))}
       {buildingSlots.length === 0 && (
@@ -531,15 +582,23 @@ export default function VillageScene({
           reflectionDays stay computed in lib/village/state.ts — nothing else
           in the data model depended on the lake being drawn — in case a
           future district wants that number again. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
+      {/* A worn patch of ground under whichever landmark you actually visit
+          most (2026-08-24) — see wornPath above. Drawn before the labels so
+          it reads as ground, not as a badge on the tile. */}
+      {wornPath && (
+        <ellipse cx={pos(wornPath as LandmarkId).x} cy={pos(wornPath as LandmarkId).y + 34} rx={24} ry={6}
+          fill="var(--gold)" opacity={0.1} pointerEvents="none" />
+      )}
+
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={navLandmark('forest', 'Growth Forest', () => goToPersonal('habits'))}
         count={`${v.plants.length} growing`}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={nav('Home', () => goToSection('brief'))} count="today"
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={navLandmark('home', 'Home', () => goToSection('brief'))} count="today"
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={navLandmark('projects', 'Projects', () => goToPersonal('tasks'))}
         count={`${v.buildings.length} standing`}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
-      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={nav('Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
+      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
@@ -547,12 +606,23 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={nav('Places', () => goToSection('places'))}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={navLandmark('places', 'Places', () => goToSection('places'))}
         count={`${placesCount} saved`}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={nav('People', () => goToPersonal('people'))}
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={navLandmark('people', 'People', () => goToPersonal('people'))}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${soonestBirthdayDays}d`) : `${peopleCount} close`}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
+      {/* Birthday bunting (2026-08-24) — only on the actual day, over the
+          People district's current position. */}
+      {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}
+
+      {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
+          no district of its own; this points off-canvas at the village
+          edge instead of inventing an eighth district. */}
+      {tripCount > 0 && (
+        <SignpostShape x={770} y={GROUND_Y + 30} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
+          onClick={nav('Trips', () => goToSection('places'))} />
+      )}
 
       {/* Styled callout for whichever plant/building is selected — see the
           selection state and locked-mode guard set up above. */}
