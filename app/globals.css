@@ -430,8 +430,19 @@ select, option {
    transform-box: fill-box makes the CSS scale below anchor on the shape's
    own bounding box rather than the SVG viewport's (0,0) origin, which is
    what "grow slightly toward the cursor" actually requires here. */
-.village-entity { cursor: pointer; transform-box: fill-box; transform-origin: 50% 100%; transition: filter 160ms ease, transform 160ms ease; }
-.village-entity:hover { filter: drop-shadow(0 0 3px var(--gold)); transform: scale(1.08); }
+/* `scale` here is the standalone CSS Transforms Level 2 property, NOT
+   shorthand for `transform: scale(...)` — every one of these elements
+   already carries an SVG `transform="translate(x y) scale(s)"` presentation
+   attribute for its actual position, and the CSS `transform` property fully
+   REPLACES that attribute rather than combining with it (the element jumps
+   to the SVG's local origin for the animation's duration, then snaps back —
+   exactly the "glitchy"/stuttery look reported 2026-08-24). The standalone
+   `scale`/`rotate`/`translate` properties compose additively with `transform`
+   instead, so the entity scales in place without ever losing its real
+   position. Support: Safari 14.1+, Chrome 104+, Firefox 72+ — covers every
+   iPad/iPhone this needs to run on. */
+.village-entity { cursor: pointer; transform-box: fill-box; transform-origin: 50% 100%; transition: filter 160ms ease, scale 160ms ease; }
+.village-entity:hover { filter: drop-shadow(0 0 3px var(--gold)); scale: 1.08; }
 .village-entity-selected { filter: drop-shadow(0 0 4px var(--gold)) drop-shadow(0 0 1px var(--gold)); }
 
 /* The sky eases between times of day rather than snapping. This is also the
@@ -517,10 +528,10 @@ select, option {
    back, distinct from the steady 1.08 hover scale so the two don't blur
    together on a device with both mouse and touch. */
 @keyframes village-bounce {
-  0%   { transform: scale(1); }
-  35%  { transform: scale(1.28); }
-  60%  { transform: scale(0.94); }
-  100% { transform: scale(1); }
+  0%   { scale: 1; }
+  35%  { scale: 1.28; }
+  60%  { scale: 0.94; }
+  100% { scale: 1; }
 }
 .village-tapped { animation: village-bounce 480ms cubic-bezier(.34,1.56,.64,1) both; }
 

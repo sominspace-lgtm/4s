@@ -12,7 +12,7 @@ import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf } from '@/lib/village/sky'
-import { resolveThemeVars, type CustomThemeSeed } from '@/lib/constants/themes'
+import { THEMES } from '@/lib/constants/themes'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -34,11 +34,8 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, theme, customTheme = null, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout }: {
   userId: string
-  theme: string
-  /** The active palette when theme === 'custom'. Ignored otherwise. */
-  customTheme?: CustomThemeSeed | null
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
   /** ISO string of the previous visit, frozen for the session by the caller. */
@@ -99,14 +96,14 @@ export default function Village({ userId, theme, customTheme = null, accountCrea
     [showArrival, lastSeen, habits, completions, allWork]
   )
 
-  // Light vs dark comes from the theme's declared --scheme rather than from
-  // reading computed styles off the DOM, so the palette stays a pure function
-  // and there's nothing for the server and client to disagree about.
-  // resolveThemeVars (not a raw THEMES[theme] lookup) so this still resolves
-  // correctly for a custom theme, which has no THEMES entry at all — that
-  // used to silently read as undefined here and fall through to dark-mode
-  // snow/sky math regardless of what the custom palette's scheme actually was.
-  const isLight = resolveThemeVars(theme, customTheme)['--scheme'] === 'light'
+  // The village is always Bloom-flavored now (2026-08-24) — see the
+  // BLOOM_VARS override on the wrapper div below, which scopes every CSS
+  // custom property the scene reads (--emerald, --gold, --surface, etc.) to
+  // Bloom's literal values regardless of the account's actual active theme.
+  // isLight is hardcoded to match: Bloom is a light theme, and the snow/sky
+  // math in seasonPalette() needs to agree with that or winter reads wrong
+  // (a light-theme wash computed as if it were dark).
+  const isLight = true
   const palette = useMemo(() => seasonPalette(v.season, isLight), [v.season, isLight])
   const celestial = useMemo(() => (clock ? celestialOf(clock) : null), [clock])
 
@@ -137,10 +134,18 @@ export default function Village({ userId, theme, customTheme = null, accountCrea
       <div
         className="lift organic"
         style={{
+          // Scopes every custom property the scene reads (--emerald, --gold,
+          // --surface, --bg, the aurora washes, even --radius-organic) to
+          // Bloom's literal values via ordinary CSS cascade — nothing inside
+          // this subtree needs to know it's happening. Redeclaring a custom
+          // property on a descendant is a real, standard override; it just
+          // has to be the SAME set of vars everything downstream already
+          // reads by name, which is exactly what THEMES.bloom already is.
+          ...THEMES.bloom,
           position: 'relative', overflow: 'hidden',
           border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
           background: 'var(--surface)',
-        }}
+        } as React.CSSProperties}
       >
         <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
           plantSlots={plantSlots} buildingSlots={buildingSlots}
