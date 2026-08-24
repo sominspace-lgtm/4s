@@ -133,25 +133,17 @@ export default function PlaceMap({ places, theme, onSelect }: {
       return
     }
 
-    map.addSource(sourceId, { type: 'geojson', data: geojson, cluster: true, clusterRadius: 50 })
-
-    map.addLayer({
-      id: 'places-clusters', type: 'circle', source: sourceId, filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': readCssColor('--surface2'),
-        'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 25, 26],
-        'circle-stroke-width': 1.5, 'circle-stroke-color': readCssColor('--border'),
-      },
-    })
-    map.addLayer({
-      id: 'places-cluster-count', type: 'symbol', source: sourceId, filter: ['has', 'point_count'],
-      layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11 },
-      paint: { 'text-color': readCssColor('--text') },
-    })
+    // No clustering (2026-08-24 fix) — this is a personal pin collection,
+    // not a dataset with thousands of points; clustering a handful of pins
+    // just hides most of them behind an unlabeled circle the moment two are
+    // near each other, which read as "pins are missing" (only a
+    // geographically isolated pin ever showed as itself). Every pin now
+    // renders as its own visible, colored, clickable point.
+    map.addSource(sourceId, { type: 'geojson', data: geojson })
 
     const kindColors = Object.entries(placeKindColorPairs()).flat()
     map.addLayer({
-      id: 'places-points', type: 'circle', source: sourceId, filter: ['!', ['has', 'point_count']],
+      id: 'places-points', type: 'circle', source: sourceId,
       paint: {
         // The spread of a variable-length kindColors array produces a tuple
         // TS can't line up against maplibre's `match` overloads directly
@@ -169,20 +161,8 @@ export default function PlaceMap({ places, theme, onSelect }: {
       const place = placesRef.current.find(p => p.id === id)
       if (place) onSelect(place)
     })
-    map.on('click', 'places-clusters', e => {
-      const feature = e.features?.[0]
-      const clusterId = feature?.properties?.cluster_id
-      const source = map.getSource(sourceId) as maplibregl.GeoJSONSource
-      if (clusterId == null) return
-      source.getClusterExpansionZoom(clusterId).then(zoom => {
-        const coords = (feature!.geometry as GeoJSON.Point).coordinates as [number, number]
-        map.easeTo({ center: coords, zoom })
-      })
-    })
     map.on('mouseenter', 'places-points', () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', 'places-points', () => { map.getCanvas().style.cursor = '' })
-    map.on('mouseenter', 'places-clusters', () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', 'places-clusters', () => { map.getCanvas().style.cursor = '' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [places, ready])
 
