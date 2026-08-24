@@ -2,8 +2,35 @@
 
 import { useState } from 'react'
 import { useDateIdeas, type DateIdea, type DateIdeaStatus, type PriceRange } from '@/lib/hooks/useDateIdeas'
-import { usePlaces } from '@/lib/hooks/usePlaces'
+import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
+import { usePlaceFilters, type PlaceFilter } from '@/lib/hooks/usePlaceFilters'
+import { haversineKm } from '@/lib/utils/geo'
 import type { Energy } from '@/lib/hooks/useWorkItems'
+
+// Which existing pin should be the center of a new "group on map" filter,
+// and how wide a radius needs to be to cover all of an area's other pins —
+// picks the pin closest to the group's centroid as center (keeps the radius
+// as small as possible) rather than always the first pin added.
+function computeAreaFilter(pins: { id: string; lat: number; lng: number }[]): { centerId: string; radiusKm: number } | null {
+  if (pins.length === 0) return null
+  if (pins.length === 1) return { centerId: pins[0].id, radiusKm: 2 }
+  const centroid = {
+    lat: pins.reduce((s, p) => s + p.lat, 0) / pins.length,
+    lng: pins.reduce((s, p) => s + p.lng, 0) / pins.length,
+  }
+  let center = pins[0]
+  let best = Infinity
+  for (const p of pins) {
+    const d = haversineKm(p, centroid)
+    if (d < best) { best = d; center = p }
+  }
+  let radius = 0
+  for (const p of pins) {
+    const d = haversineKm(center, p)
+    if (d > radius) radius = d
+  }
+  return { centerId: center.id, radiusKm: Math.max(0.5, Math.round((radius + 0.5) * 10) / 10) }
+}
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -30,11 +57,12 @@ type IdeaCardProps = {
   showStatus?: boolean
 }
 
-// One idea's card — the status/energy/price/pin controls, plus a
-// collapsed-by-default "more" section for tags and notes so a card reads as
-// one line at a glance instead of a wall of selects (2026-08-24, easier-to-
-// use pass). Shared by the Ideas & Planned list, the By Area groups, and
-// Done, rather than three copies of the same editing UI.
+// One idea, one line — a bucket-list row (title, tiny meta, status), same
+// density as Watchlist's rows, with everything else (energy/price/indoor-
+// outdoor/pin/tags/notes) tucked behind a click-to-expand (2026-08-24,
+// compact pass). This is reference material for later planning, not a daily
+// working tool, so it should read like a list you skim, not a form you fill
+// out. Shared by the Ideas & Planned list, the By Area groups, and Done.
 function IdeaCard({ idea, places, update, removeIdea, addTagDraft, setAddTagDraft, spaceId, addPlace, showStatus = true }: IdeaCardProps) {
   const placeName = (id: string | null) => (id ? places.find(p => p.id === id)?.name ?? null : null)
   const [expanded, setExpanded] = useState(false)
@@ -62,55 +90,61 @@ function IdeaCard({ idea, places, update, removeIdea, addTagDraft, setAddTagDraf
     setAddingAddress(false)
   }
 
-  const hasExtras = idea.tags.length > 0 || !!idea.notes
+  const meta: string[] = []
+  if (idea.price_range) meta.push(idea.price_range)
+  if (idea.energy) meta.push(ENERGY_LABEL[idea.energy])
+  if (idea.indoor_outdoor) meta.push(idea.indoor_outdoor === 'indoor' ? '🏠' : idea.indoor_outdoor === 'outdoor' ? '🌳' : 'in/out')
 
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text)' }}>{idea.title}</span>
-        {placeName(idea.place_id) && (
-          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75, whiteSpace: 'nowrap' }}>📍 {placeName(idea.place_id)}</span>
+    <div style={{ borderBottom: '1px solid var(--faint)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.3rem 0' }}>
+        <button onClick={() => setExpanded(v => !v)} aria-label={expanded ? 'Collapse' : 'Expand'} className="press"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.58rem', width: '0.9rem', flexShrink: 0 }}>
+          {expanded ? '▾' : '▸'}
+        </button>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {idea.title}
+        </span>
+        {meta.length > 0 && (
+          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.65, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.join(' · ')}</span>
         )}
-        <button onClick={() => removeIdea(idea.id)} aria-label={`Remove ${idea.title}`} className="press"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+        {placeName(idea.place_id) && (
+          <span style={{ fontSize: '0.6rem', flexShrink: 0 }} title={placeName(idea.place_id) ?? undefined}>📍</span>
+        )}
         {showStatus && (
           <select value={idea.status} onChange={e => update(idea.id, { status: e.target.value as DateIdeaStatus })}
-            style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+            style={{ ...inputStyle, fontSize: '0.6rem', padding: '0.15rem 0.3rem', cursor: 'pointer', flexShrink: 0 }}>
             {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
           </select>
         )}
-
-        <select value={idea.energy ?? ''} onChange={e => update(idea.id, { energy: (e.target.value || null) as Energy | null })}
-          style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
-          <option value="">No energy set</option>
-          {(['light', 'medium', 'deep'] as Energy[]).map(e => <option key={e} value={e}>{ENERGY_LABEL[e]}</option>)}
-        </select>
-
-        <select value={idea.price_range ?? ''} onChange={e => update(idea.id, { price_range: (e.target.value || null) as PriceRange | null })}
-          style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
-          <option value="">No price set</option>
-          {PRICE_RANGES.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-
-        <select value={idea.indoor_outdoor ?? ''} onChange={e => update(idea.id, { indoor_outdoor: (e.target.value || null) as 'indoor' | 'outdoor' | 'either' | null })}
-          style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
-          <option value="">Indoor/outdoor</option>
-          <option value="indoor">🏠 Indoor</option>
-          <option value="outdoor">🌳 Outdoor</option>
-          <option value="either">Either</option>
-        </select>
-
-        <button onClick={() => setExpanded(v => !v)} className="press"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.7, fontSize: '0.62rem' }}>
-          {expanded ? 'less' : 'more…'}{hasExtras && !expanded ? ` (${idea.tags.length + (idea.notes ? 1 : 0)})` : ''}
-        </button>
+        <button onClick={() => removeIdea(idea.id)} aria-label={`Remove ${idea.title}`} className="press"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.58rem', flexShrink: 0 }}>✕</button>
       </div>
 
       {expanded && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingTop: '0.15rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.1rem 0 0.6rem 1.35rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+            <select value={idea.energy ?? ''} onChange={e => update(idea.id, { energy: (e.target.value || null) as Energy | null })}
+              style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+              <option value="">No energy set</option>
+              {(['light', 'medium', 'deep'] as Energy[]).map(e => <option key={e} value={e}>{ENERGY_LABEL[e]}</option>)}
+            </select>
+
+            <select value={idea.price_range ?? ''} onChange={e => update(idea.id, { price_range: (e.target.value || null) as PriceRange | null })}
+              style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+              <option value="">No price set</option>
+              {PRICE_RANGES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+
+            <select value={idea.indoor_outdoor ?? ''} onChange={e => update(idea.id, { indoor_outdoor: (e.target.value || null) as 'indoor' | 'outdoor' | 'either' | null })}
+              style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
+              <option value="">Indoor/outdoor</option>
+              <option value="indoor">🏠 Indoor</option>
+              <option value="outdoor">🌳 Outdoor</option>
+              <option value="either">Either</option>
+            </select>
+          </div>
+
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
             <select value={idea.place_id ?? ''} onChange={e => update(idea.id, { place_id: e.target.value || null })}
               style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer', maxWidth: '160px' }}>
@@ -186,14 +220,40 @@ function CardList({ ideas, ...rest }: GroupProps) {
 // occasion an idea belongs to — collapsible per area, same pattern
 // Watchlist uses for games/shows. This is the browse-a-destination view,
 // separate from the day-to-day Ideas/Planned working list.
-function AreaGroup({ area, ideas, ...rest }: GroupProps & { area: string }) {
+//
+// "Group on map" (2026-08-24) — an area is a real place cluster, and Places
+// now supports saved radius filters (see usePlaceFilters). Rather than
+// asking you to pick a center pin and guess a radius by hand, this computes
+// one automatically from whichever of the area's ideas already have a pin,
+// then saves it under the same area name so it shows up as a filter chip in
+// Places — "later show together on the map" without a second data entry.
+function AreaGroup({ area, ideas, savedPlaceFilters, onGroupOnMap, ...rest }: GroupProps & {
+  area: string
+  savedPlaceFilters: PlaceFilter[]
+  onGroupOnMap: (area: string, pins: Place[]) => void
+}) {
+  const pins = ideas
+    .map(i => (i.place_id ? rest.places.find(p => p.id === i.place_id) : null))
+    .filter((p): p is Place => !!p && p.lat != null && p.lng != null)
+  const alreadyGrouped = savedPlaceFilters.some(f => f.label === area)
+
   return (
     <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
       <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{area}</span>
         <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{ideas.length}</span>
       </summary>
-      <div style={{ marginTop: '0.6rem' }}>
+      <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {pins.length > 0 && (
+          alreadyGrouped ? (
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65 }}>✓ Grouped on the Places map</span>
+          ) : (
+            <button onClick={() => onGroupOnMap(area, pins)} className="press"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.75, fontSize: '0.62rem', alignSelf: 'flex-start' }}>
+              📍 Group on map ({pins.length} pin{pins.length === 1 ? '' : 's'})
+            </button>
+          )
+        )}
         <CardList ideas={ideas} {...rest} />
       </div>
     </details>
@@ -214,7 +274,13 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null }) {
   const { ideas, loading, addIdea, update, removeIdea } = useDateIdeas(spaceId)
   const { places, addPlace } = usePlaces()
+  const { filters: savedPlaceFilters, addFilter: addPlaceFilter } = usePlaceFilters(spaceId)
   const [addTagDraft, setAddTagDraft] = useState<Record<string, string>>({})
+
+  function groupOnMap(area: string, pins: Place[]) {
+    const calc = computeAreaFilter(pins.map(p => ({ id: p.id, lat: p.lat as number, lng: p.lng as number })))
+    if (calc) addPlaceFilter(area, calc.centerId, calc.radiusKm)
+  }
 
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
@@ -265,9 +331,18 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
     resetForm()
   }
 
+  // Collapsed by default (2026-08-24, compact pass) — this is a bucket list
+  // for later planning, not something that needs to be open every time you
+  // scroll through Household → Reference. One click gets you the full list.
   return (
-    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-      <div className="t-card">Date Ideas</div>
+    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+    <details>
+      <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+        <span className="t-card">Date Ideas</span>
+        <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{ideas.length}</span>
+      </summary>
+
+      <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
 
       {ideas.length === 0 && !loading && !adding && (
         <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
@@ -311,7 +386,7 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
             </div>
           )}
           {areaNames.map(a => (
-            <AreaGroup key={a} area={a} ideas={ideas.filter(i => i.area === a)} {...cardProps} />
+            <AreaGroup key={a} area={a} ideas={ideas.filter(i => i.area === a)} savedPlaceFilters={savedPlaceFilters} onGroupOnMap={groupOnMap} {...cardProps} />
           ))}
         </div>
       )}
@@ -366,6 +441,9 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
       ) : (
         <button onClick={() => setAdding(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New date idea</button>
       )}
+
+      </div>
+    </details>
     </section>
   )
 }
