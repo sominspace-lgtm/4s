@@ -29,6 +29,10 @@ export default function PlaceMap({ places, theme, onSelect }: {
   useEffect(() => { placesRef.current = places })
   const [ready, setReady] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
+  // Bumped by the "Try again" button on the unavailable fallback — remounts
+  // the map from scratch, giving a fresh loadBaseStyle() attempt a real
+  // chance instead of replaying whatever the first attempt returned.
+  const [retryTick, setRetryTick] = useState(0)
   // Mirrors mapRef, purely so MapControls (rendered from JSX) can react to
   // the map becoming available — reading mapRef.current directly in render
   // is a ref-during-render violation, since a ref update never re-triggers
@@ -39,6 +43,8 @@ export default function PlaceMap({ places, theme, onSelect }: {
   useEffect(() => {
     if (!containerRef.current) return
     let cancelled = false
+    setUnavailable(false)
+    setReady(false)
 
     ;(async () => {
       const style = await buildStyle()
@@ -69,9 +75,10 @@ export default function PlaceMap({ places, theme, onSelect }: {
     })()
 
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; setMapInstance(null) }
-    // Intentionally mount-once: theme changes re-style below rather than
-    // remounting the whole map (that would reset the user's pan/zoom).
-  }, [])
+    // Re-runs only on retryTick (manual "Try again" after a failure) — theme
+    // changes re-style below rather than remounting the whole map (that
+    // would reset the user's pan/zoom).
+  }, [retryTick])
 
   // Re-tint on theme change without remounting or losing camera position.
   useEffect(() => {
@@ -162,12 +169,15 @@ export default function PlaceMap({ places, theme, onSelect }: {
   if (unavailable) {
     return (
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
         height: '100%', minHeight: '260px', background: 'var(--surface)',
         border: '1px solid var(--border)', borderRadius: 'var(--radius)',
         color: 'var(--muted)', fontSize: '0.78rem', textAlign: 'center', padding: '1.5rem',
       }}>
-        Map unavailable right now — your pins are still here, see them in the list below.
+        <span>Map unavailable right now — your pins are still here, see them in the list below.</span>
+        <button onClick={() => setRetryTick(t => t + 1)} className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}>
+          Try again
+        </button>
       </div>
     )
   }

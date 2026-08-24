@@ -22,13 +22,26 @@ const BASE_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 let cachedBase: unknown | null = null
 let cachedBasePromise: Promise<unknown | null> | null = null
 
+// Only a SUCCESSFUL fetch gets cached (2026-08-24 fix) — the previous
+// version cached the in-flight promise unconditionally, including one that
+// resolved to null on failure (bad response, timeout, transient network
+// blip). Since this module lives for the whole browser session (client-side
+// nav never reloads it), one failed fetch anywhere in that session
+// permanently broke the map for every later visit to Places, with no retry
+// short of a hard page reload — this is exactly what "pins not showing on
+// the map" turned out to be. Clearing the promise on failure means the next
+// call actually tries again instead of replaying the same null forever.
 async function loadBaseStyle(): Promise<unknown | null> {
   if (cachedBase) return cachedBase
   if (cachedBasePromise) return cachedBasePromise
   cachedBasePromise = fetch(BASE_STYLE_URL, { signal: AbortSignal.timeout(8000) })
     .then(r => (r.ok ? r.json() : null))
-    .then(json => { cachedBase = json; return json })
-    .catch(() => null)
+    .then(json => {
+      if (json) cachedBase = json
+      else cachedBasePromise = null
+      return json
+    })
+    .catch(() => { cachedBasePromise = null; return null })
   return cachedBasePromise
 }
 

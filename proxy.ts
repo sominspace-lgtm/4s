@@ -38,6 +38,8 @@ export async function proxy(request: NextRequest) {
     // Dev-only visual harness for the village scene. The page itself 404s in
     // production, so this exception can never expose anything there.
     || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/village-preview'))
+    // Dev-only diagnostic harness for the Places map — same guard.
+    || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/places-preview'))
     || pathname.startsWith('/api/alexa')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each
