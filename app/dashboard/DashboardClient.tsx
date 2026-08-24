@@ -147,6 +147,15 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [searchOpen, setSearchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  // Village's Archive district needs to open this same panel from deep
+  // inside the scene, where a direct prop callback can't reach (2026-08-24)
+  // — same "navigate, then dispatch" cross-component pattern
+  // app:open-add-task/app:focus-capture already use elsewhere.
+  useEffect(() => {
+    function onOpenArchive() { setArchiveOpen(true) }
+    window.addEventListener('app:open-archive', onOpenArchive)
+    return () => window.removeEventListener('app:open-archive', onOpenArchive)
+  }, [])
 
   // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
   // now" is a one-way choice, persisted in the layout JSON.

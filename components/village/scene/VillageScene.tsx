@@ -32,6 +32,37 @@ const GRASS_TUFTS = Array.from({ length: 34 }, (_, i) => {
   return { x, h, id: seed }
 })
 
+// More texture on the ground (2026-08-24) — same reasoning as GRASS_TUFTS,
+// borrowed directly from BloomScan's own ground: it scatters 80 tufts AND
+// 14 stones AND a distant treeline AND pollen motes, where Village had only
+// the grass. Stones sit a little further from the path line than the grass
+// does, low opacity, so they read as texture rather than as things.
+const STONES = Array.from({ length: 16 }, (_, i) => {
+  const seed = `stone-${i}`
+  const x = 15 + hashPos(seed) * 770
+  const r = 1.4 + hashPos(seed + 'r') * 2.2
+  return { x, r, id: seed }
+})
+
+// Distant treeline silhouette, behind the grass, in front of the sky — the
+// empty gap between horizon and ground that made the scene read as flat.
+// A little more here than one flat band: two overlapping rows at slightly
+// different heights, same trick BloomScan's own treeline uses.
+const DISTANT_TREES = Array.from({ length: 13 }, (_, i) => {
+  const seed = `dtree-${i}`
+  const x = 10 + hashPos(seed) * 780
+  const h = 8 + hashPos(seed + 'h') * 7
+  return { x, h, id: seed }
+})
+
+// Pollen motes — pure atmosphere, no data behind them at all, same as
+// BloomScan's own four fixed dust circles. Deterministic positions so the
+// scene doesn't shimmer differently every render.
+const POLLEN = [
+  { x: 176, y: 185 }, { x: 248, y: 240 }, { x: 496, y: 165 }, { x: 680, y: 350 },
+  { x: 340, y: 300 }, { x: 590, y: 220 },
+]
+
 export type { Slot } from '@/lib/village/layout'
 
 /**
@@ -228,6 +259,21 @@ export default function VillageScene({
       <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
       {live && <Clouds timeOfDay={v.timeOfDay} />}
 
+      {/* Distant treeline (2026-08-24) — the gap between the sky and the
+          ground line used to be empty air, which is a lot of the reason the
+          scene read flat/empty. Sits right at the horizon, behind the
+          ground, two overlapping rows so it has some depth of its own. */}
+      <g opacity={0.55}>
+        {DISTANT_TREES.map(t => (
+          <path key={t.id} d={`M ${t.x} ${GROUND_Y - 22} l ${-t.h * 0.6} ${t.h} h ${t.h * 1.2} Z`} fill="#8FA582" />
+        ))}
+      </g>
+      <g opacity={0.7}>
+        {DISTANT_TREES.map(t => (
+          <path key={t.id} d={`M ${t.x + 9} ${GROUND_Y - 14} l ${-t.h * 0.55} ${t.h * 0.85} h ${t.h * 1.1} Z`} fill="#7E9673" />
+        ))}
+      </g>
+
       {/* Rolling ground — a top-to-bottom gradient now, not one flat tone */}
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
         fill="url(#vground)" opacity={0.95} />
@@ -261,6 +307,21 @@ export default function VillageScene({
           <path key={t.id}
             d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
             fill="none" stroke={i % 2 === 0 ? '#8CA57C' : '#94AD84'} strokeWidth={1.2} strokeLinecap="round" />
+        ))}
+      </g>
+
+      {/* Stones, another layer of ground texture (2026-08-24), see STONES
+          above. */}
+      <g opacity={0.5}>
+        {STONES.map(st => (
+          <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
+        ))}
+      </g>
+
+      {/* Pollen motes — pure atmosphere, see POLLEN above. */}
+      <g opacity={0.3}>
+        {POLLEN.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={2 + (i % 2)} fill="var(--amber)" />
         ))}
       </g>
 
@@ -418,8 +479,21 @@ export default function VillageScene({
           the app's abstract SectionNav glyph set, which shared no visual
           logic with the scene around it. Positions come from pos(id) —
           layout[id] if it's been dragged, otherwise the same defaults as
-          always. */}
-      <DistrictLabel {...pos('lake')} icon="fish" label="Rest Lake" onClick={nav('Rest Lake', () => goToSection('brief'))}
+          always.
+
+          Rest Lake, Home, and Archive all landed on goToSection('brief')
+          until 2026-08-24 — three visually distinct districts that did the
+          exact same thing on click, which is exactly the "confusing
+          navigation" this fixed: Rest Lake now opens the Brief AND focuses
+          the capture box (stillness is literally "days you paused to write
+          something down", see useReflectionDays), and Archive opens the
+          real Archive panel ("everything you've completed") instead of
+          just landing on the Brief a second time. Home stays on the Brief —
+          that one was always correct. */}
+      <DistrictLabel {...pos('lake')} icon="fish" label="Rest Lake" onClick={nav('Rest Lake', () => {
+        goToSection('brief')
+        setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
+      })}
         count={v.stillness > 0.5 ? 'still' : 'ready when you are'}
         draggable={arranging} dragging={draggingId === 'lake'} onPointerDown={startDrag('lake')} />
       <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
@@ -430,7 +504,7 @@ export default function VillageScene({
       <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={nav('Projects', () => goToPersonal('tasks'))}
         count={`${v.buildings.length} standing`}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
-      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={nav('Archive', () => goToSection('brief'))}
+      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={nav('Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
         count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
 
