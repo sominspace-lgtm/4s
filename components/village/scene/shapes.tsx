@@ -232,11 +232,12 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
   return <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">{body}</g>
 }
 
-// Badge circles carry a soft dashed stroke (2026-08-22) — a small, cheap
-// echo of Bloom's "every card is a little wonky" dashed-border language,
-// applied to shape rather than to the theme's own fill colors, which stay
-// exactly what the active theme says (per the design-language decision made
-// alongside this batch — Bloom's hand-drawn *feel*, not its literal palette).
+// District pins redrawn as iOS-home-screen-style widget tiles (2026-08-24,
+// was a round badge with a dashed ring) — a rounded square with the icon
+// centered, a glossy top-left sheen, a soft drop shadow, and the count
+// shown as a small corner badge the way an iOS icon shows an unread count,
+// rather than as a separate text line. The label still sits below, same as
+// a home-screen icon's caption.
 export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown }: {
   x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
   /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
@@ -244,28 +245,48 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
   dragging?: boolean
   onPointerDown?: (e: React.PointerEvent) => void
 }) {
+  const tileR = 9 // corner radius — an iOS icon's is ~22% of its width; 9 on a 30-wide tile lands right there
   return (
     <g transform={`translate(${x} ${y})`} onClick={onClick} onPointerDown={onPointerDown}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
       <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Click to open.`}</title>
-      {/* Invisible hit area covering the whole badge + label stack, not
-          just the painted circle (2026-08-24) — the gaps between the
-          circle, icon, and the two text lines below it don't register taps
-          in SVG on their own, and the visible badge alone is a small target
-          on a phone-width render. */}
-      <rect x={-22} y={-30} width={44} height={54} fill="transparent" style={{ pointerEvents: 'all' }} />
-      {/* A dashed ring while arranging — the same visual language blueprint-
-          phase buildings already use for "not settled yet" — so a landmark
-          reads as movable without needing separate instructional copy on
-          every pin. */}
+      {/* Invisible hit area covering the whole tile + label stack, not just
+          the painted square (2026-08-24) — the gaps around it don't
+          register taps in SVG on their own, and the visible tile alone is
+          a small target on a phone-width render. */}
+      <rect x={-22} y={-32} width={44} height={56} fill="transparent" style={{ pointerEvents: 'all' }} />
+      {/* A dashed ring while arranging — squared off to match the tile
+          instead of the old circular badge, same "not settled yet" language
+          blueprint-phase buildings already use. */}
       {draggable && (
-        <circle cy={-14} r={18} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
+        <rect x={-19} y={-31} width={38} height={38} rx={12} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
       )}
-      <circle cy={-14} r={14} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.9} strokeDasharray="1.5 1.8" opacity={0.9} />
-      <circle cy={-14} r={14} fill="none" stroke="var(--border)" strokeWidth={0.6} />
+      {/* Soft drop shadow, offset down — the thing that makes a tile read as
+          sitting above the scene rather than printed onto it, same
+          grounding-shadow language the plants/buildings use. */}
+      <rect x={-15} y={-27.5} width={30} height={30} rx={tileR} fill="var(--text)" opacity={0.16} />
+      <rect x={-15} y={-29} width={30} height={30} rx={tileR} fill="var(--surface)" />
+      {/* Glossy sheen, top-left — the same highlight every other tile/roof
+          in the scene already uses, here doubling as the icon-tile gloss
+          an actual iOS icon has. */}
+      <rect x={-15} y={-29} width={30} height={30} rx={tileR} fill="url(#vsheen)" />
+      <rect x={-15} y={-29} width={30} height={30} rx={tileR} fill="none" stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.5} />
       <FeatureIcon kind={icon} y={-14} />
-      <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" letterSpacing="0.06em" y={10}>{label.toUpperCase()}</text>
-      <text textAnchor="middle" fontSize={7.5} fill="var(--muted)" opacity={0.6} y={21}>{count}</text>
+      {/* A small numeric corner badge, iOS-notification-style, ON TOP of
+          the tile whenever the count actually leads with a number (plants
+          growing, buildings standing, tree-rings/months) — a bonus glance,
+          not a replacement for the text below, since some counts are words
+          ("today", "ready when you are") with nothing to badge. */}
+      {count.match(/^\d+/) && (
+        <>
+          <circle cx={11} cy={-27} r={7} fill="var(--rose)" stroke="var(--surface)" strokeWidth={1.4} />
+          <text x={11} y={-27} textAnchor="middle" dominantBaseline="central" fontSize={6} fill="#fff" fontWeight={600}>
+            {count.match(/^\d+/)![0]}
+          </text>
+        </>
+      )}
+      <text textAnchor="middle" fontSize={8.5} fill="var(--text)" letterSpacing="0.04em" y={9}>{label}</text>
+      <text textAnchor="middle" fontSize={7} fill="var(--muted)" opacity={0.75} y={19}>{count}</text>
     </g>
   )
 }

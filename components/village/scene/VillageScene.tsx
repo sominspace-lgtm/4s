@@ -205,9 +205,18 @@ export default function VillageScene({
             objectBoundingBox (the SVG default) means every shape that
             references vsheen gets its own correctly-scaled highlight from
             this one definition — no per-shape gradient needed. */}
+        {/* Real green field, not the theme's cream/beige surface tones
+            (2026-08-24) — pulled directly from BloomScan's own ground
+            gradient (src/art/GardenGround.tsx's `-field` gradient:
+            #CBD9BB -> #BCCFAA -> #A9C096), the actual reference for "grass
+            should be green, matching BloomScan's garden feel". Fixed hex,
+            not var()-driven, for the same reason Sky.tsx's zenith blue is
+            fixed: grass reading as green is a baseline fact about grass,
+            not something a theme should be able to override into cream. */}
         <linearGradient id="vground" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--surface)" />
-          <stop offset="100%" stopColor="var(--surface2)" />
+          <stop offset="0%" stopColor="#CBD9BB" />
+          <stop offset="55%" stopColor="#BCCFAA" />
+          <stop offset="100%" stopColor="#A9C096" />
         </linearGradient>
         <radialGradient id="vsheen" cx="32%" cy="28%" r="78%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0.30" />
@@ -241,17 +250,17 @@ export default function VillageScene({
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
       {/* Grass — texture along the ground line, see GRASS_TUFTS above.
-          Fixed --emerald at near-full strength regardless of season
-          (2026-08-22): grass reading as green is a baseline expectation
-          independent of what the trees are doing this season, and the old
-          0.5 opacity plus the diluted seasonal palette.foliage (which mixes
-          toward blush/amber/slate) was a large part of why the whole scene
-          read muted, like a vintage filter, rather than like a living lawn. */}
+          Fixed BloomScan grass greens (#8CA57C/#94AD84, same two tones its
+          own tufts alternate between) instead of the theme's --emerald
+          (2026-08-24) — grass reading as green is a baseline expectation
+          independent of season or theme, and the field gradient above is
+          the bigger fix, but the tufts should match the same reference
+          rather than clash with it. */}
       <g opacity={0.9}>
-        {GRASS_TUFTS.map(t => (
+        {GRASS_TUFTS.map((t, i) => (
           <path key={t.id}
             d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
-            fill="none" stroke="var(--emerald)" strokeWidth={1.2} strokeLinecap="round" />
+            fill="none" stroke={i % 2 === 0 ? '#8CA57C' : '#94AD84'} strokeWidth={1.2} strokeLinecap="round" />
         ))}
       </g>
 

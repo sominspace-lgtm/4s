@@ -19,9 +19,16 @@ import Celestial from './Celestial'
 // theme colors) without a hard seam; mid bridges the two. This is the one
 // place in the whole scene that deliberately ignores the active theme's
 // palette on purpose.
+// Day softened toward BloomScan's own sky gradient (2026-08-24) — its
+// GardenGround.tsx runs a soft powder-blue-to-cream wash (#DCE9EC ->
+// #F3ECDA), "afternoon light, not a screen" per its own theme.ts. The old
+// day zenith (#4a90d9) was a real, saturated sky blue — genuinely correct
+// weather, just not the pastel-storybook feel this scene is going for now.
+// Dawn/dusk/night keep their own moodier saturation; softening those too
+// would flatten the one part of the day that's supposed to feel dramatic.
 const SKY: Record<VillageState['timeOfDay'], [string, string, string]> = {
   dawn:  ['#7fb3e0', 'color-mix(in srgb, #f2b5a0 75%, var(--bg))', 'color-mix(in srgb, #f7d9b8 40%, var(--bg))'],
-  day:   ['#4a90d9', 'color-mix(in srgb, #8ec5ea 75%, var(--bg))', 'color-mix(in srgb, #cfe8f7 40%, var(--bg))'],
+  day:   ['#a9d4ea', 'color-mix(in srgb, #c9e4f0 75%, var(--bg))', 'color-mix(in srgb, #f3ecda 55%, var(--bg))'],
   dusk:  ['#3d4f7a', 'color-mix(in srgb, #d97b56 78%, var(--bg))', 'color-mix(in srgb, #f0a868 40%, var(--bg))'],
   night: ['#0c1226', 'color-mix(in srgb, #1c2544 82%, var(--bg))', 'color-mix(in srgb, #2a3358 45%, var(--bg))'],
 }
