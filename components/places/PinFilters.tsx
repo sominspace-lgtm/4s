@@ -47,6 +47,12 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   const [label, setLabel] = useState('')
   const [centerId, setCenterId] = useState('')
   const [radiusKm, setRadiusKm] = useState('3')
+  // Collapsed by default (2026-08-24) — search + status + kind + tag + area
+  // chips is a lot of vertical space to spend before the map even shows.
+  // Stays open automatically once a filter is active, since that's exactly
+  // the moment you need to see (and clear) what's narrowing the pins.
+  const activeCount = (filters.kind ? 1 : 0) + (filters.status ? 1 : 0) + filters.tags.length + (filters.radiusFilterId ? 1 : 0) + (filters.query.trim() ? 1 : 0)
+  const [open, setOpen] = useState(activeCount > 0)
 
   const chipStyle = (active: boolean): React.CSSProperties => ({
     fontSize: '0.68rem', padding: '0.35rem 0.7rem',
@@ -62,8 +68,41 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
     setLabel(''); setCenterId(''); setRadiusKm('3'); setAdding(false)
   }
 
+  const activeSummary: string[] = []
+  if (filters.query.trim()) activeSummary.push(`"${filters.query.trim()}"`)
+  if (filters.status) activeSummary.push(STATUS_CHIPS.find(s => s.id === filters.status)?.label ?? filters.status)
+  if (filters.kind) activeSummary.push(kindSpec(filters.kind).label)
+  activeSummary.push(...filters.tags.map(t => `#${t}`))
+  if (filters.radiusFilterId) activeSummary.push(`📍 ${savedFilters.find(f => f.id === filters.radiusFilterId)?.label ?? 'area'}`)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <button onClick={() => setOpen(v => !v)} className="press" style={{
+          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: '0.76rem',
+          display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-body)',
+        }}>
+          <span style={{ opacity: 0.6, fontSize: '0.65rem' }}>{open ? '▾' : '▸'}</span>
+          🔍 Search &amp; filters
+          {activeCount > 0 && (
+            <span style={{
+              fontSize: '0.6rem', color: 'var(--gold)', background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
+              borderRadius: '99px', padding: '0.1em 0.55em',
+            }}>{activeCount}</span>
+          )}
+        </button>
+        {!open && activeSummary.length > 0 && (
+          <span style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.75 }}>{activeSummary.join(' · ')}</span>
+        )}
+        {activeCount > 0 && (
+          <button onClick={() => onChange(DEFAULT_PIN_FILTERS)} className="press"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.7, fontSize: '0.66rem' }}>
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {open && <>
       <input
         value={filters.query}
         onChange={e => onChange({ ...filters, query: e.target.value })}
@@ -167,6 +206,7 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
           </button>
         )}
       </div>
+      </>}
     </div>
   )
 }
