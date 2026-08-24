@@ -15,13 +15,13 @@ import { hashPos } from './state'
 // It's why the back row is derived from a hash rather than from whatever
 // order the rows came back in.
 //
-// The fixed LANDMARKS (Rest Lake, Growth Forest, Home, Projects, Archive,
-// and — added 2026-08-24 — Places and People) are a different case as of
-// 2026-08-21 — they never move on their own regardless of data, so a saved
-// position is actually meaningful and stable. See VillageLayout below and
-// VillageScene's arrange mode.
+// The fixed LANDMARKS (Growth Forest, Home, Projects, Archive, and — added
+// 2026-08-24 — Places and People; Rest Lake removed the same day) are a
+// different case as of 2026-08-21 — they never move on their own regardless
+// of data, so a saved position is actually meaningful and stable. See
+// VillageLayout below and VillageScene's arrange mode.
 
-export const LANDMARK_IDS = ['lake', 'forest', 'home', 'projects', 'archive', 'places', 'people'] as const
+export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people'] as const
 export type LandmarkId = typeof LANDMARK_IDS[number]
 /** Custom x/y per landmark, only for the ones a user has actually dragged —
  *  anything missing falls back to its default position below. */

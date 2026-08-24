@@ -225,7 +225,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'fish' | 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people'
 
 // Illustrated figures instead of abstract/object glyphs (2026-08-24) — a
 // district should feel inhabited, not labeled: someone resting at the lake,
@@ -251,13 +251,6 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
 }) {
   const body = (() => {
     switch (kind) {
-      case 'fish': // Rest Lake — a figure sitting still, resting
-        return (
-          <g fill="var(--gold)">
-            <circle cx={0} cy={-9.5} r={2.3} />
-            <path d="M -5 4.5 Q -5.2 -3.5 0 -3 Q 5.2 -3.5 5 4.5 Z" />
-          </g>
-        )
       case 'leaf': // Growth Forest — a figure bent over, tending the ground
         return (
           <g fill="none" stroke="var(--gold)" strokeWidth={1.6} strokeLinecap="round">

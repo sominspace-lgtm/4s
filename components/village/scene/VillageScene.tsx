@@ -102,7 +102,6 @@ export type { Slot } from '@/lib/village/layout'
 // named map (rather than left as literal props on each DistrictLabel call)
 // so arrangeable() below has one place to fall back to.
 const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
-  lake: { x: 150, y: 130 },
   forest: { x: 175, y: 250 },
   home: { x: 400, y: 250 },
   projects: { x: 620, y: 250 },
@@ -247,10 +246,6 @@ export default function VillageScene({
       onPointerCancel={endDrag}
     >
       <defs>
-        <radialGradient id="vlake">
-          <stop offset="0%" stopColor="var(--slate)" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="var(--slate)" stopOpacity="0.15" />
-        </radialGradient>
         <radialGradient id="vvignette" cx="50%" cy="45%" r="75%">
           {/* Switched from var(--bg) to a fixed neutral black (2026-08-21) —
               a vignette is conventionally a darkening at the edges, not a
@@ -271,9 +266,6 @@ export default function VillageScene({
           <stop offset="68%" stopColor="#000" stopOpacity="0" />
           <stop offset="100%" stopColor="#000" stopOpacity="0.22" />
         </radialGradient>
-        <clipPath id="vlakeClip">
-          <ellipse cx={150} cy={410} rx={110} ry={22} />
-        </clipPath>
         {/* Depth pass (2026-08-21) — the ground and every rounded shape were
             flat single-color fills, which is what read as sparse/flat rather
             than "not enough is drawn". vground gives the field a top-to-
@@ -394,36 +386,6 @@ export default function VillageScene({
         ))}
       </g>
 
-      {/* Rest Lake — clarity reflects actual rest taken */}
-      <ellipse cx={150} cy={410} rx={110} ry={22} fill="url(#vlake)" opacity={0.4 + v.stillness * 0.6} />
-      {/* The sky's own celestial body, mirrored onto the water. Its x maps
-          the sun/moon's full arc across the sky (roughly 70-730) onto the
-          lake's own width, so the reflection glides smoothly from one bank
-          to the other over the course of a real day rather than only
-          appearing when the sun happens to be directly overhead the pond —
-          a village pond earns a little license there. Clipped to the lake's
-          own ellipse so it never floats off the water's edge. */}
-      {live && celestial && (
-        <g clipPath="url(#vlakeClip)">
-          <ellipse
-            cx={60 + Math.max(0, Math.min(1, (celestial.x - 70) / 660)) * 180}
-            cy={405} rx={celestial.body === 'sun' ? 16 : 11} ry={5}
-            fill={celestial.body === 'sun' ? 'var(--amber)' : 'var(--text)'}
-            opacity={celestial.body === 'sun' ? 0.3 : 0.22}
-            className="village-drift"
-          />
-        </g>
-      )}
-      <ellipse cx={150} cy={410} rx={110} ry={22} fill="none" stroke="var(--slate)" strokeWidth={0.8} opacity={0.4} />
-      <g className="village-drift">
-        <ellipse cx={120} cy={406} rx={26} ry={3} fill="var(--text)" opacity={0.07} />
-        <ellipse cx={186} cy={414} rx={18} ry={2.4} fill="var(--text)" opacity={0.05} />
-      </g>
-      {/* A fish, literally in the lake (2026-08-22) — the district's nav
-          badge carries the same silhouette, but that badge floats free and
-          can be dragged anywhere in arrange mode; this one is fixed to the
-          water itself so "this is what's here" survives regardless. */}
-      <FeatureIcon kind="fish" x={195} y={402} scale={0.85} opacity={0.55} />
 
       {/* Growth Forest */}
       {plantSlots.map(({ plant, x, y, scale, back }) => (
@@ -556,29 +518,19 @@ export default function VillageScene({
       })}
 
       {/* District labels — the actual navigation. Icons are real silhouettes
-          of what's actually in each district (a fish for the lake, a leaf
-          for the forest, a building for projects, a book for the archive
-          next to its own tree — see shapes.tsx's DistrictIcon) rather than
-          the app's abstract SectionNav glyph set, which shared no visual
-          logic with the scene around it. Positions come from pos(id) —
-          layout[id] if it's been dragged, otherwise the same defaults as
-          always.
+          of what's actually in each district (a leaf for the forest, a
+          building for projects, a book for the archive next to its own tree
+          — see shapes.tsx's DistrictIcon) rather than the app's abstract
+          SectionNav glyph set, which shared no visual logic with the scene
+          around it. Positions come from pos(id) — layout[id] if it's been
+          dragged, otherwise the same defaults as always.
 
-          Rest Lake, Home, and Archive all landed on goToSection('brief')
-          until 2026-08-24 — three visually distinct districts that did the
-          exact same thing on click, which is exactly the "confusing
-          navigation" this fixed: Rest Lake now opens the Brief AND focuses
-          the capture box (stillness is literally "days you paused to write
-          something down", see useReflectionDays), and Archive opens the
-          real Archive panel ("everything you've completed") instead of
-          just landing on the Brief a second time. Home stays on the Brief —
-          that one was always correct. */}
-      <DistrictLabel {...pos('lake')} icon="fish" label="Rest Lake" onClick={nav('Rest Lake', () => {
-        goToSection('brief')
-        setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
-      })}
-        count={v.stillness > 0.5 ? 'still' : 'ready when you are'}
-        draggable={arranging} dragging={draggingId === 'lake'} onPointerDown={startDrag('lake')} />
+          Rest Lake removed 2026-08-24 (was here through 2026-08-24 morning:
+          the lake ellipse/reflection/fish, and a "Rest Lake" district
+          opening the Brief + focusing the capture box). stillness/
+          reflectionDays stay computed in lib/village/state.ts — nothing else
+          in the data model depended on the lake being drawn — in case a
+          future district wants that number again. */}
       <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={nav('Growth Forest', () => goToPersonal('habits'))}
         count={`${v.plants.length} growing`}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />

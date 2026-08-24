@@ -39,9 +39,6 @@ export default function VillageText({ village, arrival = null, horizonCount = 0 
       ? `Archive Grove: Life Tree has ${village.treeRings} ring${village.treeRings === 1 ? '' : 's'}.`
       : `Archive Grove: Life Tree in its first year, ${village.accountMonths} month${village.accountMonths === 1 ? '' : 's'} of growth.`,
     `Bloom Garden: ${village.flowers.length || 'no'} flower${village.flowers.length === 1 ? '' : 's'} so far.`,
-    // Stated as the plain count rather than a verdict. Zero reads as neutral
-    // because the sentence is about rest, not compliance.
-    `Rest Lake: reflected on ${village.reflectionDays} of the last 7 days.`,
     `It is ${village.timeOfDay}, in ${village.season}.`,
     // Omitted entirely when solo, rather than saying "0 places". The picture
     // shows nothing there either.
