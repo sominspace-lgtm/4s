@@ -18,6 +18,66 @@ const input: React.CSSProperties = {
   padding: '0.45rem 0.65rem', outline: 'none',
 }
 
+// An itinerary item, click-to-schedule (2026-08-25 fix) — before this, an
+// item could only ever be marked done or removed after creation; there was
+// no way to give an "Unscheduled" item (e.g. a whole day's worth of ideas
+// moved in from Date Ideas) an actual date without deleting and re-adding
+// it. That's the real blocker to "easy to plan" here — most items arrive
+// unscheduled and planning IS assigning them to days.
+function ItineraryItemRow({ item, onUpdate, onRemove }: {
+  item: import('@/lib/hooks/useTripBundle').ItineraryItem
+  onUpdate: (id: string, fields: Partial<Pick<import('@/lib/hooks/useTripBundle').ItineraryItem, 'title' | 'item_date' | 'time_label' | 'kind' | 'notes' | 'done'>>) => void
+  onRemove: (id: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [date, setDate] = useState(item.item_date ?? '')
+  const [time, setTime] = useState(item.time_label ?? '')
+  const [kind, setKind] = useState<ItineraryKind>(item.kind)
+
+  function save() {
+    onUpdate(item.id, { item_date: date || null, time_label: time.trim() || null, kind })
+    setEditing(false)
+  }
+
+  return (
+    <div style={{ padding: '0.3rem 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <button onClick={() => onUpdate(item.id, { done: !item.done })} className="press" style={{
+          width: 14, height: 14, borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+          background: item.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
+        }} />
+        <span aria-hidden style={{ fontSize: '0.7rem', opacity: 0.6, flexShrink: 0 }}>{KIND_ICON[item.kind]}</span>
+        <button onClick={() => setEditing(v => !v)} className="press" style={{
+          flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: '0.76rem', color: 'var(--text)', opacity: item.done ? 0.5 : 1, textDecoration: item.done ? 'line-through' : 'none',
+        }}>
+          {item.title}{item.time_label && <span style={{ color: 'var(--muted)' }}> · {item.time_label}</span>}
+          <span style={{ color: 'var(--gold)', opacity: 0.6, fontSize: '0.62rem', marginLeft: '0.4rem' }}>{editing ? '▾' : (item.item_date ? 'edit' : '▸ set date')}</span>
+        </button>
+        <button onClick={() => onRemove(item.id)} aria-label={`Remove ${item.title}`} className="press"
+          style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+      </div>
+
+      {editing && (
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.35rem', marginLeft: '1.6rem' }}>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem' }} />
+          <input value={time} onChange={e => setTime(e.target.value)} placeholder="Time (optional)" style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem', width: '100px' }} />
+          <select value={kind} onChange={e => setKind(e.target.value as ItineraryKind)} style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem', cursor: 'pointer' }}>
+            {KIND_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
+          <button onClick={save} className="btn btn-ghost press" style={{ fontSize: '0.64rem', padding: '0.25rem 0.5rem' }}>Save</button>
+          {date && (
+            <button onClick={() => { setDate(''); onUpdate(item.id, { item_date: null }) }} className="press"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.62rem' }}>
+              Clear date
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // A trip, opened up: status + dates at the top (the "what stage is this at"
 // question), then three sections that answer the three actual questions a
 // trip raises — when are we doing what (itinerary), what will it cost
@@ -111,18 +171,7 @@ export default function TripDetail({ trip, open, onClose }: {
             <div key={day} style={{ marginBottom: '0.7rem' }}>
               <div style={{ fontSize: '0.62rem', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>{day}</div>
               {items.map(item => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0' }}>
-                  <button onClick={() => bundle.updateItineraryItem(item.id, { done: !item.done })} className="press" style={{
-                    width: 14, height: 14, borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                    background: item.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                  }} />
-                  <span aria-hidden style={{ fontSize: '0.7rem', opacity: 0.6, flexShrink: 0 }}>{KIND_ICON[item.kind]}</span>
-                  <span style={{ flex: 1, fontSize: '0.76rem', color: 'var(--text)', opacity: item.done ? 0.5 : 1, textDecoration: item.done ? 'line-through' : 'none' }}>
-                    {item.title}{item.time_label && <span style={{ color: 'var(--muted)' }}> · {item.time_label}</span>}
-                  </span>
-                  <button onClick={() => bundle.removeItineraryItem(item.id)} aria-label={`Remove ${item.title}`} className="press"
-                    style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer', flexShrink: 0 }}>✕</button>
-                </div>
+                <ItineraryItemRow key={item.id} item={item} onUpdate={bundle.updateItineraryItem} onRemove={bundle.removeItineraryItem} />
               ))}
             </div>
           ))}
