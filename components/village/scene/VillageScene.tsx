@@ -784,8 +784,8 @@ export default function VillageScene({
           of what's actually in each district (a leaf for the forest, a
           building for projects, a book for the archive next to its own tree
           — see shapes.tsx's DistrictIcon) rather than the app's abstract
-          SectionNav glyph set, which shared no visual logic with the scene
-          around it. Positions come from pos(id) — layout[id] if it's been
+          nav glyph set (HomeBar), which shares no visual logic with the
+          scene around it. Positions come from pos(id) — layout[id] if it's been
           dragged, otherwise the same defaults as always.
 
           Rest Lake removed 2026-08-24 (was here through 2026-08-24 morning:

@@ -40,7 +40,7 @@ export interface Counts {
 export interface UnlockStage {
   id: string          // section id (matches DEFAULT_SECTIONS / nav ids)
   label: string
-  icon: string         // matches NAV_ICONS in SectionNav/BottomNav
+  icon: string         // shown next to the milestone in JourneyBar
   teaser: string        // the "why you want this" line
   milestone: string     // the action that unlocks it, in imperative voice
   action: ActionKey | null // null = compound (Council)

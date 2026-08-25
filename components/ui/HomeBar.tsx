@@ -1,24 +1,26 @@
 'use client'
 
-// The shared/kiosk-device nav (2026-08-25) — replaces SectionNav+BottomNav
-// in shared mode with the "Home Bar" from the wall-mounted-iPad vision doc:
-// four broad contexts (🌳 Village / 🏠 Home / 🌱 Life / 💡 Controls) instead
-// of a flat row of seven tabs, with a second, quieter row of pills for
-// whichever context is open and has more than one real destination inside
-// it. A context switcher, not a standard app tab bar — see the primary row's
-// own styling below (softer than SectionNav's already-translucent bar).
+// The ONE nav for both personal and shared use (2026-08-25) — started as
+// the shared/kiosk device's own bar (replacing SectionNav+BottomNav there),
+// now replaces them everywhere so the two modes share one visual design,
+// not just the same relative order. Broad contexts (🌳 Village / 🏠 Home /
+// 🌱 Life / 💡 Controls, plus ☀️ Today / 👤 Personal in personal mode only)
+// instead of a flat row of individual tabs, with a second, quieter row of
+// pills for whichever context is open and has more than one real
+// destination inside it. A context switcher, not a standard app tab bar.
 export interface HomeBarGroup {
   id: string
   icon: string
   label: string
   /** The real tab ids this context covers — DashboardClient's existing
-   *  section ids (village/home/calendar/routines/smarthome/reference/places).
-   *  members[0] is where selecting the group (without already being inside
-   *  it) lands. */
+   *  section ids (brief/personal/village/home/calendar/routines/smarthome/
+   *  reference/places). members[0] is where selecting the group (without
+   *  already being inside it) lands. */
   members: string[]
 }
 
 const MEMBER_LABELS: Record<string, string> = {
+  brief: 'Today', personal: 'Personal',
   village: 'Village', home: 'Home', calendar: 'Calendar', routines: 'Routines',
   smarthome: 'Controls', reference: 'Reference', places: 'Places',
 }
@@ -45,12 +47,13 @@ export default function HomeBar({ groups, activeId, onSelect }: {
           background: 'color-mix(in srgb, var(--bg) 55%, transparent)',
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
           borderRadius: '999px', border: '1px solid var(--faint)',
+          maxWidth: 'calc(100vw - 1.5rem)', overflowX: 'auto', scrollbarWidth: 'none',
         }}>
           {activeGroup.members.map(m => {
             const isActive = m === activeId
             return (
               <button key={m} onClick={() => onSelect(m)} className="press" style={{
-                padding: '0.3rem 0.75rem', borderRadius: '999px', border: 'none', cursor: 'pointer',
+                padding: '0.3rem 0.75rem', borderRadius: '999px', border: 'none', cursor: 'pointer', flexShrink: 0,
                 background: isActive ? 'color-mix(in srgb, var(--gold) 16%, transparent)' : 'none',
                 color: isActive ? 'var(--gold)' : 'var(--muted)',
                 fontFamily: 'var(--font-body)', fontSize: '0.66rem', letterSpacing: '0.03em',
@@ -71,6 +74,7 @@ export default function HomeBar({ groups, activeId, onSelect }: {
         backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
         borderRadius: '999px', border: '1px solid var(--faint)',
         boxShadow: '0 2px 14px color-mix(in srgb, var(--text) 6%, transparent)',
+        maxWidth: 'calc(100vw - 1.5rem)', overflowX: 'auto', scrollbarWidth: 'none',
       }}>
         {groups.map(g => {
           const isActive = g.id === activeGroup.id
@@ -83,7 +87,7 @@ export default function HomeBar({ groups, activeId, onSelect }: {
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
                 padding: '0.4rem 0.9rem', borderRadius: '999px', border: 'none', cursor: 'pointer',
-                background: 'none', minWidth: '3.6rem',
+                background: 'none', minWidth: '3.6rem', flexShrink: 0,
               }}
             >
               <span aria-hidden style={{

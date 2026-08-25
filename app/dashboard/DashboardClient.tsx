@@ -13,8 +13,6 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
-import BottomNav from '@/components/ui/BottomNav'
-import SectionNav from '@/components/ui/SectionNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
@@ -125,17 +123,23 @@ const SECTION_GROUPS: Record<string, string> = {
   reference: 'ours',
 }
 
-// The Home Bar's contexts (2026-08-25) — regroups the seven flat
-// shared-mode tabs above into the wall-mounted-iPad vision's 🌳/🏠/🌱/💡
-// structure. Tasks/goals/projects stay out of "Life" here on purpose: those
-// are personal data gated behind a PIN even in shared mode (see
-// VillageScene's districtLocked), so Life is scoped to Routines. Places got
-// its own icon back (2026-08-25 fix) — nesting it one tap deep under Life
-// made it noticeably harder to find than it was in the old flat nav, and
-// findability matters more here than sticking to exactly four icons. Real
-// smart-home control isn't built yet (see useSmartHome.ts) so Controls
-// still opens the manual list.
-const HOME_BAR_GROUPS: HomeBarGroup[] = [
+// The Home Bar's contexts (2026-08-25, made universal 2026-08-25) — one nav
+// component and one visual design for both personal and shared use, not
+// just the same relative order. This is the full superset; DashboardClient
+// filters it down to whatever ids are actually in `navSections` for the
+// current mode (see homeBarGroups below) — shared mode has no Today/
+// Personal, personal mode has everything. Tasks/goals/projects stay out of
+// "Life" here on purpose: those are personal data gated behind a PIN even
+// in shared mode (see VillageScene's districtLocked), so Life is scoped to
+// Routines. Places got its own icon back (2026-08-25 fix) — nesting it one
+// tap deep under Life made it noticeably harder to find than the old flat
+// nav, and findability matters more than sticking to exactly four icons.
+// Controls always opens the Smart Home overlay (special-cased in onSelect
+// below) rather than ever being a real navSections member — 'smarthome' is
+// never filtered against navSections for that reason, see the filter logic.
+const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
+  { id: 'brief',    icon: '☀️', label: 'Today',    members: ['brief'] },
+  { id: 'personal', icon: '👤', label: 'Personal', members: ['personal'] },
   { id: 'village',  icon: '🌳', label: 'Village',  members: ['village'] },
   { id: 'home',     icon: '🏠', label: 'Home',     members: ['home', 'calendar', 'reference'] },
   { id: 'life',     icon: '🌱', label: 'Life',     members: ['routines'] },
@@ -362,6 +366,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // and "what the nav bar renders" has an obvious place to live again.
   const navSections = visible
 
+  // ALL_HOME_BAR_GROUPS filtered to what's actually reachable this mode
+  // (2026-08-25) — 'smarthome' is kept unconditionally since Controls is
+  // never a navSections member, it always opens the overlay (see onSelect
+  // below); every other member has to be a real, visible section or its
+  // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
+  // so those two groups vanish rather than rendering an empty icon).
+  const navIds = new Set(navSections.map(s => s.id))
+  const homeBarGroups = ALL_HOME_BAR_GROUPS
+    .map(g => ({ ...g, members: g.members.filter(m => m === 'smarthome' || navIds.has(m)) }))
+    .filter(g => g.members.length > 0)
+
   // Tab mode: only the active section renders. If the active tab was hidden
   // (customize / simple mode), fall back to the first visible one.
   const currentTab = navSections.some(s => s.id === activeTab) ? activeTab : (navSections[0]?.id ?? 'brief')
@@ -474,18 +489,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
-      {/* Shared/kiosk mode gets the Home Bar (both a top strip and, via its
-          own sticky bottom:0, effectively the bottom nav too — see below,
-          where BottomNav is skipped in sharedMode to avoid a redundant
-          second bar). Personal mode is untouched: SectionNav up top,
-          BottomNav down below, exactly as before. */}
-      {!ambient && !sharedMode && (
-        <SectionNav
-          sections={navSections}
-          activeId={currentTab}
-          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-        />
-      )}
 
       {/* Journey bar — progress + a one-click tutorial. Quiet, disappears
           forever once everything is open. Not XP: no levels, no streaks,
@@ -507,7 +510,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
 
-      <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 4rem' }}>
+      {/* Bottom padding bumped 4rem→6rem (2026-08-25) — HomeBar is now the
+          nav for every viewport, not just mobile, and its two-row state
+          (a context with sub-destinations open) is taller than the old
+          mobile-only BottomNav this used to just clear. */}
+      <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
@@ -529,14 +536,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         )}
       </main>
       {!ambient && !sharedMode && <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />}
-      {!ambient && !sharedMode && <BottomNav
-        sections={navSections}
-        activeId={currentTab}
-        onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-      />}
-      {!ambient && sharedMode && (
+      {/* One nav component for both modes now (2026-08-25) — same design
+          everywhere, not just the same relative order. homeBarGroups is
+          ALL_HOME_BAR_GROUPS filtered down to whatever's actually in
+          navSections for this mode (Today/Personal only exist in personal
+          mode; Controls is special-cased below, same as before). */}
+      {!ambient && (
         <HomeBar
-          groups={HOME_BAR_GROUPS}
+          groups={homeBarGroups}
           activeId={currentTab}
           onSelect={id => {
             // Controls opens the Smart Home overlay (2026-08-25) rather than
