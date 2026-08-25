@@ -89,7 +89,7 @@ export default function TripDetail({ trip, open, onClose }: {
   onClose: () => void
 }) {
   const { updateTrip, removeTrip } = useTrips()
-  const bundle = useTripBundle(trip?.id ?? null)
+  const bundle = useTripBundle(trip?.id ?? null, trip?.space_id ?? null)
   const { places } = usePlaces()
   // Located date ideas, surfaced as one-click shortlist adds (2026-08-25) —
   // a date idea with a pin already IS a place, so "move it into trips"

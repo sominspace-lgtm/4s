@@ -51,7 +51,16 @@ export interface TripPlace {
 // through the browser Supabase client under RLS, not the bearer-token route
 // — the web session already has its own auth, so there's no reason to route
 // through the bot-facing API just to read the same own-or-space rows.
-export function useTripBundle(tripId: string | null) {
+//
+// spaceId is the TRIP's own space_id (Trip.space_id), not a general
+// "current space" — it has to be threaded through to every insert below
+// (2026-08-25 fix). Without it, every insert here only ever set user_id, so
+// itinerary/budget/shortlist rows added to a SHARED trip were only visible
+// to whoever happened to add them — the RLS policy on each of these three
+// tables is `user_id = auth.uid() OR (space_id is not null AND
+// is_space_member(...))`, so a null space_id silently drops the second
+// branch and the row becomes invisible to the other partner.
+export function useTripBundle(tripId: string | null, spaceId: string | null = null) {
   const supabase = createClient()
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([])
   const [budget, setBudget] = useState<BudgetItem[]>([])
@@ -81,7 +90,7 @@ export function useTripBundle(tripId: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
     const { error: e } = await supabase.from('itinerary_items').insert({
-      user_id: user.id, trip_id: tripId,
+      user_id: user.id, space_id: spaceId, trip_id: tripId,
       title: fields.title, item_date: fields.item_date ?? null, time_label: fields.time_label ?? null,
       kind: fields.kind ?? 'activity', notes: fields.notes ?? null, place_id: fields.place_id ?? null,
     })
@@ -112,7 +121,7 @@ export function useTripBundle(tripId: string | null) {
     // write path, never through this direct-entry form. See
     // supabase/migrations/places_travel.sql's note on trip_budget_items.source.
     const { error: e } = await supabase.from('trip_budget_items').insert({
-      user_id: user.id, trip_id: tripId, label: fields.label,
+      user_id: user.id, space_id: spaceId, trip_id: tripId, label: fields.label,
       category: fields.category ?? 'other', amount: fields.amount,
       currency: fields.currency ?? 'USD', source: 'user', paid: fields.paid ?? false,
     })
@@ -137,7 +146,7 @@ export function useTripBundle(tripId: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
     const { error: e } = await supabase.from('trip_places')
-      .upsert({ user_id: user.id, trip_id: tripId, place_id: placeId, note: note ?? null }, { onConflict: 'trip_id,place_id' })
+      .upsert({ user_id: user.id, space_id: spaceId, trip_id: tripId, place_id: placeId, note: note ?? null }, { onConflict: 'trip_id,place_id' })
     if (e) return { error: e.message }
     await load(); return { error: null }
   }
