@@ -125,15 +125,17 @@ const SECTION_GROUPS: Record<string, string> = {
 
 // The Home Bar's contexts (2026-08-25, made universal 2026-08-25) — one nav
 // component and one visual design for both personal and shared use, not
-// just the same relative order. This is the full superset; DashboardClient
-// filters it down to whatever ids are actually in `navSections` for the
-// current mode (see homeBarGroups below) — shared mode has no Today/
-// Personal, personal mode has everything. Tasks/goals/projects stay out of
-// Household here on purpose: those are personal data gated behind a PIN
-// even in shared mode (see VillageScene's districtLocked). Places got its
-// own icon back (2026-08-25 fix) — nesting it one tap deep under a group
-// made it noticeably harder to find than the old flat nav, and findability
-// matters more than a smaller icon count.
+// just the same relative order. This is the full superset (Calendar lives
+// inside Household here); DashboardClient filters it down to whatever ids
+// are actually in `navSections` for the current mode and, in shared mode
+// only, additionally splits Calendar out into its own top-level icon (see
+// groupsForMode/homeBarGroups below) — shared mode has no Today/Personal,
+// personal mode has everything and keeps Calendar nested. Tasks/goals/
+// projects stay out of Household here on purpose: those are personal data
+// gated behind a PIN even in shared mode (see VillageScene's
+// districtLocked). Places got its own icon back (2026-08-25 fix) — nesting
+// it one tap deep under a group made it noticeably harder to find than the
+// old flat nav, and findability matters more than a smaller icon count.
 //
 // Routines folded into Household (2026-08-25) — it used to be its own
 // "Life" icon next to Household, which put two closely-related groups side
@@ -389,7 +391,18 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
   // so those two groups vanish rather than rendering an empty icon).
   const navIds = new Set(navSections.map(s => s.id))
-  const homeBarGroups = ALL_HOME_BAR_GROUPS
+  // Calendar gets its own icon in shared mode specifically (2026-08-25) —
+  // pulled out of Household's secondary row into a standalone group, right
+  // after Household, before the rest run through the same visible-in-
+  // navSections filter below. Personal mode is untouched: Calendar stays
+  // inside Household there, same as Home/Reference/Routines.
+  const groupsForMode = sharedMode
+    ? ALL_HOME_BAR_GROUPS.flatMap(g => g.id === 'home'
+        ? [{ ...g, members: g.members.filter(m => m !== 'calendar') },
+           { id: 'calendar', icon: '📅', label: 'Calendar', members: ['calendar'] }]
+        : [g])
+    : ALL_HOME_BAR_GROUPS
+  const homeBarGroups = groupsForMode
     .map(g => ({ ...g, members: g.members.filter(m => m === 'smarthome' || navIds.has(m)) }))
     .filter(g => g.members.length > 0)
 

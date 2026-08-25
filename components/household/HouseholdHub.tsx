@@ -688,7 +688,27 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           feature covers what both were for. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
-      {tab === 'reference' && <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} />}
+
+      {/* Understanding Each Other — real relationship content (love
+          languages, preferences, the kind of thing Check-ins already gates),
+          not household logistics. Locked in shared mode (2026-08-25 fix) —
+          same "tap to unlock" pattern as Check-ins just below; it was
+          previously rendering unconditionally, visible on the shared/kiosk
+          device with no PIN at all. */}
+      {tab === 'reference' && sharedMode && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <button onClick={() => onLockedNavigate?.('Understanding Each Other')} className="press" style={{
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
+          }}>
+            <span className="t-card">Understanding Each Other</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>🔒 Personal — tap to unlock</span>
+          </button>
+        </section>
+      )}
+      {tab === 'reference' && !sharedMode && (
+        <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} />
+      )}
 
       {/* ── Rules ──────────────────────────────────────────────────
           Standing conventions, not one-off tasks: "no shoes inside", not
