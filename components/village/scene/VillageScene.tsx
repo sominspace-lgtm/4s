@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, PersonMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -157,7 +157,7 @@ export default function VillageScene({
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
   placesCount = 0, peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, people = [],
+  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0,
 }: {
   village: VillageState
   live: boolean
@@ -185,11 +185,6 @@ export default function VillageScene({
   moonLabel?: string | null
   /** Trips not done/cancelled — drives the Trips signpost, see useTrips(). */
   tripCount?: number
-  /** Per-person map markers (2026-08-25) — one dot per contact from
-   *  usePeople(), status pre-formatted by the caller (this component stays
-   *  hookless/dateless, see the file's own header comment) from
-   *  daysUntilBirthday/daysSinceContact. */
-  people?: { id: string; name: string; status: string | null }[]
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -265,9 +260,6 @@ export default function VillageScene({
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
   const [openPanel, setOpenPanel] = useState<Exclude<LandmarkId, 'archive'> | null>(null)
-  // Same hover-board idea as openPanel above, for the per-person markers
-  // (2026-08-25) — a separate id space since a person isn't a LandmarkId.
-  const [openPersonId, setOpenPersonId] = useState<string | null>(null)
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
@@ -558,23 +550,6 @@ export default function VillageScene({
           onClick={nav(area, () => goToHousehold('reference'), false)} />
       ))}
 
-      {/* Per-person markers (2026-08-25) — see PersonMarker/people prop
-          comments. Scattered on the opposite side of the path from the
-          memory map (a different hash seed + y band) so the two don't
-          collide, same "pure function of an id" determinism as everything
-          else scattered in the scene. */}
-      {people.map(p => (
-        <PersonMarker key={p.id}
-          x={40 + hashPos(p.id) * 720}
-          y={GROUND_Y + 44 + hashPos(p.id + 'y') * 30}
-          name={p.name}
-          onClick={() => {
-            if (arranging) return
-            if (locked) { onLockedNavigate?.(p.name); return }
-            setOpenPersonId(prev => (prev === p.id ? null : p.id))
-          }} />
-      ))}
-
       {/* Pollen motes — pure atmosphere, see POLLEN above. */}
       <g opacity={0.3}>
         {POLLEN.map((p, i) => (
@@ -649,6 +624,23 @@ export default function VillageScene({
         goToSection('brief')
         setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
       })} />
+
+      {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
+          dots with the three actual, always-present characters, standing in
+          Home's yard. See VillagerShape/CatShape's own header comment for
+          why this is a deliberate exception to the district icons' "objects,
+          not figures" rule. A slow, staggered idle bob (village-bob, see
+          globals.css) is the one bit of "tiny people walking" life this
+          scene gets — full movement/pathing is out of scope for now. */}
+      <g className="village-bob" style={{ animationDelay: '0s' }}>
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)" />
+      </g>
+      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)" />
+      </g>
+      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
+        <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
+      </g>
 
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
@@ -818,39 +810,6 @@ export default function VillageScene({
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
-              </g>
-            </g>
-          </g>
-        )
-      })()}
-
-      {/* Hover-board for the selected person marker — same shape as
-          openPanel's above, kept separate since a person isn't a
-          LandmarkId. */}
-      {openPersonId && (() => {
-        const person = people.find(p => p.id === openPersonId)
-        if (!person) return null
-        const x = 40 + hashPos(person.id) * 720
-        const y = GROUND_Y + 44 + hashPos(person.id + 'y') * 30
-        const lines = person.status ? [person.status] : ['Nothing to flag']
-        const width = 150
-        const height = 34 + lines.length * 13 + 22
-        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, x))
-        const top = Math.max(10, y - 30 - height)
-        return (
-          <g className="village-fade">
-            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenPersonId(null)} />
-            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
-              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
-              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
-              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{person.name}</text>
-              {lines.map((line, i) => (
-                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
-              ))}
-              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { goToPersonal('people'); setOpenPersonId(null) }}
-                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
-                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
-                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open People →</text>
               </g>
             </g>
           </g>

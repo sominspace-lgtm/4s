@@ -296,22 +296,48 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
   )
 }
 
-// One small marker per person (2026-08-25) — same deterministic-scatter
-// idea as MemoryMarker above, but for people rather than date-idea areas.
-// A dot + initial, not a figure: the People district already owns the
-// "who's in your life" illustration, this is just a footprint of theirs out
-// in the scene, with their actual name shown once clicked (see the
-// PersonCallout hover-board in VillageScene).
-export function PersonMarker({ x, y, name, onClick }: {
-  x: number; y: number; name: string; onClick?: () => void
+// The actual cast (2026-08-25, replaces the per-contact PersonMarker dots
+// above) — three fixed, one-of-a-kind characters standing near Home, not a
+// data-driven marker per usePeople() contact. This is a deliberate, bounded
+// exception to the "objects, not figures" rule the district icons follow
+// (see FeatureIcon's own header comment): that rule is about avoiding a
+// figure per plant/building/district at scale, which doesn't apply to
+// exactly three named, always-present characters — closer in spirit to the
+// Mailbox than to a per-entity pattern.
+export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
+  x: number; y: number; name: string; hairColor: string; outfitColor: string; onClick?: () => void
 }) {
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
   return (
     <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
-      <circle r={11} fill="transparent" style={{ pointerEvents: 'all' }} />
-      <circle r={5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={1} opacity={0.95} />
-      <text y={2.2} textAnchor="middle" fontSize={5.5} fontWeight={600} fill="var(--gold)" fontFamily="var(--font-body)">{initial}</text>
+      <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
+      {/* Body — rounded, faceless, matching the flat object style used
+          everywhere else in the scene. */}
+      <path d="M -6 0 Q -6 -12 0 -12 Q 6 -12 6 0 Z" fill={outfitColor} />
+      {/* Head + hair — a simple cap shape is enough to read as a person
+          without drawing an actual face. */}
+      <circle cx={0} cy={-15} r={5} fill="#E8C4A0" />
+      <path d="M -5 -16 Q -5 -21 0 -21 Q 5 -21 5 -16 Q 5 -18.5 0 -19 Q -5 -18.5 -5 -16 Z" fill={hairColor} />
+    </g>
+  )
+}
+
+export function CatShape({ x, y, name = 'Somi', onClick }: {
+  x: number; y: number; name?: string; onClick?: () => void
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      <title>{name}</title>
+      <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
+      {/* Tail, curled behind the body */}
+      <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke="var(--amber)" strokeWidth={2} strokeLinecap="round" />
+      {/* Sitting body */}
+      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill="var(--amber)" />
+      <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.9} />
+      {/* Head + ears */}
+      <circle cx={0} cy={-10} r={4} fill="var(--amber)" />
+      <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill="var(--amber)" />
+      <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill="var(--amber)" />
     </g>
   )
 }

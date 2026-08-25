@@ -424,6 +424,11 @@ select, option {
 @keyframes lantern { 0%,100% { opacity: 0.75; } 50% { opacity: 0.42; } }
 .village-glow { animation: lantern 5.5s ease-in-out infinite; }
 
+/* The cast's idle sway (2026-08-25) — see VillagerShape/CatShape in
+   shapes.tsx. Same slow/low-amplitude budget as drift/lantern above. */
+@keyframes village-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+.village-bob { animation: village-bob 3.6s ease-in-out infinite; }
+
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
 
@@ -639,7 +644,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-fade,
+  .village-drift, .village-glow, .village-fade, .village-bob,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,
   .village-tapped, .village-sparkle,
