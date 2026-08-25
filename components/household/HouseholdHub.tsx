@@ -16,6 +16,7 @@ import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
 import HouseholdMoveIn from './HouseholdMoveIn'
+import HouseholdSmartHome from './HouseholdSmartHome'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
@@ -44,7 +45,7 @@ type HouseholdTab = HouseholdTabId
 // Places went back to being its own top-level tab. Both the tab bar and
 // what's INSIDE Home are reorderable and hideable — `tabs`/`homeBlocks` are
 // owned by DashboardClient, same relationship Today has with its own blocks.
-export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false }: {
+export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate }: {
   userId: string
   userEmail: string
   tabs: SectionConfig[]
@@ -57,6 +58,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
    *  Home, so a quick glance shows what's pinned, not the full weekly-chore
    *  working view. */
   sharedMode?: boolean
+  /** Prompts the real Harry/Sylvia PIN unlock (see UnlockPanel) — used to
+   *  gate genuinely personal content (Check-ins) while sharedMode is on,
+   *  same mechanism Village already uses (2026-08-25). */
+  onLockedNavigate?: (reason: string) => void
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
@@ -638,6 +643,11 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           stay in household_movein_items either way. */}
       {tab === 'movein' && <HouseholdMoveIn spaceId={spaceId} />}
 
+      {/* Smart Home (2026-08-25) — a manual device/status list, see
+          HouseholdSmartHome's own header comment for why this isn't a real
+          automation integration. */}
+      {tab === 'smarthome' && <HouseholdSmartHome spaceId={spaceId} />}
+
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space.
           The old "fridge door" (household_notes, pinned one-liners) and
@@ -714,7 +724,18 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           them: the DM flow exists because a modal/DM is the only place that
           feels private enough to write an honest answer in the moment. 4S is
           just where you go back and read what was actually said. */}
-      {tab === 'reference' && (() => {
+      {tab === 'reference' && sharedMode && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <button onClick={() => onLockedNavigate?.('Check-ins')} className="press" style={{
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
+          }}>
+            <span className="t-card">Check-ins</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>🔒 Personal — tap to unlock</span>
+          </button>
+        </section>
+      )}
+      {tab === 'reference' && !sharedMode && (() => {
         const weeks = groupCheckinsByWeek(checkins)
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>

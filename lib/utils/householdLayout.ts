@@ -8,7 +8,7 @@ import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 // so restoring the tab brought the real data straight back with it. It is
 // deliberately a temporary hub: hide it from the tab bar (customize) once
 // the move is done and the rows stay put, same as last time.
-export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'movein' | 'reference'
+export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'movein' | 'smarthome' | 'reference'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
@@ -22,6 +22,11 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // already in Reference. One place for all of it instead of three.
   { id: 'routines',  label: 'Routines' },
   { id: 'movein',    label: 'Move-In' },
+  // Smart Home (2026-08-25) — a manual device/status list. Deliberately not
+  // a real automation integration (no Home Assistant/IoT API anywhere in
+  // this app) — just a place to note what's connected and its state, same
+  // "simple checklist" shape as House Rules and Move-In's buy-list.
+  { id: 'smarthome', label: 'Smart Home' },
   { id: 'reference', label: 'Reference' },
 ].map(s => ({ ...s, hidden: false }))
 

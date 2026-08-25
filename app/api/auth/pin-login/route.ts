@@ -26,6 +26,25 @@ export async function POST(request: Request) {
   if (!isProfile(profile)) return NextResponse.json({ error: 'Unknown profile.' }, { status: 400 })
 
   const admin = createAdminClient()
+
+  // Shared has no PIN at all (2026-08-25) — it's the household kiosk view,
+  // not a personal account, so there's nothing to guess-protect and no
+  // reason to make someone type a code for it. Personal content reached
+  // FROM shared mode (see UnlockPanel) still requires signing in as Harry
+  // or Sylvia for real, with their own PIN, checked below exactly as before.
+  if (profile === 'shared') {
+    const backing = backingCredentials(profile)
+    if (!backing.email || !backing.password) {
+      return NextResponse.json({ error: 'This profile is not configured yet.' }, { status: 500 })
+    }
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email: backing.email, password: backing.password })
+    if (error) return NextResponse.json({ error: 'Sign-in failed.' }, { status: 500 })
+    const res = NextResponse.json({ ok: true })
+    res.cookies.set('4s-shared-mode', '1', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
+    return res
+  }
+
   const { data: row } = await admin.from('pin_login_attempts').select('*').eq('profile', profile).maybeSingle()
 
   if (!row?.pin_hash) return NextResponse.json({ error: 'not_set_up' }, { status: 404 })
@@ -60,11 +79,8 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.signInWithPassword({ email: backing.email, password: backing.password })
   if (error) return NextResponse.json({ error: 'Sign-in failed.' }, { status: 500 })
 
+  // profile is 'harry' or 'sylvia' here — 'shared' returned early above.
   const res = NextResponse.json({ ok: true })
-  if (profile === 'shared') {
-    res.cookies.set('4s-shared-mode', '1', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
-  } else {
-    res.cookies.delete('4s-shared-mode')
-  }
+  res.cookies.delete('4s-shared-mode')
   return res
 }

@@ -431,8 +431,17 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
           </text>
         </>
       )}
-      <text textAnchor="middle" fontSize={8.5} fill="var(--text)" letterSpacing="0.04em" y={9}>{label}</text>
-      <text textAnchor="middle" fontSize={7} fill="var(--muted)" opacity={0.75} y={19}>{count}</text>
+      {/* Halo behind both lines (2026-08-25) — this text sits directly on
+          the ground/sky, not a flat card, so "readable in theory" fill
+          colors were still blending into whatever happened to be drawn
+          behind them. paintOrder="stroke" draws a solid --surface stroke
+          UNDER the fill, same trick map labels use over photo backgrounds —
+          the words now read the same regardless of what's underneath. Sizes
+          bumped too (8.5->10.5 / 7->8.5), and the count line's own extra
+          opacity dropped since --muted already carries the right alpha now
+          (stacking both was making it fainter than intended). */}
+      <text textAnchor="middle" fontSize={10.5} fill="var(--text)" stroke="var(--surface)" strokeWidth={3} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.04em" y={10}>{label}</text>
+      <text textAnchor="middle" fontSize={8.5} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.5} paintOrder="stroke" strokeLinejoin="round" y={21}>{count}</text>
     </g>
   )
 }

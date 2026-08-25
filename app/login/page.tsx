@@ -42,11 +42,38 @@ export default function LoginPage() {
     else router.push(target)
   }
 
+  // Shared front door, no PIN at all (2026-08-25) — Shared is the household
+  // kiosk view, not a personal account, so clicking its tile signs in
+  // immediately; the server never checks a PIN for this profile (see
+  // pin-login/route.ts). Harry and Sylvia's personal profiles are
+  // unchanged — they still need their own PIN, and content reached FROM
+  // shared mode still requires signing in as one of them for real (see
+  // UnlockPanel).
+  async function signIn(profile: Profile, pinValue: string): Promise<{ ok: true } | { error: string }> {
+    const res = await fetch('/api/auth/pin-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile, pin: pinValue }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) return { error: body.error ?? 'Something went wrong.' }
+    return { ok: true }
+  }
+
   async function pickTile(p: Profile) {
     setError(null)
     setPin(''); setConfirmPin('')
     setSelected(p)
     setLoading(true)
+
+    if (p === 'shared') {
+      const result = await signIn('shared', '')
+      setLoading(false)
+      if ('error' in result) { setError(result.error); return }
+      if (!rememberMe) sessionStorage.setItem('4s-session-only', '1')
+      goNext('/dashboard')
+      return
+    }
+
     const res = await fetch(`/api/auth/pin-status?profile=${p}`)
     const body = await res.json().catch(() => ({}))
     setLoading(false)
@@ -58,18 +85,14 @@ export default function LoginPage() {
     if (!selected || pin.length < 4) return
     setLoading(true)
     setError(null)
-    const res = await fetch('/api/auth/pin-login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: selected, pin }),
-    })
-    const body = await res.json().catch(() => ({}))
-    if (!res.ok) {
+    const result = await signIn(selected, pin)
+    setLoading(false)
+    if ('error' in result) {
       // A profile can flip to "needs setup" between the tile tap and now if
       // it was never actually claimed (pin-status raced an empty DB) —
       // route to create instead of showing a confusing wrong-PIN error.
-      if (body.error === 'not_set_up') { setScreen('create'); setLoading(false); return }
-      setError(body.error ?? 'Something went wrong.')
-      setLoading(false)
+      if (result.error === 'not_set_up') { setScreen('create'); return }
+      setError(result.error)
       return
     }
     if (!rememberMe) sessionStorage.setItem('4s-session-only', '1')
