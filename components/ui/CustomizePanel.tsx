@@ -56,11 +56,18 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // deliberately isn't here — it's overlay-only (SmartHomeOverlay), reached
   // by tapping Home in the Village or the Home Bar's Controls icon, never a
   // tab you switch into.
+  // Order matches shared mode's Home Bar exactly, just flattened instead of
+  // grouped into pill rows: Home's own group is [home, calendar, reference]
+  // there, and Life (routines) is a separate group that comes after it —
+  // so calendar/reference sit before routines here too, not the other way
+  // around, even though "Routines" would otherwise alphabetize earlier.
   { id: 'home',     label: 'Home',     hidden: false },
   { id: 'calendar', label: 'Calendar', hidden: false },
-  { id: 'routines', label: 'Routines', hidden: false },
   { id: 'reference', label: 'Reference', hidden: false },
-  // Places — saved pins and trips, on a themed map.
+  { id: 'routines', label: 'Routines', hidden: false },
+  // Places — saved pins and trips, on a themed map. Same position as the
+  // Home Bar's own Places icon: right after Household's sections, before
+  // Controls (Smart Home, overlay-only, never a section — see above).
   { id: 'places',   label: 'Places',   hidden: false },
 ]
 
