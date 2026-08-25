@@ -134,6 +134,19 @@ function postcardLine(timeOfDay: VillageState['timeOfDay'], condition?: WeatherC
   return base
 }
 
+// Village district labels read as a dashboard the moment a number leads a
+// string — DistrictLabel puts an iOS-style red notification-badge circle on
+// ANY count starting with a digit (see its own comment), which is exactly
+// the "notification badge" the Village vision explicitly asks to remove.
+// Spelling small counts as words (matching the vision doc's own "Six ideas
+// quietly grew" style) keeps the number legible without it reading as an
+// unread-count. Caps at ten; anything past that is a genuinely large
+// number, and "many" reads better than a wall of digits anyway.
+const SMALL_NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+function spellCount(n: number): string {
+  return n <= 10 ? SMALL_NUMBER_WORDS[n] : 'many'
+}
+
 /**
  * The scene itself: pure presentation, no hooks and no dates. Everything
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
@@ -802,16 +815,23 @@ export default function VillageScene({
           fill="var(--gold)" opacity={0.1} pointerEvents="none" />
       )}
 
+      {/* District captions read as words now, not counters (2026-08-25) —
+          "kill the numbers first" per the Village vision doc's own success
+          test ("if all labels and numbers disappeared, would I still
+          understand this place?"). No raw digit ever leads these strings
+          any more, which also quietly disables DistrictLabel's red
+          notification-badge circle (it only triggers on a leading digit) —
+          removing the badge and rewording the caption were the same fix. */}
       <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')}
-        count={`${v.plants.length} growing`}
+        count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
       <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today"
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
       <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')}
-        count={`${v.buildings.length} standing`}
+        count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
       <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
-        count={v.treeRings > 0 ? `${v.treeRings}y` : `${v.accountMonths}mo`}
+        count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already
@@ -819,10 +839,10 @@ export default function VillageScene({
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
       <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')}
-        count={`${placesCount} saved`}
+        count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
       <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')}
-        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${soonestBirthdayDays}d`) : `${peopleCount} close`}
+        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
