@@ -324,6 +324,15 @@ export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
   )
 }
 
+// Somi's real coloring (2026-08-25) — white/grey siamese mix, blue eyes.
+// Fixed hex, not theme vars, for the same reason grass reads green
+// elsewhere in this file: a specific cat's actual coat isn't themeable.
+// Siamese "points" (ears, tail, face mask) run a cooler blue-grey against
+// a warm white body/chest.
+const SOMI_BODY = '#F3EFE6'
+const SOMI_POINT = '#8B95A3'
+const SOMI_EYE = '#5C8FB5'
+
 export function CatShape({ x, y, name = 'Somi', onClick }: {
   x: number; y: number; name?: string; onClick?: () => void
 }) {
@@ -331,15 +340,18 @@ export function CatShape({ x, y, name = 'Somi', onClick }: {
     <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
-      {/* Tail, curled behind the body */}
-      <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke="var(--amber)" strokeWidth={2} strokeLinecap="round" />
+      {/* Tail, curled behind the body — a point, like the ears */}
+      <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke={SOMI_POINT} strokeWidth={2} strokeLinecap="round" />
       {/* Sitting body */}
-      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill="var(--amber)" />
-      <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.9} />
-      {/* Head + ears */}
-      <circle cx={0} cy={-10} r={4} fill="var(--amber)" />
-      <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill="var(--amber)" />
-      <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill="var(--amber)" />
+      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
+      <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.6} />
+      {/* Head + ears (points) */}
+      <circle cx={0} cy={-10} r={4} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
+      <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill={SOMI_POINT} />
+      <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill={SOMI_POINT} />
+      {/* Blue eyes */}
+      <circle cx={-1.4} cy={-10} r={0.7} fill={SOMI_EYE} />
+      <circle cx={1.4} cy={-10} r={0.7} fill={SOMI_EYE} />
     </g>
   )
 }
