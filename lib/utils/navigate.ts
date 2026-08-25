@@ -65,7 +65,7 @@ export function consumePersonalTab(): PersonalTab | null {
 
 // Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two
 // must not drift, or a deep link can land on a tab that no longer renders.
-export type HouseholdTab = 'home' | 'calendar' | 'routines' | 'movein' | 'smarthome' | 'reference'
+export type HouseholdTab = 'home' | 'calendar' | 'routines' | 'smarthome' | 'reference'
 
 // Same reasoning and shape as goToPersonal/consumePersonalTab above: lets a
 // caller land on a SPECIFIC Household sub-tab, which a bare

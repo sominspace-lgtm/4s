@@ -15,7 +15,7 @@ import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
-import HouseholdMoveIn from './HouseholdMoveIn'
+import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
@@ -384,6 +384,34 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
       </section>
     ),
 
+    // Folded in from the retired Move-In tab (2026-08-25) — the overview
+    // card (address + spreadsheet link) and Near Our New Home. House Rules,
+    // the third piece Move-In used to carry, stays canonical in the
+    // Reference tab only rather than becoming a third copy of the same
+    // editable list.
+    moveIn: () => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+          <div>
+            <div className="t-card">Our Move-In</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+              {NEW_HOME.label} · {NEW_HOME.city}
+            </div>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/1ZMKF-5-kK0lhuPWIHivmja334DXpASd6BK76tZfgN4I/edit?usp=sharing"
+            target="_blank" rel="noopener noreferrer" className="btn btn-secondary press"
+            style={{ fontSize: '0.72rem', textDecoration: 'none', alignSelf: 'flex-start' }}>
+            Open the move-in spreadsheet ↗
+          </a>
+          <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.65, lineHeight: 1.5 }}>
+            The sheet holds the buy-list detail — budgets, room-by-room, links. This is just the glance:
+            what&rsquo;s around the new place.
+          </div>
+        </section>
+        <NearbyPlaces />
+      </div>
+    ),
+
   }
 
   // Chores, Routines, and Maintenance — pulled out of homeBlockRenderers
@@ -637,11 +665,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           Routines were Home blocks, Maintenance was already in Reference. */}
       {tab === 'routines' && renderChores()}
       {tab === 'routines' && renderRoutines()}
-
-      {/* Move-In (restored 2026-08-24) — a temporary hub for the move into
-          The Millton. Hide the tab via customize once it's done; the rows
-          stay in household_movein_items either way. */}
-      {tab === 'movein' && <HouseholdMoveIn spaceId={spaceId} />}
 
       {/* Smart Home (2026-08-25) — a manual device/status list, see
           HouseholdSmartHome's own header comment for why this isn't a real

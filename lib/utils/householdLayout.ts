@@ -1,14 +1,14 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-// Five tabs (2026-08-24). Places went back to top level; Setup moved into
+// Five tabs (2026-08-25). Places went back to top level; Setup moved into
 // Settings, where account-level configuration already lives.
 //
-// Move-in is BACK (2026-08-24) — retiring it never deleted a single
-// household_movein_items row, exactly as that removal's own note predicted,
-// so restoring the tab brought the real data straight back with it. It is
-// deliberately a temporary hub: hide it from the tab bar (customize) once
-// the move is done and the rows stay put, same as last time.
-export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'movein' | 'smarthome' | 'reference'
+// Move-In removed again (2026-08-25) — its two non-duplicate pieces (the
+// spreadsheet link + address overview, and Near Our New Home) moved into a
+// new Home block (see moveIn in HomeBlockId below) instead of their own tab.
+// House Rules, the third piece, was always a duplicate of the one already in
+// Reference and is dropped rather than moved a second time.
+export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'smarthome' | 'reference'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
@@ -21,11 +21,10 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // scattered: Chores and Routines were Home blocks, Maintenance was
   // already in Reference. One place for all of it instead of three.
   { id: 'routines',  label: 'Routines' },
-  { id: 'movein',    label: 'Move-In' },
   // Smart Home (2026-08-25) — a manual device/status list. Deliberately not
   // a real automation integration (no Home Assistant/IoT API anywhere in
   // this app) — just a place to note what's connected and its state, same
-  // "simple checklist" shape as House Rules and Move-In's buy-list.
+  // "simple checklist" shape as House Rules.
   { id: 'smarthome', label: 'Smart Home' },
   { id: 'reference', label: 'Reference' },
 ].map(s => ({ ...s, hidden: false }))
@@ -52,7 +51,7 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // into the new Routines tab alongside Maintenance. mergeHomeBlocks drops
 // unknown saved ids, so anyone whose layout still names any of these is
 // cleaned up automatically.
-export type HomeBlockId = 'thisWeek' | 'shopping' | 'meals'
+export type HomeBlockId = 'thisWeek' | 'shopping' | 'meals' | 'moveIn'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // The week in review (2026-08-18) — same computation the bot posts on
@@ -62,9 +61,15 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   thisWeek: { label: 'This week',         hint: 'What got done, in one glance' },
   shopping: { label: 'Shopping list',     hint: 'What to buy' },
   meals:    { label: 'This week’s meals', hint: 'What we’re eating' },
+  // Folded in from the retired Move-In tab (2026-08-25) — the overview card
+  // (address + spreadsheet link) and Near Our New Home, the two pieces that
+  // weren't already duplicated elsewhere (House Rules stays canonical in
+  // Reference only). Last in the default order since it's the newest and
+  // least everyday of the four.
+  moveIn:   { label: 'Move-in',           hint: 'The Millton — what’s around it, and the buy-list sheet' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'shopping', 'meals'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['thisWeek', 'shopping', 'meals', 'moveIn'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

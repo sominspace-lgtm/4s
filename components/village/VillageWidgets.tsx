@@ -164,9 +164,11 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
               : <Line dim>{nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved around {NEW_HOME.city}</Line>}
           </Section>
 
-          {/* Move-in — only while it's actually relevant */}
+          {/* Move-in — only while it's actually relevant. Retargeted to Home
+              (2026-08-25) — Move-In is no longer its own tab; its overview
+              card + Near Our New Home moved into a Home block. */}
           {h.moveinItems.length > 0 && (
-            <Section title="Move-in" onOpen={() => goToHousehold('movein')}>
+            <Section title="Move-in" onOpen={() => goToHousehold('home')}>
               <Line strong>{moveinLeft} still to get</Line>
               <Line dim>{moveinDone} sorted</Line>
               {/* A thin progress bar reads faster than the two numbers alone. */}
