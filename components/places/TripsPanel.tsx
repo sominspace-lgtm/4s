@@ -18,6 +18,14 @@ const input: React.CSSProperties = {
   padding: '0.55rem 0.75rem', outline: 'none', width: '100%',
 }
 
+// Same uppercase small-caps section label as Date Ideas' Planned/Ideas/Done
+// split (HouseholdDateIdeas.tsx) — 'dreaming' is already "just a name and a
+// dream" (see the empty-state copy below and useTrips.ts's own comment), so
+// it doubles as the idea bucket without a new status or schema.
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.35rem',
+}
+
 // Trip list — the counterpart to PinList, one level up. Where are the places
 // we care about (Pins) vs. where should we go next (Trips): different
 // question, same tab, because they share the same "places" mental model and
@@ -31,6 +39,8 @@ export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = f
 }) {
   const { trips: allTrips, loading, addTrip } = useTrips()
   const trips = sharedOnly ? allTrips.filter(t => t.space_id !== null) : allTrips
+  const ideas = trips.filter(t => t.status === 'dreaming')
+  const planned = trips.filter(t => t.status !== 'dreaming')
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [destination, setDestination] = useState('')
@@ -62,7 +72,7 @@ export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = f
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button onClick={() => setAdding(a => !a)} className="btn btn-secondary press" style={{ fontSize: '0.72rem' }}>
-          {adding ? 'Close' : '+ New trip'}
+          {adding ? 'Close' : '+ New trip idea'}
         </button>
       </div>
 
@@ -95,35 +105,52 @@ export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = f
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {trips.map(trip => (
-          <button
-            key={trip.id}
-            onClick={() => onSelect(trip)}
-            className="press"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.7rem',
-              padding: '0.75rem 0.2rem', borderBottom: '1px solid var(--faint)',
-              background: 'none', border: 'none', borderBottomWidth: '1px',
-              borderBottomStyle: 'solid', borderBottomColor: 'var(--faint)',
-              cursor: 'pointer', textAlign: 'left', width: '100%',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.84rem', color: 'var(--text)' }}>{trip.title}</div>
-              <div style={{ fontSize: '0.66rem', color: 'var(--muted)' }}>
-                {trip.destination ?? 'No destination set'}
-                {trip.start_date && ` · ${trip.start_date}${trip.end_date ? ` – ${trip.end_date}` : ''}`}
-                {trip.space_id && ' · shared'}
-              </div>
-            </div>
-            <span style={{
-              fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em',
-              color: `var(${STATUS_COLOR[trip.status]})`, flexShrink: 0,
-            }}>{STATUS_LABEL[trip.status]}</span>
-          </button>
-        ))}
-      </div>
+      {ideas.length > 0 && (
+        <div>
+          <div style={sectionLabelStyle}>Ideas</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {ideas.map(trip => <TripRow key={trip.id} trip={trip} onSelect={onSelect} />)}
+          </div>
+        </div>
+      )}
+
+      {planned.length > 0 && (
+        <div>
+          {ideas.length > 0 && <div style={sectionLabelStyle}>Trips</div>}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {planned.map(trip => <TripRow key={trip.id} trip={trip} onSelect={onSelect} />)}
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function TripRow({ trip, onSelect }: { trip: Trip; onSelect: (trip: Trip) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(trip)}
+      className="press"
+      style={{
+        display: 'flex', alignItems: 'center', gap: '0.7rem',
+        padding: '0.75rem 0.2rem', borderBottom: '1px solid var(--faint)',
+        background: 'none', border: 'none', borderBottomWidth: '1px',
+        borderBottomStyle: 'solid', borderBottomColor: 'var(--faint)',
+        cursor: 'pointer', textAlign: 'left', width: '100%',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.84rem', color: 'var(--text)' }}>{trip.title}</div>
+        <div style={{ fontSize: '0.66rem', color: 'var(--muted)' }}>
+          {trip.destination ?? 'No destination set'}
+          {trip.start_date && ` · ${trip.start_date}${trip.end_date ? ` – ${trip.end_date}` : ''}`}
+          {trip.space_id && ' · shared'}
+        </div>
+      </div>
+      <span style={{
+        fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em',
+        color: `var(${STATUS_COLOR[trip.status]})`, flexShrink: 0,
+      }}>{STATUS_LABEL[trip.status]}</span>
+    </button>
   )
 }
