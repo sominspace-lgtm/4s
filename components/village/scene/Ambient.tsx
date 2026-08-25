@@ -75,6 +75,22 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
         </g>
       )}
 
+      {/* Two butterflies over the garden, daytime only and only when
+          there's actually something growing for them to visit — same
+          "gated on making sense" rule as the smoke/fireflies above. Kept
+          out of any dark/rain combo so the moving-node count never really
+          stacks past the budget in the header comment. */}
+      {v.timeOfDay === 'day' && v.plants.length > 0 && weatherCondition !== 'rain' && weatherCondition !== 'storm' && (
+        <g opacity={0.5}>
+          {[{ x: 165, y: 250 }, { x: 305, y: 268 }].map((p, i) => (
+            <g key={i} transform={`translate(${p.x} ${p.y})`} className={`village-butterfly village-butterfly-${i}`}>
+              <path d="M -3.5 0 Q -6 -4 -3.2 -1 Q -6 2 -3.5 0 Z" fill="var(--blush)" />
+              <path d="M 3.5 0 Q 6 -4 3.2 -1 Q 6 2 3.5 0 Z" fill="var(--blush)" />
+            </g>
+          ))}
+        </g>
+      )}
+
       {/* Whatever is falling this season. */}
       {palette.particle && (
         <g opacity={palette.particle.opacity} fill={palette.particle.fill}>

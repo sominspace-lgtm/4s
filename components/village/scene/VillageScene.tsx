@@ -517,6 +517,19 @@ export default function VillageScene({
           touching the district icons/labels drawn on top (those already
           use theme vars tuned for dark surfaces and don't need this). */}
       <g style={dark ? { filter: 'brightness(0.55) saturate(0.82)' } : undefined}>
+        {/* Background hills (2026-08-25) — a third depth layer behind the
+            treeline, per the "diorama, not a flat plane" direction: distant
+            silhouettes, soft and low-opacity so they read as far away
+            without competing with anything in front of them. Two gentle,
+            overlapping humps rather than jagged peaks — this is a small
+            village's own backdrop, not a mountain range. Fixed shapes, no
+            data behind them, same "pure atmosphere" rule as DISTANT_TREES. */}
+        <g opacity={0.28}>
+          <path d={`M -20 ${GROUND_Y - 18} Q 140 ${GROUND_Y - 62} 320 ${GROUND_Y - 30} Q 480 ${GROUND_Y - 58} 640 ${GROUND_Y - 24} Q 740 ${GROUND_Y - 40} 820 ${GROUND_Y - 20} L 820 ${GROUND_Y + 4} L -20 ${GROUND_Y + 4} Z`} fill="#9FB08A" />
+        </g>
+        <g opacity={0.38}>
+          <path d={`M -20 ${GROUND_Y - 8} Q 220 ${GROUND_Y - 34} 420 ${GROUND_Y - 14} Q 600 ${GROUND_Y - 32} 820 ${GROUND_Y - 10} L 820 ${GROUND_Y + 6} L -20 ${GROUND_Y + 6} Z`} fill="#8FA57E" />
+        </g>
         {/* Distant treeline (2026-08-24) — the gap between the sky and the
             ground line used to be empty air, which is a lot of the reason the
             scene read flat/empty. Sits right at the horizon, behind the
@@ -683,6 +696,25 @@ export default function VillageScene({
         setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
       })} />
 
+      {/* Home's own personal objects (2026-08-25) — "make Home feel like MY
+          home," not another building. A leaning bike and a bird feeder,
+          fixed just off the porch — small, specific, lived-in details
+          rather than another functional prop. Purely decorative, no
+          onClick, same as the benches/flower beds scattered elsewhere. */}
+      <g transform={`translate(358 ${GROUND_Y + 2})`} opacity={0.85}>
+        <title>A bike, leaning by the door</title>
+        <ellipse cx={0} cy={9} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
+        <circle cx={-7} cy={6} r={6} fill="none" stroke="var(--slate)" strokeWidth={1.3} />
+        <circle cx={7} cy={6} r={6} fill="none" stroke="var(--slate)" strokeWidth={1.3} />
+        <path d="M -7 6 L 0 -3 L 7 6 M 0 -3 L -3 -8 M -3 -8 L 3 -8 M 0 -3 L 3 -3" fill="none" stroke="var(--slate)" strokeWidth={1.3} strokeLinecap="round" />
+      </g>
+      <g transform={`translate(345 ${GROUND_Y - 20})`} opacity={0.85}>
+        <title>A bird feeder in the yard</title>
+        <line x1={0} y1={0} x2={0} y2={16} stroke="var(--slate)" strokeWidth={1.2} />
+        <path d="M -6 -3 L 6 -3 L 4 3 L -4 3 Z" fill="var(--gold)" fillOpacity={0.5} stroke="var(--gold)" strokeWidth={0.8} />
+        <path d="M -6 -3 Q 0 -8 6 -3" fill="none" stroke="var(--gold)" strokeWidth={0.8} opacity={0.6} />
+      </g>
+
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
         <g key={building.id} opacity={back ? 0.55 : 1}>
@@ -706,6 +738,25 @@ export default function VillageScene({
           are no buildings yet. */}
       <FeatureIcon kind="building" x={(buildingSlots[0]?.x ?? 600) - 16} y={(buildingSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
 
+      {/* Workshop identity (2026-08-25) — a small crane and a blueprint
+          sheet, fixed just past the buildings themselves, so Projects reads
+          as an active construction yard rather than the same tile-icon
+          language as every other district. One-time scenery, not tied to
+          any building count. */}
+      <g transform={`translate(690 ${GROUND_Y - 2})`} opacity={0.7}>
+        <title>The workshop crane</title>
+        <line x1={0} y1={0} x2={0} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
+        <line x1={-2} y1={-46} x2={22} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
+        <line x1={-2} y1={-46} x2={-10} y2={-40} stroke="var(--slate)" strokeWidth={1.6} />
+        <line x1={18} y1={-46} x2={18} y2={-30} stroke="var(--slate)" strokeWidth={1} opacity={0.8} />
+      </g>
+      <g transform={`translate(640 ${GROUND_Y - 1})`} opacity={0.75}>
+        <title>Blueprints, rolled out on a sawhorse</title>
+        <rect x={-10} y={-6} width={20} height={7} rx={0.6} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.7} />
+        <line x1={-7} y1={-3.5} x2={3} y2={-3.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
+        <line x1={-7} y1={-1.5} x2={6} y2={-1.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
+      </g>
+
       {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
           dots with the three actual, always-present characters, standing in
           Home's yard. See VillagerShape/CatShape's own header comment for
@@ -727,6 +778,29 @@ export default function VillageScene({
       </g>
       <g className="village-bob" style={{ animationDelay: '1.2s' }}>
         <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
+      </g>
+
+      {/* People identity (2026-08-25) — a second bench angled toward the
+          one already scattered near this district (see PROPS.benches
+          above) plus a small stack of letters, so People reads as a social
+          corner rather than the same tile language as everywhere else. */}
+      <g transform={`translate(225 ${GROUND_Y + 2})`} opacity={0.75}>
+        <title>A quiet corner to sit and talk</title>
+        <BenchShape x={0} y={0} />
+        <g transform="translate(16 -2) rotate(-8)">
+          <rect x={-4} y={-3} width={8} height={5.5} rx={0.5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.6} />
+          <rect x={-3} y={-1.6} width={6} height={4.5} rx={0.5} fill="var(--blush)" opacity={0.5} />
+        </g>
+      </g>
+
+      {/* Places identity (2026-08-25) — a small stack of luggage, marking
+          this corner as the departure point rather than another building. */}
+      <g transform={`translate(505 ${GROUND_Y + 4})`} opacity={0.8}>
+        <title>Luggage, ready for the next trip</title>
+        <ellipse cx={0} cy={5} rx={9} ry={1.4} fill="var(--text)" opacity={0.12} />
+        <rect x={-8} y={-2} width={9} height={7} rx={1} fill="var(--slate)" opacity={0.6} />
+        <rect x={0} y={-6} width={7} height={11} rx={1} fill="var(--gold)" opacity={0.45} stroke="var(--gold)" strokeWidth={0.6} />
+        <line x1={3.5} y1={-6} x2={3.5} y2={-8} stroke="var(--gold)" strokeWidth={0.9} strokeLinecap="round" />
       </g>
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
