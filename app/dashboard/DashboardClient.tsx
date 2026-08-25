@@ -16,6 +16,7 @@ import MobileNav from '@/components/ui/MobileNav'
 import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
 import { useProgression } from '@/lib/hooks/useProgression'
+import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import JourneyBar from '@/components/ui/JourneyBar'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
@@ -323,6 +324,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // (customize / simple mode), fall back to the first visible one.
   const currentTab = navSections.some(s => s.id === activeTab) ? activeTab : (navSections[0]?.id ?? 'brief')
 
+  // Idle/ambient mode (2026-08-25) — the wall-mounted "Shared" device is
+  // meant to sit untouched as a picture frame, not a dashboard left open.
+  // Only armed in sharedMode (see useIdleAmbient's own comment); only
+  // actually hides chrome when Village is the visible tab, so switching to
+  // Household/Places from a shared device isn't fighting a vanishing nav.
+  const [idleAmbient, resetIdleTimer] = useIdleAmbient(sharedMode)
+  const ambient = idleAmbient && currentTab === 'village'
+
   // Tab mode only renders one section at a time, so its group header always
   // shows — there's no neighbouring section above it to already be carrying
   // the same group label the way a stacked scroll-through view would need.
@@ -344,7 +353,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   function renderSection(id: string) {
     const { label, group } = sectionLabel(id)
 
-    const heading = (
+    // No section label while ambient — the picture-frame default shouldn't
+    // caption itself "VILLAGE" above the scene.
+    const heading = ambient && id === 'village' ? null : (
       <SectionLabel key={`lbl-${id}`} style={{ marginTop: 0 }} group={group}>
         {label}
       </SectionLabel>
@@ -353,7 +364,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={villageLayout} onChangeLayout={changeVillageLayout} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={villageLayout} onChangeLayout={changeVillageLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} />
         case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
@@ -388,31 +399,40 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           <span style={{ color: 'var(--gold)' }}>Keep it →</span>
         </a>
       )}
-      <Header
-        email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
-        onUnlock={() => setUnlockReason('')}
-        onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))}
-        initialTheme={theme} initialMode={mode} customTheme={customTheme}
-        onThemeChange={setTheme} onModeChange={setMode} onCustomThemeChange={setCustomTheme}
-        onCustomize={() => setCustomizeOpen(true)}
-        onSearch={() => setSearchOpen(true)}
-        onArchive={() => setArchiveOpen(true)}
-        onHelp={() => setHelpOpen(true)}
-        onConnect={() => setConnectOpen(true)}
-      />
+      {/* All of the chrome below is hidden in ambient/idle mode (2026-08-25)
+          — the wall-mounted device should read as a picture frame, not an
+          app with the light left on. Any tap/drag anywhere resets the idle
+          timer (see useIdleAmbient), so this reappears the instant someone
+          actually touches the screen. */}
+      {!ambient && (
+        <Header
+          email={email} userId={userId} initialName={initialName} sharedMode={sharedMode}
+          onUnlock={() => setUnlockReason('')}
+          onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))}
+          initialTheme={theme} initialMode={mode} customTheme={customTheme}
+          onThemeChange={setTheme} onModeChange={setMode} onCustomThemeChange={setCustomTheme}
+          onCustomize={() => setCustomizeOpen(true)}
+          onSearch={() => setSearchOpen(true)}
+          onArchive={() => setArchiveOpen(true)}
+          onHelp={() => setHelpOpen(true)}
+          onConnect={() => setConnectOpen(true)}
+        />
+      )}
 
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
-      <SectionNav
-        sections={navSections}
-        activeId={currentTab}
-        onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-      />
+      {!ambient && (
+        <SectionNav
+          sections={navSections}
+          activeId={currentTab}
+          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        />
+      )}
 
       {/* Journey bar — progress + a one-click tutorial. Quiet, disappears
           forever once everything is open. Not XP: no levels, no streaks,
           just "your OS grows as you use it" plus an unlock-now choice. */}
-      {!prog.loading && !prog.done && (
+      {!ambient && !prog.loading && !prog.done && (
         <JourneyBar
           unlockedCount={prog.unlockedCount}
           total={prog.total}
@@ -429,7 +449,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
 
-      <main style={{ maxWidth: 'min(1240px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
+      <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 4rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
@@ -450,12 +470,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           </div>
         )}
       </main>
-      <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />
-      <BottomNav
+      {!ambient && <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />}
+      {!ambient && <BottomNav
         sections={navSections}
         activeId={currentTab}
         onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-      />
+      />}
     </ThemeProvider>
     </LangContext.Provider>
   )

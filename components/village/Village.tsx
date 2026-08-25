@@ -23,6 +23,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import VillageWidgets from './VillageWidgets'
+import VillageHomeSheet from './VillageHomeSheet'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -40,7 +41,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -53,6 +54,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   /** Dragged positions for the five fixed landmarks. */
   layout?: VillageLayout
   onChangeLayout?: (next: VillageLayout) => void
+  /** Idle/kiosk mode (2026-08-25) — see useIdleAmbient. Only ever true in
+   *  shared mode; hides the arrange controls and the arrival/text blocks so
+   *  the scene stands alone as a picture frame. */
+  ambient?: boolean
+  /** Resets the idle timer — passed through to VillageHomeSheet so a drag
+   *  gesture counts as interaction (see useIdleAmbient's own comment on why
+   *  its window listeners alone don't cover a pointermove-only gesture). */
+  resetIdleTimer?: () => void
 }) {
   const [arranging, setArranging] = useState(false)
   const { habits, completions } = useHabits()
@@ -210,8 +219,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {/* Arrange toggle — same "⚙ arrange" convention Household's Home
             tab already uses for its own drag-reorderable blocks. Available
             even in shared/locked mode: repositioning a landmark doesn't
-            reveal anything, it's purely cosmetic. */}
-        {onChangeLayout && (
+            reveal anything, it's purely cosmetic. Hidden while ambient —
+            the picture-frame default shouldn't show a settings button. */}
+        {onChangeLayout && !ambient && (
           <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
             {arranging && Object.keys(layout).length > 0 && (
               <button
@@ -238,6 +248,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             >{arranging ? '✓ Done' : '⚙ Arrange'}</button>
           </div>
         )}
+
+        {/* The shared/kiosk-mode swipe-up sheet (2026-08-25) — an overlay
+            inside this panel (already position:relative + overflow:hidden)
+            rather than a block below it, so it reads as sliding up over the
+            picture rather than another widget under it. See
+            VillageHomeSheet's own header comment. */}
+        {locked && (
+          <VillageHomeSheet userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer} />
+        )}
       </div>
 
       {arranging && (
@@ -246,14 +265,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         </p>
       )}
 
-      <VillageArrival caption={changes?.caption ?? null} />
+      {!ambient && <VillageArrival caption={changes?.caption ?? null} />}
 
-      {/* Widgets (2026-08-24) — the useful half of Village. Hidden in
-          shared/locked mode: they read real household and date-idea content,
-          which is exactly what the PIN gate exists to keep behind a lock. */}
+      {/* Widgets (2026-08-24) — the useful half of Village for personal
+          browsing. In shared/locked mode this content moves into
+          VillageHomeSheet above instead (a swipe-up overlay, not a second
+          copy below the scene). */}
       {!locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} />}
 
-      <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />
+      {!ambient && <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />}
     </div>
   )
 }
