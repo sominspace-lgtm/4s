@@ -129,22 +129,38 @@ const SECTION_GROUPS: Record<string, string> = {
 // filters it down to whatever ids are actually in `navSections` for the
 // current mode (see homeBarGroups below) — shared mode has no Today/
 // Personal, personal mode has everything. Tasks/goals/projects stay out of
-// "Life" here on purpose: those are personal data gated behind a PIN even
-// in shared mode (see VillageScene's districtLocked), so Life is scoped to
-// Routines. Places got its own icon back (2026-08-25 fix) — nesting it one
-// tap deep under Life made it noticeably harder to find than the old flat
-// nav, and findability matters more than sticking to exactly four icons.
+// Household here on purpose: those are personal data gated behind a PIN
+// even in shared mode (see VillageScene's districtLocked). Places got its
+// own icon back (2026-08-25 fix) — nesting it one tap deep under a group
+// made it noticeably harder to find than the old flat nav, and findability
+// matters more than a smaller icon count.
+//
+// Routines folded into Household (2026-08-25) — it used to be its own
+// "Life" icon next to Household, which put two closely-related groups side
+// by side for no real reason. Label is "Household", not "Home", even
+// though its first member's own id/tab-label is "home" — once this group
+// covers four tabs (Home/Calendar/Reference/Routines) rather than one,
+// "Home" would mean three different things at once: the Village building
+// you tap (which actually opens Smart Home, see panelContent.home in
+// VillageScene.tsx), the individual "Home" tab inside this group (meals/
+// chores), and the group icon itself. "Household" — the group's original
+// pre-refactor name — only means the second and third of those, same as
+// it always did.
+//
 // Controls always opens the Smart Home overlay (special-cased in onSelect
 // below) rather than ever being a real navSections member — 'smarthome' is
 // never filtered against navSections for that reason, see the filter logic.
+// It's also structurally never `activeGroup` (nothing ever sets currentTab
+// to 'smarthome'), so unlike every other icon it can never show the normal
+// "you are here" active state — see HomeBar's own dot-cue comment for how
+// that gets made legible instead of just looking unavailable.
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'brief',    icon: '☀️', label: 'Today',    members: ['brief'] },
-  { id: 'personal', icon: '👤', label: 'Personal', members: ['personal'] },
-  { id: 'village',  icon: '🌳', label: 'Village',  members: ['village'] },
-  { id: 'home',     icon: '🏠', label: 'Home',     members: ['home', 'calendar', 'reference'] },
-  { id: 'life',     icon: '🌱', label: 'Life',     members: ['routines'] },
-  { id: 'places',   icon: '📍', label: 'Places',   members: ['places'] },
-  { id: 'controls', icon: '💡', label: 'Controls', members: ['smarthome'] },
+  { id: 'brief',    icon: '☀️', label: 'Today',      members: ['brief'] },
+  { id: 'personal', icon: '👤', label: 'Personal',   members: ['personal'] },
+  { id: 'village',  icon: '🌳', label: 'Village',    members: ['village'] },
+  { id: 'home',     icon: '🏠', label: 'Household',  members: ['home', 'calendar', 'reference', 'routines'] },
+  { id: 'places',   icon: '📍', label: 'Places',     members: ['places'] },
+  { id: 'controls', icon: '💡', label: 'Controls',   members: ['smarthome'], opensOverlay: true },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {

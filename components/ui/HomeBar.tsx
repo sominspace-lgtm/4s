@@ -3,10 +3,10 @@
 // The ONE nav for both personal and shared use (2026-08-25) — started as
 // the shared/kiosk device's own bar (replacing SectionNav+BottomNav there),
 // now replaces them everywhere so the two modes share one visual design,
-// not just the same relative order. Broad contexts (🌳 Village / 🏠 Home /
-// 🌱 Life / 💡 Controls, plus ☀️ Today / 👤 Personal in personal mode only)
-// instead of a flat row of individual tabs, with a second, quieter row of
-// pills for whichever context is open and has more than one real
+// not just the same relative order. Broad contexts (🌳 Village / 🏠 Household
+// / 📍 Places / 💡 Controls, plus ☀️ Today / 👤 Personal in personal mode
+// only) instead of a flat row of individual tabs, with a second, quieter
+// row of pills for whichever context is open and has more than one real
 // destination inside it. A context switcher, not a standard app tab bar.
 export interface HomeBarGroup {
   id: string
@@ -17,6 +17,13 @@ export interface HomeBarGroup {
    *  reference/places). members[0] is where selecting the group (without
    *  already being inside it) lands. */
   members: string[]
+  /** True for a group whose tap opens an overlay (e.g. Smart Home) rather
+   *  than switching `currentTab` — it can structurally never become
+   *  `activeGroup`, so it would otherwise always render identically to a
+   *  plain "not currently selected" icon. The small dot below its icon (see
+   *  render below) is what tells those two states apart: "always opens
+   *  something" vs. "just not the one you're on right now." */
+  opensOverlay?: boolean
 }
 
 const MEMBER_LABELS: Record<string, string> = {
@@ -85,15 +92,27 @@ export default function HomeBar({ groups, activeId, onSelect }: {
               aria-current={isActive ? 'page' : undefined}
               className="press"
               style={{
+                position: 'relative',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
                 padding: '0.4rem 0.9rem', borderRadius: '999px', border: 'none', cursor: 'pointer',
                 background: 'none', minWidth: '3.6rem', flexShrink: 0,
               }}
             >
               <span aria-hidden style={{
+                position: 'relative',
                 fontSize: '1.05rem', lineHeight: 1, opacity: isActive ? 1 : 0.55,
                 filter: isActive ? 'none' : 'grayscale(0.4)', transition: 'opacity 160ms ease, filter 160ms ease',
-              }}>{g.icon}</span>
+              }}>
+                {g.icon}
+                {/* See opensOverlay's own comment — a fixed cue, not tied to
+                    isActive, since this icon can never BE active. */}
+                {g.opensOverlay && (
+                  <span aria-hidden style={{
+                    position: 'absolute', bottom: -2, right: -3, width: 5, height: 5, borderRadius: '50%',
+                    background: 'var(--gold)', opacity: 0.75, boxShadow: '0 0 0 1.5px color-mix(in srgb, var(--bg) 55%, transparent)',
+                  }} />
+                )}
+              </span>
               <span style={{
                 fontSize: '0.58rem', letterSpacing: '0.04em', fontFamily: 'var(--font-body)',
                 color: isActive ? 'var(--text)' : 'var(--muted)', opacity: isActive ? 0.9 : 0.6,
