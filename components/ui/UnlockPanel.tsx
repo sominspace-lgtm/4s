@@ -109,6 +109,7 @@ export default function UnlockPanel({ open, onClose, reason }: {
           <form onSubmit={submit}>
             <input
               type="password" inputMode="numeric" pattern="[0-9]*" autoFocus
+              autoComplete="one-time-code"
               value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
               placeholder="••••" aria-label="PIN" style={input}
             />

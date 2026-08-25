@@ -170,6 +170,7 @@ export default function LoginPage() {
               </p>
               <input
                 type="password" inputMode="numeric" pattern="[0-9]*" autoFocus
+                autoComplete="one-time-code"
                 value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 placeholder="••••" aria-label="PIN" style={inputStyle}
               />
@@ -190,11 +191,13 @@ export default function LoginPage() {
               </p>
               <input
                 type="password" inputMode="numeric" pattern="[0-9]*" autoFocus
+                autoComplete="off"
                 value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 placeholder="New PIN" aria-label="New PIN" style={inputStyle}
               />
               <input
                 type="password" inputMode="numeric" pattern="[0-9]*"
+                autoComplete="off"
                 value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 placeholder="Confirm PIN" aria-label="Confirm PIN" style={inputStyle}
               />

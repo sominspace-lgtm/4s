@@ -65,10 +65,10 @@
      so components stop inventing one-off rem values inline. */
   --text-display: clamp(2.1rem, 4.5vw, 3rem);     /* the greeting, once per page */
   --text-section: clamp(1.4rem, 2.2vw, 1.75rem);  /* section titles */
-  --text-card:    1.05rem;                        /* card titles */
-  --text-body:    0.85rem;                        /* default reading size */
-  --text-meta:    0.74rem;                        /* metadata, muted */
-  --text-label:   0.66rem;                        /* uppercase / letter-spaced labels */
+  --text-card:    1.1rem;                         /* card titles */
+  --text-body:    0.9rem;                         /* default reading size */
+  --text-meta:    0.8rem;                         /* metadata, muted */
+  --text-label:   0.72rem;                        /* uppercase / letter-spaced labels */
 
   /* Weight is the other half of hierarchy — a scale nobody varies weight
      across still reads flat. Body stays light; headings step up. */
@@ -111,9 +111,12 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* Everything in the app is sized in rem, so this single value scales the
-   whole type system on every device. 17px ≈ a 6% bump over browser default —
-   noticeably more readable without re-tuning any component. */
-html { font-size: 17px; }
+   whole type system on every device. 18px ≈ a 12.5% bump over browser
+   default (raised from 17px, 2026-08-25, after "font a bit bigger" feedback)
+   — most of the app's fine print is written as small raw rem values inline
+   (0.6-0.7rem) rather than through the --text-* scale above, so this root
+   bump is what actually reaches them; touching the scale alone wouldn't. */
+html { font-size: 18px; }
 
 html, body {
   min-height: 100vh;

@@ -47,7 +47,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--scheme': 'light',
     '--bg': '#f7f0df', '--surface': '#fffaf0', '--surface2': '#e8dfcd',
     '--border': 'rgba(91,76,59,0.20)', '--text': '#493f35',
-    '--muted': 'rgba(73,63,53,0.72)', '--faint': 'rgba(91,76,59,0.09)',
+    '--muted': 'rgba(73,63,53,0.80)', '--faint': 'rgba(91,76,59,0.09)',
     // Accents darkened from Bloom's display pastels so they clear contrast
     // on cream — the pastels themselves are decorative fills there, not text.
     '--gold': '#4f6350', '--purple': '#7a6d94', '--emerald': '#54704f',
@@ -80,7 +80,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   moonlight: {
     '--bg': '#06070f', '--surface': '#0f1226', '--surface2': '#1a1e3c',
     '--border': 'rgba(140,155,245,0.17)', '--text': '#edf0fc',
-    '--muted': 'rgba(237,240,252,0.68)', '--faint': 'rgba(237,240,252,0.07)',
+    '--muted': 'rgba(237,240,252,0.80)', '--faint': 'rgba(237,240,252,0.07)',
     '--gold': '#8b9dff', '--purple': '#a58bf5', '--emerald': '#5fd9bd',
     '--rose': '#ff8080', '--blush': '#aab6ff', '--amber': '#f5c876',
     '--slate': '#6d80d8', '--lavender': '#c4a8ff',
@@ -100,7 +100,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   ember: {
     '--bg': '#0b0806', '--surface': '#1a1410', '--surface2': '#2a221a',
     '--border': 'rgba(224,140,64,0.19)', '--text': '#f5ede3',
-    '--muted': 'rgba(245,237,227,0.68)', '--faint': 'rgba(245,237,227,0.07)',
+    '--muted': 'rgba(245,237,227,0.80)', '--faint': 'rgba(245,237,227,0.07)',
     '--gold': '#f0964a', '--purple': '#c88ad8', '--emerald': '#7ac87a',
     '--rose': '#f0806f', '--blush': '#f5b478', '--amber': '#f0b83c',
     '--slate': '#a8a4bc', '--lavender': '#cc9ecc',
@@ -134,7 +134,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   dusk: {
     '--bg': '#170b16', '--surface': '#241226', '--surface2': '#341c38',
     '--border': 'rgba(232,140,120,0.20)', '--text': '#f8ece8',
-    '--muted': 'rgba(248,236,232,0.68)', '--faint': 'rgba(248,236,232,0.07)',
+    '--muted': 'rgba(248,236,232,0.80)', '--faint': 'rgba(248,236,232,0.07)',
     '--gold': '#f0966a', '--purple': '#c8709c', '--emerald': '#6ecca0',
     '--rose': '#ec6a7e', '--blush': '#f0a888', '--amber': '#f5b45a',
     '--slate': '#a87ca0', '--lavender': '#d896b8',
@@ -159,7 +159,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--scheme': 'light',
     '--bg': '#f1f0e6', '--surface': '#fbfbf6', '--surface2': '#e2e2d0',
     '--border': 'rgba(60,80,58,0.18)', '--text': '#2e332c',
-    '--muted': 'rgba(46,51,44,0.68)', '--faint': 'rgba(46,51,44,0.07)',
+    '--muted': 'rgba(46,51,44,0.80)', '--faint': 'rgba(46,51,44,0.07)',
     '--gold': '#4d7a52', '--purple': '#71708e', '--emerald': '#3f7d55',
     '--rose': '#b0605c', '--blush': '#9a8a5c', '--amber': '#8a7a2c',
     '--slate': '#5c7266', '--lavender': '#7c7a9e',
@@ -182,7 +182,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   obsidian: {
     '--bg': '#030304', '--surface': '#0d0d10', '--surface2': '#18181c',
     '--border': 'rgba(255,255,255,0.14)', '--text': '#f4f4f6',
-    '--muted': 'rgba(244,244,246,0.64)', '--faint': 'rgba(244,244,246,0.06)',
+    '--muted': 'rgba(244,244,246,0.76)', '--faint': 'rgba(244,244,246,0.06)',
     '--gold': '#e8e8ec', '--purple': '#9494b4', '--emerald': '#74d274',
     '--rose': '#e27474', '--blush': '#f0f0f4', '--amber': '#d2b464',
     '--slate': '#7c7ca4', '--lavender': '#c4c4dc',
@@ -354,7 +354,7 @@ export function buildCustomVars(seed: CustomThemeSeed): Record<string, string> {
     '--surface2': mix(seed.bg, seed.text, 12),
     '--border': alpha(seed.text, 16),
     '--text': seed.text,
-    '--muted': alpha(seed.text, 68),
+    '--muted': alpha(seed.text, 80),
     '--faint': alpha(seed.text, 7),
     '--gold': seed.accent,
     '--purple': mix(seed.accent, seed.rose, 50),
