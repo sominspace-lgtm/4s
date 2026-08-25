@@ -47,7 +47,10 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
     .sort((a, b) => (a.status === 'planned' ? -1 : 0) - (b.status === 'planned' ? -1 : 0))
     .slice(0, 4)
 
-  const SHEET_HEIGHT = 260 // px, matches the max-height below
+  // Bumped 260->300 (2026-08-25) alongside the section restyle below — real
+  // rounded cards with icons take a bit more vertical room than the old
+  // plain-text list did, and 260 was starting to clip the last card.
+  const SHEET_HEIGHT = 300
 
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as Element).setPointerCapture(e.pointerId)
@@ -104,11 +107,18 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
         )}
       </div>
 
-      <div style={{ padding: '0 1rem 1rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-        <div>
-          <div style={sectionLabelStyle}>Tonight</div>
+      {/* Same warm, tinted-card language as VillageWidgets' own Section
+          (2026-08-25) — this sheet used to be a plain uppercase-label list,
+          which read like a settings panel sliding up over a picture. A grid
+          instead of a single column too, since the sheet is wide enough on
+          an iPad to show two cards per row without cramping either. */}
+      <div style={{
+        padding: '0.2rem 1rem 1.1rem', overflowY: 'auto',
+        display: 'grid', gap: '0.6rem', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+      }}>
+        <Card icon="🍽️" tint="var(--amber)" title="Tonight">
           {tonight ? (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>
               {tonight.kind === 'eating_out' ? '🍴 ' : ''}{tonight.title}
             </div>
           ) : (
@@ -119,46 +129,66 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
               {choresToday.length} chore{choresToday.length > 1 ? 's' : ''} due
             </div>
           )}
-        </div>
+        </Card>
 
-        <div>
-          <div style={sectionLabelStyle}>This week&apos;s meals</div>
+        <Card icon="📅" tint="var(--blush)" title="This week’s meals">
+          {week.every(day => !h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))) && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic' }}>Nothing planned.</div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
             {week.map(day => {
               const dinner = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))
               if (!dinner) return null
               return (
                 <div key={+day} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>{format(day, 'EEE')}</span>
-                  <span style={{ fontSize: '0.72rem', color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)' }}>{dinner.title}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>{format(day, 'EEE')}</span>
+                  <span style={{ fontSize: '0.74rem', color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)' }}>{dinner.title}</span>
                 </div>
               )
             })}
           </div>
-        </div>
+        </Card>
 
         {shownIdeas.length > 0 && (
-          <div>
-            <div style={sectionLabelStyle}>Date ideas</div>
+          <Card icon="💌" tint="var(--rose)" title="Date ideas">
             {shownIdeas.map(i => (
-              <div key={i.id} style={{ fontSize: '0.72rem', color: 'var(--text)', display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
+              <div key={i.id} style={{ fontSize: '0.74rem', color: 'var(--text)', display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
                 {i.status === 'planned' && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--emerald)' }}>●</span>}
                 {i.title}
               </div>
             ))}
-          </div>
+          </Card>
         )}
 
         {nearbyCount > 0 && (
-          <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>
-            📍 {nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved around {NEW_HOME.city}
-          </div>
+          <Card icon="📍" tint="var(--emerald)" title={`Near ${NEW_HOME.city}`}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text)' }}>
+              {nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved
+            </div>
+          </Card>
         )}
       </div>
     </div>
   )
 }
 
-const sectionLabelStyle: React.CSSProperties = {
-  fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.3rem',
+// Same visual language as VillageWidgets' own Section — a soft, rounded,
+// tinted card per topic instead of a plain uppercase label over a list.
+function Card({ icon, tint, title, children }: {
+  icon: string; tint: string; title: string; children: React.ReactNode
+}) {
+  return (
+    <div className="organic" style={{
+      background: `color-mix(in srgb, ${tint} 9%, var(--surface2))`,
+      border: `1px solid color-mix(in srgb, ${tint} 22%, var(--border))`,
+      borderRadius: '14px', padding: '0.65rem 0.75rem',
+      display: 'flex', flexDirection: 'column', gap: '0.3rem',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <span aria-hidden style={{ fontSize: '1rem', lineHeight: 1 }}>{icon}</span>
+        <span style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text)' }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  )
 }

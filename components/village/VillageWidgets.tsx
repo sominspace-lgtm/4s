@@ -103,11 +103,11 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
 
       {open && (
         <div style={{
-          borderTop: '1px solid var(--border)', padding: '0.85rem 1rem 1rem',
-          display: 'grid', gap: '0.8rem', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          borderTop: '1px solid var(--border)', padding: '0.9rem 1rem 1.1rem',
+          display: 'grid', gap: '0.7rem', gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
         }}>
           {/* Tonight — the single most-asked household question there is */}
-          <Section title="Tonight" onOpen={() => goToHousehold('home')}>
+          <Section icon="🍽️" tint="var(--amber)" title="Tonight" onOpen={() => goToHousehold('home')}>
             {tonight ? (
               <>
                 <Line strong>
@@ -124,18 +124,18 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* This week's meals — the compact strip, not the full planner */}
-          <Section title="This week’s meals" onOpen={() => goToHousehold('home')}>
+          <Section icon="📅" tint="var(--blush)" title="This week’s meals" onOpen={() => goToHousehold('home')}>
             {h.meals.length === 0 && !h.loading && <Line dim italic>Nothing planned.</Line>}
             {week.map(day => {
               const dinner = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))
               if (!dinner) return null
               return (
                 <div key={+day} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>
                     {format(day, 'EEE')}
                   </span>
                   <span style={{
-                    fontSize: '0.7rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: '0.74rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)',
                     fontStyle: dinner.kind === 'eating_out' ? 'italic' : 'normal',
                   }}>{dinner.title}</span>
@@ -145,12 +145,12 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* Date ideas — glance + a door, the full editor stays in Household */}
-          <Section title="Date ideas" onOpen={() => goToHousehold('reference')} count={ideas.filter(i => i.status !== 'done').length}>
+          <Section icon="💌" tint="var(--rose)" title="Date ideas" onOpen={() => goToHousehold('reference')} count={ideas.filter(i => i.status !== 'done').length}>
             {shownIdeas.length === 0 && <Line dim italic>Nothing saved yet.</Line>}
             {shownIdeas.map(i => (
               <div key={i.id} style={{ display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
                 {i.status === 'planned' && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--emerald)', flexShrink: 0 }}>●</span>}
-                <span style={{ fontSize: '0.7rem', color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {i.title}
                 </span>
               </div>
@@ -158,7 +158,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* Nearby — pins around the new place */}
-          <Section title={`Near ${NEW_HOME.label}`} onOpen={() => goToSection('places')} count={nearbyCount}>
+          <Section icon="📍" tint="var(--emerald)" title={`Near ${NEW_HOME.label}`} onOpen={() => goToSection('places')} count={nearbyCount}>
             {nearbyCount === 0
               ? <Line dim italic>No pins tagged nearby yet.</Line>
               : <Line dim>{nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved around {NEW_HOME.city}</Line>}
@@ -168,13 +168,13 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
               (2026-08-25) — Move-In is no longer its own tab; its overview
               card + Near Our New Home moved into a Home block. */}
           {h.moveinItems.length > 0 && (
-            <Section title="Move-in" onOpen={() => goToHousehold('home')}>
+            <Section icon="📦" tint="var(--purple)" title="Move-in" onOpen={() => goToHousehold('home')}>
               <Line strong>{moveinLeft} still to get</Line>
               <Line dim>{moveinDone} sorted</Line>
               {/* A thin progress bar reads faster than the two numbers alone. */}
-              <div style={{ height: 4, borderRadius: 2, background: 'var(--surface2)', overflow: 'hidden', marginTop: '0.2rem' }}>
+              <div style={{ height: 5, borderRadius: 3, background: 'var(--surface2)', overflow: 'hidden', marginTop: '0.25rem' }}>
                 <div style={{
-                  height: '100%', borderRadius: 2, background: 'var(--emerald)',
+                  height: '100%', borderRadius: 3, background: 'var(--emerald)',
                   width: `${h.moveinItems.length ? (moveinDone / h.moveinItems.length) * 100 : 0}%`,
                 }} />
               </div>
@@ -186,11 +186,16 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
   )
 }
 
-// A lighter version of the old standalone Widget — same click-through-to-
-// the-real-section idea, but as a section inside the dock's expanded panel
-// rather than its own elevated/bordered card, since the panel itself now
-// carries that framing.
-function Section({ title, count, onOpen, children }: {
+// Each section is its own soft, rounded, tinted card now (2026-08-25) — was
+// a plain uppercase-label list, which read as a settings panel rather than
+// anything belonging to the village above it. A big, real icon per section
+// instead of a small emoji buried in the text, a warm tint unique to each
+// (so the eye can tell them apart at a glance the way district colors
+// already do in the scene), and normal-case type instead of the tiny
+// letterspaced caps every other "dashboard" surface in the app uses.
+function Section({ icon, tint, title, count, onOpen, children }: {
+  icon: string
+  tint: string
   title: string
   count?: number
   onOpen: () => void
@@ -199,18 +204,25 @@ function Section({ title, count, onOpen, children }: {
   return (
     <button
       onClick={onOpen}
-      className="press"
+      className="press organic"
       style={{
         textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-body)',
-        background: 'none', border: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem',
+        background: `color-mix(in srgb, ${tint} 9%, var(--surface2))`,
+        border: `1px solid color-mix(in srgb, ${tint} 22%, var(--border))`,
+        borderRadius: '14px', padding: '0.7rem 0.8rem',
+        display: 'flex', flexDirection: 'column', gap: '0.35rem',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.4rem', marginBottom: '0.15rem' }}>
-        <span style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.8 }}>
-          {title}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span aria-hidden style={{ fontSize: '1.05rem', lineHeight: 1 }}>{icon}</span>
+          <span style={{ fontSize: '0.76rem', fontWeight: 500, color: 'var(--text)' }}>{title}</span>
+        </div>
         {count !== undefined && count > 0 && (
-          <span style={{ fontSize: '0.6rem', color: 'var(--gold)', opacity: 0.9 }}>{count}</span>
+          <span style={{
+            fontSize: '0.62rem', fontWeight: 600, color: tint, background: `color-mix(in srgb, ${tint} 16%, transparent)`,
+            borderRadius: '999px', padding: '0.1rem 0.5rem', flexShrink: 0,
+          }}>{count}</span>
         )}
       </div>
       {children}
@@ -223,7 +235,7 @@ function Line({ children, strong, dim, italic }: {
 }) {
   return (
     <div style={{
-      fontSize: strong ? '0.82rem' : '0.68rem',
+      fontSize: strong ? '0.84rem' : '0.72rem',
       color: dim ? 'var(--muted)' : 'var(--text)',
       opacity: dim ? 0.8 : 1,
       fontStyle: italic ? 'italic' : 'normal',
