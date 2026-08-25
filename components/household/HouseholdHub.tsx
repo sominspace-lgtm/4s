@@ -45,7 +45,7 @@ type HouseholdTab = HouseholdTabId
 // Places went back to being its own top-level tab. Both the tab bar and
 // what's INSIDE Home are reorderable and hideable — `tabs`/`homeBlocks` are
 // owned by DashboardClient, same relationship Today has with its own blocks.
-export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate }: {
+export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate, forcedTab }: {
   userId: string
   userEmail: string
   tabs: SectionConfig[]
@@ -62,6 +62,12 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
    *  gate genuinely personal content (Check-ins) while sharedMode is on,
    *  same mechanism Village already uses (2026-08-25). */
   onLockedNavigate?: (reason: string) => void
+  /** Set by DashboardClient in shared mode, where Household's own sub-tabs
+   *  are promoted to the top-level nav bar (see navSections) instead of
+   *  living behind one "Household" tab — the top nav drives which sub-tab
+   *  shows, so this overrides the internal tab state and hides the
+   *  redundant tab-switcher below (2026-08-25). */
+  forcedTab?: HouseholdTab
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
@@ -87,12 +93,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
   // lets a caller land on a SPECIFIC sub-tab rather than whichever one was
   // open last. A pending deep link wins over sharedMode's Reference default.
-  const [tab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
+  const [internalTab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
   useEffect(() => {
     function onTab(e: Event) { setTab((e as CustomEvent<HouseholdTab>).detail) }
     window.addEventListener('4s:household-tab', onTab)
     return () => window.removeEventListener('4s:household-tab', onTab)
   }, [])
+  const tab = forcedTab ?? internalTab
   const h = useHousehold(spaceId)
   const routinesHook = useRoutines(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
@@ -615,20 +622,22 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-          {visibleTabs.map(tb => (
-            <button key={tb.id} onClick={() => goToTab(tb.id as HouseholdTab)} className="btn press" style={{
-              fontSize: '0.72rem', padding: '0.4em 0.9em',
-              background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
-              color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
-            }}>{tb.label}</button>
-          ))}
+      {!forcedTab && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
+            {visibleTabs.map(tb => (
+              <button key={tb.id} onClick={() => goToTab(tb.id as HouseholdTab)} className="btn press" style={{
+                fontSize: '0.72rem', padding: '0.4em 0.9em',
+                background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
+                color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
+              }}>{tb.label}</button>
+            ))}
+          </div>
+          <button onClick={() => setTabsCustomizeOpen(true)} title="Customize Household" className="press" style={{
+            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.85rem', padding: '0.3rem',
+          }}>⚙</button>
         </div>
-        <button onClick={() => setTabsCustomizeOpen(true)} title="Customize Household" className="press" style={{
-          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.85rem', padding: '0.3rem',
-        }}>⚙</button>
-      </div>
+      )}
 
       {tab === 'home' && (
         <>

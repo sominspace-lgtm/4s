@@ -31,7 +31,7 @@ import { scrollToAnchor } from '@/lib/utils/navigate'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergePersonalTabs } from '@/lib/utils/personalTabs'
-import { mergeHouseholdTabs, mergeHomeBlocks } from '@/lib/utils/householdLayout'
+import { mergeHouseholdTabs, mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -99,7 +99,20 @@ const SECTION_GROUPS: Record<string, string> = {
   personal:  'mine',
   household: 'ours',
   places:    'ours',
+  // Household's own sub-tabs, promoted to top-level nav in shared mode only
+  // (2026-08-25) — see the navSections/HOUSEHOLD_SHARED_TABS block below.
+  home:      'ours',
+  calendar:  'ours',
+  routines:  'ours',
+  smarthome: 'ours',
+  reference: 'ours',
 }
+
+// Shared/kiosk mode has no Today or Personal tab, which leaves room to show
+// Household's own sub-tabs directly in the top nav instead of nesting them
+// one click behind a single "Household" entry (2026-08-25). Non-shared mode
+// is untouched — Household keeps its own internal tab bar exactly as today.
+const HOUSEHOLD_SHARED_TABS = ['home', 'calendar', 'routines', 'smarthome', 'reference'] as const
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
@@ -294,9 +307,21 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     && (!sharedMode || s.id === 'household' || s.id === 'village' || s.id === 'places')
   )
 
+  // The nav bar's own section list — same as `visible`, except in shared
+  // mode the single `household` entry is expanded into its five sub-tabs so
+  // they sit at the top level alongside Village and Places (2026-08-25).
+  // `sections`/`visible` (the customizable layout) stay untouched; this is
+  // purely what SectionNav/BottomNav render and what `currentTab` resolves
+  // against.
+  const navSections = sharedMode
+    ? visible.flatMap(s => s.id === 'household'
+        ? HOUSEHOLD_SHARED_TABS.map(id => ({ ...s, id, label: sectionLabel(id).label, hidden: false }))
+        : [s])
+    : visible
+
   // Tab mode: only the active section renders. If the active tab was hidden
   // (customize / simple mode), fall back to the first visible one.
-  const currentTab = visible.some(s => s.id === activeTab) ? activeTab : (visible[0]?.id ?? 'brief')
+  const currentTab = navSections.some(s => s.id === activeTab) ? activeTab : (navSections[0]?.id ?? 'brief')
 
   // Tab mode only renders one section at a time, so its group header always
   // shows — there's no neighbouring section above it to already be carrying
@@ -308,6 +333,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       brief: t('Today', lang), village: t('Village', lang),
       personal: t('Personal', lang), household: t('Household', lang),
       places: t('Places', lang),
+      // Household's sub-tabs, shown at top level in shared mode only.
+      home: t('Home', lang), calendar: t('Calendar', lang), routines: t('Routines', lang),
+      smarthome: t('Smart Home', lang), reference: t('Reference', lang),
     }
 
     return { label: LABELS[id] ?? id, group }
@@ -331,6 +359,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Places came back out to top level (2026-08-21).
         case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} />
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
+        // Household's sub-tabs, promoted to the top level in shared mode
+        // (2026-08-25) — same HouseholdHub instance, just told which of its
+        // own tabs to show via forcedTab instead of letting it pick from its
+        // own internal (hidden, in this mode) tab bar.
+        case 'home': case 'calendar': case 'routines': case 'smarthome': case 'reference':
+          return <HouseholdHub key={id} userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }
     })()
@@ -370,7 +404,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
       <SectionNav
-        sections={visible}
+        sections={navSections}
         activeId={currentTab}
         onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
       />
@@ -398,7 +432,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <main style={{ maxWidth: 'min(1240px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 4rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
-          const s = visible.find(v => v.id === currentTab)
+          const s = navSections.find(v => v.id === currentTab)
           // key + .tab-in means React remounts on every tab change, so
           // the entrance animation replays instead of firing once on
           // first render and never again.
@@ -418,7 +452,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       </main>
       <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />
       <BottomNav
-        sections={visible}
+        sections={navSections}
         activeId={currentTab}
         onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
       />

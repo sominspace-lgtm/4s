@@ -5,10 +5,15 @@ interface Section { id: string; label?: string }
 const NAV_LABELS: Record<string, string> = {
   brief: 'Today', village: 'Village',
   personal: 'Personal', household: 'Household', places: 'Places',
+  // Household's own sub-tabs, shown at top level in shared mode only
+  // (2026-08-25) — see DashboardClient's navSections/HOUSEHOLD_SHARED_TABS.
+  home: 'Home', calendar: 'Calendar', routines: 'Routines',
+  smarthome: 'Smart Home', reference: 'Reference',
 }
 const ICONS: Record<string, string> = {
   brief: '◒', village: '⌂',
   personal: '◉', household: '◫', places: '◇',
+  home: '⌂', calendar: '▤', routines: '↻', smarthome: '◈', reference: '▥',
 }
 
 // Thumb-first bottom navigation for mobile. Shows the first few core tabs and
