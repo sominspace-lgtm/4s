@@ -338,35 +338,52 @@ export default function VillageScene({
       <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
       {live && <Clouds timeOfDay={v.timeOfDay} />}
 
-      {/* Distant treeline (2026-08-24) — the gap between the sky and the
-          ground line used to be empty air, which is a lot of the reason the
-          scene read flat/empty. Sits right at the horizon, behind the
-          ground, two overlapping rows so it has some depth of its own. */}
-      <g opacity={0.55}>
-        {DISTANT_TREES.map(t => (
-          <path key={t.id} d={`M ${t.x} ${GROUND_Y - 22} l ${-t.h * 0.6} ${t.h} h ${t.h * 1.2} Z`} fill="#8FA582" />
-        ))}
-      </g>
-      <g opacity={0.7}>
-        {DISTANT_TREES.map(t => (
-          <path key={t.id} d={`M ${t.x + 9} ${GROUND_Y - 14} l ${-t.h * 0.55} ${t.h * 0.85} h ${t.h * 1.1} Z`} fill="#7E9673" />
-        ))}
+      {/* Ground-plane scenery, dimmed after dark (2026-08-24 fix) — the
+          field/tree/grass/stone colors just below are fixed hex on purpose
+          (grass reading as green is a baseline fact, not a themeable one —
+          see vground's own comment), which means they never varied with
+          time of day OR the active theme. That was fine in daylight, but at
+          night — exactly when a dark theme is most likely in use — a
+          still-bright pastel field under a genuinely dark night sky (Sky.tsx
+          DOES correctly darken) read as washed out, and light-on-dark theme
+          colors like Obsidian's near-white --gold lost contrast against it.
+          A CSS filter here is simpler and more complete than re-deriving
+          every hex by hand — it dims and slightly desaturates the whole
+          ground plane at once, the way moonlight actually would, without
+          touching the district icons/labels drawn on top (those already
+          use theme vars tuned for dark surfaces and don't need this). */}
+      <g style={dark ? { filter: 'brightness(0.55) saturate(0.82)' } : undefined}>
+        {/* Distant treeline (2026-08-24) — the gap between the sky and the
+            ground line used to be empty air, which is a lot of the reason the
+            scene read flat/empty. Sits right at the horizon, behind the
+            ground, two overlapping rows so it has some depth of its own. */}
+        <g opacity={0.55}>
+          {DISTANT_TREES.map(t => (
+            <path key={t.id} d={`M ${t.x} ${GROUND_Y - 22} l ${-t.h * 0.6} ${t.h} h ${t.h * 1.2} Z`} fill="#8FA582" />
+          ))}
+        </g>
+        <g opacity={0.7}>
+          {DISTANT_TREES.map(t => (
+            <path key={t.id} d={`M ${t.x + 9} ${GROUND_Y - 14} l ${-t.h * 0.55} ${t.h * 0.85} h ${t.h * 1.1} Z`} fill="#7E9673" />
+          ))}
+        </g>
+
+        {/* Rolling ground — a top-to-bottom gradient now, not one flat tone */}
+        <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+          fill="url(#vground)" opacity={0.95} />
+        {/* The season, laid over the ground rather than replacing it: the land
+            keeps its shape, it just goes gold or goes cold. Same opacity bug
+            as Sky.tsx's skyWash, same fix: real target opacity on a static
+            outer <g>, animation only on the inner path, so the animation's
+            own opacity:1 end-state can't override the intended low wash. */}
+        {live && palette.ground && (
+          <g opacity={palette.groundOpacity}>
+            <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+              fill={palette.ground} className="village-fade" />
+          </g>
+        )}
       </g>
 
-      {/* Rolling ground — a top-to-bottom gradient now, not one flat tone */}
-      <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
-        fill="url(#vground)" opacity={0.95} />
-      {/* The season, laid over the ground rather than replacing it: the land
-          keeps its shape, it just goes gold or goes cold. Same opacity bug
-          as Sky.tsx's skyWash, same fix: real target opacity on a static
-          outer <g>, animation only on the inner path, so the animation's
-          own opacity:1 end-state can't override the intended low wash. */}
-      {live && palette.ground && (
-        <g opacity={palette.groundOpacity}>
-          <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
-            fill={palette.ground} className="village-fade" />
-        </g>
-      )}
       {/* Behind the ground line and above the sky: places you've both been.
           Drawn before the ground stroke so the hills sit properly behind it. */}
       <Horizon places={horizon} groundY={GROUND_Y} />
@@ -378,27 +395,33 @@ export default function VillageScene({
       <path d={PATH_D} fill="none" stroke="var(--surface2)" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
       <path d={PATH_D} fill="none" stroke="var(--border)" strokeWidth={5} strokeDasharray="1 7" strokeLinecap="round" opacity={0.6} />
 
-      {/* Grass — texture along the ground line, see GRASS_TUFTS above.
-          Fixed BloomScan grass greens (#8CA57C/#94AD84, same two tones its
-          own tufts alternate between) instead of the theme's --emerald
-          (2026-08-24) — grass reading as green is a baseline expectation
-          independent of season or theme, and the field gradient above is
-          the bigger fix, but the tufts should match the same reference
-          rather than clash with it. */}
-      <g opacity={0.9}>
-        {GRASS_TUFTS.map((t, i) => (
-          <path key={t.id}
-            d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
-            fill="none" stroke={i % 2 === 0 ? '#8CA57C' : '#94AD84'} strokeWidth={1.2} strokeLinecap="round" />
-        ))}
-      </g>
+      {/* Grass and stones — same dark-mode dimming as the ground-plane
+          group above, kept as a second filtered group rather than merged
+          into it so the walkway/Horizon still render between the field and
+          this top texture layer, same as before the fix (2026-08-24). */}
+      <g style={dark ? { filter: 'brightness(0.55) saturate(0.82)' } : undefined}>
+        {/* Grass — texture along the ground line, see GRASS_TUFTS above.
+            Fixed BloomScan grass greens (#8CA57C/#94AD84, same two tones its
+            own tufts alternate between) instead of the theme's --emerald
+            (2026-08-24) — grass reading as green is a baseline expectation
+            independent of season or theme, and the field gradient above is
+            the bigger fix, but the tufts should match the same reference
+            rather than clash with it. */}
+        <g opacity={0.9}>
+          {GRASS_TUFTS.map((t, i) => (
+            <path key={t.id}
+              d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
+              fill="none" stroke={i % 2 === 0 ? '#8CA57C' : '#94AD84'} strokeWidth={1.2} strokeLinecap="round" />
+          ))}
+        </g>
 
-      {/* Stones, another layer of ground texture (2026-08-24), see STONES
-          above. */}
-      <g opacity={0.5}>
-        {STONES.map(st => (
-          <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
-        ))}
+        {/* Stones, another layer of ground texture (2026-08-24), see STONES
+            above. */}
+        <g opacity={0.5}>
+          {STONES.map(st => (
+            <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
+          ))}
+        </g>
       </g>
 
       {/* Small props along the path — see PROPS above. */}
