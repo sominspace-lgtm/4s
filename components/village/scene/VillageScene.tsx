@@ -751,12 +751,20 @@ export default function VillageScene({
           into words. Real values only (see the props' own comments); never
           shown if the caller has nothing real to say yet. */}
       {(timeLabel || weather) && (
-        <g transform="translate(16 22)" opacity={0.8} pointerEvents="none">
-          <text fontSize={9} fill="var(--text)" fontFamily="var(--font-body)">
+        <g transform="translate(16 24)" pointerEvents="none">
+          {/* A soft plate behind the text (2026-08-25 fix) — the readout was
+              reported too small and too grey to read: fontSize 9/7 with the
+              second line in --muted AND an extra 0.8 group-opacity stacked
+              on top of muted's own alpha. Bigger type, a real background so
+              contrast doesn't depend on whatever's behind it in the scene
+              (sky color varies by time of day), and --text at a gentle
+              opacity instead of double-dimmed --muted. */}
+          <rect x={-8} y={-15} width={168} height={30} rx={8} fill="var(--surface)" opacity={0.55} />
+          <text fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
             {[timeLabel, weather ? `${weatherMeta(weather.condition).emoji} ${weather.tempF}°` : null]
               .filter(Boolean).join('   ')}
           </text>
-          <text y={12} fontSize={7} fill="var(--muted)" fontFamily="var(--font-body)">
+          <text y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">
             {[dateLabel, weather ? weatherMeta(weather.condition).label : null, moonLabel]
               .filter(Boolean).join(' · ')}
           </text>
