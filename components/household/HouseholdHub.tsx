@@ -718,42 +718,49 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         const weeks = groupCheckinsByWeek(checkins)
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            <div className="t-card" style={{ marginBottom: '0.3rem' }}>Check-ins</div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
-              Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept.
-            </div>
-
-            {weeks.length === 0 && !checkinsLoading && (
-              <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                No check-ins yet. They show up here once you&rsquo;ve answered one in Discord.
-              </div>
-            )}
-
-            {weeks.map(w => (
-              <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
-                <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span>Week of {w.weekOf}</span>
-                  <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
-                    {Object.keys(w.byUser).length === 1 ? 'one of you answered' : 'both answered'}
-                  </span>
-                </summary>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
-                  {Object.entries(w.byUser).map(([uid, c]) => (
-                    <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid) ?? 'Partner'}</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                        {c.answers.map((a, i) => (
-                          <div key={i}>
-                            {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
-                            <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            <details>
+              <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                <span className="t-card">Check-ins</span>
+                <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{weeks.length}</span>
+              </summary>
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
+                  Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept.
                 </div>
-              </details>
-            ))}
+
+                {weeks.length === 0 && !checkinsLoading && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
+                    No check-ins yet. They show up here once you&rsquo;ve answered one in Discord.
+                  </div>
+                )}
+
+                {weeks.map(w => (
+                  <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
+                    <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>Week of {w.weekOf}</span>
+                      <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
+                        {Object.keys(w.byUser).length === 1 ? 'one of you answered' : 'both answered'}
+                      </span>
+                    </summary>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
+                      {Object.entries(w.byUser).map(([uid, c]) => (
+                        <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid) ?? 'Partner'}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                            {c.answers.map((a, i) => (
+                              <div key={i}>
+                                {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
+                                <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </details>
           </section>
         )
       })()}

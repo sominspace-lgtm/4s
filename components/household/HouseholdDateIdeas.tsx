@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useDateIdeas, type DateIdea, type DateIdeaStatus, type PriceRange } from '@/lib/hooks/useDateIdeas'
 import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
 import { usePlaceFilters, type PlaceFilter } from '@/lib/hooks/usePlaceFilters'
+import { useTrips, type Trip } from '@/lib/hooks/useTrips'
+import { createClient } from '@/lib/supabase/client'
 import { haversineKm } from '@/lib/utils/geo'
 import type { Energy } from '@/lib/hooks/useWorkItems'
 
@@ -227,15 +229,25 @@ function CardList({ ideas, ...rest }: GroupProps) {
 // one automatically from whichever of the area's ideas already have a pin,
 // then saves it under the same area name so it shows up as a filter chip in
 // Places — "later show together on the map" without a second data entry.
-function AreaGroup({ area, ideas, savedPlaceFilters, onGroupOnMap, ...rest }: GroupProps & {
+function AreaGroup({ area, ideas, savedPlaceFilters, onGroupOnMap, trips, onMoveToTrip, ...rest }: GroupProps & {
   area: string
   savedPlaceFilters: PlaceFilter[]
   onGroupOnMap: (area: string, pins: Place[]) => void
+  trips: Trip[]
+  onMoveToTrip: (area: string, pins: Place[]) => Promise<void>
 }) {
   const pins = ideas
     .map(i => (i.place_id ? rest.places.find(p => p.id === i.place_id) : null))
     .filter((p): p is Place => !!p && p.lat != null && p.lng != null)
+  // "Move to Trip" only needs a real pin, not lat/lng specifically — a
+  // trip shortlist is just a set of place_ids (2026-08-25).
+  const locatedPins = ideas
+    .map(i => (i.place_id ? rest.places.find(p => p.id === i.place_id) : null))
+    .filter((p): p is Place => !!p)
   const alreadyGrouped = savedPlaceFilters.some(f => f.label === area)
+  const matchingTrip = trips.find(t => t.title.trim().toLowerCase() === area.trim().toLowerCase())
+  const [moving, setMoving] = useState(false)
+  const [moved, setMoved] = useState(false)
 
   return (
     <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
@@ -251,6 +263,24 @@ function AreaGroup({ area, ideas, savedPlaceFilters, onGroupOnMap, ...rest }: Gr
             <button onClick={() => onGroupOnMap(area, pins)} className="press"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.75, fontSize: '0.62rem', alignSelf: 'flex-start' }}>
               📍 Group on map ({pins.length} pin{pins.length === 1 ? '' : 's'})
+            </button>
+          )
+        )}
+        {/* Move to Trip (2026-08-25) — "move Santa Cruz day to Trips" means
+            a Trip named after the area, shortlisted with the area's located
+            ideas. Purely additive: nothing is removed from Date Ideas, and
+            a second click just re-upserts (harmless) rather than
+            duplicating. */}
+        {locatedPins.length > 0 && (
+          (matchingTrip || moved) ? (
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65 }}>✓ On the {matchingTrip?.title ?? area} trip</span>
+          ) : (
+            <button
+              disabled={moving}
+              onClick={async () => { setMoving(true); await onMoveToTrip(area, locatedPins); setMoving(false); setMoved(true) }}
+              className="press"
+              style={{ background: 'none', border: 'none', cursor: moving ? 'default' : 'pointer', color: 'var(--gold)', opacity: moving ? 0.5 : 0.75, fontSize: '0.62rem', alignSelf: 'flex-start' }}>
+              ✈ {moving ? 'Moving…' : `Move to Trip (${locatedPins.length} pin${locatedPins.length === 1 ? '' : 's'})`}
             </button>
           )
         )}
@@ -275,11 +305,34 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
   const { ideas, loading, addIdea, update, removeIdea } = useDateIdeas(spaceId)
   const { places, addPlace } = usePlaces()
   const { filters: savedPlaceFilters, addFilter: addPlaceFilter } = usePlaceFilters(spaceId)
+  const { trips, addTrip } = useTrips()
   const [addTagDraft, setAddTagDraft] = useState<Record<string, string>>({})
 
   function groupOnMap(area: string, pins: Place[]) {
     const calc = computeAreaFilter(pins.map(p => ({ id: p.id, lat: p.lat as number, lng: p.lng as number })))
     if (calc) addPlaceFilter(area, calc.centerId, calc.radiusKm)
+  }
+
+  // "Move Santa Cruz day to Trips" (2026-08-25) — a Trip named after the
+  // area (reusing one if it already exists), shortlisted with the area's
+  // located ideas. Uses the raw trip_places upsert directly rather than
+  // useTripBundle(tripId) — that hook is built for one open trip's live
+  // view, and this is a one-shot bulk action across a set of pins, not a
+  // subscription. Same upsert-on-conflict useTripBundle's own
+  // addToShortlist uses, so re-running this is always harmless.
+  async function moveAreaToTrip(area: string, pins: Place[]) {
+    let trip = trips.find(t => t.title.trim().toLowerCase() === area.trim().toLowerCase())
+    if (!trip) {
+      const { trip: created, error } = await addTrip({ title: area, shared: !!spaceId }, spaceId)
+      if (error || !created) { console.error('Failed to create trip:', error); return }
+      trip = created
+    }
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { error } = await supabase.from('trip_places')
+      .upsert(pins.map(p => ({ user_id: user.id, trip_id: trip!.id, place_id: p.id })), { onConflict: 'trip_id,place_id' })
+    if (error) console.error('Failed to add to trip shortlist:', error)
   }
 
   const [adding, setAdding] = useState(false)
@@ -386,7 +439,8 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
             </div>
           )}
           {areaNames.map(a => (
-            <AreaGroup key={a} area={a} ideas={ideas.filter(i => i.area === a)} savedPlaceFilters={savedPlaceFilters} onGroupOnMap={groupOnMap} {...cardProps} />
+            <AreaGroup key={a} area={a} ideas={ideas.filter(i => i.area === a)} savedPlaceFilters={savedPlaceFilters} onGroupOnMap={groupOnMap}
+              trips={trips} onMoveToTrip={moveAreaToTrip} {...cardProps} />
           ))}
         </div>
       )}

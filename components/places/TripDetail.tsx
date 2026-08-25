@@ -5,6 +5,7 @@ import PlacesSheet from '@/components/places/PlacesSheet'
 import { useTrips, type Trip, type TripStatus } from '@/lib/hooks/useTrips'
 import { useTripBundle, type ItineraryKind, type BudgetCategory } from '@/lib/hooks/useTripBundle'
 import { usePlaces } from '@/lib/hooks/usePlaces'
+import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 
 const STATUS_OPTIONS: TripStatus[] = ['dreaming', 'planning', 'booked', 'travelling', 'done', 'cancelled']
 const KIND_OPTIONS: ItineraryKind[] = ['activity', 'travel', 'stay', 'food', 'note']
@@ -30,6 +31,12 @@ export default function TripDetail({ trip, open, onClose }: {
   const { updateTrip, removeTrip } = useTrips()
   const bundle = useTripBundle(trip?.id ?? null)
   const { places } = usePlaces()
+  // Located date ideas, surfaced as one-click shortlist adds (2026-08-25) —
+  // a date idea with a pin already IS a place, so "move it into trips"
+  // means making it easy to shortlist here, not a second copy of the data.
+  // Scoped to the trip's own space so a personal trip doesn't see a
+  // partner's shared ideas or vice versa.
+  const { ideas: dateIdeas } = useDateIdeas(trip?.space_id ?? null)
 
   const [addingItem, setAddingItem] = useState(false)
   const [itemTitle, setItemTitle] = useState('')
@@ -56,6 +63,7 @@ export default function TripDetail({ trip, open, onClose }: {
 
   const shortlistedIds = new Set(bundle.shortlist.map(s => s.place_id))
   const availableForShortlist = places.filter(p => !shortlistedIds.has(p.id))
+  const locatedDateIdeas = dateIdeas.filter(i => i.place_id && !shortlistedIds.has(i.place_id))
 
   if (!trip) return <PlacesSheet open={open} onClose={onClose} title="Trip">{null}</PlacesSheet>
   // Captured as a const so closures below narrow to non-null — `trip` the
@@ -194,6 +202,26 @@ export default function TripDetail({ trip, open, onClose }: {
                 style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
+
+          {/* From your date ideas — any idea that already has a pin is one
+              click from being on this trip too. Purely additive: adding one
+              here doesn't touch or remove it from Date Ideas. */}
+          {locatedDateIdeas.length > 0 && (
+            <div style={{ marginTop: bundle.shortlist.length > 0 ? '0.6rem' : 0 }}>
+              <div style={{ fontSize: '0.6rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.3rem' }}>
+                From your date ideas
+              </div>
+              {locatedDateIdeas.map(idea => (
+                <button key={idea.id} onClick={() => bundle.addToShortlist(idea.place_id!)} className="press" style={{
+                  display: 'block', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: '0.74rem', color: 'var(--gold)', padding: '0.25rem 0', width: '100%',
+                }}>
+                  + {idea.title}{idea.area && <span style={{ color: 'var(--muted)' }}> · {idea.area}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           {addingShortlist ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem', maxHeight: '160px', overflowY: 'auto' }}>
               {availableForShortlist.length === 0 && (
