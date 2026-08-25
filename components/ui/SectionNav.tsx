@@ -34,17 +34,24 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
   if (sections.length < 2) return null
 
   return (
+    // Softened (2026-08-25) — this bar used to read as a strong, near-opaque
+    // slab of --bg above the much softer scene underneath, worst on a dark
+    // theme since Village always renders in Bloom's light palette regardless
+    // of the account's active theme (see Village.tsx's own THEMES.bloom
+    // override), so a dark theme's nav could sit directly on top of a light
+    // world. More translucency, a fainter bottom edge, and lighter/wider-set
+    // type all pull it toward "integrated frame" rather than "app chrome."
     <div className="section-nav" style={{
       position: 'sticky', top: 0, zIndex: 90,
-      background: 'color-mix(in srgb, var(--bg) 85%, transparent)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid var(--border)',
-      WebkitBackdropFilter: 'blur(12px)',
+      background: 'color-mix(in srgb, var(--bg) 68%, transparent)',
+      backdropFilter: 'blur(16px)',
+      borderBottom: '1px solid var(--faint)',
+      WebkitBackdropFilter: 'blur(16px)',
     }}>
       <div
         style={{
           maxWidth: '900px', margin: '0 auto', padding: '0 2rem',
-          display: 'flex', gap: '0', overflowX: 'auto',
+          display: 'flex', gap: '0.15rem', overflowX: 'auto',
           scrollbarWidth: 'none',
         }}
       >
@@ -62,16 +69,17 @@ export default function SectionNav({ sections, activeId, onSelect }: Props) {
               className="nav-tab"
               data-active={isActive}
               style={{
-                padding: '0.7rem 1rem', flexShrink: 0, minHeight: '44px',
+                padding: '0.7rem 1.15rem', flexShrink: 0, minHeight: '44px',
                 display: 'flex', alignItems: 'center', gap: '0.45rem',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-body)', fontSize: '0.78rem',
-                letterSpacing: '0.05em', textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)', fontSize: '0.72rem', fontWeight: 450,
+                letterSpacing: '0.07em', textTransform: 'uppercase',
                 color: isActive ? 'var(--text)' : 'var(--muted)',
+                opacity: isActive ? 1 : 0.75,
                 borderRadius: '8px 8px 0 0',
               }}
             >
-              <span aria-hidden style={{ fontSize: '0.9rem', opacity: isActive ? 1 : 0.7, color: isActive ? 'var(--gold)' : 'inherit', transition: 'color 160ms ease, opacity 160ms ease' }}>
+              <span aria-hidden style={{ fontSize: '0.88rem', opacity: isActive ? 1 : 0.65, color: isActive ? 'var(--gold)' : 'inherit', transition: 'color 160ms ease, opacity 160ms ease' }}>
                 {NAV_ICONS[s.id] ?? '•'}
               </span>
               {label}

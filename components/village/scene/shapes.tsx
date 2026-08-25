@@ -193,6 +193,37 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
   )
 }
 
+// A short picket fence run (2026-08-25) — pure scenery, same "small fixed
+// prop near the path" idiom as Bench/FlowerBed above. `length` is how many
+// pickets, so one component covers both a short garden-edge run and a
+// longer stretch without a second shape.
+export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
+  const spacing = 6
+  const width = (length - 1) * spacing
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.75}>
+      <rect x={-width / 2 - 1} y={-3.5} width={width + 2} height={1.4} fill="var(--border)" />
+      {[...Array(length)].map((_, i) => (
+        <rect key={i} x={-width / 2 + i * spacing - 0.7} y={-7} width={1.4} height={7} rx={0.5} fill="var(--border)" />
+      ))}
+    </g>
+  )
+}
+
+// A lamppost (2026-08-25) — glows after dark, same window-glow reasoning as
+// BuildingShape's own (`dark` gates the lit look rather than leaving it
+// unconditionally on). Pure scenery, no click target.
+export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
+      <rect x={-0.8} y={-22} width={1.6} height={22} fill="var(--slate)" opacity={0.75} />
+      <circle cy={-24} r={3.4} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--slate)" strokeWidth={0.7}
+        opacity={dark ? 0.9 : 0.6} className={dark ? 'village-glow' : undefined} />
+    </g>
+  )
+}
+
 // A mailbox, standing in for capture (2026-08-24) — Rest Lake's click used
 // to open the Brief and focus the capture box; removing the lake removed
 // that entry point too. This gives "jot something down" a small, real place

@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker, PersonMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, PersonMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -17,7 +17,16 @@ import type { VillageChanges } from '@/lib/village/state'
 import { hashPos } from '@/lib/village/state'
 import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 
-export const GROUND_Y = 372
+// Raised from 372 (2026-08-25) — the ground used to be a thin strip at the
+// very bottom of the canvas (68px of 440, ~15%) with almost the whole frame
+// spent on empty sky gradient above it. 210 puts the ground/village at
+// roughly 52% of the frame, matching "this is my little world" rather than
+// "a sitemap floating over a sky." Every other position in this file is
+// already expressed relative to GROUND_Y (forestSlots/districtSlots,
+// Horizon, Ambient, the path/props/grass/stones below), so they all move up
+// with it automatically — only DEFAULT_LANDMARK_POS below needed a manual
+// nudge to actually sit near the new, higher ground line.
+export const GROUND_Y = 210
 
 // A fixed scatter of grass tufts along the ground line (2026-08-21) — one
 // of the concrete things making the scene read as sparse rather than calm:
@@ -91,9 +100,39 @@ const PROPS = {
     { x: 700, y: GROUND_Y - 8, hue: 'var(--gold)' },
     { x: 200, y: GROUND_Y + 32, hue: 'var(--blush)' },
   ],
+  // Fences and lamps (2026-08-25) — the rest of "denser, more lived-in
+  // ground" from PROPS above. A short fence run near Home reads as a real
+  // yard boundary rather than an open field; lamps mark the path itself so
+  // it reads as a real route, lit after dark.
+  fences: [
+    { x: 350, y: GROUND_Y + 6, length: 4 },
+    { x: 450, y: GROUND_Y + 10, length: 4 },
+  ],
+  lamps: [
+    { x: 240, y: GROUND_Y - 32 },
+    { x: 500, y: GROUND_Y - 36 },
+    { x: 690, y: GROUND_Y - 24 },
+  ],
 }
 
 export type { Slot } from '@/lib/village/layout'
+
+// A small postcard sentence for the readout (2026-08-25) — "10:05 AM · 63°"
+// is data; "A quiet morning in your village" is the same data read as a
+// place rather than a dashboard. Real time-of-day only (no invented mood),
+// with rain folded in when it's actually raining — everything else about
+// the weather already shows on the line above via weatherMeta's own label.
+const POSTCARD_LINE: Record<VillageState['timeOfDay'], string> = {
+  dawn: 'A quiet morning in your village.',
+  day: 'A bright day in your village.',
+  dusk: 'Evening settles over your village.',
+  night: 'A still night in your village.',
+}
+function postcardLine(timeOfDay: VillageState['timeOfDay'], condition?: WeatherCondition | null): string {
+  const base = POSTCARD_LINE[timeOfDay]
+  if (condition === 'rain' || condition === 'storm') return base.replace('village.', 'village, rain on the path.')
+  return base
+}
 
 /**
  * The scene itself: pure presentation, no hooks and no dates. Everything
@@ -108,9 +147,9 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   forest: { x: 175, y: 250 },
   home: { x: 400, y: 250 },
   projects: { x: 620, y: 250 },
-  archive: { x: 725, y: 190 },
-  people: { x: 265, y: 165 },
-  places: { x: 505, y: 165 },
+  archive: { x: 725, y: 205 },
+  people: { x: 265, y: 180 },
+  places: { x: 505, y: 180 },
 }
 
 export default function VillageScene({
@@ -163,12 +202,21 @@ export default function VillageScene({
   arranging?: boolean
   onMoveLandmark?: (id: LandmarkId, x: number, y: number) => void
 }) {
+  // Per-district lock (2026-08-25) — `locked` used to gate every district
+  // uniformly, but Places isn't personal data (shared saved pins/trips) and
+  // shouldn't sit behind the same PIN as a habit's or a contact's name.
+  // Forest/Home/Projects/Archive/People stay locked (habits, today's Brief,
+  // projects, the reflection archive, and contacts are all personal); Places
+  // is the one exception. Non-landmark navs (Mailbox, the Trips signpost,
+  // the date-idea memory markers) pass their own lock intent explicitly.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places'
+
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
   // Also the arranging guard: a click shouldn't navigate away mid-drag-mode.
-  const nav = (label: string, go: () => void) => () => {
+  const nav = (label: string, go: () => void, requiresLock = true) => () => {
     if (arranging) return
-    if (locked) onLockedNavigate?.(label)
+    if (locked && requiresLock) onLockedNavigate?.(label)
     else go()
   }
 
@@ -206,7 +254,7 @@ export default function VillageScene({
   const navLandmark = (id: LandmarkId, label: string, go: () => void) => () => {
     if (arranging) return
     recordVisit(id)
-    if (locked) onLockedNavigate?.(label)
+    if (districtLocked(id)) onLockedNavigate?.(label)
     else go()
   }
 
@@ -223,7 +271,7 @@ export default function VillageScene({
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
-    if (locked) { onLockedNavigate?.(label); return }
+    if (districtLocked(id)) { onLockedNavigate?.(label); return }
     setOpenPanel(prev => (prev === id ? null : id))
   }
 
@@ -494,6 +542,8 @@ export default function VillageScene({
       <PondShape x={PROPS.pond.x} y={PROPS.pond.y} />
       {PROPS.benches.map((b, i) => <BenchShape key={i} x={b.x} y={b.y} />)}
       {PROPS.flowerBeds.map((f, i) => <FlowerBedShape key={i} x={f.x} y={f.y} hue={f.hue} />)}
+      {PROPS.fences.map((f, i) => <FenceShape key={i} x={f.x} y={f.y} length={f.length} />)}
+      {PROPS.lamps.map((l, i) => <LampShape key={i} x={l.x} y={l.y} dark={dark} />)}
 
       {/* Memory map (2026-08-24) — one small marker per date-idea area,
           scattered near the path via the same hashPos-by-id determinism
@@ -505,7 +555,7 @@ export default function VillageScene({
           x={70 + hashPos(area) * 660}
           y={GROUND_Y - 36 + hashPos(area + 'y') * 24}
           label={area} count={count}
-          onClick={nav(area, () => goToHousehold('reference'))} />
+          onClick={nav(area, () => goToHousehold('reference'), false)} />
       ))}
 
       {/* Per-person markers (2026-08-25) — see PersonMarker/people prop
@@ -560,29 +610,42 @@ export default function VillageScene({
           dashed circle when there are no plants yet. */}
       <FeatureIcon kind="leaf" x={(plantSlots[0]?.x ?? 200) - 16} y={(plantSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
 
-      {/* Home — always present, grows detail with activity */}
+      {/* Home — the anchor of the village (2026-08-25 enlarge), so it reads
+          as the center rather than a district the same size as the rest.
+          Body/roof scaled up from the old 60×44 to 84×58, plus a porch
+          (roofed overhang + two posts + a step) since a door alone read as
+          flat. Windows/chimney logic unchanged, just repositioned for the
+          bigger frame. */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
         <title>Home — your Brief and today</title>
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
-        <ellipse cx={0} cy={1.5} rx={34} ry={3} fill="var(--text)" opacity={0.12} />
-        <rect x={-30} y={-44} width={60} height={44} rx={6} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.2} />
-        <rect x={-30} y={-44} width={60} height={44} rx={6} fill="url(#vsheen)" />
-        <path d="M -36 -44 Q 0 -70 36 -44 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1} strokeOpacity={0.7} />
-        <rect x={-8} y={-24} width={16} height={24} rx={3} fill="var(--gold)" opacity={0.35} />
+        <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
+        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.3} />
+        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vsheen)" />
+        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1.1} strokeOpacity={0.7} />
+        {/* Porch — a small overhang roof on two posts, framing the door */}
+        <rect x={-20} y={-36} width={40} height={2.4} rx={1} fill="var(--slate)" opacity={0.6} />
+        <rect x={-19} y={-36} width={1.6} height={36} fill="var(--slate)" opacity={0.55} />
+        <rect x={17.4} y={-36} width={1.6} height={36} fill="var(--slate)" opacity={0.55} />
+        <rect x={-24} y={0.5} width={48} height={2} fill="var(--slate)" opacity={0.4} />
+        <rect x={-10} y={-32} width={20} height={32} rx={3.5} fill="var(--gold)" opacity={0.35} />
         {/* Windows glow after dark, same reasoning as BuildingShape's own
-            (2026-08-24, were unconditionally lit before). */}
-        <rect x={-22} y={-34} width={10} height={10} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.75 : 0.5} className={dark ? 'village-glow' : undefined} />
-        <rect x={12} y={-34} width={10} height={10} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.55 : 0.4} />
+            (2026-08-24, were unconditionally lit before). Third small
+            "bedroom" window up in the gable, per the redesign brief. */}
+        <rect x={-32} y={-46} width={11} height={11} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.75 : 0.5} className={dark ? 'village-glow' : undefined} />
+        <rect x={21} y={-46} width={11} height={11} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.55 : 0.4} />
+        <circle cy={-72} r={5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--border)" strokeWidth={0.8}
+          opacity={dark ? 0.7 : 0.45} className={dark ? 'village-glow' : undefined} />
         {v.buildings.length + v.plants.length > 6 && (
-          <path d="M 18 -68 L 18 -80 L 25 -80 L 25 -68" fill="none" stroke="var(--border)" strokeWidth={2} />
+          <path d="M 24 -84 L 24 -98 L 31 -98 L 31 -84" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
       </g>
 
       {/* Mailbox, beside Home (2026-08-24) — see MailboxShape's own comment:
           Rest Lake used to be where "jot something down" lived; this is its
           new, smaller home. */}
-      <MailboxShape x={444} y={GROUND_Y - 4} onClick={nav('Capture', () => {
+      <MailboxShape x={462} y={GROUND_Y - 4} onClick={nav('Capture', () => {
         goToSection('brief')
         setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
       })} />
@@ -727,7 +790,7 @@ export default function VillageScene({
           edge instead of inventing an eighth district. */}
       {tripCount > 0 && (
         <SignpostShape x={770} y={GROUND_Y + 30} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
-          onClick={nav('Trips', () => goToSection('places'))} />
+          onClick={nav('Trips', () => goToSection('places'), false)} />
       )}
 
       {/* The hover-board itself — see openOrToggle above. A transparent
@@ -820,7 +883,7 @@ export default function VillageScene({
               contrast doesn't depend on whatever's behind it in the scene
               (sky color varies by time of day), and --text at a gentle
               opacity instead of double-dimmed --muted. */}
-          <rect x={-8} y={-15} width={168} height={30} rx={8} fill="var(--surface)" opacity={0.55} />
+          <rect x={-8} y={-15} width={186} height={44} rx={8} fill="var(--surface)" opacity={0.55} />
           <text fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
             {[timeLabel, weather ? `${weatherMeta(weather.condition).emoji} ${weather.tempF}°` : null]
               .filter(Boolean).join('   ')}
@@ -828,6 +891,10 @@ export default function VillageScene({
           <text y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">
             {[dateLabel, weather ? weatherMeta(weather.condition).label : null, moonLabel]
               .filter(Boolean).join(' · ')}
+          </text>
+          {/* The postcard line — see postcardLine() above. */}
+          <text y={27} fontSize={9} fill="var(--text)" opacity={0.62} fontFamily="var(--font-body)" fontStyle="italic">
+            {postcardLine(v.timeOfDay, weather?.condition)}
           </text>
         </g>
       )}
