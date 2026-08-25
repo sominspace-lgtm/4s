@@ -116,18 +116,21 @@ const SECTION_GROUPS: Record<string, string> = {
 // is untouched — Household keeps its own internal tab bar exactly as today.
 const HOUSEHOLD_SHARED_TABS = ['home', 'calendar', 'routines', 'smarthome', 'reference'] as const
 
-// The Home Bar's four contexts (2026-08-25) — regroups the seven flat
+// The Home Bar's contexts (2026-08-25) — regroups the seven flat
 // shared-mode tabs above into the wall-mounted-iPad vision's 🌳/🏠/🌱/💡
 // structure. Tasks/goals/projects stay out of "Life" here on purpose: those
 // are personal data gated behind a PIN even in shared mode (see
-// VillageScene's districtLocked), so Life is scoped to what's actually safe
-// and useful to show on a shared device — Routines and Places (the vision's
-// own "shared plans, trips" framing for Life). Real smart-home control isn't
-// built yet (see useSmartHome.ts) so Controls still opens the manual list.
+// VillageScene's districtLocked), so Life is scoped to Routines. Places got
+// its own icon back (2026-08-25 fix) — nesting it one tap deep under Life
+// made it noticeably harder to find than it was in the old flat nav, and
+// findability matters more here than sticking to exactly four icons. Real
+// smart-home control isn't built yet (see useSmartHome.ts) so Controls
+// still opens the manual list.
 const HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: '🌳', label: 'Village',  members: ['village'] },
   { id: 'home',     icon: '🏠', label: 'Home',     members: ['home', 'calendar', 'reference'] },
-  { id: 'life',     icon: '🌱', label: 'Life',     members: ['routines', 'places'] },
+  { id: 'life',     icon: '🌱', label: 'Life',     members: ['routines'] },
+  { id: 'places',   icon: '📍', label: 'Places',   members: ['places'] },
   { id: 'controls', icon: '💡', label: 'Controls', members: ['smarthome'] },
 ]
 
