@@ -308,7 +308,9 @@ export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
   x: number; y: number; name: string; hairColor: string; outfitColor: string; onClick?: () => void
 }) {
   return (
-    <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
+    <g transform={`translate(${x} ${y})`} onClick={onClick}
+      className={onClick ? 'village-entity' : undefined}
+      style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
       {/* Body — rounded, faceless, matching the flat object style used

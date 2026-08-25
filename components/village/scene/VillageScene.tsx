@@ -197,14 +197,17 @@ export default function VillageScene({
   arranging?: boolean
   onMoveLandmark?: (id: LandmarkId, x: number, y: number) => void
 }) {
-  // Per-district lock (2026-08-25) — `locked` used to gate every district
-  // uniformly, but Places isn't personal data (shared saved pins/trips) and
-  // shouldn't sit behind the same PIN as a habit's or a contact's name.
-  // Forest/Home/Projects/Archive/People stay locked (habits, today's Brief,
-  // projects, the reflection archive, and contacts are all personal); Places
-  // is the one exception. Non-landmark navs (Mailbox, the Trips signpost,
-  // the date-idea memory markers) pass their own lock intent explicitly.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places'
+  // Per-district lock (2026-08-25, Home exception added 2026-08-25) —
+  // `locked` used to gate every district uniformly, but Places isn't
+  // personal data (shared saved pins/trips) and shouldn't sit behind the
+  // same PIN as a habit's or a contact's name. Home dropped out too once its
+  // own tap target changed from Today's Brief (personal) to Smart Home
+  // (shared household devices, not personal data) — see panelContent.home
+  // below. Forest/Projects/Archive/People stay locked (habits, projects, the
+  // reflection archive, and contacts are all personal). Non-landmark navs
+  // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
+  // own lock intent explicitly.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -260,6 +263,24 @@ export default function VillageScene({
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
   const [openPanel, setOpenPanel] = useState<Exclude<LandmarkId, 'archive'> | null>(null)
+
+  // Tap-your-own-figure personal entry (2026-08-25) — same hover-card idea
+  // as openPanel above, for Sylvia/Harry's cast figures. Only wired up in
+  // shared mode: outside it, you're already in your own session, so tapping
+  // your own figure means nothing. No real personal data in the card (the
+  // shared session's RLS can't see it anyway — see onLockedNavigate below,
+  // which is the exact same full-session-swap unlock every locked district
+  // already uses, not a new mechanism).
+  const [openFigure, setOpenFigure] = useState<'sylvia' | 'harry' | null>(null)
+  const figureContent: Record<'sylvia' | 'harry', { title: string; lines: string[] }> = {
+    sylvia: { title: 'Sylvia', lines: ['Tap to open your personal space'] },
+    harry: { title: 'Harry', lines: ['Tap to open your personal space'] },
+  }
+  const openFigureOrToggle = (id: 'sylvia' | 'harry') => () => {
+    if (arranging || !locked) return
+    setOpenFigure(prev => (prev === id ? null : id))
+  }
+
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
@@ -282,8 +303,12 @@ export default function VillageScene({
     },
     home: {
       title: 'Home',
-      lines: ["Today's Brief"],
-      actionLabel: 'Open Today', go: () => goToSection('brief'),
+      // Retargeted from Today's Brief to Smart Home (2026-08-25) — Home is
+      // the primary entry to the shared household devices, not a personal
+      // surface; Today stays reachable via the swipe-up sheet (shared mode)
+      // or the Today tab (personal mode), just not through this tap.
+      lines: ['Lights, temperature, and more'],
+      actionLabel: 'Open Smart Home', go: () => goToHousehold('smarthome'),
     },
     projects: {
       title: 'Projects',
@@ -592,7 +617,7 @@ export default function VillageScene({
           flat. Windows/chimney logic unchanged, just repositioned for the
           bigger frame. */}
       <g transform={`translate(400 ${GROUND_Y - 4})`}>
-        <title>Home — your Brief and today</title>
+        <title>Home — Smart Home</title>
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
@@ -633,10 +658,12 @@ export default function VillageScene({
           globals.css) is the one bit of "tiny people walking" life this
           scene gets — full movement/pathing is out of scope for now. */}
       <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)" />
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
+          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
       </g>
       <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)" />
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
+          onClick={locked ? openFigureOrToggle('harry') : undefined} />
       </g>
       <g className="village-bob" style={{ animationDelay: '1.2s' }}>
         <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
@@ -810,6 +837,37 @@ export default function VillageScene({
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
+              </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Figure hover-card — same shape as the district hover-board above,
+          positioned over Sylvia/Harry's own fixed spot rather than pos(id)
+          since figures aren't landmarks. */}
+      {openFigure && (() => {
+        const figX = openFigure === 'sylvia' ? 372 : 428
+        const figY = GROUND_Y + 8
+        const info = figureContent[openFigure]
+        const width = 150
+        const height = 34 + info.lines.length * 13 + 22
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, figX))
+        const top = Math.max(10, figY - 40 - height)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenFigure(null)} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
+              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{info.title}</text>
+              {info.lines.map((line, i) => (
+                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+              ))}
+              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { onLockedNavigate?.(info.title); setOpenFigure(null) }}
+                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
+                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
+                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Unlock →</text>
               </g>
             </g>
           </g>
