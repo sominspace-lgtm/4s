@@ -18,6 +18,7 @@ import SectionNav from '@/components/ui/SectionNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
+import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import JourneyBar from '@/components/ui/JourneyBar'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
@@ -363,6 +364,15 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Household/Places from a shared device isn't fighting a vanishing nav.
   const [idleAmbient, resetIdleTimer] = useIdleAmbient(sharedMode)
   const ambient = idleAmbient && currentTab === 'village'
+
+  // The other half of the same privacy story (2026-08-25) — useIdleAmbient
+  // above only ever arms in sharedMode. This arms the opposite case: once
+  // someone has unlocked THIS device into their own account (see
+  // UnlockPanel), it signs back into the shared view after a few inactive
+  // minutes, so a personal session left open on the wall iPad doesn't just
+  // sit there indefinitely. No-ops entirely on a personal phone/laptop that
+  // never went through shared mode — see useAutoRelock's own comment.
+  useAutoRelock(sharedMode)
 
   // Tab mode only renders one section at a time, so its group header always
   // shows — there's no neighbouring section above it to already be carrying

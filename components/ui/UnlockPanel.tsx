@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { WAS_SHARED_DEVICE_KEY } from '@/lib/hooks/useAutoRelock'
 
 // Session upgrade from Shared → personal (2026-08-21).
 //
@@ -43,6 +44,13 @@ export default function UnlockPanel({ open, onClose, reason }: {
       setLoading(false)
       return
     }
+    // Mark this browser as the shared kiosk (2026-08-25) — this unlock only
+    // ever happens FROM shared mode (see this component's own header
+    // comment), so this is the one place that knows "this physical device
+    // is the one that stays logged in on the wall." See useAutoRelock,
+    // which reads this to know whether to sign back into shared after
+    // inactivity, vs. leaving a personal phone/laptop alone.
+    try { localStorage.setItem(WAS_SHARED_DEVICE_KEY, '1') } catch { /* ignore */ }
     // The cookie changed server-side; refresh so the dashboard re-reads it
     // and drops out of shared mode.
     router.refresh()
