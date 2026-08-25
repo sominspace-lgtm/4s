@@ -13,7 +13,7 @@ import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
-import { goToSection, goToPersonal } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal, openSmartHome } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -68,6 +68,32 @@ function AreaRow({ label, line, onAction }: { label: string; line: string; onAct
     }}>
       <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', width: '5.2rem', flexShrink: 0 }}>{label}</span>
       <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1, lineHeight: 1.4 }}>{line}</span>
+      <span aria-hidden style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.5 }}>→</span>
+    </button>
+  )
+}
+
+// A bigger, tinted-card shortcut into a whole other tab/overlay — not
+// another area-summary line (AreaRow above), since these don't have a
+// one-line status to report, just "go here" (2026-08-25). Same warm-card
+// language as VillageWidgets' own Section, so Today and the Village dock
+// don't look like two different apps.
+function ShortcutCard({ icon, tint, title, hint, onOpen }: {
+  icon: string; tint: string; title: string; hint: string; onOpen: () => void
+}) {
+  return (
+    <button onClick={onOpen} className="press organic" style={{
+      textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-body)',
+      background: `color-mix(in srgb, ${tint} 9%, var(--surface2))`,
+      border: `1px solid color-mix(in srgb, ${tint} 22%, var(--border))`,
+      borderRadius: '14px', padding: '0.8rem 0.9rem',
+      display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
+    }}>
+      <span aria-hidden style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)' }}>{title}</div>
+        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.8 }}>{hint}</div>
+      </div>
       <span aria-hidden style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.5 }}>→</span>
     </button>
   )
@@ -500,6 +526,17 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
             {summaryCards.map(c => <AreaRow key={c.label} label={c.label} line={c.line} onAction={c.onAction} />)}
           </div>
         </div>
+      )
+      // Two shortcuts, not embedded features — see TODAY_BLOCK_META's own
+      // comment on why this is a one-tap card into the real Village/Smart
+      // Home rather than a live mini scene (2026-08-25).
+      if (id === 'village') return (
+        <ShortcutCard key="village" icon="🌳" tint="var(--emerald)" title="Your Village"
+          hint="See your little world" onOpen={() => goToSection('village')} />
+      )
+      if (id === 'controls') return (
+        <ShortcutCard key="controls" icon="💡" tint="var(--gold)" title="Smart Home"
+          hint="Lights, temperature, and more" onOpen={openSmartHome} />
       )
       return null
     })}

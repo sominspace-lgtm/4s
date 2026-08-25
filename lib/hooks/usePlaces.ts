@@ -13,6 +13,11 @@ export interface Place {
   space_id: string | null
   name: string
   kind: string
+  /** All categories this pin carries (2026-08-25) — `kind` stays the
+   *  primary one (still what the map pin icon/color and every existing
+   *  filter reads), `kinds` is the full set for the multi-select add/edit
+   *  UI. `kinds[0]` is kept in sync with `kind` on write. */
+  kinds: string[]
   note: string | null
   address: string | null
   city: string | null
@@ -36,6 +41,8 @@ export interface Place {
 export interface NewPlaceInput {
   name: string
   kind?: string
+  /** See Place.kinds — if omitted, defaults to `[kind]`. */
+  kinds?: string[]
   note?: string | null
   address?: string | null
   city?: string | null
@@ -85,6 +92,7 @@ export function usePlaces() {
       space_id: input.shared ? spaceId : null,
       name: input.name,
       kind: input.kind ?? 'place',
+      kinds: input.kinds ?? [input.kind ?? 'place'],
       note: input.note ?? null,
       address: input.address ?? null,
       city: input.city ?? null,
@@ -100,7 +108,7 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on' | 'space_id'
+    'name' | 'kind' | 'kinds' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on' | 'space_id'
   >>) {
     // First time a place is marked good/hmm/bad, stamp today as the visit
     // date automatically — but never overwrite one already set (manual edits

@@ -4,7 +4,7 @@
 // say "I don't use Reflection" or "put the calendar first". This is the same
 // hide/reorder idea CustomizePanel already gives the top-level tabs, scoped
 // one level down.
-export type TodayBlockId = 'onething' | 'budget' | 'areas' | 'calendar' | 'inbox'
+export type TodayBlockId = 'onething' | 'budget' | 'areas' | 'calendar' | 'inbox' | 'village' | 'controls'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -17,6 +17,13 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Agenda and month view' },
   inbox:      { label: 'Quick Add · Inbox', hint: 'Capture and sort' },
+  // Two shortcuts, not embedded features (2026-08-25) — a live mini Village
+  // scene would mean importing VillageScene's whole data pipeline (habits,
+  // tasks, clock, palette, weather) into Today just to draw a tiny picture;
+  // a one-tap card into the real thing gets the same "your world is right
+  // there" effect for a fraction of the weight.
+  village:    { label: 'Village',        hint: 'A shortcut into your village' },
+  controls:   { label: 'Smart Home',     hint: 'Opens the Smart Home overlay' },
 }
 
 // Which blocks can actually change POSITION, not just visibility.
@@ -27,7 +34,7 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // DashboardClient after DailyBrief returns, a different component
 // entirely). All three can still be hidden. Only these three are true
 // siblings in the render tree and can be reordered against each other.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'inbox'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'inbox', 'village', 'controls'])
 
 // Order here is the default order — not enforced at render time, so a
 // reorder in the customize panel actually changes what you see.
@@ -37,6 +44,8 @@ export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
   { id: 'areas',      hidden: false },
   { id: 'calendar',   hidden: false },
   { id: 'inbox',      hidden: false },
+  { id: 'village',    hidden: false },
+  { id: 'controls',   hidden: false },
 ]
 
 // Same merge shape as mergeLayout() in DashboardClient: a saved list might

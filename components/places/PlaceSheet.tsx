@@ -42,6 +42,9 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
   const [addressDraft, setAddressDraft] = useState('')
   const [cityDraft, setCityDraft] = useState('')
   const [countryDraft, setCountryDraft] = useState('')
+  // Address lookup (2026-08-25) — see lookupAddress()/saveAddress() above.
+  const [geoLatLng, setGeoLatLng] = useState<{ lat: number; lng: number } | null>(null)
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'looking' | 'found' | 'not-found'>('idle')
   const [editingVisited, setEditingVisited] = useState(false)
   const [visitedDraft, setVisitedDraft] = useState('')
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
@@ -87,8 +90,34 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
       address: addressDraft.trim() || null,
       city: cityDraft.trim() || null,
       country: countryDraft.trim() || null,
+      ...(geoLatLng ? { lat: geoLatLng.lat, lng: geoLatLng.lng } : {}),
     })
     setEditingAddress(false)
+    setGeoLatLng(null); setGeoStatus('idle')
+  }
+
+  // Same fix as AddPlacePanel's — this edit flow never called a geocode
+  // endpoint either (2026-08-25). City/country fill the existing draft
+  // fields so they're visibly editable before saving; lat/lng ride along
+  // silently via geoLatLng, same "not its own field" reasoning as there.
+  async function lookupAddress() {
+    const q = addressDraft.trim()
+    if (q.length < 5) { setGeoLatLng(null); setGeoStatus('idle'); return }
+    setGeoStatus('looking')
+    try {
+      const res = await fetch(`/api/places/geocode?q=${encodeURIComponent(q)}`)
+      const body = await res.json().catch(() => ({ found: false }))
+      if (body.found) {
+        setGeoLatLng({ lat: body.lat, lng: body.lng })
+        if (body.city && !cityDraft.trim()) setCityDraft(body.city)
+        if (body.country && !countryDraft.trim()) setCountryDraft(body.country)
+        setGeoStatus('found')
+      } else {
+        setGeoLatLng(null); setGeoStatus('not-found')
+      }
+    } catch {
+      setGeoLatLng(null); setGeoStatus('not-found')
+    }
   }
 
   async function saveVisited() {
@@ -290,14 +319,25 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
           </div>
           {editingAddress ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <input autoFocus value={addressDraft} onChange={e => setAddressDraft(e.target.value)} placeholder="Street address" style={inputStyle} />
+              <input
+                autoFocus value={addressDraft}
+                onChange={e => { setAddressDraft(e.target.value); setGeoStatus('idle'); setGeoLatLng(null) }}
+                onBlur={lookupAddress}
+                placeholder="Street address" style={inputStyle}
+              />
+              {geoStatus === 'looking' && (
+                <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Looking that up…</div>
+              )}
+              {geoStatus === 'found' && (
+                <div style={{ fontSize: '0.64rem', color: 'var(--emerald)' }}>📍 Found it — filled in below</div>
+              )}
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <input value={cityDraft} onChange={e => setCityDraft(e.target.value)} placeholder="City" style={inputStyle} />
                 <input value={countryDraft} onChange={e => setCountryDraft(e.target.value)} placeholder="Country" style={inputStyle} />
               </div>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <button onClick={saveAddress} className="btn btn-secondary press" style={{ fontSize: '0.68rem' }}>Save</button>
-                <button onClick={() => setEditingAddress(false)} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Cancel</button>
+                <button onClick={() => { setEditingAddress(false); setGeoLatLng(null); setGeoStatus('idle') }} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Cancel</button>
               </div>
             </div>
           ) : (
@@ -369,14 +409,39 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
           />
         </div>
 
-        {/* Kind picker — reassigning a place's type is common early on. */}
+        {/* Kind picker — reassigning a place's type is common early on.
+            Multi-select now (2026-08-25): a pin can carry more than one
+            category (a place that's both a gym and a cafe). `kinds` falls
+            back to `[kind]` for any pin saved before the kinds column
+            existed. The first one toggled on stays `kind` — still what the
+            map pin icon/color and every other single-kind reader uses. */}
         {editingFields && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem' }}>
-            <span style={{ color: 'var(--muted)' }}>Kind</span>
-            <select value={place.kind} onChange={e => updatePlace(place!.id, { kind: e.target.value })} style={inputStyle}>
-              {KIND_ORDER.map(k => <option key={k} value={k}>{kindSpec(k).label}</option>)}
-            </select>
-          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>Kind</span>
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+              {KIND_ORDER.map(k => {
+                const current = place.kinds?.length ? place.kinds : [place.kind]
+                const active = current.includes(k)
+                const spec = kindSpec(k)
+                return (
+                  <button key={k} type="button" className="btn press" style={{
+                    fontSize: '0.7rem', padding: '0.35rem 0.65rem',
+                    background: active ? 'color-mix(in srgb, var(--gold) 14%, transparent)' : 'transparent',
+                    color: active ? 'var(--gold)' : 'var(--muted)', border: '1px solid var(--border)',
+                  }}
+                    onClick={() => {
+                      const next = active
+                        ? (current.length > 1 ? current.filter(x => x !== k) : current)
+                        : [...current, k]
+                      updatePlace(place!.id, { kinds: next, kind: next[0] })
+                    }}
+                  >
+                    <span aria-hidden style={{ marginRight: '0.3rem' }}>{spec.icon}</span>{spec.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         )}
 
         {/* Tags */}

@@ -68,6 +68,14 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
       { key: 'fee', label: 'Fee', type: 'text' },
     ],
   },
+  gym: {
+    label: 'Gym', icon: '◪', color: '--emerald',
+    fields: [
+      { key: 'membership', label: 'Membership', type: 'text', placeholder: 'day pass, monthly...' },
+      { key: 'day_pass_cost', label: 'Day pass cost', type: 'text' },
+      { key: 'amenities', label: 'Amenities', type: 'text', placeholder: 'showers, sauna, classes...' },
+    ],
+  },
   park: {
     label: 'Park', icon: '♣', color: '--emerald',
     fields: [
@@ -134,6 +142,6 @@ export function kindSpec(kind: string): KindSpec {
 // Order used by the kind picker and the filter chips — most-used first,
 // 'place' last since it's the "none of these" option.
 export const KIND_ORDER = [
-  'place', 'restaurant', 'cafe', 'bar', 'date-idea', 'court', 'park', 'beach', 'trail',
+  'place', 'restaurant', 'cafe', 'bar', 'date-idea', 'court', 'gym', 'park', 'beach', 'trail',
   'hotel', 'shop', 'activity',
 ]
