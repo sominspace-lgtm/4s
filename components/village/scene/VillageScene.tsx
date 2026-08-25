@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, MemoryMarker, PersonMarker, MailboxShape, SignpostShape, BuntingShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -26,7 +26,7 @@ export const GROUND_Y = 372
 // tuft's position and height stable across renders — same "pure function of
 // an id" rule the rest of the village runs under, just with a literal index
 // standing in for a real entity id since these aren't tied to any data.
-const GRASS_TUFTS = Array.from({ length: 44 }, (_, i) => {
+const GRASS_TUFTS = Array.from({ length: 64 }, (_, i) => {
   const seed = `grass-${i}`
   const x = 20 + hashPos(seed) * 760
   const h = 4 + hashPos(seed + 'h') * 5
@@ -38,7 +38,7 @@ const GRASS_TUFTS = Array.from({ length: 44 }, (_, i) => {
 // 14 stones AND a distant treeline AND pollen motes, where Village had only
 // the grass. Stones sit a little further from the path line than the grass
 // does, low opacity, so they read as texture rather than as things.
-const STONES = Array.from({ length: 22 }, (_, i) => {
+const STONES = Array.from({ length: 32 }, (_, i) => {
   const seed = `stone-${i}`
   const x = 15 + hashPos(seed) * 770
   const r = 1.4 + hashPos(seed + 'r') * 2.2
@@ -72,7 +72,7 @@ const POLLEN = [
 // above) and a path wired to their literal position would tear the moment
 // someone rearranges one. This is scenery, not wiring: one gentle curve
 // through the ground band, fixed regardless of layout.
-const PATH_D = `M 60 ${GROUND_Y - 28} Q 220 ${GROUND_Y - 44} 380 ${GROUND_Y - 26} T 740 ${GROUND_Y - 34}`
+const PATH_D = `M 40 ${GROUND_Y - 24} Q 130 ${GROUND_Y - 40} 220 ${GROUND_Y - 30} T 400 ${GROUND_Y - 22} T 580 ${GROUND_Y - 32} T 760 ${GROUND_Y - 20}`
 
 // A pond, two benches, three flower beds — small fixed props scattered near
 // the path, same "pure atmosphere, deterministic position" rule as
@@ -82,11 +82,14 @@ const PROPS = {
   benches: [
     { x: 260, y: GROUND_Y - 6 },
     { x: 660, y: GROUND_Y + 4 },
+    { x: 130, y: GROUND_Y + 26 },
   ],
   flowerBeds: [
     { x: 90, y: GROUND_Y + 14, hue: 'var(--blush)' },
     { x: 340, y: GROUND_Y - 30, hue: 'var(--gold)' },
     { x: 570, y: GROUND_Y + 20, hue: 'var(--blush)' },
+    { x: 700, y: GROUND_Y - 8, hue: 'var(--gold)' },
+    { x: 200, y: GROUND_Y + 32, hue: 'var(--blush)' },
   ],
 }
 
@@ -115,7 +118,7 @@ export default function VillageScene({
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
   placesCount = 0, peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0,
+  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, people = [],
 }: {
   village: VillageState
   live: boolean
@@ -143,6 +146,11 @@ export default function VillageScene({
   moonLabel?: string | null
   /** Trips not done/cancelled — drives the Trips signpost, see useTrips(). */
   tripCount?: number
+  /** Per-person map markers (2026-08-25) — one dot per contact from
+   *  usePeople(), status pre-formatted by the caller (this component stays
+   *  hookless/dateless, see the file's own header comment) from
+   *  daysUntilBirthday/daysSinceContact. */
+  people?: { id: string; name: string; status: string | null }[]
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -209,6 +217,9 @@ export default function VillageScene({
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
   const [openPanel, setOpenPanel] = useState<Exclude<LandmarkId, 'archive'> | null>(null)
+  // Same hover-board idea as openPanel above, for the per-person markers
+  // (2026-08-25) — a separate id space since a person isn't a LandmarkId.
+  const [openPersonId, setOpenPersonId] = useState<string | null>(null)
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
@@ -497,6 +508,23 @@ export default function VillageScene({
           onClick={nav(area, () => goToHousehold('reference'))} />
       ))}
 
+      {/* Per-person markers (2026-08-25) — see PersonMarker/people prop
+          comments. Scattered on the opposite side of the path from the
+          memory map (a different hash seed + y band) so the two don't
+          collide, same "pure function of an id" determinism as everything
+          else scattered in the scene. */}
+      {people.map(p => (
+        <PersonMarker key={p.id}
+          x={40 + hashPos(p.id) * 720}
+          y={GROUND_Y + 44 + hashPos(p.id + 'y') * 30}
+          name={p.name}
+          onClick={() => {
+            if (arranging) return
+            if (locked) { onLockedNavigate?.(p.name); return }
+            setOpenPersonId(prev => (prev === p.id ? null : p.id))
+          }} />
+      ))}
+
       {/* Pollen motes — pure atmosphere, see POLLEN above. */}
       <g opacity={0.3}>
         {POLLEN.map((p, i) => (
@@ -727,6 +755,39 @@ export default function VillageScene({
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
+              </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Hover-board for the selected person marker — same shape as
+          openPanel's above, kept separate since a person isn't a
+          LandmarkId. */}
+      {openPersonId && (() => {
+        const person = people.find(p => p.id === openPersonId)
+        if (!person) return null
+        const x = 40 + hashPos(person.id) * 720
+        const y = GROUND_Y + 44 + hashPos(person.id + 'y') * 30
+        const lines = person.status ? [person.status] : ['Nothing to flag']
+        const width = 150
+        const height = 34 + lines.length * 13 + 22
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, x))
+        const top = Math.max(10, y - 30 - height)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenPersonId(null)} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
+              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{person.name}</text>
+              {lines.map((line, i) => (
+                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+              ))}
+              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { goToPersonal('people'); setOpenPersonId(null) }}
+                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
+                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
+                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open People →</text>
               </g>
             </g>
           </g>

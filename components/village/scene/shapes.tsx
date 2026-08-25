@@ -265,6 +265,26 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
   )
 }
 
+// One small marker per person (2026-08-25) — same deterministic-scatter
+// idea as MemoryMarker above, but for people rather than date-idea areas.
+// A dot + initial, not a figure: the People district already owns the
+// "who's in your life" illustration, this is just a footprint of theirs out
+// in the scene, with their actual name shown once clicked (see the
+// PersonCallout hover-board in VillageScene).
+export function PersonMarker({ x, y, name, onClick }: {
+  x: number; y: number; name: string; onClick?: () => void
+}) {
+  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  return (
+    <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      <title>{name}</title>
+      <circle r={11} fill="transparent" style={{ pointerEvents: 'all' }} />
+      <circle r={5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={1} opacity={0.95} />
+      <text y={2.2} textAnchor="middle" fontSize={5.5} fontWeight={600} fill="var(--gold)" fontFamily="var(--font-body)">{initial}</text>
+    </g>
+  )
+}
+
 // Styled callout for a selected plant/building (2026-08-21) — the native
 // SVG <title> tooltip on each shape still works (hover, no-JS, screen
 // readers), but it renders in the browser's own unstyled tooltip box, which

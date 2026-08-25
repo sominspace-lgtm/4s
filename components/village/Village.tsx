@@ -9,7 +9,7 @@ import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
-import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
+import { usePeople, daysUntilBirthday, daysSinceContact } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
@@ -70,6 +70,21 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     const upcoming = people.map(p => daysUntilBirthday(p.birthday)).filter((d): d is number => d != null)
     return upcoming.length ? Math.min(...upcoming) : null
   }, [people])
+  // One marker per person, with a real one-line status pre-formatted here
+  // (2026-08-25) — VillageScene stays hookless/dateless (see its own header
+  // comment), so the birthday/contact math happens up here, same as
+  // timeLabel/dateLabel just below. Birthday takes priority over a stale
+  // last-contact note when both are true.
+  const villagePeople = useMemo(() => people.map(p => {
+    const bday = daysUntilBirthday(p.birthday)
+    const sinceContact = daysSinceContact(p.last_contact)
+    const status = bday != null && bday <= 14
+      ? (bday === 0 ? 'Birthday today 🎉' : `Birthday in ${bday}d`)
+      : sinceContact != null && sinceContact >= 14
+        ? `Haven't talked in ${sinceContact}d`
+        : null
+    return { id: p.id, name: p.name, status }
+  }), [people])
   const { ideas } = useDateIdeas(spaces[0]?.id ?? null)
   const { trips } = useTrips()
   const tripCount = trips.filter(t => t.status !== 'done' && t.status !== 'cancelled').length
@@ -191,7 +206,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
           placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
           dateIdeaAreas={dateIdeaAreas} weather={weather}
-          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
+          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount}
+          people={villagePeople} />
 
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked

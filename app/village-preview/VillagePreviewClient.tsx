@@ -55,6 +55,14 @@ function slotsFor(v: VillageState) {
 
 const HOUR_FOR: Record<VillageState['timeOfDay'], number> = { dawn: 8, day: 13, dusk: 18.5, night: 22 }
 
+// Fake people markers, just for visually checking PersonMarker placement —
+// see VillageScene's `people` prop.
+const FAKE_PEOPLE = [
+  { id: 'pp1', name: 'Harry', status: 'Birthday in 3d' },
+  { id: 'pp2', name: 'Sylvia', status: null },
+  { id: 'pp3', name: 'Mom', status: "Haven't talked in 21d" },
+]
+
 export default function VillagePreviewClient() {
   const [theme, setTheme] = useState('bloom')
   const themeVars = THEMES[theme] ?? {}
@@ -91,7 +99,7 @@ export default function VillagePreviewClient() {
                 <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)' }}>
                   <VillageScene village={v} live palette={seasonPalette('summer', isLight)}
                     celestial={celestialOf(new Date(2026, 6, 15, 13))}
-                    plantSlots={plantSlots} buildingSlots={buildingSlots} />
+                    plantSlots={plantSlots} buildingSlots={buildingSlots} people={FAKE_PEOPLE} />
                 </div>
               </div>
             )
