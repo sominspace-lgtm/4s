@@ -83,3 +83,12 @@ export function consumeHouseholdTab(): HouseholdTab | null {
   pendingHouseholdTab = null
   return t
 }
+
+// Smart Home gets its own overlay/transition (2026-08-25), not a tab switch
+// — tapping Home in the Village should feel like the house opening up, with
+// the Village staying visible (dimmed, non-interactive) behind it, per the
+// "Village becomes background/context only" vision doc. DashboardClient
+// listens for this the same way it already does for app:open-archive.
+export function openSmartHome() {
+  window.dispatchEvent(new CustomEvent('app:open-smarthome'))
+}

@@ -198,7 +198,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           locked={locked} onLockedNavigate={onLockedNavigate}
           layout={layout} arranging={arranging}
           onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
-          placesCount={places.length} peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
+          placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
+          peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
           dateIdeaAreas={dateIdeaAreas} weather={weather}
           timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
 

@@ -6,7 +6,7 @@ import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
-import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
@@ -156,7 +156,7 @@ export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
-  placesCount = 0, peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
+  placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0,
 }: {
   village: VillageState
@@ -169,6 +169,9 @@ export default function VillageScene({
   changes?: VillageChanges
   /** Saved pins, for the Places district's count badge. */
   placesCount?: number
+  /** A few real place names for the Places hover-card (2026-08-25) — not
+   *  personal data, safe to show in shared mode too (see districtLocked). */
+  placeNames?: string[]
   /** Contacts, for the People district's count badge. */
   peopleCount?: number
   /** Days until the soonest upcoming birthday, if any — see usePeople's daysUntilBirthday. */
@@ -298,6 +301,14 @@ export default function VillageScene({
       lines: [
         `${v.plants.length} habit${v.plants.length === 1 ? '' : 's'}`,
         v.plants.length ? `${growingCount} growing · ${restingCount} resting` : 'Nothing planted yet',
+        // Real names, not just the count (2026-08-25) — "reveal depth
+        // progressively" per the vision doc. Free data: plantSlots already
+        // carries each plant's real name, no new prop needed. Safe to show
+        // here specifically because this panel only ever renders when the
+        // district ISN'T locked (see openOrToggle above) — a locked click
+        // never reaches this content at all, it goes straight to the PIN
+        // prompt instead.
+        ...(v.plants.length ? [plantSlots.slice(0, 3).map(s => s.plant.name).join(', ')] : []),
       ],
       actionLabel: 'Open Habits', go: () => goToPersonal('habits'),
     },
@@ -308,19 +319,28 @@ export default function VillageScene({
       // surface; Today stays reachable via the swipe-up sheet (shared mode)
       // or the Today tab (personal mode), just not through this tap.
       lines: ['Lights, temperature, and more'],
-      actionLabel: 'Open Smart Home', go: () => goToHousehold('smarthome'),
+      actionLabel: 'Open Smart Home', go: openSmartHome,
     },
     projects: {
       title: 'Projects',
       lines: [
         `${v.buildings.length} project${v.buildings.length === 1 ? '' : 's'}`,
         v.buildings.length ? `${standingCount} standing · ${underwayCount} underway` : 'Nothing underway yet',
+        // Same "real names, safe because it's locked-gated" reasoning as
+        // Growth Forest above — buildingSlots already carries each
+        // project's real title.
+        ...(v.buildings.length ? [buildingSlots.slice(0, 3).map(s => s.building.title).join(', ')] : []),
       ],
       actionLabel: 'Open Tasks', go: () => goToPersonal('tasks'),
     },
     places: {
       title: 'Places',
-      lines: [`${placesCount} saved place${placesCount === 1 ? '' : 's'}`],
+      lines: [
+        `${placesCount} saved place${placesCount === 1 ? '' : 's'}`,
+        // Places isn't personal/locked data, so a few real names here are
+        // fine even in shared mode — see districtLocked's own comment.
+        ...(placeNames.length ? [placeNames.slice(0, 3).join(', ')] : []),
+      ],
       actionLabel: 'Open Places', go: () => goToSection('places'),
     },
     people: {

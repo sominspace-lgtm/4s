@@ -24,6 +24,7 @@ import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
 import PersonalHub from '@/components/personal/PersonalHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
+import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
 import PlacesHub from '@/components/places/PlacesHub'
 import UnlockPanel from '@/components/ui/UnlockPanel'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
@@ -188,6 +189,18 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     function onOpenArchive() { setArchiveOpen(true) }
     window.addEventListener('app:open-archive', onOpenArchive)
     return () => window.removeEventListener('app:open-archive', onOpenArchive)
+  }, [])
+
+  // Smart Home overlay (2026-08-25) — same "navigate, then dispatch"
+  // cross-component pattern as Archive above; Village's Home tap calls
+  // openSmartHome() (lib/utils/navigate.ts) rather than switching tabs, so
+  // it can rise as a sheet over the still-visible Village instead of
+  // replacing it. See SmartHomeOverlay's own header comment.
+  const [smartHomeOpen, setSmartHomeOpen] = useState(false)
+  useEffect(() => {
+    function onOpenSmartHome() { setSmartHomeOpen(true) }
+    window.addEventListener('app:open-smarthome', onOpenSmartHome)
+    return () => window.removeEventListener('app:open-smarthome', onOpenSmartHome)
   }, [])
 
   // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
@@ -504,9 +517,23 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         <HomeBar
           groups={HOME_BAR_GROUPS}
           activeId={currentTab}
-          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+          onSelect={id => {
+            // Controls opens the Smart Home overlay (2026-08-25) rather than
+            // switching tabs — see openSmartHome()/SmartHomeOverlay. Nothing
+            // else about currentTab changes, so whatever was showing (the
+            // Village, most of the time) is still there underneath.
+            if (id === 'smarthome') { setSmartHomeOpen(true); return }
+            setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
         />
       )}
+      <SmartHomeOverlay
+        open={smartHomeOpen} onClose={() => setSmartHomeOpen(false)}
+        userId={userId} userEmail={email}
+        tabs={householdTabs} onChangeTabs={changeHouseholdTabs}
+        homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks}
+        sharedMode={sharedMode} onLockedNavigate={setUnlockReason}
+      />
     </ThemeProvider>
     </LangContext.Provider>
   )
