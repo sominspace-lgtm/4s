@@ -650,25 +650,6 @@ export default function VillageScene({
         setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
       })} />
 
-      {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
-          dots with the three actual, always-present characters, standing in
-          Home's yard. See VillagerShape/CatShape's own header comment for
-          why this is a deliberate exception to the district icons' "objects,
-          not figures" rule. A slow, staggered idle bob (village-bob, see
-          globals.css) is the one bit of "tiny people walking" life this
-          scene gets — full movement/pathing is out of scope for now. */}
-      <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
-          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
-      </g>
-      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
-          onClick={locked ? openFigureOrToggle('harry') : undefined} />
-      </g>
-      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
-      </g>
-
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
         <g key={building.id} opacity={back ? 0.55 : 1}>
@@ -691,6 +672,29 @@ export default function VillageScene({
           above. Falls back near the empty-state dashed square when there
           are no buildings yet. */}
       <FeatureIcon kind="building" x={(buildingSlots[0]?.x ?? 600) - 16} y={(buildingSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
+
+      {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
+          dots with the three actual, always-present characters, standing in
+          Home's yard. See VillagerShape/CatShape's own header comment for
+          why this is a deliberate exception to the district icons' "objects,
+          not figures" rule. A slow, staggered idle bob (village-bob, see
+          globals.css) is the one bit of "tiny people walking" life this
+          scene gets — full movement/pathing is out of scope for now.
+          Drawn AFTER plants/buildings (2026-08-25 fix, was right after the
+          Mailbox) — a scattered plant/building slot could otherwise land on
+          top of the cast's fixed spot and steal its clicks, since SVG paints
+          later elements over earlier ones ("can't click the figures"). */}
+      <g className="village-bob" style={{ animationDelay: '0s' }}>
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
+          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+      </g>
+      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
+          onClick={locked ? openFigureOrToggle('harry') : undefined} />
+      </g>
+      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
+        <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
+      </g>
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
           canopy is the continuum underneath, so the tree visibly thickens

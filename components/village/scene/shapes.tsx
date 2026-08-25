@@ -312,6 +312,13 @@ export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
+      {/* Invisible hit-padding (2026-08-25 fix) — the figure itself is only
+          ~12×21 SVG units, which becomes a genuinely hard-to-tap target once
+          scaled to a real screen ("can't click the figures"). Every other
+          clickable prop in the scene (Mailbox, memory markers, district
+          labels) has this same oversized transparent hit circle; this one
+          was missing it. */}
+      {onClick && <circle cx={0} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
       {/* Body — rounded, faceless, matching the flat object style used
           everywhere else in the scene. */}
