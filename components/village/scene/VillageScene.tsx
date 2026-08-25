@@ -297,6 +297,20 @@ export default function VillageScene({
     setOpenFigure(prev => (prev === id ? null : id))
   }
 
+  // Somi's own hover-card (2026-08-25) — same idea as the figures above,
+  // but pet care isn't personal data (it's household business, same as
+  // chores), so this is available in every mode, never PIN-gated. Opens
+  // straight into the real Household Routines system rather than a
+  // separate pet-specific data model — "Somi's Care" is one ordinary
+  // maintenance-kind Routine (household_routines, see useRoutines.ts) with
+  // real checklist items, the same mechanism every other recurring
+  // household task already uses.
+  const [somiOpen, setSomiOpen] = useState(false)
+  const openSomi = () => {
+    if (arranging) return
+    setSomiOpen(prev => !prev)
+  }
+
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
@@ -777,7 +791,7 @@ export default function VillageScene({
           onClick={locked ? openFigureOrToggle('harry') : undefined} />
       </g>
       <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        <CatShape x={452} y={GROUND_Y + 20} name="Somi" />
+        <CatShape x={452} y={GROUND_Y + 20} name="Somi" onClick={openSomi} />
       </g>
 
       {/* People identity (2026-08-25) — a second bench angled toward the
@@ -986,6 +1000,36 @@ export default function VillageScene({
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Unlock →</text>
+              </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Somi's hover-card — see openSomi's own comment. Never PIN-gated,
+          available in every mode. */}
+      {somiOpen && (() => {
+        const somiX = 452
+        const somiY = GROUND_Y + 20
+        const lines = ['Nails, bath, litter — her care routine']
+        const width = 150
+        const height = 34 + lines.length * 13 + 22
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiX))
+        const top = Math.max(10, somiY - 30 - height)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setSomiOpen(false)} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
+              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">Somi</text>
+              {lines.map((line, i) => (
+                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+              ))}
+              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { goToHousehold('routines'); setSomiOpen(false) }}
+                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
+                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
+                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open Care →</text>
               </g>
             </g>
           </g>

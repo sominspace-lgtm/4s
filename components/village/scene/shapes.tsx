@@ -344,8 +344,13 @@ export function CatShape({ x, y, name = 'Somi', onClick }: {
   x: number; y: number; name?: string; onClick?: () => void
 }) {
   return (
-    <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
+    <g transform={`translate(${x} ${y})`} onClick={onClick}
+      className={onClick ? 'village-entity' : undefined}
+      style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
+      {/* Same oversized invisible hit circle as VillagerShape — see its own
+          2026-08-25 fix comment ("can't click the figures"). */}
+      {onClick && <circle cx={0} cy={-6} r={14} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
       {/* Tail, curled behind the body — a point, like the ears */}
       <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke={SOMI_POINT} strokeWidth={2} strokeLinecap="round" />
