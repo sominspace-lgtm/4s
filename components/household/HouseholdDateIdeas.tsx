@@ -2,37 +2,8 @@
 
 import { useState } from 'react'
 import { useDateIdeas, type DateIdea, type DateIdeaStatus, type PriceRange } from '@/lib/hooks/useDateIdeas'
-import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
-import { usePlaceFilters, type PlaceFilter } from '@/lib/hooks/usePlaceFilters'
-import { useTrips, type Trip } from '@/lib/hooks/useTrips'
-import { createClient } from '@/lib/supabase/client'
-import { haversineKm } from '@/lib/utils/geo'
+import { usePlaces } from '@/lib/hooks/usePlaces'
 import type { Energy } from '@/lib/hooks/useWorkItems'
-
-// Which existing pin should be the center of a new "group on map" filter,
-// and how wide a radius needs to be to cover all of an area's other pins —
-// picks the pin closest to the group's centroid as center (keeps the radius
-// as small as possible) rather than always the first pin added.
-function computeAreaFilter(pins: { id: string; lat: number; lng: number }[]): { centerId: string; radiusKm: number } | null {
-  if (pins.length === 0) return null
-  if (pins.length === 1) return { centerId: pins[0].id, radiusKm: 2 }
-  const centroid = {
-    lat: pins.reduce((s, p) => s + p.lat, 0) / pins.length,
-    lng: pins.reduce((s, p) => s + p.lng, 0) / pins.length,
-  }
-  let center = pins[0]
-  let best = Infinity
-  for (const p of pins) {
-    const d = haversineKm(p, centroid)
-    if (d < best) { best = d; center = p }
-  }
-  let radius = 0
-  for (const p of pins) {
-    const d = haversineKm(center, p)
-    if (d > radius) radius = d
-  }
-  return { centerId: center.id, radiusKm: Math.max(0.5, Math.round((radius + 0.5) * 10) / 10) }
-}
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -218,78 +189,6 @@ function CardList({ ideas, ...rest }: GroupProps) {
   )
 }
 
-// Grouped by area — "Monterey Day", "SLO", "Santa Cruz", whatever trip or
-// occasion an idea belongs to — collapsible per area, same pattern
-// Watchlist uses for games/shows. This is the browse-a-destination view,
-// separate from the day-to-day Ideas/Planned working list.
-//
-// "Group on map" (2026-08-24) — an area is a real place cluster, and Places
-// now supports saved radius filters (see usePlaceFilters). Rather than
-// asking you to pick a center pin and guess a radius by hand, this computes
-// one automatically from whichever of the area's ideas already have a pin,
-// then saves it under the same area name so it shows up as a filter chip in
-// Places — "later show together on the map" without a second data entry.
-function AreaGroup({ area, ideas, savedPlaceFilters, onGroupOnMap, trips, onMoveToTrip, ...rest }: GroupProps & {
-  area: string
-  savedPlaceFilters: PlaceFilter[]
-  onGroupOnMap: (area: string, pins: Place[]) => void
-  trips: Trip[]
-  onMoveToTrip: (area: string, pins: Place[]) => Promise<void>
-}) {
-  const pins = ideas
-    .map(i => (i.place_id ? rest.places.find(p => p.id === i.place_id) : null))
-    .filter((p): p is Place => !!p && p.lat != null && p.lng != null)
-  // "Move to Trip" only needs a real pin, not lat/lng specifically — a
-  // trip shortlist is just a set of place_ids (2026-08-25).
-  const locatedPins = ideas
-    .map(i => (i.place_id ? rest.places.find(p => p.id === i.place_id) : null))
-    .filter((p): p is Place => !!p)
-  const alreadyGrouped = savedPlaceFilters.some(f => f.label === area)
-  const matchingTrip = trips.find(t => t.title.trim().toLowerCase() === area.trim().toLowerCase())
-  const [moving, setMoving] = useState(false)
-  const [moved, setMoved] = useState(false)
-
-  return (
-    <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-      <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{area}</span>
-        <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{ideas.length}</span>
-      </summary>
-      <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {pins.length > 0 && (
-          alreadyGrouped ? (
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65 }}>✓ Grouped on the Places map</span>
-          ) : (
-            <button onClick={() => onGroupOnMap(area, pins)} className="press"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.75, fontSize: '0.62rem', alignSelf: 'flex-start' }}>
-              📍 Group on map ({pins.length} pin{pins.length === 1 ? '' : 's'})
-            </button>
-          )
-        )}
-        {/* Move to Trip (2026-08-25) — "move Santa Cruz day to Trips" means
-            a Trip named after the area, shortlisted with the area's located
-            ideas. Purely additive: nothing is removed from Date Ideas, and
-            a second click just re-upserts (harmless) rather than
-            duplicating. */}
-        {locatedPins.length > 0 && (
-          (matchingTrip || moved) ? (
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65 }}>✓ On the {matchingTrip?.title ?? area} trip</span>
-          ) : (
-            <button
-              disabled={moving}
-              onClick={async () => { setMoving(true); await onMoveToTrip(area, locatedPins); setMoving(false); setMoved(true) }}
-              className="press"
-              style={{ background: 'none', border: 'none', cursor: moving ? 'default' : 'pointer', color: 'var(--gold)', opacity: moving ? 0.5 : 0.75, fontSize: '0.62rem', alignSelf: 'flex-start' }}>
-              ✈ {moving ? 'Moving…' : `Move to Trip (${locatedPins.length} pin${locatedPins.length === 1 ? '' : 's'})`}
-            </button>
-          )
-        )}
-        <CardList ideas={ideas} {...rest} />
-      </div>
-    </details>
-  )
-}
-
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick} className="press" style={{
@@ -304,36 +203,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null }) {
   const { ideas, loading, addIdea, update, removeIdea } = useDateIdeas(spaceId)
   const { places, addPlace } = usePlaces()
-  const { filters: savedPlaceFilters, addFilter: addPlaceFilter } = usePlaceFilters(spaceId)
-  const { trips, addTrip } = useTrips()
   const [addTagDraft, setAddTagDraft] = useState<Record<string, string>>({})
-
-  function groupOnMap(area: string, pins: Place[]) {
-    const calc = computeAreaFilter(pins.map(p => ({ id: p.id, lat: p.lat as number, lng: p.lng as number })))
-    if (calc) addPlaceFilter(area, calc.centerId, calc.radiusKm)
-  }
-
-  // "Move Santa Cruz day to Trips" (2026-08-25) — a Trip named after the
-  // area (reusing one if it already exists), shortlisted with the area's
-  // located ideas. Uses the raw trip_places upsert directly rather than
-  // useTripBundle(tripId) — that hook is built for one open trip's live
-  // view, and this is a one-shot bulk action across a set of pins, not a
-  // subscription. Same upsert-on-conflict useTripBundle's own
-  // addToShortlist uses, so re-running this is always harmless.
-  async function moveAreaToTrip(area: string, pins: Place[]) {
-    let trip = trips.find(t => t.title.trim().toLowerCase() === area.trim().toLowerCase())
-    if (!trip) {
-      const { trip: created, error } = await addTrip({ title: area, shared: !!spaceId }, spaceId)
-      if (error || !created) { console.error('Failed to create trip:', error); return }
-      trip = created
-    }
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { error } = await supabase.from('trip_places')
-      .upsert(pins.map(p => ({ user_id: user.id, trip_id: trip!.id, place_id: p.id })), { onConflict: 'trip_id,place_id' })
-    if (error) console.error('Failed to add to trip shortlist:', error)
-  }
 
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
@@ -343,14 +213,13 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
   const [address, setAddress] = useState('')
   const [existingPlaceId, setExistingPlaceId] = useState('')
   const [notes, setNotes] = useState('')
-  const [tab, setTab] = useState<'active' | 'area' | 'done'>('active')
+  const [tab, setTab] = useState<'active' | 'done'>('active')
 
-  // Three views instead of one area-grouped list nested by status
-  // (2026-08-24, easier-to-use pass): "Ideas & Planned" is the day-to-day
-  // working list (flat — area grouping just added a click to get to the
-  // thing you're deciding between tonight), "By Area" is the browse-a-
-  // destination view (SLO, Santa Cruz, whatever trip an idea belongs to),
-  // and "Done" is the history.
+  // Two views: "Ideas & Planned" is the day-to-day working list, "Done" is
+  // the history. The former "By Area" browse tab was removed 2026-08-25 —
+  // every area's ideas got moved onto a real Trip's itinerary (see
+  // TripDetail), so browsing by area here would just be a second, stale
+  // copy of what Trips now owns.
   const notDone = ideas.filter(i => i.status !== 'done')
   const planned = notDone.filter(i => i.status === 'planned')
   const notPlanned = notDone.filter(i => i.status === 'idea')
@@ -406,7 +275,6 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
       {ideas.length > 0 && (
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
           <TabButton active={tab === 'active'} onClick={() => setTab('active')}>Ideas &amp; Planned ({notDone.length})</TabButton>
-          <TabButton active={tab === 'area'} onClick={() => setTab('area')}>By Area ({areaNames.length})</TabButton>
           <TabButton active={tab === 'done'} onClick={() => setTab('done')}>Done ({doneIdeas.length})</TabButton>
         </div>
       )}
@@ -428,20 +296,6 @@ export default function HouseholdDateIdeas({ spaceId }: { spaceId: string | null
               <CardList ideas={notPlanned} {...cardProps} />
             </div>
           )}
-        </div>
-      )}
-
-      {tab === 'area' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {areaNames.length === 0 && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-              No areas yet — give an idea an area below, like &quot;SLO&quot; or &quot;Santa Cruz&quot;, to browse it here.
-            </div>
-          )}
-          {areaNames.map(a => (
-            <AreaGroup key={a} area={a} ideas={ideas.filter(i => i.area === a)} savedPlaceFilters={savedPlaceFilters} onGroupOnMap={groupOnMap}
-              trips={trips} onMoveToTrip={moveAreaToTrip} {...cardProps} />
-          ))}
         </div>
       )}
 
