@@ -15,6 +15,7 @@ import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
 import BottomNav from '@/components/ui/BottomNav'
 import SectionNav from '@/components/ui/SectionNav'
+import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import JourneyBar from '@/components/ui/JourneyBar'
@@ -114,6 +115,21 @@ const SECTION_GROUPS: Record<string, string> = {
 // one click behind a single "Household" entry (2026-08-25). Non-shared mode
 // is untouched — Household keeps its own internal tab bar exactly as today.
 const HOUSEHOLD_SHARED_TABS = ['home', 'calendar', 'routines', 'smarthome', 'reference'] as const
+
+// The Home Bar's four contexts (2026-08-25) — regroups the seven flat
+// shared-mode tabs above into the wall-mounted-iPad vision's 🌳/🏠/🌱/💡
+// structure. Tasks/goals/projects stay out of "Life" here on purpose: those
+// are personal data gated behind a PIN even in shared mode (see
+// VillageScene's districtLocked), so Life is scoped to what's actually safe
+// and useful to show on a shared device — Routines and Places (the vision's
+// own "shared plans, trips" framing for Life). Real smart-home control isn't
+// built yet (see useSmartHome.ts) so Controls still opens the manual list.
+const HOME_BAR_GROUPS: HomeBarGroup[] = [
+  { id: 'village',  icon: '🌳', label: 'Village',  members: ['village'] },
+  { id: 'home',     icon: '🏠', label: 'Home',     members: ['home', 'calendar', 'reference'] },
+  { id: 'life',     icon: '🌱', label: 'Life',     members: ['routines', 'places'] },
+  { id: 'controls', icon: '💡', label: 'Controls', members: ['smarthome'] },
+]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
@@ -421,7 +437,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
-      {!ambient && (
+      {/* Shared/kiosk mode gets the Home Bar (both a top strip and, via its
+          own sticky bottom:0, effectively the bottom nav too — see below,
+          where BottomNav is skipped in sharedMode to avoid a redundant
+          second bar). Personal mode is untouched: SectionNav up top,
+          BottomNav down below, exactly as before. */}
+      {!ambient && !sharedMode && (
         <SectionNav
           sections={navSections}
           activeId={currentTab}
@@ -470,12 +491,19 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           </div>
         )}
       </main>
-      {!ambient && <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />}
-      {!ambient && <BottomNav
+      {!ambient && !sharedMode && <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />}
+      {!ambient && !sharedMode && <BottomNav
         sections={navSections}
         activeId={currentTab}
         onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
       />}
+      {!ambient && sharedMode && (
+        <HomeBar
+          groups={HOME_BAR_GROUPS}
+          activeId={currentTab}
+          onSelect={id => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+        />
+      )}
     </ThemeProvider>
     </LangContext.Provider>
   )
