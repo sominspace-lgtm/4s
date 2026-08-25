@@ -78,8 +78,20 @@ const DEPRECATED_SECTION_IDS = new Set([
   'relationship', 'shared',                          // → people (a Personal sub-tab)
   'habits', 'domains', 'council', 'growth',          // → Personal sub-tabs
   'people', 'money',                                 // → Personal sub-tabs
-  'calendar',                                        // → a panel inside Today
   'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
+  // 'household' folded into five real top-level sections (2026-08-25) —
+  // home/calendar/routines/reference (smarthome deliberately excluded, see
+  // DEFAULT_SECTIONS' own comment). mergeLayout appends the missing new
+  // ones the same way it always has, so this is a one-line migration, not a
+  // special case.
+  'household',
+  // NOTE: 'calendar' was deprecated here 2026-08-20 through 2026-08-25 (→ a
+  // panel inside Today) and reused 2026-08-25 for Household's own Calendar
+  // sub-tab promoted to top level — a different meaning, not a collision:
+  // any layout saved during that window had a STANDALONE calendar tab that
+  // no longer exists, gets stripped once by this same set (the id was still
+  // deprecated when they last saved), and mergeLayout's own "append missing
+  // defaults" step brings the NEW 'calendar' meaning back on next load.
   // NOTE: 'places' was briefly deprecated here (2026-08-20) when it folded
   // into Household, and came back out to top level a day later. Anyone whose
   // layout was saved during that window had it stripped; mergeLayout appends
@@ -101,22 +113,17 @@ const SECTION_GROUPS: Record<string, string> = {
   brief:     'now',
   village:   'your world',
   personal:  'mine',
-  household: 'ours',
   places:    'ours',
-  // Household's own sub-tabs, promoted to top-level nav in shared mode only
-  // (2026-08-25) — see the navSections/HOUSEHOLD_SHARED_TABS block below.
+  // Household's own sub-tabs — real top-level sections for both personal
+  // and shared use as of 2026-08-25 (used to nest one click behind a single
+  // "Household" tab; still grouped visually in shared mode's Home Bar, see
+  // HOME_BAR_GROUPS below, but the underlying sections are flat everywhere
+  // now, not just in shared mode).
   home:      'ours',
   calendar:  'ours',
   routines:  'ours',
-  smarthome: 'ours',
   reference: 'ours',
 }
-
-// Shared/kiosk mode has no Today or Personal tab, which leaves room to show
-// Household's own sub-tabs directly in the top nav instead of nesting them
-// one click behind a single "Household" entry (2026-08-25). Non-shared mode
-// is untouched — Household keeps its own internal tab bar exactly as today.
-const HOUSEHOLD_SHARED_TABS = ['home', 'calendar', 'routines', 'smarthome', 'reference'] as const
 
 // The Home Bar's contexts (2026-08-25) — regroups the seven flat
 // shared-mode tabs above into the wall-mounted-iPad vision's 🌳/🏠/🌱/💡
@@ -327,31 +334,33 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // isn't open instead of only when it happens to be. Keeping both would
   // double-notify anyone who has the tab open when the cron fires.
 
+  // Shared-mode section ids — everything Household used to bundle, plus
+  // Village and Places. Now that Household's sub-tabs are real top-level
+  // ids (2026-08-25), this is a plain id list, not a flatMap over one
+  // wrapping 'household' entry.
+  const SHARED_MODE_IDS = new Set(['home', 'calendar', 'routines', 'reference', 'village', 'places'])
+
   const visible = sections.filter(s =>
     !s.hidden
     && prog.isUnlocked(s.id)
-    // Shared mode sees Household, the Village and Places. The Village is
-    // drawn FROM personal data (plants are habits, buildings are tasks),
-    // which is deliberate here: it's a shared household device, so seeing
-    // each other's shape-of-the-week is the point. Going from that picture
-    // into the actual data still requires a PIN — see UnlockPanel and the
-    // `locked` prop on Village. Places is different: it's a real working
-    // surface, not a picture, so instead of locking it we scope it to
-    // shared-only content (see PlacesHub's sharedOnly).
-    && (!sharedMode || s.id === 'household' || s.id === 'village' || s.id === 'places')
+    // Shared mode sees Household's sections, the Village and Places. The
+    // Village is drawn FROM personal data (plants are habits, buildings are
+    // tasks), which is deliberate here: it's a shared household device, so
+    // seeing each other's shape-of-the-week is the point. Going from that
+    // picture into the actual data still requires a PIN — see UnlockPanel
+    // and the `locked` prop on Village. Places is different: it's a real
+    // working surface, not a picture, so instead of locking it we scope it
+    // to shared-only content (see PlacesHub's sharedOnly).
+    && (!sharedMode || SHARED_MODE_IDS.has(s.id))
   )
 
-  // The nav bar's own section list — same as `visible`, except in shared
-  // mode the single `household` entry is expanded into its five sub-tabs so
-  // they sit at the top level alongside Village and Places (2026-08-25).
-  // `sections`/`visible` (the customizable layout) stay untouched; this is
-  // purely what SectionNav/BottomNav render and what `currentTab` resolves
-  // against.
-  const navSections = sharedMode
-    ? visible.flatMap(s => s.id === 'household'
-        ? HOUSEHOLD_SHARED_TABS.map(id => ({ ...s, id, label: sectionLabel(id).label, hidden: false }))
-        : [s])
-    : visible
+  // Sections are flat now for both personal and shared use (2026-08-25) —
+  // the old shared-mode-only flatMap over a single 'household' entry is
+  // gone because there's no wrapping entry left to expand. `navSections` is
+  // kept as its own name (rather than using `visible` directly at the call
+  // sites below) so a future difference between "the customizable layout"
+  // and "what the nav bar renders" has an obvious place to live again.
+  const navSections = visible
 
   // Tab mode: only the active section renders. If the active tab was hidden
   // (customize / simple mode), fall back to the first visible one.
@@ -382,11 +391,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang),
-      personal: t('Personal', lang), household: t('Household', lang),
-      places: t('Places', lang),
-      // Household's sub-tabs, shown at top level in shared mode only.
+      personal: t('Personal', lang), places: t('Places', lang),
+      // Household's own sub-tabs — real top-level sections now, for both
+      // personal and shared use (2026-08-25). Smart Home isn't here: it's
+      // overlay-only, never a tab (see SmartHomeOverlay).
       home: t('Home', lang), calendar: t('Calendar', lang), routines: t('Routines', lang),
-      smarthome: t('Smart Home', lang), reference: t('Reference', lang),
+      reference: t('Reference', lang),
     }
 
     return { label: LABELS[id] ?? id, group }
@@ -410,13 +420,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
-        case 'household': return <HouseholdHub key="household" userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} />
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
-        // Household's sub-tabs, promoted to the top level in shared mode
-        // (2026-08-25) — same HouseholdHub instance, just told which of its
-        // own tabs to show via forcedTab instead of letting it pick from its
-        // own internal (hidden, in this mode) tab bar.
-        case 'home': case 'calendar': case 'routines': case 'smarthome': case 'reference':
+        // Household's own sub-tabs — real top-level sections now, for both
+        // personal and shared use (2026-08-25, was a single wrapping
+        // 'household' tab with its own internal switcher). Same HouseholdHub
+        // instance every time, just told which of its own tabs to show via
+        // forcedTab. Smart Home is deliberately not one of these cases — it
+        // only ever renders inside SmartHomeOverlay now.
+        case 'home': case 'calendar': case 'routines': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }

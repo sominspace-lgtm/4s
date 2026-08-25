@@ -48,10 +48,18 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'personal', label: 'Personal', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
-  // Household — chores, meals and the shared calendar, for the people you
-  // live with. Briefly labeled "Shared" (2026-08-20); reverted because
-  // "Household" is what the space itself is called everywhere else.
-  { id: 'household', label: 'Household', hidden: false },
+  // Household's own sub-tabs, promoted to real top-level sections
+  // (2026-08-25) — used to be nested one click behind a single "Household"
+  // wrapping tab (still how shared mode's Home Bar groups them visually,
+  // see DashboardClient's HOME_BAR_GROUPS, but the underlying sections are
+  // flat now for both personal and shared use, not just shared). Smart Home
+  // deliberately isn't here — it's overlay-only (SmartHomeOverlay), reached
+  // by tapping Home in the Village or the Home Bar's Controls icon, never a
+  // tab you switch into.
+  { id: 'home',     label: 'Home',     hidden: false },
+  { id: 'calendar', label: 'Calendar', hidden: false },
+  { id: 'routines', label: 'Routines', hidden: false },
+  { id: 'reference', label: 'Reference', hidden: false },
   // Places — saved pins and trips, on a themed map.
   { id: 'places',   label: 'Places',   hidden: false },
 ]

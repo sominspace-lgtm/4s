@@ -8,8 +8,8 @@ interface Section { id: string; label?: string }
 const NAV_LABELS: Record<string, string> = {
   brief: 'Today', village: 'Village',
   personal: 'Personal', household: 'Household', places: 'Places',
-  // Household's own sub-tabs, shown at top level in shared mode only
-  // (2026-08-25) — see DashboardClient's navSections/HOUSEHOLD_SHARED_TABS.
+  // Household's own sub-tabs — real top-level sections now, for both
+  // personal and shared use (2026-08-25).
   home: 'Home', calendar: 'Calendar', routines: 'Routines',
   smarthome: 'Smart Home', reference: 'Reference',
 }

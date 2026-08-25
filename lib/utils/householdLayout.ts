@@ -1,7 +1,9 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-// Five tabs (2026-08-25). Places went back to top level; Setup moved into
-// Settings, where account-level configuration already lives.
+// Four switchable tabs plus Smart Home, which is overlay-only and never
+// appears in DEFAULT_HOUSEHOLD_TABS below (2026-08-25 — see its own
+// comment). Places went back to top level; Setup moved into Settings, where
+// account-level configuration already lives.
 //
 // Move-In removed again (2026-08-25) — its two non-duplicate pieces (the
 // spreadsheet link + address overview, and Near Our New Home) moved into a
@@ -21,12 +23,13 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // scattered: Chores and Routines were Home blocks, Maintenance was
   // already in Reference. One place for all of it instead of three.
   { id: 'routines',  label: 'Routines' },
-  // Smart Home (2026-08-25) — a manual device/status list. Deliberately not
-  // a real automation integration (no Home Assistant/IoT API anywhere in
-  // this app) — just a place to note what's connected and its state, same
-  // "simple checklist" shape as House Rules.
-  { id: 'smarthome', label: 'Smart Home' },
   { id: 'reference', label: 'Reference' },
+  // Smart Home dropped out of this list (2026-08-25) — it's overlay-only
+  // now (SmartHomeOverlay, reached by tapping Home in the Village or the
+  // Home Bar's Controls icon), never a directly-switchable tab. 'smarthome'
+  // stays a valid HouseholdTabId below since SmartHomeOverlay still passes
+  // it as a forcedTab — HouseholdHub's internal tab-switcher (which reads
+  // this list) is what no longer offers it as an option.
 ].map(s => ({ ...s, hidden: false }))
 
 export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): SectionConfig[] {

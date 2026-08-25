@@ -51,16 +51,20 @@ export interface UnlockStage {
 // Places used to need its own entry here (no milestone produces a pin other
 // than opening the tab and adding one, so any gate on it would be circular)
 // but it folded into Household as a sub-tab (2026-08-20), so Household's own
-// entry already covers it.
-export const NEVER_GATED = new Set(['village', 'household'])
+// entry already covers it. 'household' itself folded into four real
+// top-level sections (2026-08-25) — see DashboardClient's DEFAULT_SECTIONS —
+// so its NEVER_GATED entry became four.
+export const NEVER_GATED = new Set(['village', 'home', 'calendar', 'routines', 'reference'])
 
 /** Sections that are open from the first login and never counted as something
- *  "to unlock": Today, Village, Household — down from 5 (2026-08-20) now that
- *  Tasks and Places are Personal/Household sub-tabs rather than top-level
- *  sections of their own. Kept as a named constant because it's used twice
- *  below to size the journey bar — when it was a bare number in both places,
+ *  "to unlock": Today, Village, Home, Calendar, Routines, Reference — 6, up
+ *  from 3 (2026-08-25) when Household split from one always-open section
+ *  into four (see NEVER_GATED above and DashboardClient's DEFAULT_SECTIONS)
+ *  — none of those four became a new milestone to unlock, there are just
+ *  more of them now. Kept as a named constant because it's used twice below
+ *  to size the journey bar — when it was a bare number in both places,
  *  adding a section silently made the bar report the wrong total. */
-const ALWAYS_OPEN_COUNT = 3
+const ALWAYS_OPEN_COUNT = 6
 
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
