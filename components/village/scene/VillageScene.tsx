@@ -202,6 +202,61 @@ export default function VillageScene({
     else go()
   }
 
+  // A small hover-board instead of leaving straight away (2026-08-25) —
+  // same idea as Archive already opening its own panel rather than
+  // navigating off the Village on the first click. Forest/Home/Projects/
+  // Places/People now open a compact summary card near the icon; a second
+  // click on its own button is what actually leaves the Village. Archive
+  // is untouched — it already IS this pattern, via the real ArchivePanel.
+  const [openPanel, setOpenPanel] = useState<Exclude<LandmarkId, 'archive'> | null>(null)
+  const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
+    if (arranging) return
+    recordVisit(id)
+    if (locked) { onLockedNavigate?.(label); return }
+    setOpenPanel(prev => (prev === id ? null : id))
+  }
+
+  const growingCount = v.plants.filter(p => !p.dormant).length
+  const restingCount = v.plants.length - growingCount
+  const standingCount = v.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length
+  const underwayCount = v.buildings.length - standingCount
+  const panelContent: Record<Exclude<LandmarkId, 'archive'>, { title: string; lines: string[]; actionLabel: string; go: () => void }> = {
+    forest: {
+      title: 'Growth Forest',
+      lines: [
+        `${v.plants.length} habit${v.plants.length === 1 ? '' : 's'}`,
+        v.plants.length ? `${growingCount} growing · ${restingCount} resting` : 'Nothing planted yet',
+      ],
+      actionLabel: 'Open Habits', go: () => goToPersonal('habits'),
+    },
+    home: {
+      title: 'Home',
+      lines: ["Today's Brief"],
+      actionLabel: 'Open Today', go: () => goToSection('brief'),
+    },
+    projects: {
+      title: 'Projects',
+      lines: [
+        `${v.buildings.length} project${v.buildings.length === 1 ? '' : 's'}`,
+        v.buildings.length ? `${standingCount} standing · ${underwayCount} underway` : 'Nothing underway yet',
+      ],
+      actionLabel: 'Open Tasks', go: () => goToPersonal('tasks'),
+    },
+    places: {
+      title: 'Places',
+      lines: [`${placesCount} saved place${placesCount === 1 ? '' : 's'}`],
+      actionLabel: 'Open Places', go: () => goToSection('places'),
+    },
+    people: {
+      title: 'People',
+      lines: [
+        `${peopleCount} close`,
+        ...(soonestBirthdayDays != null ? [soonestBirthdayDays === 0 ? 'Birthday today 🎉' : `Birthday in ${soonestBirthdayDays}d`] : []),
+      ],
+      actionLabel: 'Open People', go: () => goToPersonal('people'),
+    },
+  }
+
   const svgRef = useRef<SVGSVGElement>(null)
   const [draggingId, setDraggingId] = useState<LandmarkId | null>(null)
   const pos = (id: LandmarkId) => layout[id] ?? DEFAULT_LANDMARK_POS[id]
@@ -613,12 +668,12 @@ export default function VillageScene({
           fill="var(--gold)" opacity={0.1} pointerEvents="none" />
       )}
 
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={navLandmark('forest', 'Growth Forest', () => goToPersonal('habits'))}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')}
         count={`${v.plants.length} growing`}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={navLandmark('home', 'Home', () => goToSection('brief'))} count="today"
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today"
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={navLandmark('projects', 'Projects', () => goToPersonal('tasks'))}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')}
         count={`${v.buildings.length} standing`}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
       <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
@@ -629,10 +684,10 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={navLandmark('places', 'Places', () => goToSection('places'))}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')}
         count={`${placesCount} saved`}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={navLandmark('people', 'People', () => goToPersonal('people'))}
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${soonestBirthdayDays}d`) : `${peopleCount} close`}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
@@ -646,6 +701,37 @@ export default function VillageScene({
         <SignpostShape x={770} y={GROUND_Y + 30} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
           onClick={nav('Trips', () => goToSection('places'))} />
       )}
+
+      {/* The hover-board itself — see openOrToggle above. A transparent
+          full-canvas rect behind the card closes it on any outside click;
+          the card stops that click from reaching the rect so tapping
+          inside never dismisses it. */}
+      {openPanel && (() => {
+        const p = pos(openPanel)
+        const info = panelContent[openPanel]
+        const width = 150
+        const height = 34 + info.lines.length * 13 + 22
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
+        const top = Math.max(10, p.y - 40 - height)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
+              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{info.title}</text>
+              {info.lines.map((line, i) => (
+                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+              ))}
+              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { info.go(); setOpenPanel(null) }}
+                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
+                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
+                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
+              </g>
+            </g>
+          </g>
+        )
+      })()}
 
       {/* Styled callout for whichever plant/building is selected — see the
           selection state and locked-mode guard set up above. */}
