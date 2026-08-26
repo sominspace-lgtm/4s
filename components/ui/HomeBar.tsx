@@ -17,7 +17,7 @@ export interface HomeBarGroup {
   icon: IconName
   label: string
   /** The real tab ids this context covers — DashboardClient's existing
-   *  section ids (brief/personal/village/home/calendar/routines/smarthome/
+   *  section ids (brief/personal/village/home/calendar/smarthome/
    *  reference/places). members[0] is where selecting the group (without
    *  already being inside it) lands. */
   members: string[]
@@ -32,7 +32,7 @@ export interface HomeBarGroup {
 
 const MEMBER_LABELS: Record<string, string> = {
   brief: 'Today', personal: 'Personal',
-  village: 'Village', home: 'Home', calendar: 'Calendar', routines: 'Routines',
+  village: 'Village', home: 'Home', calendar: 'Calendar',
   smarthome: 'Controls', reference: 'Reference', places: 'Places',
 }
 

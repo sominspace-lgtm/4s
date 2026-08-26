@@ -667,13 +667,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} spaceId={spaceId} />
       )}
 
-      {/* Routines tab (2026-08-22) — Chores, Routines, and Maintenance
-          together: all three are "the cleaning and upkeep stuff", just
+      {/* Chores, Routines, and Maintenance (2026-08-22, folded into
+          Reference 2026-08-25 when the standalone Routines tab was
+          removed) — all three are "the cleaning and upkeep stuff", just
           different granularities (a single recurring item, a named group of
-          steps, a long-cadence one-off). Previously scattered: Chores and
-          Routines were Home blocks, Maintenance was already in Reference. */}
-      {tab === 'routines' && renderChores()}
-      {tab === 'routines' && renderRoutines()}
+          steps, a long-cadence one-off). */}
+      {tab === 'reference' && renderChores()}
+      {tab === 'reference' && renderRoutines()}
 
       {/* Smart Home (2026-08-25) — a manual device/status list, see
           HouseholdSmartHome's own header comment for why this isn't a real
@@ -840,10 +840,10 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 
       {/* Maintenance (2026-08-13) — long-cadence items ("HVAC filter every 3
           months") that would get lost in a weekly chore/routine list. Same
-          household_routines table as Routines, kind='maintenance'. Moved
-          from Reference into Routines (2026-08-22), alongside Chores and
-          Routines above. */}
-      {tab === 'routines' && (() => {
+          household_routines table as Routines, kind='maintenance'. Lived in
+          Routines alongside Chores/Routines from 2026-08-22 until that tab
+          was folded into Reference (2026-08-25). */}
+      {tab === 'reference' && (() => {
         const maint = [...routinesHook.routines.filter(r => r.kind === 'maintenance')].sort((a, b) => routineDue(a) - routineDue(b))
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>

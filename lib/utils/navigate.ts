@@ -65,7 +65,7 @@ export function consumePersonalTab(): PersonalTab | null {
 
 // Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two
 // must not drift, or a deep link can land on a tab that no longer renders.
-export type HouseholdTab = 'home' | 'calendar' | 'routines' | 'smarthome' | 'reference'
+export type HouseholdTab = 'home' | 'calendar' | 'smarthome' | 'reference'
 
 // Smart Home gets its own overlay/transition (2026-08-25), not a tab switch
 // — tapping Home in the Village should feel like the house opening up, with

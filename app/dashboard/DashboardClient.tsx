@@ -77,11 +77,12 @@ const DEPRECATED_SECTION_IDS = new Set([
   'habits', 'domains', 'council', 'growth',          // → Personal sub-tabs
   'people', 'money',                                 // → Personal sub-tabs
   'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
-  // 'household' folded into five real top-level sections (2026-08-25) —
-  // home/calendar/routines/reference (smarthome deliberately excluded, see
-  // DEFAULT_SECTIONS' own comment). mergeLayout appends the missing new
-  // ones the same way it always has, so this is a one-line migration, not a
-  // special case.
+  // 'household' folded into four real top-level sections (2026-08-25) —
+  // home/calendar/reference (smarthome deliberately excluded, see
+  // DEFAULT_SECTIONS' own comment; 'routines' was briefly a fifth, folded
+  // into Reference and removed the same day). mergeLayout appends the
+  // missing new ones the same way it always has, so this is a one-line
+  // migration, not a special case.
   'household',
   // NOTE: 'calendar' was deprecated here 2026-08-20 through 2026-08-25 (→ a
   // panel inside Today) and reused 2026-08-25 for Household's own Calendar
@@ -119,7 +120,6 @@ const SECTION_GROUPS: Record<string, string> = {
   // now, not just in shared mode).
   home:      'ours',
   calendar:  'ours',
-  routines:  'ours',
   reference: 'ours',
 }
 
@@ -139,19 +139,22 @@ const SECTION_GROUPS: Record<string, string> = {
 //
 // Routines folded into Household (2026-08-25) — it used to be its own
 // "Life" icon next to Household, which put two closely-related groups side
-// by side for no real reason. Label is "Household", not "Home", even
-// though its first member's own id/tab-label is "home" — once this group
-// covers four tabs (Home/Calendar/Reference/Routines) rather than one,
-// "Home" would mean three different things at once: the Village building
-// you tap (which actually opens Smart Home, see panelContent.home in
-// VillageScene.tsx), the individual "Home" tab inside this group (meals/
+// by side for no real reason; its own tab was then folded into Reference
+// and removed the same day, so Household's group covers three tabs today
+// (Home/Calendar/Reference) plus Smart Home. Label is "Household", not
+// "Home", even though its first member's own id/tab-label is "home" —
+// "Home" would otherwise mean three different things at once: the Village
+// building you tap (which actually opens Smart Home, see panelContent.home
+// in VillageScene.tsx), the individual "Home" tab inside this group (meals/
 // chores), and the group icon itself. "Household" — the group's original
 // pre-refactor name — only means the second and third of those, same as
 // it always did.
 //
 // Controls always opens the Smart Home overlay (special-cased in onSelect
 // below) rather than ever being a real navSections member — 'smarthome' is
-// never filtered against navSections for that reason, see the filter logic.
+// unconditionally kept regardless of navSections for that reason (see the
+// filter logic below), reachable both as Household's own trailing pill and
+// as its own standalone Controls icon, in both personal and shared mode.
 // It's also structurally never `activeGroup` (nothing ever sets currentTab
 // to 'smarthome'), so unlike every other icon it can never show the normal
 // "you are here" active state — see HomeBar's own dot-cue comment for how
@@ -160,7 +163,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'brief',    icon: 'today',     label: 'Today',      members: ['brief'] },
   { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['personal'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'routines'] },
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
   { id: 'controls', icon: 'controls',  label: 'Controls',   members: ['smarthome'], opensOverlay: true },
 ]
@@ -360,7 +363,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'calendar', 'routines', 'reference', 'village', 'places'])
+  const SHARED_MODE_IDS = new Set(['home', 'calendar', 'reference', 'village', 'places'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -388,15 +391,19 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // (2026-08-25). Every member has to be a real, visible section or its
   // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
   // so those two groups vanish rather than rendering an empty icon).
-  // 'smarthome' and 'village' both get an extra shared-mode-only gate below
-  // (2026-08-25 round two) — Village stays a fully real, renderable section
-  // (navIds still has it; the compact preview in Today still opens the real
-  // thing on tap) but loses its permanent Home Bar icon in personal mode,
-  // same treatment Controls already had: both now live inside Today instead
-  // (DailyBrief's 'village'/'controls' blocks) rather than being permanent
-  // nav destinations. Shared mode keeps both icons exactly as before —
-  // Village IS that device's whole point, and Today doesn't exist there to
-  // hold a preview of it.
+  // 'village' gets an extra shared-mode-only gate below (2026-08-25 round
+  // two) — it stays a fully real, renderable section (navIds still has it;
+  // the compact preview in Today still opens the real thing on tap) but
+  // loses its permanent Home Bar icon in personal mode, where the live
+  // Village window inside Today covers that instead. Shared mode keeps the
+  // icon exactly as before — Village IS that device's whole point, and
+  // Today doesn't exist there to hold a preview of it.
+  // 'smarthome' is never a navSections member (it's overlay-only, see
+  // ALL_HOME_BAR_GROUPS's own comment above) so it needs its own bypass of
+  // the navIds check below, unconditionally — round two above briefly also
+  // gated it to shared-mode-only alongside village, which silently dropped
+  // the Controls icon from personal mode's Home Bar entirely (2026-08-25,
+  // caught and reverted the same day: "add smarthome back").
   const navIds = new Set(navSections.map(s => s.id))
   // Calendar gets its own icon in shared mode specifically (2026-08-25) —
   // pulled out of Household's secondary row into a standalone group, right
@@ -413,7 +420,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     .map(g => ({
       ...g,
       members: g.members.filter(m => {
-        if (m === 'smarthome' || m === 'village') return sharedMode
+        if (m === 'smarthome') return true
+        if (m === 'village') return sharedMode
         return navIds.has(m)
       }),
     }))
@@ -452,7 +460,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
-      home: t('Home', lang), calendar: t('Calendar', lang), routines: t('Routines', lang),
+      home: t('Home', lang), calendar: t('Calendar', lang),
       reference: t('Reference', lang),
     }
 
@@ -484,7 +492,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // instance every time, just told which of its own tabs to show via
         // forcedTab. Smart Home is deliberately not one of these cases — it
         // only ever renders inside SmartHomeOverlay now.
-        case 'home': case 'calendar': case 'routines': case 'reference':
+        case 'home': case 'calendar': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }

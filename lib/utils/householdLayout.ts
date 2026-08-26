@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-// Four switchable tabs plus Smart Home, which is overlay-only and never
+// Three switchable tabs plus Smart Home, which is overlay-only and never
 // appears in DEFAULT_HOUSEHOLD_TABS below (2026-08-25 — see its own
 // comment). Places went back to top level; Setup moved into Settings, where
 // account-level configuration already lives.
@@ -10,7 +10,13 @@ import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 // new Home block (see moveIn in HomeBlockId below) instead of their own tab.
 // House Rules, the third piece, was always a duplicate of the one already in
 // Reference and is dropped rather than moved a second time.
-export type HouseholdTabId = 'home' | 'calendar' | 'routines' | 'smarthome' | 'reference'
+//
+// 'routines' removed (2026-08-25) — Chores, Routines, and Maintenance (which
+// had only just been pulled together into this tab on 2026-08-22) all moved
+// into Reference instead; a standalone tab for three "upkeep stuff" sections
+// wasn't earning its keep next to Reference's own similar grab-bag of lookup
+// material.
+export type HouseholdTabId = 'home' | 'calendar' | 'smarthome' | 'reference'
 
 export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   { id: 'home',      label: 'Home' },
@@ -18,11 +24,6 @@ export const DEFAULT_HOUSEHOLD_TABS: SectionConfig[] = [
   // calendar is a thing you go and look at, not one card among six competing
   // for the top of a scroll.
   { id: 'calendar',  label: 'Calendar' },
-  // Chores, Routines, and Maintenance pulled together into one tab
-  // (2026-08-22) — all three were "the cleaning and upkeep stuff", just
-  // scattered: Chores and Routines were Home blocks, Maintenance was
-  // already in Reference. One place for all of it instead of three.
-  { id: 'routines',  label: 'Routines' },
   { id: 'reference', label: 'Reference' },
   // Smart Home dropped out of this list (2026-08-25) — it's overlay-only
   // now (SmartHomeOverlay, reached by tapping Home in the Village or the
@@ -50,10 +51,10 @@ export function mergeHouseholdTabs(saved: SectionConfig[] | null | undefined): S
 // `calendar` left this list on 2026-08-21 — it's a tab of its own now, see
 // DEFAULT_HOUSEHOLD_TABS above. `lists` left it the same day, moved into the
 // Reference tab (a generic checklist reads more like reference material than
-// a weekly home-screen block). `chores` and `routines` left 2026-08-22, moved
-// into the new Routines tab alongside Maintenance. mergeHomeBlocks drops
-// unknown saved ids, so anyone whose layout still names any of these is
-// cleaned up automatically.
+// a weekly home-screen block). `chores` and `routines` left 2026-08-22 into
+// their own Routines tab, which was itself folded into Reference 2026-08-25.
+// mergeHomeBlocks drops unknown saved ids, so anyone whose layout still names
+// any of these is cleaned up automatically.
 export type HomeBlockId = 'thisWeek' | 'shopping' | 'meals' | 'moveIn'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {

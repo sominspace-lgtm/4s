@@ -297,18 +297,19 @@ export default function VillageScene({
     setOpenFigure(prev => (prev === id ? null : id))
   }
 
-  // Somi goes straight to Household Routines on tap (2026-08-25 — was a
+  // Somi goes straight to Household Reference on tap (2026-08-25 — was a
   // hover-card first, simplified after "once clicked it should take you to
-  // routines" feedback: one tap, no intermediate card). Never PIN-gated —
-  // pet care isn't personal data, it's household business, same as chores.
-  // "Somi's Care" is one ordinary maintenance-kind Routine
-  // (household_routines, see useRoutines.ts) with real checklist items
-  // (Trim nails/Bath/Clean litter box/Refill food & water), the same
-  // mechanism every other recurring household task already uses — not a
-  // separate pet-specific data model.
+  // routines" feedback: one tap, no intermediate card; the destination
+  // moved from the standalone Routines tab to Reference the same day, when
+  // that tab was folded in and removed). Never PIN-gated — pet care isn't
+  // personal data, it's household business, same as chores. "Somi's Care"
+  // is one ordinary maintenance-kind Routine (household_routines, see
+  // useRoutines.ts) with real checklist items (Trim nails/Bath/Clean litter
+  // box/Refill food & water), the same mechanism every other recurring
+  // household task already uses — not a separate pet-specific data model.
   const openSomi = () => {
     if (arranging) return
-    goToHousehold('routines')
+    goToHousehold('reference')
   }
 
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {

@@ -44,7 +44,7 @@ const SECTIONS = [
   {
     icon: '⌂',
     title: 'Household',
-    body: 'Chores, meals, and shared shopping for the people you live with. Home covers this week, shopping, and meals. Calendar is the shared household calendar. Routines has chores, multi-step routines, and long-cadence maintenance. Reference has date ideas, notes, a watchlist, and understanding each other. Partner pairing and Discord live in Settings.',
+    body: 'Chores, meals, and shared shopping for the people you live with. Home covers this week, shopping, and meals. Calendar is the shared household calendar. Reference has chores, multi-step routines, long-cadence maintenance, date ideas, notes, a watchlist, and understanding each other. Partner pairing and Discord live in Settings.',
   },
   {
     icon: '◈',
