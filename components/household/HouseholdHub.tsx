@@ -124,6 +124,13 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
   const [choreFolder, setChoreFolder] = useState('')
+  // Which chore folders are collapsed (2026-08-26) — open by default (empty
+  // set), so a folder someone just filed something into doesn't immediately
+  // hide it; click the header to fold an 8-item list like Somi's care down
+  // to one line. Keyed by folder name, not persisted — reopens on next
+  // visit, same as everything else in this tab that isn't worth a settings
+  // row.
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set())
   const [mealDay, setMealDay] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
   const [mealTitle, setMealTitle] = useState('')
@@ -510,10 +517,29 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             {existingFolders.map(folder => {
               const items = sortedChores.filter(c => c.folder === folder)
               if (items.length === 0) return null
+              const collapsed = collapsedFolders.has(folder)
               return (
                 <div key={folder} style={{ marginBottom: '0.7rem' }}>
-                  <div className="t-label" style={{ marginBottom: '0.25rem' }}>{folder}</div>
-                  {items.map(renderChoreRow)}
+                  <button
+                    onClick={() => setCollapsedFolders(prev => {
+                      const next = new Set(prev)
+                      if (next.has(folder)) next.delete(folder); else next.add(folder)
+                      return next
+                    })}
+                    className="press"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: '0.25rem',
+                      display: 'flex', alignItems: 'center', gap: '0.3rem', width: '100%',
+                    }}
+                  >
+                    <span aria-hidden style={{
+                      display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'none',
+                      transition: 'transform 150ms', fontSize: '0.6rem', color: 'var(--muted)',
+                    }}>▾</span>
+                    <span className="t-label">{folder}</span>
+                    <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6 }}>({items.length})</span>
+                  </button>
+                  {!collapsed && items.map(renderChoreRow)}
                 </div>
               )
             })}

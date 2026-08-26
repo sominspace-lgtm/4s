@@ -7,9 +7,11 @@ import { useGoals } from '@/lib/hooks/useGoals'
 import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
+import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import PulseItem from '@/components/pulse/PulseItem'
-import { goToPersonal } from '@/lib/utils/navigate'
-import { format } from 'date-fns'
+import { goToPersonal, goToHousehold } from '@/lib/utils/navigate'
+import { format, differenceInCalendarDays, parseISO } from 'date-fns'
 
 // A control-center strip above Personal's own sub-tabs (2026-08-21) — the
 // thing you glance at before deciding which sub-tab to actually open, so it
@@ -23,8 +25,15 @@ import { format } from 'date-fns'
 export default function PersonalOverview({ userId }: { userId: string }) {
   const { items: workItems } = useWorkItems()
   const { habits, completions } = useHabits()
-  const { spaces } = useSharedSpaces(userId)
-  const goalsHook = useGoals(spaces[0]?.id ?? null)
+  const { spaces, members } = useSharedSpaces(userId)
+  // Prefer a space that actually has an accepted member, same as
+  // HouseholdHub's own spaceId logic — otherwise this can silently pick an
+  // old, empty solo space instead of the real shared one.
+  const householdSpaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
+    ?? spaces[0]?.id ?? null
+  const goalsHook = useGoals(householdSpaceId)
+  const household = useHousehold(householdSpaceId)
+  const routinesHook = useRoutines(householdSpaceId)
   const { captures, add: addCapture } = useCaptures()
   const { items: focusItems, snooze } = useFocusItems()
 
@@ -39,12 +48,44 @@ export default function PersonalOverview({ userId }: { userId: string }) {
   const habitsDone = habitsDue.filter(h => (completions[h.id] ?? []).includes(today))
   const staleGoals = goalsHook.stale
 
-  // Next few dated, undone tasks — same ordering Tasks itself uses, just
-  // truncated to what fits a glance.
-  const upcoming = openTasks
+  // "Coming up" used to be personal tasks only — but Household is the one
+  // tab both people already share, and its chores/routines were invisible
+  // from Personal entirely (2026-08-26 — "household is just the tab both
+  // users can share and see", so its due dates belong in the same glance as
+  // everything else coming up, not siloed behind its own tab). Each source
+  // uses its own "days until due" convention (task due_date vs.
+  // choreDue/routineDue's day-count) so everything sorts on one shared key
+  // regardless of where it lives.
+  type ComingUpItem = { id: string; title: string; dueDays: number; dueLabel: string; badge?: string; onClick: () => void }
+
+  const tasksUpcoming: ComingUpItem[] = openTasks
     .filter(i => i.due_date && dueUrgency(i.due_date) !== 'overdue' && dueUrgency(i.due_date) !== 'today')
-    .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
-    .slice(0, 3)
+    .map(i => ({
+      id: `task-${i.id}`, title: i.title,
+      dueDays: differenceInCalendarDays(parseISO(i.due_date!), new Date()),
+      dueLabel: i.due_date!,
+      onClick: () => goToPersonal('tasks'),
+    }))
+
+  const choresUpcoming: ComingUpItem[] = household.chores
+    .map(c => ({ c, due: choreDue(c) }))
+    .filter(({ c, due }) => c.last_done_at && due > 0 && due <= 14)
+    .map(({ c, due }) => ({
+      id: `chore-${c.id}`, title: c.name, dueDays: due, dueLabel: `in ${due}d`,
+      badge: 'Household', onClick: () => goToHousehold('reference'),
+    }))
+
+  const routinesUpcoming: ComingUpItem[] = routinesHook.routines
+    .map(r => ({ r, due: routineDue(r) }))
+    .filter(({ r, due }) => r.last_done_at && due > 0 && due <= 14)
+    .map(({ r, due }) => ({
+      id: `routine-${r.id}`, title: r.name, dueDays: due, dueLabel: `in ${due}d`,
+      badge: 'Household', onClick: () => goToHousehold('reference'),
+    }))
+
+  const upcoming = [...tasksUpcoming, ...choresUpcoming, ...routinesUpcoming]
+    .sort((a, b) => a.dueDays - b.dueDays)
+    .slice(0, 5)
 
   async function submitNote(e: React.FormEvent) {
     e.preventDefault()
@@ -92,12 +133,19 @@ export default function PersonalOverview({ userId }: { userId: string }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
               {upcoming.map(i => (
-                <button key={i.id} onClick={() => goToPersonal('tasks')} className="press" style={{
+                <button key={i.id} onClick={i.onClick} className="press" style={{
                   background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
-                  fontSize: '0.8rem', color: 'var(--text)', display: 'flex', justifyContent: 'space-between', gap: '0.6rem',
+                  fontSize: '0.8rem', color: 'var(--text)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem',
                 }}>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: '0.7rem', flexShrink: 0 }}>{i.due_date}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: '0.4rem', minWidth: 0 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
+                    {i.badge && (
+                      <span style={{ fontSize: '0.56rem', color: 'var(--muted)', opacity: 0.7, border: '1px solid var(--border)', borderRadius: '6px', padding: '0.05em 0.4em', flexShrink: 0 }}>
+                        {i.badge}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ color: 'var(--muted)', fontSize: '0.7rem', flexShrink: 0 }}>{i.dueLabel}</span>
                 </button>
               ))}
             </div>
