@@ -14,9 +14,8 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import Village from '@/components/village/Village'
-import Icon, { type IconName } from '@/components/ui/Icon'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
-import { goToSection, goToPersonal, openSmartHome } from '@/lib/utils/navigate'
+import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
@@ -73,31 +72,6 @@ function AreaRow({ label, line, onAction }: { label: string; line: string; onAct
   )
 }
 
-// A bigger, tinted-card shortcut into a whole other tab/overlay — not
-// another area-summary line (AreaRow above), since these don't have a
-// one-line status to report, just "go here" (2026-08-25). Same warm-card
-// language as VillageWidgets' own Section, so Today and the Village dock
-// don't look like two different apps.
-function ShortcutCard({ icon, tint, title, hint, onOpen }: {
-  icon: IconName; tint: string; title: string; hint: string; onOpen: () => void
-}) {
-  return (
-    <button onClick={onOpen} className="press organic" style={{
-      textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-body)',
-      background: `color-mix(in srgb, ${tint} 9%, var(--surface2))`,
-      border: `1px solid color-mix(in srgb, ${tint} 22%, var(--border))`,
-      borderRadius: '14px', padding: '0.8rem 0.9rem',
-      display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
-    }}>
-      <span aria-hidden style={{ display: 'inline-flex', color: tint }}><Icon name={icon} size={22} /></span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)' }}>{title}</div>
-        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.8 }}>{hint}</div>
-      </div>
-      <span aria-hidden style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.5 }}>→</span>
-    </button>
-  )
-}
 
 export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false, blocks, onOpenCustomize }: {
   userId: string
@@ -509,10 +483,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         <div key="village" style={{ maxWidth: '420px' }}>
           <Village compact userId={userId} />
         </div>
-      )
-      if (id === 'controls') return (
-        <ShortcutCard key="controls" icon="controls" tint="var(--gold)" title="Smart Home"
-          hint="Lights, temperature, and more" onOpen={openSmartHome} />
       )
       // A real "what needs you" panel, not a shortcut (2026-08-25 round
       // two) — chores due and shopping needed, read straight from the same
