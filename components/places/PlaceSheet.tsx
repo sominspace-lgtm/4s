@@ -111,6 +111,12 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
         setGeoLatLng({ lat: body.lat, lng: body.lng })
         if (body.city && !cityDraft.trim()) setCityDraft(body.city)
         if (body.country && !countryDraft.trim()) setCountryDraft(body.country)
+        // Same "city repeated" fix as AddPlacePanel's — replace the typed
+        // text with the clean street-only address the lookup returned, so
+        // saveAddress() never persists a full "...San Jose, CA" string
+        // alongside a separately saved city that then shows twice wherever
+        // address+city get joined for display.
+        if (body.address) setAddressDraft(body.address)
         setGeoStatus('found')
       } else {
         setGeoLatLng(null); setGeoStatus('not-found')

@@ -34,6 +34,44 @@ async function searchNominatim(q: string): Promise<NominatimResult[]> {
   return res.json()
 }
 
+interface PhotonFeature {
+  properties: {
+    housenumber?: string; street?: string; name?: string
+    city?: string; town?: string; village?: string
+    country?: string; countrycode?: string
+  }
+  geometry: { coordinates: [number, number] } // [lon, lat]
+}
+
+// Fallback when Nominatim's own parser comes up empty (2026-08-25) —
+// confirmed case: "1292 Briar crest Dr, San Jose, CA" (the street is
+// actually "Briarcrest", one word) returns [] from Nominatim, structured
+// query params included, but resolves fine once the space is gone. Photon
+// (komoot, same underlying OSM data, no API key, free) tokenizes more
+// forgivingly and gets this right without any special-casing on our side —
+// confirmed against the live API before wiring this in. Nominatim stays
+// primary (it's what's cached, and this app was already built around its
+// address shape); Photon only runs when Nominatim truly found nothing.
+async function searchPhoton(q: string): Promise<NominatimResult[]> {
+  const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`, {
+    headers: { 'User-Agent': '4S-OS/1.0 (household places pin capture)' },
+  })
+  if (!res.ok) return []
+  const body = await res.json().catch(() => null) as { features?: PhotonFeature[] } | null
+  const f = body?.features?.[0]
+  if (!f) return []
+  const [lon, lat] = f.geometry.coordinates
+  return [{
+    lat: String(lat), lon: String(lon), osm_type: '', osm_id: 0,
+    display_name: [f.properties.housenumber, f.properties.street, f.properties.city, f.properties.country].filter(Boolean).join(', '),
+    address: {
+      house_number: f.properties.housenumber ?? '', road: f.properties.street ?? '',
+      city: f.properties.city ?? f.properties.town ?? f.properties.village ?? '',
+      country: f.properties.country ?? '',
+    },
+  }]
+}
+
 export type GeocodeResult =
   | { found: true; lat: number; lng: number; address: string | null; city: string | null; country: string | null; display_name: string }
   | { found: false }
@@ -68,6 +106,11 @@ export async function geocodeAddress(raw: string): Promise<GeocodeResult> {
       const afterFirstComma = raw.slice(raw.indexOf(',') + 1).trim()
       if (afterFirstComma.length >= 5) results = await searchNominatim(afterFirstComma)
     }
+    // Photon fallback, full original text (2026-08-25) — see searchPhoton's
+    // own comment. Tried last, only when both Nominatim attempts above came
+    // up empty, since Nominatim is what's cached and already tuned for the
+    // business-name-prefix case.
+    if (results.length === 0) results = await searchPhoton(raw)
   } catch {
     return { found: false }
   }

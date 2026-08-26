@@ -56,6 +56,14 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
       const body = await res.json().catch(() => ({ found: false }))
       if (body.found) {
         setGeo({ lat: body.lat, lng: body.lng, city: body.city, country: body.country })
+        // Replace whatever was typed with the clean street-only address the
+        // lookup returned (2026-08-25 fix) — someone had typed the full
+        // "1292 Briar Crest Dr, San Jose, CA" into this one field, which
+        // then got saved verbatim as `address` right alongside a separately
+        // saved `city`, so anywhere the two get joined for display
+        // ("address, city, country") showed San Jose twice. A clean street
+        // portion here means nothing downstream ever duplicates it again.
+        if (body.address) setAddress(body.address)
         setGeoStatus('found')
       } else {
         setGeo(null); setGeoStatus('not-found')
