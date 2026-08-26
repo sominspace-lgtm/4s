@@ -46,6 +46,30 @@ type HouseholdTab = HouseholdTabId
 // Places went back to being its own top-level tab. Both the tab bar and
 // what's INSIDE Home are reorderable and hideable — `tabs`/`homeBlocks` are
 // owned by DashboardClient, same relationship Today has with its own blocks.
+// The emoji vibe check (2026-08-26) — a Discord DM reaction the companion
+// bot now mirrors to 4S as a 'vibe' answer (see checkinStore.VIBE_QUESTION_KEY
+// in the companion repo). The four it pre-seeds map to a word + color, same
+// language the due-date coloring elsewhere in this file already uses; "react
+// with anything else" is explicitly allowed there, so anything outside those
+// four falls back to a neutral badge rather than rendering the raw emoji
+// (this app's whole point in dropping emoji is to not have Discord's font
+// choices leaking into 4S's own look).
+const VIBE_MAP: Record<string, { label: string; color: string }> = {
+  '🥱': { label: 'Tired', color: 'var(--muted)' },
+  '😐': { label: 'Meh', color: 'var(--amber)' },
+  '🙂': { label: 'Good', color: 'var(--emerald)' },
+  '🥰': { label: 'Great', color: 'var(--gold)' },
+}
+function VibeBadge({ emoji }: { emoji: string }) {
+  const v = VIBE_MAP[emoji] ?? { label: 'Vibe noted', color: 'var(--muted)' }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.62rem', color: v.color, opacity: 0.9 }}>
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: v.color, flexShrink: 0 }} />
+      {v.label}
+    </span>
+  )
+}
+
 export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate, forcedTab }: {
   userId: string
   userEmail: string
@@ -905,19 +929,26 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                       </span>
                     </summary>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
-                      {Object.entries(w.byUser).map(([uid, c]) => (
-                        <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                          <div style={{ fontSize: '0.68rem', color: 'var(--gold)', marginBottom: '0.4rem' }}>{nameFor(uid) ?? 'Partner'}</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                            {c.answers.map((a, i) => (
-                              <div key={i}>
-                                {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
-                                <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
-                              </div>
-                            ))}
+                      {Object.entries(w.byUser).map(([uid, c]) => {
+                        const vibe = c.answers.find(a => a.questionKey === 'vibe')
+                        const questions = c.answers.filter(a => a.questionKey !== 'vibe')
+                        return (
+                          <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--gold)' }}>{nameFor(uid) ?? 'Partner'}</div>
+                              {vibe && <VibeBadge emoji={vibe.answer} />}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                              {questions.map((a, i) => (
+                                <div key={i}>
+                                  {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </details>
                 ))}
