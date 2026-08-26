@@ -473,14 +473,18 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
         </div>
       )
-      // A real live window, sized small (2026-08-25 round three — 260px
-      // was an overcorrection, small enough to be hard to actually see;
-      // 420px reads as a real picture without taking over the page) — tap
-      // anywhere to open the real Village. See Village's own `compact`
-      // prop comment for what it strips out (arrange controls, widgets
-      // dock, arrival banner, story text — just the picture itself).
+      // A real live window, sized small on a phone but not stuck at
+      // phone-size on a desktop browser (2026-08-25 round three: 260px was
+      // an overcorrection, small enough to be hard to see; 420px read fine
+      // on mobile but left a fixed-size window swimming in empty space on
+      // a wide window, round four 2026-08-26). A clamp scales it with the
+      // viewport between those two anchors instead of a flat cap — still a
+      // window, not the whole page, on any width. Tap anywhere to open the
+      // real Village. See Village's own `compact` prop comment for what it
+      // strips out (arrange controls, widgets dock, arrival banner, story
+      // text — just the picture itself).
       if (id === 'village') return (
-        <div key="village" style={{ maxWidth: '420px' }}>
+        <div key="village" style={{ maxWidth: 'clamp(420px, 45vw, 640px)' }}>
           <Village compact userId={userId} />
         </div>
       )
