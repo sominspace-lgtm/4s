@@ -157,12 +157,12 @@ const SECTION_GROUPS: Record<string, string> = {
 // "you are here" active state — see HomeBar's own dot-cue comment for how
 // that gets made legible instead of just looking unavailable.
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'brief',    icon: '☀️', label: 'Today',      members: ['brief'] },
-  { id: 'personal', icon: '👤', label: 'Personal',   members: ['personal'] },
-  { id: 'village',  icon: '🌳', label: 'Village',    members: ['village'] },
-  { id: 'home',     icon: '🏠', label: 'Household',  members: ['home', 'calendar', 'reference', 'routines'] },
-  { id: 'places',   icon: '📍', label: 'Places',     members: ['places'] },
-  { id: 'controls', icon: '💡', label: 'Controls',   members: ['smarthome'], opensOverlay: true },
+  { id: 'brief',    icon: 'today',     label: 'Today',      members: ['brief'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['personal'] },
+  { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'routines'] },
+  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
+  { id: 'controls', icon: 'controls',  label: 'Controls',   members: ['smarthome'], opensOverlay: true },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
@@ -406,7 +406,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const groupsForMode = sharedMode
     ? ALL_HOME_BAR_GROUPS.flatMap(g => g.id === 'home'
         ? [{ ...g, members: g.members.filter(m => m !== 'calendar') },
-           { id: 'calendar', icon: '📅', label: 'Calendar', members: ['calendar'] }]
+           { id: 'calendar', icon: 'calendar' as const, label: 'Calendar', members: ['calendar'] }]
         : [g])
     : ALL_HOME_BAR_GROUPS
   const homeBarGroups = groupsForMode

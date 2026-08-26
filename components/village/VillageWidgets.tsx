@@ -7,6 +7,7 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // The dock under the village scene (2026-08-24 redesign, was a grid of
 // standalone cards) — a single panel attached to the scene above it rather
@@ -95,9 +96,9 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
 
         {/* THIS WEEK — a compact stat row, real counts only. */}
         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.1rem', fontSize: '0.66rem', color: 'var(--muted)' }}>
-          <span>♡ {plannedIdeas.length} plan{plannedIdeas.length === 1 ? '' : 's'}</span>
-          <span>📍 {newPlacesThisWeek} new place{newPlacesThisWeek === 1 ? '' : 's'}</span>
-          <span>🧺 {choresToday.length} chore{choresToday.length === 1 ? '' : 's'} today</span>
+          <StatChip icon="heart">{plannedIdeas.length} plan{plannedIdeas.length === 1 ? '' : 's'}</StatChip>
+          <StatChip icon="pin">{newPlacesThisWeek} new place{newPlacesThisWeek === 1 ? '' : 's'}</StatChip>
+          <StatChip icon="basket">{choresToday.length} chore{choresToday.length === 1 ? '' : 's'} today</StatChip>
         </div>
       </button>
 
@@ -107,12 +108,10 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           display: 'grid', gap: '0.7rem', gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
         }}>
           {/* Tonight — the single most-asked household question there is */}
-          <Section icon="🍽️" tint="var(--amber)" title="Tonight" onOpen={() => goToHousehold('home')}>
+          <Section icon="plate" tint="var(--amber)" title="Tonight" onOpen={() => goToHousehold('home')}>
             {tonight ? (
               <>
-                <Line strong>
-                  {tonight.kind === 'eating_out' ? '🍴 ' : ''}{tonight.title}
-                </Line>
+                <Line strong>{tonight.title}</Line>
                 {tonight.kind === 'eating_out' && <Line dim>not cooking tonight</Line>}
               </>
             ) : (
@@ -124,7 +123,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* This week's meals — the compact strip, not the full planner */}
-          <Section icon="📅" tint="var(--blush)" title="This week’s meals" onOpen={() => goToHousehold('home')}>
+          <Section icon="calendar" tint="var(--blush)" title="This week’s meals" onOpen={() => goToHousehold('home')}>
             {h.meals.length === 0 && !h.loading && <Line dim italic>Nothing planned.</Line>}
             {week.map(day => {
               const dinner = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))
@@ -145,7 +144,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* Date ideas — glance + a door, the full editor stays in Household */}
-          <Section icon="💌" tint="var(--rose)" title="Date ideas" onOpen={() => goToHousehold('reference')} count={ideas.filter(i => i.status !== 'done').length}>
+          <Section icon="heart" tint="var(--rose)" title="Date ideas" onOpen={() => goToHousehold('reference')} count={ideas.filter(i => i.status !== 'done').length}>
             {shownIdeas.length === 0 && <Line dim italic>Nothing saved yet.</Line>}
             {shownIdeas.map(i => (
               <div key={i.id} style={{ display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
@@ -158,7 +157,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
           </Section>
 
           {/* Nearby — pins around the new place */}
-          <Section icon="📍" tint="var(--emerald)" title={`Near ${NEW_HOME.label}`} onOpen={() => goToSection('places')} count={nearbyCount}>
+          <Section icon="places" tint="var(--emerald)" title={`Near ${NEW_HOME.label}`} onOpen={() => goToSection('places')} count={nearbyCount}>
             {nearbyCount === 0
               ? <Line dim italic>No pins tagged nearby yet.</Line>
               : <Line dim>{nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved around {NEW_HOME.city}</Line>}
@@ -168,7 +167,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
               (2026-08-25) — Move-In is no longer its own tab; its overview
               card + Near Our New Home moved into a Home block. */}
           {h.moveinItems.length > 0 && (
-            <Section icon="📦" tint="var(--purple)" title="Move-in" onOpen={() => goToHousehold('home')}>
+            <Section icon="box" tint="var(--purple)" title="Move-in" onOpen={() => goToHousehold('home')}>
               <Line strong>{moveinLeft} still to get</Line>
               <Line dim>{moveinDone} sorted</Line>
               {/* A thin progress bar reads faster than the two numbers alone. */}
@@ -194,7 +193,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
 // already do in the scene), and normal-case type instead of the tiny
 // letterspaced caps every other "dashboard" surface in the app uses.
 function Section({ icon, tint, title, count, onOpen, children }: {
-  icon: string
+  icon: IconName
   tint: string
   title: string
   count?: number
@@ -215,7 +214,7 @@ function Section({ icon, tint, title, count, onOpen, children }: {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span aria-hidden style={{ fontSize: '1.05rem', lineHeight: 1 }}>{icon}</span>
+          <span aria-hidden style={{ display: 'inline-flex', color: tint }}><Icon name={icon} size={17} /></span>
           <span style={{ fontSize: '0.76rem', fontWeight: 500, color: 'var(--text)' }}>{title}</span>
         </div>
         {count !== undefined && count > 0 && (
@@ -227,6 +226,17 @@ function Section({ icon, tint, title, count, onOpen, children }: {
       </div>
       {children}
     </button>
+  )
+}
+
+// A small icon + text pair for the collapsed header's stat row — same idea
+// as Section's own icon treatment, just inline instead of a card.
+function StatChip({ icon, children }: { icon: IconName; children: React.ReactNode }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+      <Icon name={icon} size={12} style={{ opacity: 0.8 }} />
+      {children}
+    </span>
   )
 }
 

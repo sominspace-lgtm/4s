@@ -14,6 +14,8 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import Village from '@/components/village/Village'
+import Icon, { type IconName } from '@/components/ui/Icon'
+import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import { goToSection, goToPersonal, openSmartHome } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -77,7 +79,7 @@ function AreaRow({ label, line, onAction }: { label: string; line: string; onAct
 // language as VillageWidgets' own Section, so Today and the Village dock
 // don't look like two different apps.
 function ShortcutCard({ icon, tint, title, hint, onOpen }: {
-  icon: string; tint: string; title: string; hint: string; onOpen: () => void
+  icon: IconName; tint: string; title: string; hint: string; onOpen: () => void
 }) {
   return (
     <button onClick={onOpen} className="press organic" style={{
@@ -87,7 +89,7 @@ function ShortcutCard({ icon, tint, title, hint, onOpen }: {
       borderRadius: '14px', padding: '0.8rem 0.9rem',
       display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%',
     }}>
-      <span aria-hidden style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icon}</span>
+      <span aria-hidden style={{ display: 'inline-flex', color: tint }}><Icon name={icon} size={22} /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)' }}>{title}</div>
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.8 }}>{hint}</div>
@@ -497,24 +499,25 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
         </div>
       )
-      // A real live window now, not just a shortcut card (2026-08-25) — the
-      // actual scene, height-capped, tap anywhere to open the real Village.
-      // See Village's own `compact` prop comment for what it strips out
-      // (arrange controls, widgets dock, arrival banner, story text —
-      // just the picture itself).
+      // A real live window, sized small (2026-08-25 round two — was full
+      // card width, now capped narrower) — tap anywhere to open the real
+      // Village. See Village's own `compact` prop comment for what it
+      // strips out (arrange controls, widgets dock, arrival banner, story
+      // text — just the picture itself).
       if (id === 'village') return (
-        <div key="village">
+        <div key="village" style={{ maxWidth: '260px' }}>
           <Village compact userId={userId} />
         </div>
       )
       if (id === 'controls') return (
-        <ShortcutCard key="controls" icon="💡" tint="var(--gold)" title="Smart Home"
+        <ShortcutCard key="controls" icon="controls" tint="var(--gold)" title="Smart Home"
           hint="Lights, temperature, and more" onOpen={openSmartHome} />
       )
-      if (id === 'household') return (
-        <ShortcutCard key="household" icon="🏠" tint="var(--purple)" title="Household"
-          hint="Chores, meals, shopping & more" onOpen={() => goToSection('home')} />
-      )
+      // A real "what needs you" panel, not a shortcut (2026-08-25 round
+      // two) — chores due and shopping needed, read straight from the same
+      // household data the real Household tab uses, not a second copy of
+      // it. See TodayHouseholdNeeds.
+      if (id === 'household') return <TodayHouseholdNeeds key="household" userId={userId} />
       return null
     })}
 

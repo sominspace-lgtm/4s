@@ -6,6 +6,7 @@ import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // The shared/kiosk-mode counterpart to VillageWidgets (2026-08-25) — same
 // household data (useHousehold/useDateIdeas/usePlaces, nothing new), but
@@ -116,11 +117,9 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
         padding: '0.2rem 1rem 1.1rem', overflowY: 'auto',
         display: 'grid', gap: '0.6rem', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
       }}>
-        <Card icon="🍽️" tint="var(--amber)" title="Tonight">
+        <Card icon="plate" tint="var(--amber)" title="Tonight">
           {tonight ? (
-            <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>
-              {tonight.kind === 'eating_out' ? '🍴 ' : ''}{tonight.title}
-            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{tonight.title}</div>
           ) : (
             <div style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic' }}>No dinner planned yet.</div>
           )}
@@ -131,7 +130,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
           )}
         </Card>
 
-        <Card icon="📅" tint="var(--blush)" title="This week’s meals">
+        <Card icon="calendar" tint="var(--blush)" title="This week’s meals">
           {week.every(day => !h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))) && (
             <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic' }}>Nothing planned.</div>
           )}
@@ -150,7 +149,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
         </Card>
 
         {shownIdeas.length > 0 && (
-          <Card icon="💌" tint="var(--rose)" title="Date ideas">
+          <Card icon="heart" tint="var(--rose)" title="Date ideas">
             {shownIdeas.map(i => (
               <div key={i.id} style={{ fontSize: '0.74rem', color: 'var(--text)', display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
                 {i.status === 'planned' && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--emerald)' }}>●</span>}
@@ -161,7 +160,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
         )}
 
         {nearbyCount > 0 && (
-          <Card icon="📍" tint="var(--emerald)" title={`Near ${NEW_HOME.city}`}>
+          <Card icon="places" tint="var(--emerald)" title={`Near ${NEW_HOME.city}`}>
             <div style={{ fontSize: '0.74rem', color: 'var(--text)' }}>
               {nearbyCount} place{nearbyCount > 1 ? 's' : ''} saved
             </div>
@@ -175,7 +174,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
 // Same visual language as VillageWidgets' own Section — a soft, rounded,
 // tinted card per topic instead of a plain uppercase label over a list.
 function Card({ icon, tint, title, children }: {
-  icon: string; tint: string; title: string; children: React.ReactNode
+  icon: IconName; tint: string; title: string; children: React.ReactNode
 }) {
   return (
     <div className="organic" style={{
@@ -185,7 +184,7 @@ function Card({ icon, tint, title, children }: {
       display: 'flex', flexDirection: 'column', gap: '0.3rem',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        <span aria-hidden style={{ fontSize: '1rem', lineHeight: 1 }}>{icon}</span>
+        <span aria-hidden style={{ display: 'inline-flex', color: tint }}><Icon name={icon} size={16} /></span>
         <span style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text)' }}>{title}</span>
       </div>
       {children}
