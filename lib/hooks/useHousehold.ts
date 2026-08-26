@@ -11,6 +11,10 @@ export interface Chore {
   cadence_days: number
   last_done_at: string | null
   last_done_by: string | null
+  // Free-text grouping, same idea as ShoppingItem.category but user-defined
+  // rather than a fixed list (2026-08-26) — see
+  // supabase/migrations/household_chores_folders.sql.
+  folder: string | null
 }
 
 export interface Meal {
@@ -130,11 +134,17 @@ export function useHousehold(spaceId: string | null) {
 
   function notify() { window.dispatchEvent(new CustomEvent('4s:household-changed')) }
 
-  async function addChore(name: string, cadence_days: number) {
+  async function addChore(name: string, cadence_days: number, folder: string | null = null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
     const { error } = await supabase.from('household_chores')
-      .insert({ user_id: user.id, space_id: spaceId, name, cadence_days })
+      .insert({ user_id: user.id, space_id: spaceId, name, cadence_days, folder })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function setChoreFolder(id: string, folder: string | null) {
+    const { error } = await supabase.from('household_chores').update({ folder }).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
   }
@@ -307,7 +317,7 @@ export function useHousehold(spaceId: string | null) {
 
   return {
     chores, meals, shopping, notes, rules, moveinItems, loading, error,
-    addChore, markChoreDone, removeChore,
+    addChore, markChoreDone, removeChore, setChoreFolder,
     addMeal, removeMeal, updateMeal,
     addShopping, toggleGot, clearGot, removeShopping,
     addNote, toggleNotePin, removeNote,

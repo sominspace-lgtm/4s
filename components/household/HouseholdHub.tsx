@@ -123,6 +123,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
+  const [choreFolder, setChoreFolder] = useState('')
   const [mealDay, setMealDay] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
   const [mealTitle, setMealTitle] = useState('')
@@ -427,6 +428,71 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // tied to Home's customizable-block system (there's nothing to hide or
   // reorder here — one tab, three sections, always all three).
   function renderChores() {
+    // Folders (2026-08-26) — a free-text grouping a person names as they go
+    // ("Somi", "Car", "Seasonal"), not a fixed taxonomy like Shopping's
+    // aisle categories. Only shown once something is actually in a folder;
+    // a household with zero folders sees the exact same flat list as
+    // before this existed, no empty "Other" heading imposed on them.
+    const existingFolders = [...new Set(h.chores.map(c => c.folder).filter((f): f is string => !!f))].sort()
+    const grouped = existingFolders.length > 0
+    const unfoldered = sortedChores.filter(c => !c.folder)
+
+    function renderChoreRow(c: Chore) {
+      const due = dueLabel(c)
+      return (
+        <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
+          background: 'var(--hover-bg)', border: '1px solid var(--border)',
+          position: 'relative',
+        }}>
+          {justDone === c.id && (
+            <span className="praise" aria-hidden style={{
+              position: 'absolute', right: '0.6rem', top: '-0.4rem',
+              fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
+            }}>done ✓</span>
+          )}
+          <button
+            onClick={() => doneChore(c)}
+            className={`press ${justDone === c.id ? 'settle' : ''}`}
+            title="Mark done — resets the clock"
+            style={{
+              background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
+              width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
+              fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
+            }}
+          >✓</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
+            {c.last_done_at && nameFor(c.last_done_by) && (
+              <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
+                Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
+          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
+          {/* Move to a folder — free text, committed on blur/Enter rather
+              than a fixed <select>, since folder names are whatever a
+              person decides to call them, not a preset list. */}
+          <input
+            key={c.folder ?? ''}
+            defaultValue={c.folder ?? ''}
+            list="chore-folders"
+            placeholder="folder"
+            title="Move to a folder"
+            onBlur={e => {
+              const v = e.target.value.trim()
+              if (v !== (c.folder ?? '')) h.setChoreFolder(c.id, v || null)
+            }}
+            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+            style={{ ...input, width: '80px', fontSize: '0.62rem', padding: '0.3rem 0.4rem', flexShrink: 0 }}
+          />
+          <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+        </div>
+      )
+    }
+
     return (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
@@ -439,57 +505,48 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           </div>
         )}
 
-        {sortedChores.map(c => {
-          const due = dueLabel(c)
-          return (
-            <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
-              display: 'flex', alignItems: 'center', gap: '0.6rem',
-              padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
-              background: 'var(--hover-bg)', border: '1px solid var(--border)',
-              position: 'relative',
-            }}>
-              {justDone === c.id && (
-                <span className="praise" aria-hidden style={{
-                  position: 'absolute', right: '0.6rem', top: '-0.4rem',
-                  fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
-                }}>done ✓</span>
-              )}
-              <button
-                onClick={() => doneChore(c)}
-                className={`press ${justDone === c.id ? 'settle' : ''}`}
-                title="Mark done — resets the clock"
-                style={{
-                  background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
-                  width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
-                  fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
-                }}
-              >✓</button>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
-                {c.last_done_at && nameFor(c.last_done_by) && (
-                  <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
-                    Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
-                  </div>
-                )}
+        {grouped ? (
+          <>
+            {existingFolders.map(folder => {
+              const items = sortedChores.filter(c => c.folder === folder)
+              if (items.length === 0) return null
+              return (
+                <div key={folder} style={{ marginBottom: '0.7rem' }}>
+                  <div className="t-label" style={{ marginBottom: '0.25rem' }}>{folder}</div>
+                  {items.map(renderChoreRow)}
+                </div>
+              )
+            })}
+            {unfoldered.length > 0 && (
+              <div style={{ marginBottom: '0.7rem' }}>
+                {existingFolders.length > 0 && <div className="t-label" style={{ marginBottom: '0.25rem' }}>No folder</div>}
+                {unfoldered.map(renderChoreRow)}
               </div>
-              <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
-              <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
-              <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-            </div>
-          )
-        })}
+            )}
+          </>
+        ) : (
+          sortedChores.map(renderChoreRow)
+        )}
+
+        {/* Suggests existing folder names in the per-row input above without
+            constraining what someone can type — a new value just creates a
+            new folder. */}
+        <datalist id="chore-folders">
+          {existingFolders.map(f => <option key={f} value={f} />)}
+        </datalist>
 
         <form
           onSubmit={async e => {
             e.preventDefault()
             if (!choreName.trim()) return
-            await h.addChore(choreName.trim(), Math.max(1, parseInt(choreCadence) || 7))
-            setChoreName('')
+            await h.addChore(choreName.trim(), Math.max(1, parseInt(choreCadence) || 7), choreFolder.trim() || null)
+            setChoreName(''); setChoreFolder('')
           }}
           style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
         >
           <input value={choreName} onChange={e => setChoreName(e.target.value)} placeholder="Add a chore" style={{ ...input, flex: 1, minWidth: '140px' }} />
           <input type="number" min={1} value={choreCadence} onChange={e => setChoreCadence(e.target.value)} title="Every N days" style={{ ...input, width: '70px' }} />
+          <input value={choreFolder} onChange={e => setChoreFolder(e.target.value)} list="chore-folders" placeholder="Folder (optional)" style={{ ...input, width: '120px' }} />
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
       </section>
