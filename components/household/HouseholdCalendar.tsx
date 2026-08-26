@@ -55,7 +55,9 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
    *  from that source when there's no space (solo account). */
   spaceId?: string | null
 }) {
-  const [view, setView] = useState<'agenda' | 'month'>('agenda')
+  // Month by default (2026-08-25) — same as CalendarEmbed, so every
+  // calendar in the app opens on the same view.
+  const [view, setView] = useState<'agenda' | 'month'>('month')
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const { items: sharedTasks } = useSharedWorkItems(spaceId)

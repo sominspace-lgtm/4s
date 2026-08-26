@@ -16,10 +16,10 @@ import CalendarMonth from './CalendarMonth'
 // Google, Apple and Outlook) — as a layer on top of this, never the
 // foundation underneath it.
 export default function CalendarEmbed() {
-  // Agenda by default (2026-08-21), not Month. "Today & Upcoming" is the
-  // planner view — what's actually next — and it was previously one click
-  // behind a toggle defaulting to a month grid nobody asked to see first.
-  const [view, setView] = useState<'agenda' | 'month'>('agenda')
+  // Month by default (2026-08-25, reverses the 2026-08-21 change) — every
+  // calendar in the app should open on the same view, and the user asked
+  // for that view to be the month grid.
+  const [view, setView] = useState<'agenda' | 'month'>('month')
 
   const toggleBtn = (active: boolean): React.CSSProperties => ({
     fontSize: '0.66rem', padding: '0.3em 0.75em', borderRadius: '7px', cursor: 'pointer',

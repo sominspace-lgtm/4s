@@ -201,7 +201,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           position: 'relative', overflow: 'hidden',
           border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
           background: 'var(--surface)',
-          ...(compact ? { height: '150px', cursor: 'pointer' } : {}),
+          // aspect-ratio, not a fixed height (2026-08-25 fix) — a fixed px
+          // height cropped from the TOP of the 800×440 scene, and the
+          // ground/village itself only starts around y=210 (roughly the
+          // lower half); at 150px tall the crop showed almost nothing but
+          // sky. aspect-ratio scales height to the card's actual width, so
+          // the full scene always renders, never cropped — and at a normal
+          // Today-card width that's naturally much bigger than 150px too.
+          ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
       >

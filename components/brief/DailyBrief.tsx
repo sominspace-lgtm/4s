@@ -18,11 +18,8 @@ import { goToSection, goToPersonal, openSmartHome } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
-import FamilyTodayCard from '@/components/companion/FamilyTodayCard'
 import AttentionBudget from '@/components/brief/AttentionBudget'
-import OneThing from '@/components/brief/OneThing'
 import { REORDERABLE, type TodayBlockId, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
-import CaptureSection from '@/components/capture/CaptureSection'
 import Breathing from '@/components/focus/Breathing'
 
 const CALM_QUOTES = [
@@ -360,21 +357,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         <button onClick={dismissAdaptive} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>Not now</button>
       </div>
     )}
-    {/* One thing, above everything. The greeting and the stats used to be
-        the first things on the page, which meant Today opened by telling
-        you how you're doing rather than what to do. Recovery mode is the
-        one exception — it has its own, gentler answer below. */}
-    {!recovery && !isHidden('onething') && (
-      <OneThing
-        items={items}
-        habits={habits}
-        habitsDueToday={habitsDueToday}
-        completedHabitIds={new Set(habitsDueToday.filter(h => (completions[h.id] ?? []).includes(today)).map(h => h.id))}
-        lowEnergy={energy === 'low'}
-        onOpenTask={() => goToPersonal('tasks')}
-        onOpenHabit={() => goToPersonal('habits')}
-      />
-    )}
 
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',
@@ -504,20 +486,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       )}
     </div>
 
-    <FamilyTodayCard userId={userId} />
-
     {tailOrder.map(id => {
-      if (id === 'inbox') return (
-        <div key="inbox" id="brief-inbox">
-          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-            Quick Add · Inbox
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-            Drop a task, thought, reminder, or idea — sort it later.
-          </div>
-          <CaptureSection userId={userId} />
-        </div>
-      )
       if (id === 'areas' && !lowDay) return (
         <div key="areas">
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
@@ -541,6 +510,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       if (id === 'controls') return (
         <ShortcutCard key="controls" icon="💡" tint="var(--gold)" title="Smart Home"
           hint="Lights, temperature, and more" onOpen={openSmartHome} />
+      )
+      if (id === 'household') return (
+        <ShortcutCard key="household" icon="🏠" tint="var(--purple)" title="Household"
+          hint="Chores, meals, shopping & more" onOpen={() => goToSection('home')} />
       )
       return null
     })}
