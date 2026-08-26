@@ -24,6 +24,7 @@ import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import VillageWidgets from './VillageWidgets'
 import VillageHomeSheet from './VillageHomeSheet'
+import { goToSection } from '@/lib/utils/navigate'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -41,7 +42,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -62,6 +63,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  gesture counts as interaction (see useIdleAmbient's own comment on why
    *  its window listeners alone don't cover a pointermove-only gesture). */
   resetIdleTimer?: () => void
+  /** A small live-preview window for Today (2026-08-25) — just the scene,
+   *  height-capped, individual districts non-interactive (one click
+   *  anywhere opens the real Village tab instead). No arrange controls, no
+   *  arrival banner, no widgets dock, no story text — those belong to the
+   *  real thing, not a teaser of it. See TodayVillageWindow. */
+  compact?: boolean
 }) {
   const [arranging, setArranging] = useState(false)
   const { habits, completions } = useHabits()
@@ -113,13 +120,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // have read what changed, it should stop being news.
   const [showArrival, setShowArrival] = useState(false)
   useEffect(() => {
+    // A glance at Today's compact preview shouldn't consume the real
+    // "welcome back" moment — that's earned by actually opening the
+    // Village, not by it merely being visible in a mini card.
+    if (compact) return
     if (typeof window === 'undefined') return
     if (sessionStorage.getItem(ARRIVAL_KEY)) return
     sessionStorage.setItem(ARRIVAL_KEY, '1')
     setShowArrival(true)
     onSeen?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [compact])
 
   const changes = useMemo(
     () => (showArrival && lastSeen
@@ -190,7 +201,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           position: 'relative', overflow: 'hidden',
           border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
           background: 'var(--surface)',
+          ...(compact ? { height: '150px', cursor: 'pointer' } : {}),
         } as React.CSSProperties}
+        {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
       >
         <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
           plantSlots={plantSlots} buildingSlots={buildingSlots}
@@ -203,11 +216,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           dateIdeaAreas={dateIdeaAreas} weather={weather}
           timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
 
+        {/* Compact mode (2026-08-25): a transparent click-catcher over the
+            whole scene — the preview should open the real Village on any
+            tap, not fire an individual district's own click handler
+            underneath it. */}
+        {compact && (
+          <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'transparent' }} />
+        )}
+
         {/* Glass highlight along the top edge — the one bit of gloss in the
             whole app, and only because this is the piece meant to be looked
             at rather than used. Skipped while arranging so it can't be
             mistaken for a drag-catching overlay. */}
-        {!arranging && (
+        {!compact && !arranging && (
           <div
             aria-hidden
             style={{
@@ -222,7 +243,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             even in shared/locked mode: repositioning a landmark doesn't
             reveal anything, it's purely cosmetic. Hidden while ambient —
             the picture-frame default shouldn't show a settings button. */}
-        {onChangeLayout && !ambient && (
+        {!compact && onChangeLayout && !ambient && (
           <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
             {arranging && Object.keys(layout).length > 0 && (
               <button
@@ -255,26 +276,26 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             rather than a block below it, so it reads as sliding up over the
             picture rather than another widget under it. See
             VillageHomeSheet's own header comment. */}
-        {locked && (
+        {!compact && locked && (
           <VillageHomeSheet userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer} />
         )}
       </div>
 
-      {arranging && (
+      {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
           Drag any landmark to move it. Your layout is saved automatically.
         </p>
       )}
 
-      {!ambient && <VillageArrival caption={changes?.caption ?? null} />}
+      {!compact && !ambient && <VillageArrival caption={changes?.caption ?? null} />}
 
       {/* Widgets (2026-08-24) — the useful half of Village for personal
           browsing. In shared/locked mode this content moves into
           VillageHomeSheet above instead (a swipe-up overlay, not a second
           copy below the scene). */}
-      {!locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} />}
+      {!compact && !locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} />}
 
-      {!ambient && <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />}
+      {!compact && !ambient && <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />}
     </div>
   )
 }

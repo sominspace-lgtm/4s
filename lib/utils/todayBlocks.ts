@@ -17,12 +17,12 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Agenda and month view' },
   inbox:      { label: 'Quick Add · Inbox', hint: 'Capture and sort' },
-  // Two shortcuts, not embedded features (2026-08-25) — a live mini Village
-  // scene would mean importing VillageScene's whole data pipeline (habits,
-  // tasks, clock, palette, weather) into Today just to draw a tiny picture;
-  // a one-tap card into the real thing gets the same "your world is right
-  // there" effect for a fraction of the weight.
-  village:    { label: 'Village',        hint: 'A shortcut into your village' },
+  // Village is a real live window now, not a shortcut card (2026-08-25
+  // round two) — Village.tsx's `compact` prop renders the actual scene,
+  // height-capped, tap anywhere to open the full Village. Controls stays a
+  // one-tap shortcut into the Smart Home overlay — there's no "mini"
+  // version of a control panel worth previewing.
+  village:    { label: 'Village',        hint: 'A live window into your village' },
   controls:   { label: 'Smart Home',     hint: 'Opens the Smart Home overlay' },
 }
 

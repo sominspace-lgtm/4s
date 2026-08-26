@@ -13,6 +13,7 @@ import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
+import Village from '@/components/village/Village'
 import { goToSection, goToPersonal, openSmartHome } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -527,12 +528,15 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
         </div>
       )
-      // Two shortcuts, not embedded features — see TODAY_BLOCK_META's own
-      // comment on why this is a one-tap card into the real Village/Smart
-      // Home rather than a live mini scene (2026-08-25).
+      // A real live window now, not just a shortcut card (2026-08-25) — the
+      // actual scene, height-capped, tap anywhere to open the real Village.
+      // See Village's own `compact` prop comment for what it strips out
+      // (arrange controls, widgets dock, arrival banner, story text —
+      // just the picture itself).
       if (id === 'village') return (
-        <ShortcutCard key="village" icon="🌳" tint="var(--emerald)" title="Your Village"
-          hint="See your little world" onOpen={() => goToSection('village')} />
+        <div key="village">
+          <Village compact userId={userId} />
+        </div>
       )
       if (id === 'controls') return (
         <ShortcutCard key="controls" icon="💡" tint="var(--gold)" title="Smart Home"

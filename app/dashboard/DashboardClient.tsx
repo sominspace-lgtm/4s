@@ -385,11 +385,18 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const navSections = visible
 
   // ALL_HOME_BAR_GROUPS filtered to what's actually reachable this mode
-  // (2026-08-25) — 'smarthome' is kept unconditionally since Controls is
-  // never a navSections member, it always opens the overlay (see onSelect
-  // below); every other member has to be a real, visible section or its
+  // (2026-08-25). Every member has to be a real, visible section or its
   // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
   // so those two groups vanish rather than rendering an empty icon).
+  // 'smarthome' and 'village' both get an extra shared-mode-only gate below
+  // (2026-08-25 round two) — Village stays a fully real, renderable section
+  // (navIds still has it; the compact preview in Today still opens the real
+  // thing on tap) but loses its permanent Home Bar icon in personal mode,
+  // same treatment Controls already had: both now live inside Today instead
+  // (DailyBrief's 'village'/'controls' blocks) rather than being permanent
+  // nav destinations. Shared mode keeps both icons exactly as before —
+  // Village IS that device's whole point, and Today doesn't exist there to
+  // hold a preview of it.
   const navIds = new Set(navSections.map(s => s.id))
   // Calendar gets its own icon in shared mode specifically (2026-08-25) —
   // pulled out of Household's secondary row into a standalone group, right
@@ -403,7 +410,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         : [g])
     : ALL_HOME_BAR_GROUPS
   const homeBarGroups = groupsForMode
-    .map(g => ({ ...g, members: g.members.filter(m => m === 'smarthome' || navIds.has(m)) }))
+    .map(g => ({
+      ...g,
+      members: g.members.filter(m => {
+        if (m === 'smarthome' || m === 'village') return sharedMode
+        return navIds.has(m)
+      }),
+    }))
     .filter(g => g.members.length > 0)
 
   // Tab mode: only the active section renders. If the active tab was hidden
