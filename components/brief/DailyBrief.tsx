@@ -499,13 +499,14 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
         </div>
       )
-      // A real live window, sized small (2026-08-25 round two — was full
-      // card width, now capped narrower) — tap anywhere to open the real
-      // Village. See Village's own `compact` prop comment for what it
-      // strips out (arrange controls, widgets dock, arrival banner, story
-      // text — just the picture itself).
+      // A real live window, sized small (2026-08-25 round three — 260px
+      // was an overcorrection, small enough to be hard to actually see;
+      // 420px reads as a real picture without taking over the page) — tap
+      // anywhere to open the real Village. See Village's own `compact`
+      // prop comment for what it strips out (arrange controls, widgets
+      // dock, arrival banner, story text — just the picture itself).
       if (id === 'village') return (
-        <div key="village" style={{ maxWidth: '260px' }}>
+        <div key="village" style={{ maxWidth: '420px' }}>
           <Village compact userId={userId} />
         </div>
       )
