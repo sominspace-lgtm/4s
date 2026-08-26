@@ -15,6 +15,7 @@ import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import Village from '@/components/village/Village'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
+import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -483,9 +484,25 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       // real Village. See Village's own `compact` prop comment for what it
       // strips out (arrange controls, widgets dock, arrival banner, story
       // text — just the picture itself).
+      //
+      // Paired with the Calendar block (2026-08-26) — Calendar used to
+      // render at the very bottom of the whole Today page regardless of
+      // where Village sat, so on a wide browser window the two things
+      // someone actually looks at side by side ended up screens apart.
+      // flex-wrap means a narrow/mobile viewport still stacks them exactly
+      // like before; Calendar keeps its own hide toggle from Customize
+      // Today, it just lives next to Village now instead of after
+      // everything else.
       if (id === 'village') return (
-        <div key="village" style={{ maxWidth: 'clamp(420px, 45vw, 640px)' }}>
-          <Village compact userId={userId} />
+        <div key="village" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ flex: '1 1 420px', maxWidth: 'clamp(420px, 45vw, 640px)' }}>
+            <Village compact userId={userId} />
+          </div>
+          {!isHidden('calendar') && (
+            <div id="brief-calendar" style={{ flex: '2 1 480px', minWidth: 0 }}>
+              <CalendarEmbed />
+            </div>
+          )}
         </div>
       )
       // A real "what needs you" panel, not a shortcut (2026-08-25 round
@@ -495,6 +512,16 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       if (id === 'household') return <TodayHouseholdNeeds key="household" userId={userId} />
       return null
     })}
+
+    {/* Calendar rides along with Village above whenever Village is
+        actually showing. If someone's hidden Village specifically but not
+        Calendar, it still needs to render somewhere — same standalone spot
+        it always used to sit in. */}
+    {!isHidden('calendar') && !tailOrder.includes('village') && (
+      <div id="brief-calendar">
+        <CalendarEmbed />
+      </div>
+    )}
 
     <button onClick={onOpenCustomize} className="btn btn-ghost press" style={{ fontSize: '0.64rem', alignSelf: 'flex-start', opacity: 0.6 }}>
       ⚙ Customize Today

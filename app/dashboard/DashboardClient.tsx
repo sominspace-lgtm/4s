@@ -26,7 +26,6 @@ import HouseholdHub from '@/components/household/HouseholdHub'
 import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
 import PlacesHub from '@/components/places/PlacesHub'
 import UnlockPanel from '@/components/ui/UnlockPanel'
-import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor } from '@/lib/utils/navigate'
@@ -573,17 +572,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           // first render and never again.
           return s ? <div key={s.id} id={`section-${s.id}`} className="tab-in">{renderSection(s.id)}</div> : null
         })()}
-        {/* The calendar lives inside Today rather than owning a tab — it's
-            something you check, not a place you go to live. Rendered after
-            the Brief so the day reads top-down: what's happening, what's
-            waiting, then the month around it. Hideable via Customize Today
-            (its position here stays fixed — see REORDERABLE in
-            lib/utils/todayBlocks.ts for why). */}
-        {currentTab === 'brief' && !todayBlocks.find(b => b.id === 'calendar')?.hidden && (
-          <div id="brief-calendar" style={{ marginTop: '1.2rem' }}>
-            <CalendarEmbed />
-          </div>
-        )}
       </main>
       {!ambient && !sharedMode && <MobileNav onCapture={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} />}
       {/* One nav component for both modes now (2026-08-25) — same design

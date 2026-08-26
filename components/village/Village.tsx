@@ -212,16 +212,24 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
       >
-        <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
-          plantSlots={plantSlots} buildingSlots={buildingSlots}
-          horizon={horizon} changes={changes}
-          locked={locked} onLockedNavigate={onLockedNavigate}
-          layout={layout} arranging={arranging}
-          onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
-          placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
-          peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
-          dateIdeaAreas={dateIdeaAreas} weather={weather}
-          timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
+        {/* Compact zoom (2026-08-26) — the full 800×440 scene left a lot of
+            bare sky at Today's small window size, making the actual
+            village (ground level down) hard to make out. Scaling the scene
+            up slightly and biasing the transform origin toward the ground
+            crops a bit more sky than grass off each edge — the parent's
+            own overflow:hidden clips it, so nothing else has to change. */}
+        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
+          <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
+            plantSlots={plantSlots} buildingSlots={buildingSlots}
+            horizon={horizon} changes={changes}
+            locked={locked} onLockedNavigate={onLockedNavigate}
+            layout={layout} arranging={arranging}
+            onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
+            placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
+            peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
+            dateIdeaAreas={dateIdeaAreas} weather={weather}
+            timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
+        </div>
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the
             whole scene — the preview should open the real Village on any

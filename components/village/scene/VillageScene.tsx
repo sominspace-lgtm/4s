@@ -297,19 +297,20 @@ export default function VillageScene({
     setOpenFigure(prev => (prev === id ? null : id))
   }
 
-  // Somi goes straight to Household Reference on tap (2026-08-25 — was a
-  // hover-card first, simplified after "once clicked it should take you to
-  // routines" feedback: one tap, no intermediate card; the destination
-  // moved from the standalone Routines tab to Reference the same day, when
-  // that tab was folded in and removed). Never PIN-gated — pet care isn't
-  // personal data, it's household business, same as chores. "Somi's Care"
-  // is one ordinary maintenance-kind Routine (household_routines, see
-  // useRoutines.ts) with real checklist items (Trim nails/Bath/Clean litter
-  // box/Refill food & water), the same mechanism every other recurring
-  // household task already uses — not a separate pet-specific data model.
+  // Somi got a hover-card back (2026-08-26) — the direct one-tap navigate
+  // tried on 2026-08-25 read as glitchy in practice (a tap on her tiny
+  // figure hard-cutting straight to another tab, with nothing to visually
+  // confirm the tap actually landed on HER and not the ground beside her).
+  // Same card mechanism as Sylvia/Harry's openFigure below, just its own
+  // state and no PIN gate — pet care isn't personal data, it's household
+  // business, same as chores. "Somi's Care" is chores/routines/maintenance
+  // tracked the same way every other recurring household task is (see
+  // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
+  const [openSomiCard, setOpenSomiCard] = useState(false)
+  const somiInfo = { title: 'Somi', lines: ['Her chores, routines, and maintenance'] }
   const openSomi = () => {
     if (arranging) return
-    goToHousehold('reference')
+    setOpenSomiCard(o => !o)
   }
 
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
@@ -1008,6 +1009,36 @@ export default function VillageScene({
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Unlock →</text>
+              </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Somi's own hover-card — same shape again, positioned over her fixed
+          spot, no PIN gate (her card just navigates, never calls
+          onLockedNavigate). */}
+      {openSomiCard && (() => {
+        const somiX = 480
+        const somiY = GROUND_Y + 30
+        const width = 150
+        const height = 34 + somiInfo.lines.length * 13 + 22
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiX))
+        const top = Math.max(10, somiY - 40 - height)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenSomiCard(false)} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
+              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{somiInfo.title}</text>
+              {somiInfo.lines.map((line, i) => (
+                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+              ))}
+              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { goToHousehold('reference'); setOpenSomiCard(false) }}
+                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
+                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
+                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open →</text>
               </g>
             </g>
           </g>

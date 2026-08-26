@@ -307,8 +307,12 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
   x: number; y: number; name: string; hairColor: string; outfitColor: string; onClick?: () => void
 }) {
+  // stopPropagation (2026-08-26) — without it a tap also bubbles to the
+  // scene's own onClick={() => setSelected(null)}, firing a second state
+  // update right behind the figure's own handler on every single tap.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y})`} onClick={onClick}
+    <g transform={`translate(${x} ${y})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
@@ -343,8 +347,10 @@ const SOMI_EYE = '#5C8FB5'
 export function CatShape({ x, y, name = 'Somi', onClick }: {
   x: number; y: number; name?: string; onClick?: () => void
 }) {
+  // stopPropagation, same reason as VillagerShape above.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y})`} onClick={onClick}
+    <g transform={`translate(${x} ${y})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
