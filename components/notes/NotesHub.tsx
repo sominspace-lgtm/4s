@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useNotes, type Note } from '@/lib/hooks/useNotes'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import Icon from '@/components/ui/Icon'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px',
@@ -110,7 +111,7 @@ export default function NotesHub({ userId }: { userId: string }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              {n.pinned && <span style={{ fontSize: '0.65rem', color: 'var(--gold)' }}>📌</span>}
+              {n.pinned && <span style={{ color: 'var(--gold)', display: 'inline-flex' }}><Icon name="thumbtack" size={10} /></span>}
               <span style={{ fontSize: '0.85rem', color: 'var(--text)', fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {n.title || 'Untitled'}
               </span>
@@ -164,8 +165,9 @@ export default function NotesHub({ userId }: { userId: string }) {
                   fontSize: '0.68rem', padding: '0.3em 0.7em', borderRadius: '8px', cursor: 'pointer',
                   border: '1px solid var(--border)', background: open.pinned ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
                   color: open.pinned ? 'var(--gold)' : 'var(--muted)',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35em',
                 }}
-              >📌 {open.pinned ? 'Pinned' : 'Pin'}</button>
+              ><Icon name="thumbtack" size={11} /> {open.pinned ? 'Pinned' : 'Pin'}</button>
 
               {spaceId && (
                 <button

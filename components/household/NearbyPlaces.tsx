@@ -3,6 +3,7 @@
 import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
 import { kindSpec } from '@/lib/constants/placeKinds'
 import { goToSection } from '@/lib/utils/navigate'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // "Near our new home" — a VIEW over the pins that already exist, not a second
 // location database (2026-08-24). A place carries one `kind` but many `tags`,
@@ -22,28 +23,29 @@ export const NEW_HOME = { label: 'The Millton', city: 'Redwood City, CA' }
 interface Group {
   key: string
   title: string
+  icon: IconName
   blurb: string
   match: (p: Place) => boolean
 }
 
 const GROUPS: Group[] = [
   {
-    key: 'walking', title: '🚶 Walking Paths',
+    key: 'walking', title: 'Walking Paths', icon: 'walk',
     blurb: 'Evening walks, scenic routes, somewhere to go together',
     match: p => p.kind === 'trail',
   },
   {
-    key: 'parks', title: '🌳 Parks',
+    key: 'parks', title: 'Parks', icon: 'tree',
     blurb: 'Green space nearby',
     match: p => p.kind === 'park' || p.kind === 'beach',
   },
   {
-    key: 'stores', title: '🛍 Stores',
+    key: 'stores', title: 'Stores', icon: 'bag',
     blurb: 'Groceries, home goods, the essentials',
     match: p => p.kind === 'shop',
   },
   {
-    key: 'gems', title: '✨ Hidden Gems',
+    key: 'gems', title: 'Hidden Gems', icon: 'sparkle',
     blurb: "Cafés, small shops, scenic spots — the ones worth finding",
     // Tag-driven rather than kind-driven on purpose: a hidden gem can be a
     // cafe, a viewpoint, a bookshop or a bar, so no single `kind` captures it.
@@ -72,7 +74,8 @@ export default function NearbyPlaces({ compact = false }: {
           <span key={g.key} style={{
             fontSize: '0.66rem', color: 'var(--muted)', background: 'var(--surface2)',
             border: '1px solid var(--border)', borderRadius: '99px', padding: '0.2em 0.6em',
-          }}>{g.title} {g.items.length}</span>
+            display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+          }}><Icon name={g.icon} size={10} /> {g.title} {g.items.length}</span>
         ))}
         {nearby.length === 0 && !loading && (
           <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
@@ -101,8 +104,10 @@ export default function NearbyPlaces({ compact = false }: {
 
       {grouped.filter(g => g.items.length > 0).map(g => (
         <details key={g.key} open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-          <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{g.title}</span>
+          <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Icon name={g.icon} size={13} /> {g.title}
+            </span>
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{g.items.length}</span>
           </summary>
           <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65, margin: '0.3rem 0 0.5rem' }}>{g.blurb}</div>

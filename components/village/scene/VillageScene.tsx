@@ -376,7 +376,7 @@ export default function VillageScene({
       title: 'People',
       lines: [
         `${peopleCount} close`,
-        ...(soonestBirthdayDays != null ? [soonestBirthdayDays === 0 ? 'Birthday today 🎉' : `Birthday in ${soonestBirthdayDays}d`] : []),
+        ...(soonestBirthdayDays != null ? [soonestBirthdayDays === 0 ? 'Birthday today' : `Birthday in ${soonestBirthdayDays}d`] : []),
       ],
       actionLabel: 'Open People', go: () => goToPersonal('people'),
     },
@@ -1073,7 +1073,7 @@ export default function VillageScene({
               opacity instead of double-dimmed --muted. */}
           <rect x={-8} y={-15} width={186} height={44} rx={8} fill="var(--surface)" opacity={0.55} />
           <text fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
-            {[timeLabel, weather ? `${weatherMeta(weather.condition).emoji} ${weather.tempF}°` : null]
+            {[timeLabel, weather ? `${weather.tempF}°` : null]
               .filter(Boolean).join('   ')}
           </text>
           <text y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">

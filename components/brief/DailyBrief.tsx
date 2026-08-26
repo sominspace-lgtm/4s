@@ -16,6 +16,7 @@ import { plantFor } from '@/lib/village/state'
 import Village from '@/components/village/Village'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
+import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
@@ -523,8 +524,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       </div>
     )}
 
-    <button onClick={onOpenCustomize} className="btn btn-ghost press" style={{ fontSize: '0.64rem', alignSelf: 'flex-start', opacity: 0.6 }}>
-      ⚙ Customize Today
+    <button onClick={onOpenCustomize} className="btn btn-ghost press" style={{ fontSize: '0.64rem', alignSelf: 'flex-start', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}>
+      <Icon name="gear" size={11} /> Customize Today
     </button>
     </div>
   )

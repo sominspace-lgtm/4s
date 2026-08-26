@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useWatchlist, type WatchlistDomain, type WatchlistStatus, type WatchlistItem } from '@/lib/hooks/useWatchlist'
+import Icon from '@/components/ui/Icon'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -22,7 +23,7 @@ const STATUS_ORDER: WatchlistStatus[] = ['watching', 'watchlist', 'finished', 'd
 // that's a plain checklist (done/not done), this needs a real status
 // beyond binary — watchlist -> watching -> finished, or dropped.
 function DomainBacklog({ domain, label, verb, spaceId }: {
-  domain: WatchlistDomain; label: string; /** "play" or "watch" — for the empty state and status labels */ verb: string; spaceId: string | null
+  domain: WatchlistDomain; label: React.ReactNode; /** "play" or "watch" — for the empty state and status labels */ verb: string; spaceId: string | null
 }) {
   const { items: all, loading, addItem, setStatus, removeItem } = useWatchlist(spaceId)
   const items = all.filter(i => i.domain === domain)
@@ -33,7 +34,7 @@ function DomainBacklog({ domain, label, verb, spaceId }: {
   return (
     <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
       <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{label}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>{label}</span>
         <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{items.length}</span>
       </summary>
 
@@ -90,8 +91,8 @@ export default function HouseholdWatchlist({ spaceId }: { spaceId: string | null
   return (
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       <div className="t-card">Watchlist</div>
-      <DomainBacklog domain="game" label="🎮 Game list" verb="play" spaceId={spaceId} />
-      <DomainBacklog domain="media" label="📺 Watch list" verb="watch" spaceId={spaceId} />
+      <DomainBacklog domain="game" label={<><Icon name="gamepad" size={12} /> Game list</>} verb="play" spaceId={spaceId} />
+      <DomainBacklog domain="media" label={<><Icon name="tv" size={12} /> Watch list</>} verb="watch" spaceId={spaceId} />
     </section>
   )
 }

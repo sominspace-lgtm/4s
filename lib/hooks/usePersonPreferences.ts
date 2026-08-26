@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { IconName } from '@/components/ui/Icon'
 
 // The `4s:person-preferences-changed` event dispatched by add()/remove()
 // below used to also drive usePersonPreferenceCounts() (removed 2026-08-21
@@ -20,7 +21,11 @@ export interface PersonPreference {
 }
 
 export const PERSON_CATEGORY_LABEL: Record<PersonPreferenceCategory, string> = {
-  preference: '💛 Preference', like: '👍 Like', dislike: '👎 Dislike', idea: '💡 Idea', general: '🧠 General',
+  preference: 'Preference', like: 'Like', dislike: 'Dislike', idea: 'Idea', general: 'General',
+}
+
+export const PERSON_CATEGORY_ICON: Record<PersonPreferenceCategory, IconName> = {
+  preference: 'heart', like: 'thumbsUp', dislike: 'thumbsDown', idea: 'lightbulb', general: 'brain',
 }
 
 // One instance per person card — each person's list is small (a handful of

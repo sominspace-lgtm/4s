@@ -77,7 +77,7 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
     ],
   },
   park: {
-    label: 'Park', icon: '♣', color: '--emerald',
+    label: 'Park', icon: '◉', color: '--emerald',
     fields: [
       { key: 'amenities', label: 'Amenities', type: 'text', placeholder: 'trails, dog park, picnic...' },
     ],

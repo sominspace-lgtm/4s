@@ -22,6 +22,7 @@ import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
+import Icon from '@/components/ui/Icon'
 import VillageWidgets from './VillageWidgets'
 import VillageHomeSheet from './VillageHomeSheet'
 import { goToSection } from '@/lib/utils/navigate'
@@ -253,7 +254,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           />
         )}
 
-        {/* Arrange toggle — same "⚙ arrange" convention Household's Home
+        {/* Arrange toggle — same "arrange" convention Household's Home
             tab already uses for its own drag-reorderable blocks. Available
             even in shared/locked mode: repositioning a landmark doesn't
             reveal anything, it's purely cosmetic. Hidden while ambient —
@@ -281,8 +282,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 borderRadius: '8px', padding: '0.3rem 0.6rem',
                 color: arranging ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
                 fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}
-            >{arranging ? '✓ Done' : '⚙ Arrange'}</button>
+            >{arranging ? <><Icon name="check" size={10} /> Done</> : <><Icon name="gear" size={10} /> Arrange</>}</button>
           </div>
         )}
 

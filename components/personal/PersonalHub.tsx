@@ -14,6 +14,7 @@ import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCu
 import { DEFAULT_PERSONAL_TABS } from '@/lib/utils/personalTabs'
 import { consumePersonalTab, type PersonalTab } from '@/lib/utils/navigate'
 import type { Mode } from '@/lib/constants/modes'
+import Icon from '@/components/ui/Icon'
 
 // Personal — everything that's about you, in one place: your habits, your
 // life areas, your money, your people, and the Council that reads all of it.
@@ -85,8 +86,8 @@ export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
           ))}
         </div>
         <button onClick={() => setCustomizeOpen(true)} title="Customize Personal" className="press" style={{
-          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.85rem', padding: '0.3rem',
-        }}>⚙</button>
+          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, padding: '0.3rem', display: 'inline-flex',
+        }}><Icon name="gear" size={14} /></button>
       </div>
 
       {tab === 'tasks'   && <MasterDashboard userId={userId} />}

@@ -250,7 +250,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
         <MoreMenu items={sharedMode ? [
           // The shared view is deliberately read-mostly; this is the way out
           // of it without signing out and back in.
-          ...(onUnlock ? [{ icon: '🔓', label: 'Unlock with PIN', onClick: onUnlock }] : []),
+          ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '⇄', label: 'Switch account', onClick: signOut },
@@ -258,7 +258,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
         ] : [
           { icon: '⇄', label: 'Connect', onClick: onConnect },
           ...(push.status === 'unsupported' ? [] : [{
-            icon: push.status === 'subscribed' ? '🔔' : '🔕',
+            icon: push.status === 'subscribed' ? '◉' : '◌',
             label: push.status === 'subscribed' ? 'Notifications on'
               : push.status === 'denied' ? 'Notifications blocked'
               : 'Enable notifications',

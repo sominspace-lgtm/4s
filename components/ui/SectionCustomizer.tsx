@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import Icon from '@/components/ui/Icon'
 
 // The one reorder/hide drawer, used at every level that has a customizable
 // list — top-level tabs (CustomizePanel), Today's blocks (was
@@ -166,9 +167,9 @@ export default function SectionCustomizer({
               <button onClick={() => toggle(s.id)} title={s.hidden ? 'Show' : 'Hide'} className="press" style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontSize: '0.82rem', color: 'var(--muted)', opacity: s.hidden ? 0.3 : 0.7,
-                padding: '2px', lineHeight: 1,
+                padding: '2px', lineHeight: 1, display: 'inline-flex',
               }}>
-                {s.hidden ? '🙈' : '👁'}
+                <Icon name={s.hidden ? 'eyeOff' : 'eye'} size={13} />
               </button>
             </div>
           )

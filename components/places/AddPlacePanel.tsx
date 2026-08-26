@@ -4,6 +4,7 @@ import { useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces } from '@/lib/hooks/usePlaces'
+import Icon from '@/components/ui/Icon'
 
 // Manual entry only (Phase 2). Places must be fully usable with zero external
 // services — this is that path, not a fallback for when Phase 3's place
@@ -136,8 +137,8 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
             <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.3rem' }}>Looking that up…</div>
           )}
           {geoStatus === 'found' && geo && (
-            <div style={{ fontSize: '0.64rem', color: 'var(--emerald)', marginTop: '0.3rem' }}>
-              📍 Found it{geo.city ? ` — ${[geo.city, geo.country].filter(Boolean).join(', ')}` : ''}
+            <div style={{ fontSize: '0.64rem', color: 'var(--emerald)', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+              <Icon name="pin" size={10} /> Found it{geo.city ? ` — ${[geo.city, geo.country].filter(Boolean).join(', ')}` : ''}
             </div>
           )}
           {geoStatus === 'not-found' && (

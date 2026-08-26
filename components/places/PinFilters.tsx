@@ -5,6 +5,7 @@ import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import type { Place, PlaceStatus } from '@/lib/hooks/usePlaces'
 import type { PlaceFilter } from '@/lib/hooks/usePlaceFilters'
 import { haversineKm } from '@/lib/utils/geo'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 export interface PinFilterState {
   query: string
@@ -18,11 +19,11 @@ export interface PinFilterState {
 
 export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, status: null, tags: [], radiusFilterId: null }
 
-const STATUS_CHIPS: { id: PlaceStatus; label: string }[] = [
+const STATUS_CHIPS: { id: PlaceStatus; label: string; icon?: IconName }[] = [
   { id: 'idea', label: 'Want to go' },
-  { id: 'good', label: '👍 Good' },
-  { id: 'hmm', label: '🤷 Hmm' },
-  { id: 'bad', label: '👎 Not again' },
+  { id: 'good', label: 'Good', icon: 'thumbsUp' },
+  { id: 'hmm', label: 'Hmm', icon: 'shrug' },
+  { id: 'bad', label: 'Not again', icon: 'thumbsDown' },
 ]
 
 const inputStyle: React.CSSProperties = {
@@ -73,7 +74,7 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   if (filters.status) activeSummary.push(STATUS_CHIPS.find(s => s.id === filters.status)?.label ?? filters.status)
   if (filters.kind) activeSummary.push(kindSpec(filters.kind).label)
   activeSummary.push(...filters.tags.map(t => `#${t}`))
-  if (filters.radiusFilterId) activeSummary.push(`📍 ${savedFilters.find(f => f.id === filters.radiusFilterId)?.label ?? 'area'}`)
+  if (filters.radiusFilterId) activeSummary.push(savedFilters.find(f => f.id === filters.radiusFilterId)?.label ?? 'area')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
@@ -83,7 +84,7 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
           display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-body)',
         }}>
           <span style={{ opacity: 0.6, fontSize: '0.65rem' }}>{open ? '▾' : '▸'}</span>
-          🔍 Search &amp; filters
+          <Icon name="search" size={12} /> Search &amp; filters
           {activeCount > 0 && (
             <span style={{
               fontSize: '0.6rem', color: 'var(--gold)', background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
@@ -120,8 +121,9 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
             key={s.id}
             onClick={() => onChange({ ...filters, status: filters.status === s.id ? null : s.id })}
             className="btn press"
-            style={chipStyle(filters.status === s.id)}
+            style={{ ...chipStyle(filters.status === s.id), display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
           >
+            {s.icon && <Icon name={s.icon} size={11} />}
             {s.label}
           </button>
         ))}
@@ -172,9 +174,9 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
             <button
               onClick={() => onChange({ ...filters, radiusFilterId: filters.radiusFilterId === f.id ? null : f.id })}
               className="btn press"
-              style={{ ...chipStyle(filters.radiusFilterId === f.id), borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+              style={{ ...chipStyle(filters.radiusFilterId === f.id), borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
             >
-              📍 {f.label} <span style={{ opacity: 0.6 }}>({f.radius_km}km)</span>
+              <Icon name="pin" size={10} /> {f.label} <span style={{ opacity: 0.6 }}>({f.radius_km}km)</span>
             </button>
             <button
               onClick={() => onRemoveFilter(f.id)}

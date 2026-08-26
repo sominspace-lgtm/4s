@@ -4,9 +4,11 @@
 // heuristic (no AI call, no cost, no latency) — good enough to be usually
 // right, and the user can always override it by hand (see WorkItem.energy).
 
+import type { IconName } from '@/components/ui/Icon'
+
 export type Energy = 'light' | 'medium' | 'deep'
 
-export const ENERGY_GLYPH: Record<Energy, string> = { light: '🌱', medium: '🌿', deep: '🌳' }
+export const ENERGY_ICON: Record<Energy, IconName> = { light: 'sprout', medium: 'leaf', deep: 'tree' }
 export const ENERGY_LABEL: Record<Energy, string> = { light: 'Light', medium: 'Medium', deep: 'Deep focus' }
 export const ENERGY_ORDER: Energy[] = ['light', 'medium', 'deep']
 

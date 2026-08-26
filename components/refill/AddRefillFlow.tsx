@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { extractFromLabel, extractFromLink, type ExtractedProductInfo } from '@/lib/utils/refillExtraction'
 import { REFILL_CATEGORIES, CATEGORY_DEFAULTS, type RefillCategory, type TrackingMode } from '@/lib/hooks/useBuyItems'
+import Icon from '@/components/ui/Icon'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -154,9 +155,15 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
     return (
       <div style={wrap}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button onClick={() => { setDraft(EMPTY_DRAFT); setMethod('quick') }} className="btn btn-primary">⚡ Quick reminder</button>
-          <button onClick={() => setMethod('scan')} className="btn btn-secondary">📷 Scan / upload label</button>
-          <button onClick={() => setMethod('link')} className="btn btn-secondary">🔗 Paste product link</button>
+          <button onClick={() => { setDraft(EMPTY_DRAFT); setMethod('quick') }} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+            <Icon name="controls" size={12} /> Quick reminder
+          </button>
+          <button onClick={() => setMethod('scan')} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+            <Icon name="camera" size={12} /> Scan / upload label
+          </button>
+          <button onClick={() => setMethod('link')} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em' }}>
+            <Icon name="link" size={12} /> Paste product link
+          </button>
           <button onClick={startManual} className="btn btn-secondary">✎ Manual / advanced</button>
           <button onClick={onCancel} className="btn btn-ghost">cancel</button>
         </div>

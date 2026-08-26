@@ -1,14 +1,15 @@
 import type { WorkItem } from '@/lib/hooks/useWorkItems'
+import type { IconName } from '@/components/ui/Icon'
 
 // The notice board's four columns, from the brief's Village vision:
-// 🌱 Small · 🌿 Growing · 🏗️ Projects · 🌙 Later.
+// Small · Growing · Projects · Later.
 export type BoardColumn = 'small' | 'growing' | 'projects' | 'later'
 
-export const BOARD_COLUMNS: { id: BoardColumn; glyph: string; label: string }[] = [
-  { id: 'small',    glyph: '🌱', label: 'Small Tasks' },
-  { id: 'growing',  glyph: '🌿', label: 'Growing Tasks' },
-  { id: 'projects', glyph: '🏗️', label: 'Projects' },
-  { id: 'later',    glyph: '🌙', label: 'Later' },
+export const BOARD_COLUMNS: { id: BoardColumn; icon: IconName; label: string }[] = [
+  { id: 'small',    icon: 'sprout', label: 'Small Tasks' },
+  { id: 'growing',  icon: 'leaf',   label: 'Growing Tasks' },
+  { id: 'projects', icon: 'crane',  label: 'Projects' },
+  { id: 'later',    icon: 'moon',  label: 'Later' },
 ]
 
 // A task's column is a stored, user-set choice (board_column) once someone

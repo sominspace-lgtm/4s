@@ -18,6 +18,7 @@ import HouseholdDateIdeas from './HouseholdDateIdeas'
 import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
+import Icon, { type IconName } from '@/components/ui/Icon'
 import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { consumeHouseholdTab } from '@/lib/utils/navigate'
 
@@ -25,7 +26,7 @@ const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 // slot was captured on every meal from the start but never shown or sorted
 // by (2026-08-21) — breakfast could render below dinner in the day's list.
 const SLOT_ORDER: Record<typeof SLOTS[number], number> = { breakfast: 0, lunch: 1, dinner: 2 }
-const SLOT_GLYPH: Record<typeof SLOTS[number], string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙' }
+const SLOT_ICON: Record<typeof SLOTS[number], IconName> = { breakfast: 'sunrise', lunch: 'today', dinner: 'moon' }
 
 type HouseholdTab = HouseholdTabId
 
@@ -341,8 +342,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                         scanning the week is "we're not cooking that night",
                         which the meal-time icon can't say. */}
                     <span title={m.kind === 'eating_out' ? `${m.slot} · eating out` : m.slot} aria-hidden
-                      style={{ fontSize: '0.62rem', flexShrink: 0, opacity: 0.8 }}>
-                      {m.kind === 'eating_out' ? '🍴' : SLOT_GLYPH[m.slot]}
+                      style={{ flexShrink: 0, opacity: 0.8, display: 'inline-flex' }}>
+                      <Icon name={m.kind === 'eating_out' ? 'plate' : SLOT_ICON[m.slot]} size={11} />
                     </span>
                     <button
                       onClick={() => {
@@ -717,8 +718,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             ))}
           </div>
           <button onClick={() => setTabsCustomizeOpen(true)} title="Customize Household" className="press" style={{
-            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.85rem', padding: '0.3rem',
-          }}>⚙</button>
+            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, padding: '0.3rem', display: 'inline-flex',
+          }}><Icon name="gear" size={14} /></button>
         </div>
       )}
 
@@ -731,7 +732,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={() => setHomeCustomizeOpen(true)} title="Customize Home" className="press" style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.68rem', padding: '0.2rem',
-            }}>⚙ arrange</button>
+              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+            }}><Icon name="gear" size={11} /> arrange</button>
           </div>
           {homeBlocks.filter(b => !b.hidden).map(b => (
             <div key={b.id}>{homeBlockRenderers[b.id as HomeBlockId]()}</div>
@@ -785,7 +787,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
           }}>
             <span className="t-card">Understanding Each Other</span>
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>🔒 Personal — tap to unlock</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Icon name="lock" size={10} /> Personal — tap to unlock
+            </span>
           </button>
         </section>
       )}
@@ -866,7 +870,9 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
           }}>
             <span className="t-card">Check-ins</span>
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>🔒 Personal — tap to unlock</span>
+            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Icon name="lock" size={10} /> Personal — tap to unlock
+            </span>
           </button>
         </section>
       )}

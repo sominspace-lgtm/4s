@@ -2,6 +2,7 @@
 
 import type { SectionConfig } from '@/components/ui/CustomizePanel'
 import HouseholdHub from './HouseholdHub'
+import Icon from '@/components/ui/Icon'
 
 // Smart Home's own transition (2026-08-25) — per the vision doc, tapping
 // Home shouldn't feel like switching app tabs; the Village stays visible
@@ -58,13 +59,13 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, tab
           padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span aria-hidden style={{ fontSize: '1rem' }}>💡</span>
+            <span aria-hidden style={{ display: 'inline-flex' }}><Icon name="controls" size={16} /></span>
             <span style={{ fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Smart Home</span>
           </div>
           <button onClick={onClose} className="press" style={{
             background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
             fontSize: '0.72rem', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '0.3rem',
-          }}>🌳 Village</button>
+          }}><Icon name="village" size={13} /> Village</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.2rem 2rem' }}>
           {open && (

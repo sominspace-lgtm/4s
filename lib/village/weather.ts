@@ -22,16 +22,16 @@ export interface WeatherNow {
   condition: WeatherCondition
 }
 
-const CONDITION_META: Record<WeatherCondition, { emoji: string; label: string }> = {
-  clear: { emoji: '☀️', label: 'Clear' },
-  cloudy: { emoji: '☁️', label: 'Cloudy' },
-  fog: { emoji: '🌫️', label: 'Foggy' },
-  rain: { emoji: '🌧️', label: 'Rain' },
-  snow: { emoji: '❄️', label: 'Snow' },
-  storm: { emoji: '⛈️', label: 'Storms' },
+const CONDITION_META: Record<WeatherCondition, { label: string }> = {
+  clear: { label: 'Clear' },
+  cloudy: { label: 'Cloudy' },
+  fog: { label: 'Foggy' },
+  rain: { label: 'Rain' },
+  snow: { label: 'Snow' },
+  storm: { label: 'Storms' },
 }
 
-export function weatherMeta(c: WeatherCondition): { emoji: string; label: string } {
+export function weatherMeta(c: WeatherCondition): { label: string } {
   return CONDITION_META[c]
 }
 

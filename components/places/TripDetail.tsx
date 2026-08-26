@@ -9,7 +9,7 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 
 const STATUS_OPTIONS: TripStatus[] = ['dreaming', 'planning', 'booked', 'travelling', 'done', 'cancelled']
 const KIND_OPTIONS: ItineraryKind[] = ['activity', 'travel', 'stay', 'food', 'note']
-const KIND_ICON: Record<ItineraryKind, string> = { activity: '◆', travel: '✈', stay: '🛏', food: '🍽', note: '✎' }
+const KIND_ICON: Record<ItineraryKind, string> = { activity: '◆', travel: '◇', stay: '▭', food: '◍', note: '✎' }
 const CATEGORY_OPTIONS: BudgetCategory[] = ['flights', 'stay', 'food', 'transport', 'activities', 'other']
 
 const input: React.CSSProperties = {

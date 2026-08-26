@@ -199,8 +199,8 @@ export default function GuidePage() {
         <Card>
           Pin the restaurants, courts, and spots you don&rsquo;t want to have to remember on your own — a themed map plus a list,
           filterable by kind. Status is the only &ldquo;rating&rdquo; this has: <strong style={{ color: 'var(--text)' }}>want to go</strong>,
-          <strong style={{ color: 'var(--text)' }}> 👍 good</strong> (go again), or <strong style={{ color: 'var(--text)' }}>👎 not again</strong>.
-          From Discord, no command needed — post a name or a maps link in #pins and it&rsquo;s saved; react 👍 or 👎 on the bot&rsquo;s
+          <strong style={{ color: 'var(--text)' }}> good</strong> (go again), or <strong style={{ color: 'var(--text)' }}>not again</strong>.
+          From Discord, no command needed — post a name or a maps link in #pins and it&rsquo;s saved; react thumbs-up or thumbs-down on the bot&rsquo;s
           message once you&rsquo;ve been.
         </Card>
         <Card title="Photos">

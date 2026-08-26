@@ -9,13 +9,14 @@ import {
 import { MODES, type Mode } from '@/lib/constants/modes'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Only three Guides now (2026-08-21), down from five — Therapist and
 // Challenger felt like the same underlying voice wearing different framing
 // as Friend and Executive respectively, and five options for "who's talking
 // to me today" was more choosing than deciding.
-const MODE_ICONS: Partial<Record<Mode, string>> = {
-  peaceful: '🌿', friend: '🤝', executive: '▲',
+const MODE_ICONS: Partial<Record<Mode, IconName>> = {
+  peaceful: 'leaf', friend: 'handshake',
 }
 
 function swatch(seed: CustomThemeSeed) {
@@ -283,8 +284,9 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
                       transition: 'background 0.15s',
                     }}
                   >
-                    <div style={{ fontSize: '0.75rem', color: isActive ? 'var(--text)' : 'var(--muted)', fontWeight: isActive ? 500 : 300 }}>
-                      {MODE_ICONS[key] ? `${MODE_ICONS[key]} ` : ''}{cfg.label}
+                    <div style={{ fontSize: '0.75rem', color: isActive ? 'var(--text)' : 'var(--muted)', fontWeight: isActive ? 500 : 300, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {MODE_ICONS[key] ? <Icon name={MODE_ICONS[key]!} size={12} /> : key === 'executive' ? <span aria-hidden>▲</span> : null}
+                      {cfg.label}
                     </div>
                     <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.1rem', lineHeight: 1.4 }}>{cfg.description}</div>
                   </button>

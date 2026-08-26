@@ -428,6 +428,15 @@ select, option {
    shapes.tsx. Same slow/low-amplitude budget as drift/lantern above. */
 @keyframes village-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 .village-bob { animation: village-bob 3.6s ease-in-out infinite; }
+/* Freeze the bob the instant a figure is hovered (2026-08-26) — without
+   this, the figure keeps drifting ±1.5px under a STATIONARY cursor, which
+   repeatedly carries it in and out of its own hit circle and makes
+   .village-entity's hover glow/scale below flicker on and off ("glitchy"
+   when hovering or trying to select Sylvia/Harry/Somi specifically — the
+   only entities with a continuous idle animation of their own). Pausing on
+   :hover stabilizes the target the moment the cursor lands on it, instead
+   of only after the hover state has already started flickering. */
+.village-bob:has(.village-entity:hover) { animation-play-state: paused; }
 
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }

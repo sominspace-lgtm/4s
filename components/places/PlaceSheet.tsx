@@ -8,9 +8,14 @@ import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
-  idea: 'Want to go', good: '👍 Good — go again', hmm: '🤷 Hmm — no strong opinion', bad: '👎 Not again', archived: 'Archived',
+  idea: 'Want to go', good: 'Good — go again', hmm: 'Hmm — no strong opinion', bad: 'Not again', archived: 'Archived',
+}
+
+const STATUS_ICON: Partial<Record<PlaceStatus, IconName>> = {
+  good: 'thumbsUp', hmm: 'shrug', bad: 'thumbsDown',
 }
 
 // Type-adaptive place detail. Order, top to bottom: name, kind + city, one
@@ -201,8 +206,10 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
                 background: place.status === s ? 'color-mix(in srgb, var(--gold) 14%, transparent)' : 'transparent',
                 color: place.status === s ? 'var(--gold)' : 'var(--muted)',
                 border: '1px solid var(--border)',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}
             >
+              {STATUS_ICON[s] && <Icon name={STATUS_ICON[s]!} size={11} />}
               {STATUS_LABEL[s]}
             </button>
           ))}
@@ -335,7 +342,9 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
                 <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7 }}>Looking that up…</div>
               )}
               {geoStatus === 'found' && (
-                <div style={{ fontSize: '0.64rem', color: 'var(--emerald)' }}>📍 Found it — filled in below</div>
+                <div style={{ fontSize: '0.64rem', color: 'var(--emerald)', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+                  <Icon name="pin" size={10} /> Found it — filled in below
+                </div>
               )}
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <input value={cityDraft} onChange={e => setCityDraft(e.target.value)} placeholder="City" style={inputStyle} />

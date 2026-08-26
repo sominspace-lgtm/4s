@@ -32,7 +32,7 @@ const SECTIONS = [
     body: 'Native Agenda and Month views built from your tasks, renewals, refills, and gifts. Connect Google Calendar to see events alongside them.',
   },
   {
-    icon: '⚖',
+    icon: '◫',
     title: 'Council',
     body: 'Convene your Council for a calm per-area review plus one suggested next action. Runs on rules instantly; upgrades to a real AI review when AI is enabled.',
   },
@@ -49,7 +49,7 @@ const SECTIONS = [
   {
     icon: '◈',
     title: 'Places',
-    body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: want to go, 👍 good (go again), or 👎 not again. Add photos right on a pin, and share it to a household space to put it on both your maps. From Discord, no command needed — just post the name in #pins, and react 👍/👎 once you’ve been.',
+    body: 'Pin the restaurants, courts, and spots you don’t want to have to remember. Status is the only rating: want to go, good (go again), or not again. Add photos right on a pin, and share it to a household space to put it on both your maps. From Discord, no command needed — just post the name in #pins, and react thumbs-up or thumbs-down once you’ve been.',
   },
   {
     icon: '□',
@@ -62,7 +62,7 @@ const SECTIONS = [
     body: 'Pick light or dark and one accent color, or build a fully custom theme with your own six colors and font. Three Guides change only the tone — Peaceful, Friend, Executive. Mix freely.',
   },
   {
-    icon: '🎙',
+    icon: '◔',
     title: 'Alexa',
     body: 'Link once from Account → Connect Alexa, then control 4S by voice: "Alexa, open four s", then "what needs attention", "read my tasks", "i did meditation", "money summary".',
   },

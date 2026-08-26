@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { usePeople, daysUntilBirthday, daysSinceContact, type Person } from '@/lib/hooks/usePeople'
-import { usePersonPreferences, PERSON_CATEGORY_LABEL, type PersonPreferenceCategory } from '@/lib/hooks/usePersonPreferences'
+import { usePersonPreferences, PERSON_CATEGORY_LABEL, PERSON_CATEGORY_ICON, type PersonPreferenceCategory } from '@/lib/hooks/usePersonPreferences'
+import Icon from '@/components/ui/Icon'
 
 const PREF_CATEGORIES: PersonPreferenceCategory[] = ['preference', 'like', 'dislike', 'idea', 'general']
 
@@ -22,7 +23,7 @@ function contactLine(p: Person): { text: string; nudge: boolean } {
 function birthdayLine(p: Person): string | null {
   const d = daysUntilBirthday(p.birthday)
   if (d === null) return null
-  if (d === 0) return 'Birthday today 🎂'
+  if (d === 0) return 'Birthday today'
   if (d <= 30) return `Birthday in ${d}d`
   return null
 }
@@ -81,7 +82,9 @@ function PersonCard({ person, onSave, onRemove, onContacted, innerRef }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {prefs.items.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--muted)' }}>
-              <span style={{ flexShrink: 0, opacity: 0.85 }}>{PERSON_CATEGORY_LABEL[p.category]}</span>
+              <span style={{ flexShrink: 0, opacity: 0.85, display: 'inline-flex' }} title={PERSON_CATEGORY_LABEL[p.category]}>
+                <Icon name={PERSON_CATEGORY_ICON[p.category]} size={11} />
+              </span>
               <span style={{ flex: 1 }}>{p.text}</span>
               <button onClick={() => prefs.remove(p.id)} aria-label={`Remove ${p.text}`} className="press"
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>

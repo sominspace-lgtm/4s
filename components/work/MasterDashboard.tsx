@@ -10,6 +10,7 @@ import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
 import ShareMenu from '@/components/ui/ShareMenu'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Energy, not priority — how much of a person a task takes, not a ranking of
 // what matters. No color implies urgency; the dot count is the only signal.
@@ -44,8 +45,8 @@ type Filter = 'all' | 'today' | 'upcoming' | 'overdue' | 'done'
 // One source for both views' empty states, so board and list can't drift
 // apart. Every line names something to do next rather than reporting a void —
 // an empty queue is a good outcome, not a failure to have tasks.
-const EMPTY_GLYPH: Record<Filter, string> = {
-  all: '✓', today: '✓', upcoming: '◔', overdue: '🎉', done: '📋',
+const EMPTY_ICON: Record<Filter, IconName> = {
+  all: 'check', today: 'check', upcoming: 'calendar', overdue: 'party', done: 'clipboard',
 }
 const EMPTY_LINE: Record<Filter, string> = {
   all:      'Queue clear. Add one thing worth finishing.',
@@ -493,7 +494,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
         <>
           {!loading && boardItems.length === 0 && (
             <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{EMPTY_GLYPH[filter]}</div>
+              <div style={{ opacity: 0.3, display: 'flex', justifyContent: 'center' }}><Icon name={EMPTY_ICON[filter]} size={22} /></div>
               <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>{EMPTY_LINE[filter]}</div>
             </div>
           )}
@@ -506,7 +507,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <div style={{ padding: '1.5rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ fontSize: '1.3rem', opacity: 0.3 }}>{EMPTY_GLYPH[filter]}</div>
+              <div style={{ opacity: 0.3, display: 'flex', justifyContent: 'center' }}><Icon name={EMPTY_ICON[filter]} size={22} /></div>
               <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>{EMPTY_LINE[filter]}</div>
             </div>
           )}

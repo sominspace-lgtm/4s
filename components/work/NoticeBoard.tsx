@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { WorkRow } from './MasterDashboard'
 import { BOARD_COLUMNS, effectiveColumn, type BoardColumn } from '@/lib/utils/boardColumn'
 import type { WorkItem } from '@/lib/hooks/useWorkItems'
+import Icon from '@/components/ui/Icon'
 
 interface Props {
   items: WorkItem[]
@@ -62,7 +63,7 @@ export default function NoticeBoard({ items, userId, onStatus, onRemove, onToggl
               fontSize: '0.66rem', letterSpacing: '0.04em', color: 'var(--muted)',
               marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem',
             }}>
-              <span aria-hidden>{col.glyph}</span> {col.label}
+              <span aria-hidden style={{ display: 'inline-flex' }}><Icon name={col.icon} size={13} /></span> {col.label}
               <span style={{ opacity: 0.5 }}>· {colItems.length}</span>
             </div>
 
@@ -94,7 +95,7 @@ export default function NoticeBoard({ items, userId, onStatus, onRemove, onToggl
                     padding: '0.1rem 0.3rem', fontFamily: 'var(--font-body)', cursor: 'pointer',
                   }}
                 >
-                  {BOARD_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.glyph} {c.label}</option>)}
+                  {BOARD_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
             ))}

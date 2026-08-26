@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useDateIdeas, type DateIdea, type DateIdeaStatus, type PriceRange } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import type { Energy } from '@/lib/hooks/useWorkItems'
+import Icon from '@/components/ui/Icon'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -12,7 +13,7 @@ const inputStyle: React.CSSProperties = {
 
 const STATUS_LABEL: Record<DateIdeaStatus, string> = { idea: 'Idea', planned: 'Planned', done: 'Done' }
 const STATUS_ORDER: DateIdeaStatus[] = ['planned', 'idea', 'done']
-const ENERGY_LABEL: Record<Energy, string> = { light: '🌤️ Light', medium: '⛅ Medium', deep: '🌧️ Deep' }
+const ENERGY_LABEL: Record<Energy, string> = { light: 'Light', medium: 'Medium', deep: 'Deep' }
 const PRICE_RANGES: PriceRange[] = ['$', '$$', '$$$', '$$$$']
 const sectionLabelStyle: React.CSSProperties = {
   fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.35rem',
@@ -66,7 +67,7 @@ function IdeaCard({ idea, places, update, removeIdea, addTagDraft, setAddTagDraf
   const meta: string[] = []
   if (idea.price_range) meta.push(idea.price_range)
   if (idea.energy) meta.push(ENERGY_LABEL[idea.energy])
-  if (idea.indoor_outdoor) meta.push(idea.indoor_outdoor === 'indoor' ? '🏠' : idea.indoor_outdoor === 'outdoor' ? '🌳' : 'in/out')
+  if (idea.indoor_outdoor) meta.push(idea.indoor_outdoor === 'indoor' ? 'indoor' : idea.indoor_outdoor === 'outdoor' ? 'outdoor' : 'in/out')
 
   return (
     <div style={{ borderBottom: '1px solid var(--faint)' }}>
@@ -82,7 +83,9 @@ function IdeaCard({ idea, places, update, removeIdea, addTagDraft, setAddTagDraf
           <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.65, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.join(' · ')}</span>
         )}
         {placeName(idea.place_id) && (
-          <span style={{ fontSize: '0.6rem', flexShrink: 0 }} title={placeName(idea.place_id) ?? undefined}>📍</span>
+          <span style={{ flexShrink: 0, opacity: 0.65, display: 'inline-flex' }} title={placeName(idea.place_id) ?? undefined}>
+            <Icon name="pin" size={11} />
+          </span>
         )}
         {showStatus && (
           <select value={idea.status} onChange={e => update(idea.id, { status: e.target.value as DateIdeaStatus })}
@@ -112,8 +115,8 @@ function IdeaCard({ idea, places, update, removeIdea, addTagDraft, setAddTagDraf
             <select value={idea.indoor_outdoor ?? ''} onChange={e => update(idea.id, { indoor_outdoor: (e.target.value || null) as 'indoor' | 'outdoor' | 'either' | null })}
               style={{ ...inputStyle, fontSize: '0.62rem', padding: '0.2rem 0.4rem', cursor: 'pointer' }}>
               <option value="">Indoor/outdoor</option>
-              <option value="indoor">🏠 Indoor</option>
-              <option value="outdoor">🌳 Outdoor</option>
+              <option value="indoor">Indoor</option>
+              <option value="outdoor">Outdoor</option>
               <option value="either">Either</option>
             </select>
           </div>

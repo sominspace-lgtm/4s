@@ -17,7 +17,7 @@ export interface Preference {
 }
 
 export const CATEGORY_LABEL: Record<PreferenceCategory, string> = {
-  preference: '💛 Preference', like: '👍 Like', dislike: '👎 Dislike', decision: '✅ Decision', general: '🧠 General',
+  preference: 'Preference', like: 'Like', dislike: 'Dislike', decision: 'Decision', general: 'General',
 }
 
 // Same pattern as usePlaces: not scoped to one space at load time. RLS

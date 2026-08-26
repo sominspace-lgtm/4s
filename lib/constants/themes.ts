@@ -30,7 +30,7 @@
 // achieved by making everything faint, which isn't calm, it's washed out.
 export const THEMES: Record<string, Record<string, string>> = {
 
-  // 🌿 Bloom — the shared world with BloomScan.
+  // Bloom — the shared world with BloomScan.
   //
   // Palette lifted from the live Bloom app rather than approximated by eye:
   // cream paper, sage, warm brown ink, and its soft botanical pastels. The
@@ -71,7 +71,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--card-border-style': 'dashed',
   },
 
-  // 🌙 Moonlight — deep indigo, premium minimal
+  // Moonlight — deep indigo, premium minimal
   //
   // RENAMED from key `sunset` (2026-08-11) — the label was always
   // "Moonlight"; the key just never matched, which is exactly backwards from
@@ -96,7 +96,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '14px', '--radius-sm': '8px',
   },
 
-  // 🔥 Ember — charcoal with warm amber-orange
+  // Ember — charcoal with warm amber-orange
   ember: {
     '--bg': '#0b0806', '--surface': '#1a1410', '--surface2': '#2a221a',
     '--border': 'rgba(224,140,64,0.19)', '--text': '#f5ede3',
@@ -116,7 +116,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '12px', '--radius-sm': '7px',
   },
 
-  // 🌇 Sunset — warm dark, dusky plum-to-amber
+  // Sunset — warm dark, dusky plum-to-amber
   //
   // NEW (2026-08-11). Deliberately not a repaint of Ember: Ember is charcoal
   // with orange embers (a fire palette), Sunset leans pink-purple-to-amber
@@ -150,7 +150,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '15px', '--radius-sm': '8px',
   },
 
-  // 🌿 Sage — soft green on warm off-white
+  // Sage — soft green on warm off-white
   //
   // NEW (2026-08-11), the second light theme alongside Bloom. Pairs with
   // Bloom's paper feel but reads cooler/quieter — sage rather than cream,
@@ -175,7 +175,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     '--radius': '17px', '--radius-sm': '9px',
   },
 
-  // ⚫ Obsidian — near-monochrome, stark and focused
+  // Obsidian — near-monochrome, stark and focused
   //
   // RENAMED from key `noir` (2026-08-11), same reasoning as Moonlight above:
   // the label was already "Obsidian".

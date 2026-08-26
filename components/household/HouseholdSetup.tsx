@@ -5,6 +5,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import DiscordConnect from './DiscordConnect'
 import CompanionSync from '@/components/relationships/CompanionSync'
+import Icon from '@/components/ui/Icon'
 
 // Household setup — moved out of the Household tab into Settings (2026-08-21).
 //
@@ -80,8 +81,8 @@ export default function HouseholdSetup({ userId, userEmail }: { userId: string; 
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {memories.links.map(link => (
                   <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.4rem 0.4rem 0.4rem 0.7rem' }}>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--text)', textDecoration: 'none' }}>
-                      📷 {link.label}
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: 'var(--text)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}>
+                      <Icon name="camera" size={11} /> {link.label}
                     </a>
                     <button
                       onClick={() => memories.removeLink(link.id)}
