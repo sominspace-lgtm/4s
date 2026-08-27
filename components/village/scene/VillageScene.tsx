@@ -7,7 +7,15 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+
+// The 2-frame flower-cluster sway (round 13, 2026-08-27,
+// village-animations-complete.zip) — same idiom as shapes.tsx's own
+// TREE_SWAY_FRAMES, module-level so it's one shared array reference.
+const FLOWER_SWAY_FRAMES = [
+  { src: '/village-assets/flower-cluster-1.png', aspect: 249 / 200 },
+  { src: '/village-assets/flower-cluster-2.png', aspect: 272 / 201 },
+]
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -279,6 +287,9 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   floweringBush: { x: 611, y: GROUND_Y + 27 },
   tallGrass: { x: 305, y: GROUND_Y + 31 },
   rockCluster: { x: 693, y: GROUND_Y + 29 },
+  // Round 13 (2026-08-27) additions.
+  flowerCluster: { x: 240, y: GROUND_Y + 33 },
+  paperLantern: { x: 565, y: GROUND_Y - 20 },
 }
 
 export default function VillageScene({
@@ -945,6 +956,47 @@ export default function VillageScene({
           </g>
         )
       })}
+
+      {/* Two more real sprites, round 13 (2026-08-27,
+          village-animations-complete.zip) — a swaying flower cluster and a
+          hanging paper lantern that actually lights up after dark. Both
+          draggable via the same decorPos/DECOR_DEFAULTS mechanism as the
+          block above, just rendered separately since neither fits the
+          generic static-<image> loop (one animates, one swaps by `dark`). */}
+      {(() => {
+        const p0 = decorPos('flowerCluster')
+        return (
+          <g transform={`translate(${p0.x} ${p0.y})`} opacity={0.9}
+            onPointerDown={startDrag('flowerCluster')} style={{ cursor: arranging ? (draggingId === 'flowerCluster' ? 'grabbing' : 'grab') : undefined }}>
+            <title>Flowers by the path</title>
+            <ellipse cx={0} cy={2.4} rx={6} ry={1.4} fill="var(--text)" opacity={0.14} />
+            <SpriteCycle frames={FLOWER_SWAY_FRAMES} x={0} y={2} height={9.6} periodSec={4.5} />
+            {arranging && (
+              <rect x={-6} y={-11.6} width={12} height={15.6} rx={4}
+                fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+                opacity={draggingId === 'flowerCluster' ? 0.9 : 0.4} />
+            )}
+          </g>
+        )
+      })()}
+      {(() => {
+        const p0 = decorPos('paperLantern')
+        const w = 5.7, h = 14 // 141×345 source, same aspect ratio
+        return (
+          <g transform={`translate(${p0.x} ${p0.y})`} opacity={0.95}
+            onPointerDown={startDrag('paperLantern')} style={{ cursor: arranging ? (draggingId === 'paperLantern' ? 'grabbing' : 'grab') : undefined }}>
+            <title>A paper lantern</title>
+            {dark && <circle cy={-h / 2} r={7} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
+            <image href={`/village-assets/paper-lantern-${dark ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
+            {arranging && (
+              <rect x={-w / 2 - 2} y={-h - 2} width={w + 4} height={h + 4} rx={4}
+                fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+                opacity={draggingId === 'paperLantern' ? 0.9 : 0.4} />
+            )}
+          </g>
+        )
+      })()}
 
       {/* Memory map (2026-08-24) — one small marker per date-idea area,
           scattered near the path via the same hashPos-by-id determinism

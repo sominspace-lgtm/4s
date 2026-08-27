@@ -22,15 +22,30 @@ pack's own page for current pricing).
 see VillageScene.tsx's own comment on why a second house-shaped sprite risks reviving the
 "two houses" confusion from earlier rounds).
 
-## Custom sprites (2026-08-27, rounds 9 & 11)
+## Custom sprites (2026-08-27, rounds 9, 11, 12 & 13)
 
-Everything else in this folder — `cottage.png`, `sylvia.png`, `harry.png`, `somi-cat.png`,
-`mailbox2.png`, `bicycle.png`, `bench2.png`, `stone-lantern.png`, `pennant.png`,
-`flower-pot.png`, `laundry-basket.png`, `bread-basket.png`, `book-stack.png`,
-`garden-lantern.png`, `tea-set.png`, `picnic-blanket.png`, `swing.png`, `blank-sign.png`,
-`veg-crate.png`, `round-tree.png`, `pine-tree.png`, `bush-mound.png`, `flowering-bush.png`,
-`tall-grass.png`, `rock-cluster.png`, `shop.png`, `greenhouse.png`, `workshop.png`, `car.png`,
-`fence2.png`, `gate.png`, `signpost2.png`, `mailbox3.png`, `bus-stop.png` — is the user's own
-custom-made art (two self-authored packs, `simple-cozy-village-sprite-pack.zip` and
-`village-matching-expansion-pack.zip`), style-matched to work together and to the free-tier
-Cozy Farm pieces above. No third-party license applies to these; they're the user's own.
+Everything else in this folder — `cottage.png`, `sylvia.png`, `harry.png`, `mailbox2.png`,
+`bicycle.png`, `bench2.png`, `stone-lantern.png`, `pennant.png`, `flower-pot.png`,
+`laundry-basket.png`, `bread-basket.png`, `book-stack.png`, `garden-lantern.png`, `tea-set.png`,
+`picnic-blanket.png`, `swing.png`, `blank-sign.png`, `veg-crate.png`, `round-tree.png`,
+`pine-tree.png`, `bush-mound.png`, `flowering-bush.png`, `tall-grass.png`, `rock-cluster.png`,
+`shop.png`, `greenhouse.png`, `workshop.png`, `car.png`, `fence2.png`, `gate.png`,
+`signpost2.png`, `mailbox3.png`, `bus-stop.png`, `round-tree-sway-1.png`…`-4.png`,
+`couple-bench.png`, `flower-cluster-1.png`, `flower-cluster-2.png`, `paper-lantern-unlit.png`,
+`paper-lantern-lit.png`, `somi-idle-1.png`…`-3.png`, `somi-walk.png`, `somi-stretch.png`,
+`somi-play.png`, `somi-belly-up.png` — is the user's own custom-made art (three self-authored
+packs: `simple-cozy-village-sprite-pack.zip`, `village-matching-expansion-pack.zip` /
+`-v2.zip`, and `village-animations-complete.zip`), style-matched to work together and to the
+free-tier Cozy Farm pieces above. No third-party license applies to these; they're the user's
+own.
+
+`fence2.png` and `mailbox3.png` are downloaded but not used yet (see VillageScene.tsx's own
+comments — fence2 doesn't fit FenceShape's variable-length API without restructuring it, and
+mailbox3 would duplicate Home's existing mailbox2). `somi-cat.png` (round 9's single static
+pose) was deleted in round 13 — fully superseded by the seven-pose SpriteCycle animation.
+
+Round 13's source pack (`village-animations-complete.zip`, in `.assets-staging/anim/` during
+that session, not committed) has four sheets not yet cropped/wired in: `people-interaction`
+(wave/gift/tea vignettes), `tennis-outfits`, `weather-night` (a small twinkle-star + crescent
+moon accent), and three of `residents-cute`'s four poses (only the bench-sitting one became
+`couple-bench.png`) — real content, just not placed yet.

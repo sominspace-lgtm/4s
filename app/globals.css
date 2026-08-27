@@ -424,6 +424,16 @@ select, option {
 @keyframes lantern { 0%,100% { opacity: 0.75; } 50% { opacity: 0.42; } }
 .village-glow { animation: lantern 5.5s ease-in-out infinite; }
 
+/* Sprite-frame cycling (round 13, 2026-08-27) — see SpriteCycle in
+   shapes.tsx for the full mechanism. One rule per frame count in current
+   use: each is visible for exactly 1/N of the shared period, offset per-
+   frame via a negative animation-delay so N stacked <image>s take turns
+   with no JS timer. steps(1) makes each switch instant, matching pixel-art
+   discrete poses rather than a smooth crossfade. */
+@keyframes village-cycle-2 { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes village-cycle-4 { 0%, 24.9% { opacity: 1; } 25%, 100% { opacity: 0; } }
+@keyframes village-cycle-7 { 0%, 14.28% { opacity: 1; } 14.29%, 100% { opacity: 0; } }
+
 /* The cast's idle sway (2026-08-25) — see VillagerShape/CatShape in
    shapes.tsx. Same slow/low-amplitude budget as drift/lantern above. */
 @keyframes village-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
@@ -682,6 +692,11 @@ select, option {
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }
+  /* Sprite-frame cycling (round 13) — freeze on the first/primary pose
+     instead of leaving every stacked frame at its default opacity (which
+     without the animation running would stack all of them visibly). */
+  .village-cycle-frame { animation: none !important; opacity: 0 !important; }
+  .village-cycle-frame:first-child { opacity: 1 !important; }
   .village-sky-stop { transition: none !important; }
   .press:active, .lift:hover, .drop-target, .drag-source { transform: none !important; }
   .nav-tab::after { transition: none !important; }

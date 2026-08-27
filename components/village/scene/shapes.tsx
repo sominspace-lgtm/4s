@@ -7,6 +7,51 @@ import { STAGE_INDEX, hashPos, type Plant, type Building } from '@/lib/village/s
 // N times, while the one-off scenery stays in VillageScene where you can read
 // the composition order top to bottom.
 
+// Cycles through several real sprite frames in place (round 13, 2026-08-27,
+// the user's own village-animations-complete.zip) — pure CSS, no JS timer
+// and no re-render: N stacked <image>s share one @keyframes rule (defined
+// in globals.css per frame count — village-cycle-2/4/7) that's visible only
+// during its own 1/N slice of the period, each offset by a NEGATIVE
+// animation-delay so they take turns without any JS driving it. steps(1)
+// makes each switch an instant cut, matching these sprites' own discrete-
+// pose art rather than a smooth crossfade between them.
+//
+// Frames can have different aspect ratios (a cat sitting vs. stretched-out
+// mid-play is a very different shape) — height is shared, width is derived
+// per frame so nothing gets squashed, and every frame is bottom-center
+// anchored at (x, y) so the figure's "feet" don't drift as poses change.
+// The 4-frame round-tree sway cycle (round 13, 2026-08-27,
+// village-animations-complete.zip) — module-level so every tree instance
+// shares one array reference rather than re-allocating it per render.
+const TREE_SWAY_FRAMES = [
+  { src: '/village-assets/round-tree-sway-1.png', aspect: 331 / 459 },
+  { src: '/village-assets/round-tree-sway-2.png', aspect: 355 / 459 },
+  { src: '/village-assets/round-tree-sway-3.png', aspect: 350 / 458 },
+  { src: '/village-assets/round-tree-sway-4.png', aspect: 333 / 458 },
+]
+
+export function SpriteCycle({ frames, x, y, height, periodSec, opacity = 1 }: {
+  frames: { src: string; aspect: number }[]; x: number; y: number; height: number; periodSec: number; opacity?: number
+}) {
+  const n = frames.length
+  return (
+    <g opacity={opacity}>
+      {frames.map((f, i) => {
+        const w = height * f.aspect
+        return (
+          <image key={f.src} href={f.src} x={x - w / 2} y={y - height} width={w} height={height}
+            className="village-cycle-frame"
+            style={{
+              imageRendering: 'pixelated',
+              animation: `village-cycle-${n} ${periodSec}s steps(1) infinite`,
+              animationDelay: `${-(periodSec * i / n)}s`,
+            }} />
+        )
+      })}
+    </g>
+  )
+}
+
 // Plant silhouettes by stage. Each stage is a real change in shape, not just
 // scale — growth should read at a glance, from across the room.
 export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 'var(--emerald)', selected = false, cared = false, onClick }: {
@@ -381,25 +426,35 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  // Real sprite art (round 9, 2026-08-27) — same reasoning and same source
-  // pack as VillagerShape's own header comment. Somi's actual siamese
-  // coloring (cream body, blue-grey points, blue eyes — formerly hand-drawn
-  // as SOMI_BODY/SOMI_POINT/SOMI_EYE, now removed) turns out to match this
-  // sprite almost exactly.
-  const spriteW = 186, spriteH = 272
+  // Real sprite art (round 9), now actually alive (round 13, 2026-08-27,
+  // village-animations-complete.zip) — the single static somi-cat.png
+  // pose is replaced with SpriteCycle across seven real poses: three
+  // subtly different sitting/tail-swish frames (the "idle breathing" of
+  // the cycle), then a walk, a stretch-and-sniff, a play-pounce, and a
+  // belly-up sprawl, in that order, 3s each (21s full loop) — slow enough
+  // to read as "she's actually doing things" rather than a fidgety loop.
   const h = 22
-  const w = h * (spriteW / spriteH)
+  const frames = [
+    { src: '/village-assets/somi-idle-1.png', aspect: 172 / 272 },
+    { src: '/village-assets/somi-idle-2.png', aspect: 229 / 272 },
+    { src: '/village-assets/somi-idle-3.png', aspect: 230 / 272 },
+    { src: '/village-assets/somi-walk.png', aspect: 305 / 254 },
+    { src: '/village-assets/somi-stretch.png', aspect: 300 / 248 },
+    { src: '/village-assets/somi-play.png', aspect: 322 / 159 },
+    { src: '/village-assets/somi-belly-up.png', aspect: 1061 / 675 },
+  ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
       {/* Same oversized invisible hit circle as VillagerShape — see its own
-          2026-08-25 fix comment ("can't click the figures"). */}
+          2026-08-25 fix comment ("can't click the figures"). Sized off the
+          idle pose's own width, not whichever frame happens to be showing —
+          a stable hit target regardless of which pose is currently up. */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={1} rx={w / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <image href="/village-assets/somi-cat.png" x={-w / 2} y={-h} width={w} height={h}
-        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+      <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
+      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={21} />
     </g>
   )
 }
@@ -569,17 +624,21 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
     case 'leaf': // Growth Forest — real tree sprites (round 11, 2026-08-27, the user's own
       // village-matching-expansion-pack), replacing the single repeated tree.png icon with
       // an actual small grove: one pine, one round tree, a third smaller round tree behind.
+      // The two round trees now actually sway (round 13, 2026-08-27,
+      // village-animations-complete.zip's 4-frame tree-sway sheet) — different
+      // periodSec per tree so they drift in and out of phase rather than
+      // swaying in perfect lockstep.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.16} />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
-          <image href="/village-assets/round-tree.png" x={-16} y={-14} width={12.4} height={15}
-            style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+          <g opacity={0.85}>
+            <SpriteCycle frames={TREE_SWAY_FRAMES} x={-16 + 6.2} y={1} height={15} periodSec={6.5} />
+          </g>
           <image href="/village-assets/pine-tree.png" x={-7} y={-26} width={13.3} height={26}
             style={{ imageRendering: 'pixelated' }} />
-          <image href="/village-assets/round-tree.png" x={6} y={-19} width={15.8} height={19}
-            style={{ imageRendering: 'pixelated' }} />
+          <SpriteCycle frames={TREE_SWAY_FRAMES} x={6 + 7.9} y={0} height={19} periodSec={7.8} />
         </g>
       )
     case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
@@ -614,27 +673,15 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cx={0} cy={-14} r={5.5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
         </g>
       )
-    case 'people': // People — a bench with two people sharing it, not a house (round 4 point 2, 2026-08-27 —
-      // the round-3 "second small house" read as a confusing duplicate of Home itself, live report
-      // "there are two houses?" — a second FIGURE reads as "people," a second house just reads as
-      // another house).
+    case 'people': // People — the user's own couple-on-a-bench sprite (round 13, 2026-08-27,
+      // village-animations-complete.zip's residents-cute sheet), replacing the round-4 hand-drawn
+      // bench + two circle-head figures. Real Sylvia/Harry art, not a stand-in — same reasoning
+      // that made a second FIGURE (not a second house) the right read for "People" in round 4.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
-          <g transform="translate(-6 0)">
-            <rect x={-6} y={-6} width={12} height={1.6} rx={0.5} fill={TRIM} opacity={0.85} />
-            <rect x={-6} y={-9.5} width={12} height={1.4} rx={0.5} fill={TRIM} opacity={0.7} />
-            <rect x={-5} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
-            <rect x={3.8} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
-          </g>
-          <g transform="translate(-8.5 -6)">
-            <circle cx={0} cy={-6} r={2.6} fill="#E8C4A0" />
-            <path d="M -3 0 Q -3 -6.5 0 -6.5 Q 3 -6.5 3 0 Z" fill="var(--blush)" />
-          </g>
-          <g transform="translate(-2 -6)">
-            <circle cx={0} cy={-6} r={2.6} fill="#D4A574" />
-            <path d="M -3 0 Q -3 -6.5 0 -6.5 Q 3 -6.5 3 0 Z" fill="var(--emerald)" />
-          </g>
+          <ellipse cx={0} cy={2} rx={13} ry={2.1} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/couple-bench.png" x={-8.35} y={-14} width={16.7} height={14}
+            style={{ imageRendering: 'pixelated' }} />
         </g>
       )
   }
