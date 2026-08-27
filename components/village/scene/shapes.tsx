@@ -1,6 +1,6 @@
 'use client'
 
-import { STAGE_INDEX, type Plant, type Building } from '@/lib/village/state'
+import { STAGE_INDEX, hashPos, type Plant, type Building } from '@/lib/village/state'
 
 // The repeated silhouettes: one per habit, one per project, one per district
 // label. Split out of Village.tsx unchanged — these are the pieces that appear
@@ -22,10 +22,20 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   onClick?: () => void
 }) {
   const i = STAGE_INDEX(plant.stage)
-  const h = [8, 18, 34, 52, 72][i]
-  const w = [7, 12, 22, 32, 44][i]
-  const color = plant.dormant ? 'var(--muted)' : foliage
   const opacity = plant.dormant ? 0.4 : 1
+
+  // Real pixel-art crop sprites (round 8, 2026-08-27) — "make it more
+  // aesthetic or artistic," after establishing that pushing the flat-SVG
+  // style further had a hard ceiling (user direction: "use free tier
+  // [shubibubi's Cozy Farm asset pack] then make own" for what it doesn't
+  // cover). Every plant alternates between the pack's two crops (tomato/
+  // potato), picked once per plant via the same hashPos() determinism every
+  // other scattered element in this scene already uses — same plant, same
+  // species, every load. Size ramps 14→38 units across the 5 real stages,
+  // in the same spirit as the old h/w arrays but tuned to the sprites'
+  // actual 16×16 source proportions instead of the hand-drawn circle sizes.
+  const species = hashPos(plant.id + 'species') < 0.5 ? 'tomato' : 'potato'
+  const size = [14, 20, 27, 33, 38][i]
 
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
 
@@ -43,7 +53,7 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
           it shipped). Keeping it as a sibling means the visual group's own
           fill-box — and therefore its scale origin — only ever reflects the
           shape that's actually drawn. */}
-      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <circle cx={0} cy={-size / 2} r={Math.max(16, size / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick}
         className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
         {/* Native <title> stays as the a11y fallback (screen readers, and
@@ -55,29 +65,10 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
             of why the village read flatter/less charming: nothing looked
             like it was actually standing on the ground, just pasted onto
             it. */}
-        <ellipse cx={0} cy={1.5} rx={Math.max(4, w / 2.3)} ry={1.6} fill="var(--text)" opacity={0.12} />
-        {/* stem */}
-        <rect x={-1.2} y={-h} width={2.4} height={h} rx={1.2} fill={color} opacity={0.75} />
-        {i === 0 && <circle cy={-h - 2} r={3.5} fill={color} />}
-        {i === 1 && (
-          <>
-            <ellipse cx={-5} cy={-h + 2} rx={5.5} ry={3.4} fill={color} transform="rotate(-24 -5 0)" />
-            <ellipse cx={5} cy={-h - 1} rx={5.5} ry={3.4} fill={color} transform="rotate(24 5 0)" />
-          </>
-        )}
-        {i >= 2 && (
-          <>
-            <circle cx={0} cy={-h} r={w / 2} fill={color} opacity={0.92} />
-            <circle cx={-w / 3.2} cy={-h + w / 5} r={w / 3.4} fill={color} opacity={0.75} />
-            <circle cx={w / 3.2} cy={-h + w / 5.5} r={w / 3.8} fill={color} opacity={0.7} />
-            {/* Sheen — a plain flat-filled circle reads as a paper cutout;
-                this makes it read as lit from above instead. */}
-            {!plant.dormant && <circle cx={0} cy={-h} r={w / 2} fill="url(#vsheen)" />}
-          </>
-        )}
-        {plant.dormant && i >= 1 && (
-          <circle cx={0} cy={-h - w / 2 - 6} r={1.6} fill="var(--muted)" opacity={0.5} />
-        )}
+        <ellipse cx={0} cy={1.5} rx={Math.max(4, size / 2.6)} ry={1.6} fill="var(--text)" opacity={0.12} />
+        <image href={`/village-assets/${species}-${i}.png`} x={-size / 2} y={-size}
+          width={size} height={size}
+          style={{ imageRendering: 'pixelated', filter: plant.dormant ? 'grayscale(1)' : undefined }} />
       </g>
     </g>
   )
@@ -667,19 +658,13 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
               INTO, not three trees standing in a row. */}
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
-          <g transform="translate(-9 -1)">
-            <rect x={-1} y={-4} width={2} height={5} fill={TRIM} opacity={0.8} />
-            <path d="M -6 -3 L 0 -14 L 6 -3 Z" fill="var(--emerald)" fillOpacity={0.85} />
-          </g>
-          <g>
-            <rect x={-1.2} y={-5} width={2.4} height={7} fill={TRIM} opacity={0.85} />
-            <path d="M -8 -4 L 0 -22 L 8 -4 Z" fill="var(--emerald)" />
-            <path d="M -6.5 -10 L 0 -24 L 6.5 -10 Z" fill="var(--emerald)" opacity={0.85} />
-          </g>
-          <g transform="translate(9 1)">
-            <rect x={-1} y={-3} width={2} height={4} fill={TRIM} opacity={0.8} />
-            <circle cx={0} cy={-6} r={5.5} fill="var(--emerald)" fillOpacity={0.8} />
-          </g>
+          {/* Real pixel-art tree sprite (round 8, 2026-08-27), same "use
+              free tier then make own" direction as PlantShape/Home — three
+              copies at varying scale/position read as a small grove without
+              needing three different hand-drawn tree shapes. */}
+          <image href="/village-assets/tree.png" x={-9 - 8} y={-1 - 16} width={16} height={13} style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/tree.png" x={-11} y={-27} width={22} height={18} style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/tree.png" x={9 - 7} y={1 - 14} width={14} height={11} style={{ imageRendering: 'pixelated' }} />
         </g>
       )
     case 'building': // Projects — a construction site: stacked lumber, a sawhorse, the crane.

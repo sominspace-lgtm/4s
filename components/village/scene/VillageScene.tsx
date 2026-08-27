@@ -921,40 +921,28 @@ export default function VillageScene({
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
-        {/* Wall switched from flat var(--surface2) to the vwall gradient
-            (round 8 atmosphere pass, 2026-08-27) — a flat-filled rect this
-            large (84×58, by far the biggest single fill in the scene) was
-            the single most obvious "flat vector" tell in the whole picture.
-            The gradient plus vsheen's own highlight on top gives it real
-            top-lit dimension instead. */}
-        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vwall)" stroke="var(--border)" strokeWidth={1.3} />
-        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vsheen)" />
-        {/* Roof + trim switched from var(--gold)/var(--slate) to the same
-            fixed ROOF/TRIM hex every other building in the scene uses
-            (round 6 fix, 2026-08-27) — var(--gold) is Bloom's dark sage
-            green, not gold, and was rendering this roof green right next
-            to DistrictArt's correctly-orange ROOF, which is what actually
-            made "two houses" look like two different houses instead of one
-            (see this file's own header note and shapes.tsx's ROOF export
-            comment). Solid ROOF swapped for the vroof gradient in round 8,
-            same dimensionality reasoning as the wall above. */}
-        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill="url(#vroof)" fillOpacity={0.92} stroke={TRIM} strokeWidth={1.1} strokeOpacity={0.8} />
-        <path d="M -49 -58 Q -20 -78 0 -80 Q -14 -66 -38 -58 Z" fill={ROOF_LIGHT} opacity={0.55} />
-        {/* Porch — a small overhang roof on two posts, framing the door */}
-        <rect x={-20} y={-36} width={40} height={2.4} rx={1} fill={TRIM} opacity={0.7} />
-        <rect x={-19} y={-36} width={1.6} height={36} fill={TRIM} opacity={0.65} />
-        <rect x={17.4} y={-36} width={1.6} height={36} fill={TRIM} opacity={0.65} />
-        <rect x={-24} y={0.5} width={48} height={2} fill={TRIM} opacity={0.5} />
-        <rect x={-10} y={-32} width={20} height={32} rx={3.5} fill={TRIM} opacity={0.55} />
-        {/* Windows glow after dark, same reasoning as BuildingShape's own
-            (2026-08-24, were unconditionally lit before). Third small
-            "bedroom" window up in the gable, per the redesign brief. */}
-        <rect x={-32} y={-46} width={11} height={11} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.75 : 0.5} className={dark ? 'village-glow' : undefined} />
-        <rect x={21} y={-46} width={11} height={11} rx={2.5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.55 : 0.4} />
-        <circle cy={-72} r={5} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--border)" strokeWidth={0.8}
-          opacity={dark ? 0.7 : 0.45} className={dark ? 'village-glow' : undefined} />
+        {/* Real pixel-art sprite, not hand-drawn paths (round 8, 2026-08-27) —
+            "make it more aesthetic or artistic," after establishing pushing
+            the flat-SVG style further had a real ceiling (see globals'/this
+            file's own atmosphere-pass comments from earlier this round).
+            User direction: "use free tier [shubibubi's Cozy Farm pack] then
+            make own" for what it doesn't cover — Home, being the single
+            biggest and most-looked-at element in the whole scene, is the
+            highest-value swap to an actual licensed sprite. Cropped from the
+            pack's own sheet (public/village-assets/home-house.png), non-
+            commercial free-tier license — fine for a private household app,
+            revisit if 4S is ever sold. Source crop is 63×80px; scaled here
+            to 79×100 (same ~0.79 aspect ratio) for a footprint close to the
+            old hand-drawn house's visual weight. imageRendering: pixelated
+            keeps the pixel edges crisp instead of blurring on upscale. */}
+        <image href="/village-assets/home-house.png" x={-39.5} y={-100} width={79} height={100}
+          style={{ imageRendering: 'pixelated' }} />
+        {/* Window glow after dark — the sprite has no baked-in light state,
+            so this is a soft blurred amber ellipse roughly over the round
+            window, same vglow filter as the sun/moon/lamps. */}
+        {dark && <ellipse cx={0} cy={-60} rx={9} ry={9} fill="var(--amber)" opacity={0.35} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
-          <path d="M 24 -84 L 24 -98 L 31 -98 L 31 -84" fill="none" stroke="var(--border)" strokeWidth={2} />
+          <path d="M 28 -88 L 28 -102 L 35 -102 L 35 -88" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
       </g>
 
