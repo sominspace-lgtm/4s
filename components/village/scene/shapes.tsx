@@ -211,9 +211,16 @@ export function BushShape({ x, y, scale = 1, tone, light, opacity = 1 }: {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">
       <ellipse cx={0} cy={1.5} rx={11} ry={2.2} fill="var(--text)" opacity={0.13} />
-      <circle cx={-6} cy={-3.5} r={5.4} fill={tone} />
-      <circle cx={6} cy={-3} r={5} fill={tone} />
-      <circle cx={0} cy={-6.5} r={6.6} fill={tone} />
+      {/* A soft dark edge on the base circles (round 7 fix, 2026-08-27) — the
+          bush's own tone sits close in hue to the ground it's drawn on, so
+          without an edge it barely registered against the grass at all
+          (live report showed a foreground almost entirely grass/flowers,
+          no visible bushes). A thin var(--text) stroke at low opacity reads
+          as a shadow line, same idiom as this file's grounding ellipses,
+          without needing a second darker color. */}
+      <circle cx={-6} cy={-3.5} r={5.4} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
+      <circle cx={6} cy={-3} r={5} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
+      <circle cx={0} cy={-6.5} r={6.6} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
       {/* Sunlit cap and shadowed base — the volume, in two shapes. */}
       <circle cx={-1.5} cy={-8.5} r={4} fill={light} opacity={0.75} />
       <circle cx={4} cy={-4.5} r={2.6} fill={light} opacity={0.4} />
