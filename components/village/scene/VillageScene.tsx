@@ -146,7 +146,12 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   return {
     id: seed,
     x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85,
-    y: GROUND_Y + 2 + hashPos(seed + 'y') * 34,
+    // Extended from +2..+36 to +2..+56 (round 14, 2026-08-27) — that left a
+    // bare 22-unit gap (y 246..268) between where MIDGROUND stopped and
+    // FOREGROUND started, undoing some of round 6's own "close the empty
+    // space" fix now that there's a real named prop or two also sitting in
+    // that band.
+    y: GROUND_Y + 2 + hashPos(seed + 'y') * 54,
     scale: 0.5 + hashPos(seed + 's') * 0.5,
     tone: 1 + Math.floor(hashPos(seed + 't') * 3),
   }
@@ -271,17 +276,13 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   busStop: { x: 568, y: GROUND_Y + 10 },
   vegCrate: { x: 122, y: GROUND_Y + 8 },
   bike: { x: 358, y: GROUND_Y + 2 },
-  birdFeeder: { x: 345, y: GROUND_Y - 20 },
   flowerPot: { x: 340, y: GROUND_Y + 8 },
   laundryBasket: { x: 448, y: GROUND_Y + 6 },
   breadBasket: { x: 478, y: GROUND_Y + 8 },
-  workshopCrane: { x: 690, y: GROUND_Y - 2 },
-  blueprints: { x: 640, y: GROUND_Y - 1 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
   teaSet: { x: 220, y: GROUND_Y - 5 },
   picnicBlanket: { x: 255, y: GROUND_Y + 16 },
   swing: { x: 180, y: GROUND_Y + 6 },
-  luggage: { x: 505, y: GROUND_Y + 4 },
   blankSign: { x: 540, y: GROUND_Y - 2 },
   bushMound: { x: 78, y: GROUND_Y - 2 },
   floweringBush: { x: 611, y: GROUND_Y + 27 },
@@ -289,7 +290,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   rockCluster: { x: 693, y: GROUND_Y + 29 },
   // Round 13 (2026-08-27) additions.
   flowerCluster: { x: 240, y: GROUND_Y + 33 },
-  paperLantern: { x: 565, y: GROUND_Y - 20 },
+  paperLantern: { x: 565, y: GROUND_Y + 10 },
 }
 
 export default function VillageScene({
@@ -982,15 +983,27 @@ export default function VillageScene({
       {(() => {
         const p0 = decorPos('paperLantern')
         const w = 5.7, h = 14 // 141×345 source, same aspect ratio
+        // A real post now (round 14 fix, 2026-08-27, "make sure all
+        // elements are on the ground") — the sprite itself is a HANGING
+        // lantern (its own art includes a mounting bracket at top), and
+        // rendering just that, floating at head height with only a ground
+        // shadow under it, read as unsupported. A short post planted at
+        // y=0 (the anchor's own ground level, unlike round 13's
+        // GROUND_Y-20 default) carries the bracket up to where the sprite
+        // takes over — the same "post holds the fixture up" logic
+        // LampShape already uses for the stone lantern.
+        const postH = 10
         return (
           <g transform={`translate(${p0.x} ${p0.y})`} opacity={0.95}
             onPointerDown={startDrag('paperLantern')} style={{ cursor: arranging ? (draggingId === 'paperLantern' ? 'grabbing' : 'grab') : undefined }}>
             <title>A paper lantern</title>
-            {dark && <circle cy={-h / 2} r={7} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
-            <image href={`/village-assets/paper-lantern-${dark ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-h} width={w} height={h}
+            <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
+            <rect x={-0.7} y={-postH} width={1.4} height={postH} fill={TRIM} opacity={0.8} />
+            {dark && <circle cy={-postH - h / 2} r={7} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
+            <image href={`/village-assets/paper-lantern-${dark ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
               style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
             {arranging && (
-              <rect x={-w / 2 - 2} y={-h - 2} width={w + 4} height={h + 4} rx={4}
+              <rect x={-w / 2 - 2} y={-postH - h - 2} width={w + 4} height={postH + h + 4} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
                 opacity={draggingId === 'paperLantern' ? 0.9 : 0.4} />
             )}
@@ -1096,10 +1109,12 @@ export default function VillageScene({
       })} />
 
       {/* Home's own personal objects (2026-08-25) — "make Home feel like MY
-          home," not another building. A leaning bike and a bird feeder,
-          fixed just off the porch — small, specific, lived-in details
-          rather than another functional prop. Purely decorative, no
-          onClick, same as the benches/flower beds scattered elsewhere. */}
+          home," not another building. Purely decorative, no onClick, same
+          as the benches/flower beds scattered elsewhere.
+          The hand-drawn bird feeder is gone (round 14, 2026-08-27, "remove
+          all old out of style elements") — no matching sprite exists for
+          it, and it was the one remaining raw SVG shape standing right next
+          to the bike's real sprite. */}
       {/* Real sprite, round 9 (2026-08-27) — same pack as the cottage/cast. */}
       <g transform={`translate(${decorPos('bike').x} ${decorPos('bike').y})`} opacity={0.9}
         onPointerDown={startDrag('bike')} style={{ cursor: arranging ? (draggingId === 'bike' ? 'grabbing' : 'grab') : undefined }}>
@@ -1107,13 +1122,6 @@ export default function VillageScene({
         <ellipse cx={0} cy={7.5} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/bicycle.png" x={-13} y={-1} width={26} height={16.5}
           style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(${decorPos('birdFeeder').x} ${decorPos('birdFeeder').y})`} opacity={0.85}
-        onPointerDown={startDrag('birdFeeder')} style={{ cursor: arranging ? (draggingId === 'birdFeeder' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A bird feeder in the yard</title>
-        <line x1={0} y1={0} x2={0} y2={16} stroke="var(--slate)" strokeWidth={1.2} />
-        <path d="M -6 -3 L 6 -3 L 4 3 L -4 3 Z" fill="var(--gold)" fillOpacity={0.5} stroke="var(--gold)" strokeWidth={0.8} />
-        <path d="M -6 -3 Q 0 -8 6 -3" fill="none" stroke="var(--gold)" strokeWidth={0.8} opacity={0.6} />
       </g>
 
       {/* Three more real sprites from the same custom pack, filling out
@@ -1165,40 +1173,23 @@ export default function VillageScene({
           are no buildings yet. */}
       <FeatureIcon kind="building" x={(buildingSlots[0]?.x ?? 600) - 16} y={(buildingSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
 
-      {/* Workshop identity (2026-08-25) — a small crane and a blueprint
-          sheet, fixed just past the buildings themselves, so Projects reads
-          as an active construction yard rather than the same tile-icon
-          language as every other district. One-time scenery, not tied to
-          any building count. */}
-      <g transform={`translate(${decorPos('workshopCrane').x} ${decorPos('workshopCrane').y})`} opacity={0.7}
-        onPointerDown={startDrag('workshopCrane')} style={{ cursor: arranging ? (draggingId === 'workshopCrane' ? 'grabbing' : 'grab') : undefined }}>
-        <title>The workshop crane</title>
-        <line x1={0} y1={0} x2={0} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
-        <line x1={-2} y1={-46} x2={22} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
-        <line x1={-2} y1={-46} x2={-10} y2={-40} stroke="var(--slate)" strokeWidth={1.6} />
-        <line x1={18} y1={-46} x2={18} y2={-30} stroke="var(--slate)" strokeWidth={1} opacity={0.8} />
-      </g>
-      <g transform={`translate(${decorPos('blueprints').x} ${decorPos('blueprints').y})`} opacity={0.75}
-        onPointerDown={startDrag('blueprints')} style={{ cursor: arranging ? (draggingId === 'blueprints' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Blueprints, rolled out on a sawhorse</title>
-        <rect x={-10} y={-6} width={20} height={7} rx={0.6} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.7} />
-        <line x1={-7} y1={-3.5} x2={3} y2={-3.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
-        <line x1={-7} y1={-1.5} x2={6} y2={-1.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
-      </g>
-
+      {/* The hand-drawn crane and blueprint sheet (2026-08-25) that used to
+          stand in for Projects' identity are gone (round 14, 2026-08-27,
+          "remove all old out of style elements") — redundant now that the
+          district has a real workshop.png building (round 11) a few units
+          away; keeping both was two different art styles competing for the
+          same "this is a workshop" job. */}
 
       {/* People identity (2026-08-25) — a second bench angled toward the
           one already scattered near this district (see PROPS.benches
-          above) plus a small stack of letters, so People reads as a social
-          corner rather than the same tile language as everywhere else. */}
+          above), so People reads as a social corner rather than the same
+          tile language as everywhere else. The hand-drawn "letter" prop
+          that used to sit beside it is gone (round 14) — real tea-set/
+          picnic-blanket sprites already cover this corner's identity. */}
       <g transform={`translate(${decorPos('peopleCorner').x} ${decorPos('peopleCorner').y})`} opacity={0.75}
         onPointerDown={startDrag('peopleCorner')} style={{ cursor: arranging ? (draggingId === 'peopleCorner' ? 'grabbing' : 'grab') : undefined }}>
         <title>A quiet corner to sit and talk</title>
         <BenchShape x={0} y={0} />
-        <g transform="translate(16 -2) rotate(-8)">
-          <rect x={-4} y={-3} width={8} height={5.5} rx={0.5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.6} />
-          <rect x={-3} y={-1.6} width={6} height={4.5} rx={0.5} fill="var(--blush)" opacity={0.5} />
-        </g>
       </g>
 
       {/* Two more real sprites, round 10 (2026-08-27) — a tea set on the
@@ -1224,16 +1215,10 @@ export default function VillageScene({
           style={{ imageRendering: 'pixelated' }} />
       </g>
 
-      {/* Places identity (2026-08-25) — a small stack of luggage, marking
-          this corner as the departure point rather than another building. */}
-      <g transform={`translate(${decorPos('luggage').x} ${decorPos('luggage').y})`} opacity={0.8}
-        onPointerDown={startDrag('luggage')} style={{ cursor: arranging ? (draggingId === 'luggage' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Luggage, ready for the next trip</title>
-        <ellipse cx={0} cy={5} rx={9} ry={1.4} fill="var(--text)" opacity={0.12} />
-        <rect x={-8} y={-2} width={9} height={7} rx={1} fill="var(--slate)" opacity={0.6} />
-        <rect x={0} y={-6} width={7} height={11} rx={1} fill="var(--gold)" opacity={0.45} stroke="var(--gold)" strokeWidth={0.6} />
-        <line x1={3.5} y1={-6} x2={3.5} y2={-8} stroke="var(--gold)" strokeWidth={0.9} strokeLinecap="round" />
-      </g>
+      {/* The hand-drawn luggage stack (2026-08-25) is gone (round 14,
+          2026-08-27) — Places now has a real shop.png building (round 11)
+          and a real bus-stop.png (round 12); a hand-drawn suitcase next to
+          both read as a leftover from before either existed. */}
 
       {/* Real sprite, round 10 (2026-08-27) — a blank signpost near the
           Places kiosk, "use all of the custom sprites." */}

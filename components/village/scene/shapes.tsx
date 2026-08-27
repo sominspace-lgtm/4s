@@ -673,14 +673,17 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cx={0} cy={-14} r={5.5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
         </g>
       )
-    case 'people': // People — the user's own couple-on-a-bench sprite (round 13, 2026-08-27,
-      // village-animations-complete.zip's residents-cute sheet), replacing the round-4 hand-drawn
-      // bench + two circle-head figures. Real Sylvia/Harry art, not a stand-in — same reasoning
-      // that made a second FIGURE (not a second house) the right read for "People" in round 4.
+    case 'people': // People — an empty bench, not a second Sylvia/Harry (round 14 fix,
+      // 2026-08-27 — round 13 briefly used the pack's real couple-on-a-bench sprite here, but
+      // there should only ever be ONE Sylvia and ONE Harry in the village, and the real ones
+      // already stand by Home; a second rendering of them sitting on a district badge was
+      // exactly the kind of duplicate-character confusion the "two houses" fix spent a whole
+      // round eliminating for buildings. The real bench2.png sprite already used at the actual
+      // People corner (VillageScene's peopleCorner prop) stands in for the district itself too.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={13} ry={2.1} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/couple-bench.png" x={-8.35} y={-14} width={16.7} height={14}
+          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/bench2.png" x={-5.9} y={-7.5} width={11.85} height={7.5}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
