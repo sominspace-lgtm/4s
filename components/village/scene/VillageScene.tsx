@@ -862,6 +862,41 @@ export default function VillageScene({
       {PROPS.fences.map((f, i) => <FenceShape key={i} x={f.x} y={f.y} length={f.length} />)}
       {PROPS.lamps.map((l, i) => <LampShape key={i} x={l.x} y={l.y} dark={dark} />)}
 
+      {/* Six more real sprites, round 11 (2026-08-27, the user's own
+          village-matching-expansion-pack) — a gate marking the village's
+          own entrance, a car and a bus stop for two more districts to lean
+          on, and four ground-cover accents (bush/flowering bush/tall grass/
+          rock) scattered for variety beyond the procedural FOREGROUND
+          layer's own three shapes. All purely decorative — a title for
+          hover-free accessibility, no onClick, same idiom as every other
+          fixed prop in this file. */}
+      <g transform={`translate(58 ${GROUND_Y + 20})`} opacity={0.92}>
+        <title>The way into the village</title>
+        <ellipse cx={0} cy={4} rx={13} ry={2} fill="var(--text)" opacity={0.14} />
+        <image href="/village-assets/gate.png" x={-13.4} y={-16} width={26.7} height={16}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(500 ${GROUND_Y + 14})`} opacity={0.92}>
+        <title>Parked by the house</title>
+        <ellipse cx={0} cy={4.5} rx={13} ry={2} fill="var(--text)" opacity={0.14} />
+        <image href="/village-assets/car.png" x={-12.9} y={-12} width={25.8} height={12}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(568 ${GROUND_Y + 10})`} opacity={0.92}>
+        <title>A bus stop</title>
+        <ellipse cx={0} cy={4.5} rx={11} ry={1.8} fill="var(--text)" opacity={0.14} />
+        <image href="/village-assets/bus-stop.png" x={-10.5} y={-15.5} width={21} height={15.5}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <image href="/village-assets/bush-mound.png" x={78} y={GROUND_Y - 6} width={14.3} height={8.5}
+        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+      <image href="/village-assets/flowering-bush.png" x={598} y={GROUND_Y + 22} width={13.6} height={10}
+        style={{ imageRendering: 'pixelated' }} opacity={0.88} />
+      <image href="/village-assets/tall-grass.png" x={300} y={GROUND_Y + 26} width={10} height={9.8}
+        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+      <image href="/village-assets/rock-cluster.png" x={686} y={GROUND_Y + 24} width={13.8} height={9.8}
+        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+
       {/* Memory map (2026-08-24) — one small marker per date-idea area,
           scattered near the path via the same hashPos-by-id determinism
           everything else in the scene uses, so a given area always lands in
@@ -1104,19 +1139,15 @@ export default function VillageScene({
             ? `Archive Grove, Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`
             : `Archive Grove, Life Tree in its first year, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
         }</title>
-        {/* Greenhouse frame, behind the tree (2026-08-24 reskin) — Archive
-            reads as a generic tree in a plain spot without this; a small
-            glass-roofed frame around it reframes the whole thing as a
-            library/greenhouse for what you've finished and kept, not just
-            another district. Drawn first so the tree stands inside it. */}
-        <path d="M -28 4 L -28 -30 L 0 -46 L 28 -30 L 28 4"
-          fill="var(--surface2)" fillOpacity={0.22} stroke="var(--border)" strokeWidth={1} />
-        {/* Ridge accent switched from var(--gold) (Bloom's dark sage green)
-            to the same fixed ROOF used everywhere else (round 6 fix,
-            2026-08-27) — a stray green line on an otherwise warm-toned
-            scene, same underlying bug as Home's roof above. */}
-        <path d="M -28 -30 L 0 -46 L 28 -30" fill="none" stroke={ROOF} strokeWidth={0.8} opacity={0.55} />
-        <path d="M -14 -38 L -14 4 M 14 -38 L 14 4" stroke="var(--border)" strokeWidth={0.6} opacity={0.45} />
+        {/* The hand-drawn "greenhouse frame" that used to stand in for
+            Archive's library/greenhouse identity is gone (round 11,
+            2026-08-27) — DistrictArt's 'book' case now renders the user's
+            own real greenhouse.png sprite at the district badge a few units
+            away, so a second, translucent greenhouse-shaped outline back
+            here would just be redundant (and risked reading as another
+            structure, the exact "two houses" mistake earlier rounds spent
+            a long time fixing). The Life Tree itself stays — real
+            years-of-account data, not decoration. */}
         <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
           transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />
         <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.35} />

@@ -321,16 +321,20 @@ export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?
 // A signpost toward Trips (2026-08-24) — Places' Trips sub-tab has no
 // district of its own; a signpost at the village edge, pointing off-canvas,
 // gives "somewhere else" a presence without inventing an eighth district.
+// Real sprite (round 11, 2026-08-27, village-matching-expansion-pack) — an
+// actual directional arrow-sign on a post, an even better fit for "points
+// toward Trips" than the hand-drawn flag it replaces.
 export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  const w = 13.7, h = 18 // 207×272 source, same aspect ratio
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={8} cy={-14} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <circle cx={4} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
         <title>{label}</title>
-        <ellipse cx={0} cy={1.5} rx={4} ry={1.3} fill="var(--text)" opacity={0.12} />
-        <rect x={-1} y={-22} width={2} height={22} fill="var(--slate)" opacity={0.75} />
-        <path d="M 0 -20 L 20 -17 L 0 -14 Z" fill="var(--gold)" fillOpacity={0.75} stroke="var(--gold)" strokeWidth={0.7} />
+        <ellipse cx={0} cy={1.5} rx={5} ry={1.3} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/signpost2.png" x={-w / 2} y={-h + 1} width={w} height={h}
+          style={{ imageRendering: 'pixelated' }} />
       </g>
     </g>
   )
@@ -625,86 +629,52 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // renders its hit-rect and "Home" label at this position for click/drag; it just
       // has nothing left to draw, since the real house already exists a few pixels away.
       return null
-    case 'leaf': // Growth Forest — a small grove, threaded with a path, not one potted sprout.
+    case 'leaf': // Growth Forest — real tree sprites (round 11, 2026-08-27, the user's own
+      // village-matching-expansion-pack), replacing the single repeated tree.png icon with
+      // an actual small grove: one pine, one round tree, a third smaller round tree behind.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={14} ry={2.2} fill="var(--text)" opacity={0.16} />
-          {/* A path segment between the trees (2026-08-27, round 3) — same
-              stroke language as PATH_D — so this reads as a place you walk
-              INTO, not three trees standing in a row. */}
+          <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.16} />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
-          {/* Real pixel-art tree sprite (round 8, 2026-08-27), same "use
-              free tier then make own" direction as PlantShape/Home — three
-              copies at varying scale/position read as a small grove without
-              needing three different hand-drawn tree shapes. */}
-          <image href="/village-assets/tree.png" x={-9 - 8} y={-1 - 16} width={16} height={13} style={{ imageRendering: 'pixelated' }} />
-          <image href="/village-assets/tree.png" x={-11} y={-27} width={22} height={18} style={{ imageRendering: 'pixelated' }} />
-          <image href="/village-assets/tree.png" x={9 - 7} y={1 - 14} width={14} height={11} style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/round-tree.png" x={-16} y={-14} width={12.4} height={15}
+            style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+          <image href="/village-assets/pine-tree.png" x={-7} y={-26} width={13.3} height={26}
+            style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/round-tree.png" x={6} y={-19} width={15.8} height={19}
+            style={{ imageRendering: 'pixelated' }} />
         </g>
       )
-    case 'building': // Projects — a construction site: stacked lumber, a sawhorse, the crane.
-      // No walls, no roof at all (round 6 fix, 2026-08-27 — round 5's flat-roof revision was
-      // STILL a box with a roof and windows, and at real render size that reads as "a house"
-      // regardless of the roofline, live report "still 2 houses in the middle"). A workshop
-      // that hasn't built its walls yet can't be mistaken for one.
+    case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
+      // pack), replacing the hand-drawn construction site.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={14} ry={2.3} fill="var(--text)" opacity={0.17} />
-          {/* Stacked lumber */}
-          <g transform="translate(-8 -0.5)">
-            <rect x={-5.5} y={-2.2} width={11} height={2} rx={0.5} fill={ROOF} stroke={TRIM} strokeWidth={0.4} />
-            <rect x={-5} y={-4.2} width={10} height={2} rx={0.5} fill={ROOF_LIGHT} stroke={TRIM} strokeWidth={0.4} />
-            <rect x={-5.5} y={-6.2} width={11} height={2} rx={0.5} fill={ROOF} stroke={TRIM} strokeWidth={0.4} />
-          </g>
-          {/* A sawhorse */}
-          <g transform="translate(3 1.5)" stroke={TRIM} strokeWidth={0.9} strokeLinecap="round" fill="none">
-            <path d="M -5 0 L -1.5 -6.5 L 2 0" />
-            <path d="M -3.6 -3.5 L 1 -3.5" />
-          </g>
-          {/* Scaffold pole + the same crane silhouette as before. */}
-          <rect x={7} y={-24} width={1.4} height={26} fill={TRIM} opacity={0.85} />
-          <path d="M 7.7 -24 L 7.7 -32 L 15 -29" stroke={TRIM} strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 15 -29 L 15 -23.5" stroke={TRIM} strokeWidth={0.8} fill="none" strokeLinecap="round" />
-          {/* String marking out a foundation — "under construction," not "a finished house." */}
-          <path d="M -12 1.5 L 12 1.5" stroke={TRIM} strokeWidth={0.5} strokeDasharray="0.5 2.2" opacity={0.55} />
-          {dark && <circle cx={15} cy={-27} r={2} fill="var(--amber)" opacity={0.75} className="village-glow" />}
+          <ellipse cx={0} cy={2} rx={16} ry={2.3} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/workshop.png" x={-16.8} y={-24} width={33.5} height={24}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cx={4} cy={-15} r={5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
         </g>
       )
-    case 'book': // Archive — a stump with books stacked on top and a lantern beside it.
-      // No walls, no roof (round 6 fix, 2026-08-27, same "still 2 houses" report as Projects
-      // above) — nothing architectural left to be mistaken for a house.
+    case 'book': // Archive — a real greenhouse sprite (round 11, 2026-08-27, same custom pack) —
+      // the exact "library/greenhouse" identity this district has been reaching for by hand
+      // since the 2026-08-24 reskin, now with the actual building. The Life Tree stays where
+      // it is, drawn separately in VillageScene (real years-of-account data, not decoration).
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2.2} fill="var(--text)" opacity={0.17} />
-          {/* The stump — a short cylinder (side rect + top ellipse) with grain rings. */}
-          <rect x={-8} y={-9} width={16} height={9.5} fill={TRIM} opacity={0.5} />
-          <ellipse cx={0} cy={-9} rx={8} ry={2.6} fill={ROOF_LIGHT} stroke={TRIM} strokeWidth={0.6} />
-          <ellipse cx={0} cy={-9} rx={5.3} ry={1.7} fill="none" stroke={TRIM} strokeWidth={0.45} opacity={0.5} />
-          <ellipse cx={0} cy={-9} rx={2.6} ry={0.85} fill="none" stroke={TRIM} strokeWidth={0.4} opacity={0.45} />
-          {/* Books stacked on top, each tipped slightly so the stack reads as
-              precarious/lived-in rather than a neat printed pile. */}
-          <rect x={-6} y={-13.6} width={11} height={2.4} rx={0.5} fill="var(--amber)" opacity={0.85} transform="rotate(-3 -0.5 -12.4)" />
-          <rect x={-5} y={-16.1} width={9} height={2.4} rx={0.5} fill={ROOF} opacity={0.85} transform="rotate(2 -0.5 -14.9)" />
-          <rect x={-4} y={-18.4} width={7} height={2.2} rx={0.5} fill="var(--emerald)" opacity={0.8} transform="rotate(-4 -0.5 -17.3)" />
-          {/* A small lantern beside the stump, glowing after dark. */}
-          <g transform="translate(9.5 -4)">
-            <rect x={-0.6} y={0} width={1.2} height={5} fill={TRIM} opacity={0.7} />
-            <rect x={-2} y={-3.6} width={4} height={3.7} rx={0.8}
-              fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.95 : 0.85}
-              className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.4} strokeOpacity={0.5} />
-          </g>
+          <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/greenhouse.png" x={-15} y={-24} width={30} height={24}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cx={0} cy={-13} r={6} fill="var(--amber)" opacity={0.16} filter="url(#vglow)" />}
         </g>
       )
-    case 'places': // Places — a little kiosk: signpost with an awning and a stand, not a bare sign.
+    case 'places': // Places — a real market/shop sprite (round 11, 2026-08-27, same custom
+      // pack), replacing the hand-drawn kiosk.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={9} ry={1.8} fill="var(--text)" opacity={0.16} />
-          <rect x={-1} y={-24} width={2} height={26} fill={TRIM} opacity={0.85} />
-          {/* A small stand base, so the post reads as a kiosk you'd stop at. */}
-          <rect x={-4} y={0} width={8} height={2.2} rx={0.6} fill="url(#vwall)" stroke={TRIM} strokeWidth={0.5} />
-          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill="url(#vroof)" stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" transform="rotate(-3 -1 -19)" />
-          <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" transform="rotate(3 -1 -11)" />
+          <ellipse cx={0} cy={2} rx={16} ry={2.2} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/shop.png" x={-16.1} y={-24} width={32.3} height={24}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cx={0} cy={-14} r={5.5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
         </g>
       )
     case 'people': // People — a bench with two people sharing it, not a house (round 4 point 2, 2026-08-27 —

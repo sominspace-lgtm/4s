@@ -21,3 +21,16 @@ pack's own page for current pricing).
 `archive-house.png` is downloaded but not currently used in the scene (kept in reserve —
 see VillageScene.tsx's own comment on why a second house-shaped sprite risks reviving the
 "two houses" confusion from earlier rounds).
+
+## Custom sprites (2026-08-27, rounds 9 & 11)
+
+Everything else in this folder — `cottage.png`, `sylvia.png`, `harry.png`, `somi-cat.png`,
+`mailbox2.png`, `bicycle.png`, `bench2.png`, `stone-lantern.png`, `pennant.png`,
+`flower-pot.png`, `laundry-basket.png`, `bread-basket.png`, `book-stack.png`,
+`garden-lantern.png`, `tea-set.png`, `picnic-blanket.png`, `swing.png`, `blank-sign.png`,
+`veg-crate.png`, `round-tree.png`, `pine-tree.png`, `bush-mound.png`, `flowering-bush.png`,
+`tall-grass.png`, `rock-cluster.png`, `shop.png`, `greenhouse.png`, `workshop.png`, `car.png`,
+`fence2.png`, `gate.png`, `signpost2.png`, `mailbox3.png`, `bus-stop.png` — is the user's own
+custom-made art (two self-authored packs, `simple-cozy-village-sprite-pack.zip` and
+`village-matching-expansion-pack.zip`), style-matched to work together and to the free-tier
+Cozy Farm pieces above. No third-party license applies to these; they're the user's own.
