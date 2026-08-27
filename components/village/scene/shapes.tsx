@@ -160,14 +160,14 @@ export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: n
   )
 }
 
+// Real sprite (round 10, 2026-08-27) — same custom pack as the cottage/cast.
 export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
+  const w = 15.7, h = 9.9 // 327×207 source, same aspect ratio
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={2} rx={9} ry={1.6} fill="var(--text)" opacity={0.1} />
-      <rect x={-8} y={-4} width={16} height={2} rx={0.8} fill="var(--slate)" opacity={0.75} />
-      <rect x={-8} y={-1} width={16} height={1.6} rx={0.6} fill="var(--slate)" opacity={0.6} />
-      <rect x={-7} y={-4} width={1.4} height={6} fill="var(--slate)" opacity={0.6} />
-      <rect x={5.6} y={-4} width={1.4} height={6} fill="var(--slate)" opacity={0.6} />
+      <image href="/village-assets/bench2.png" x={-w / 2} y={-h + 2} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
     </g>
   )
 }
@@ -281,17 +281,17 @@ export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: numb
 // A lamppost (2026-08-25) — glows after dark, same window-glow reasoning as
 // BuildingShape's own (`dark` gates the lit look rather than leaving it
 // unconditionally on). Pure scenery, no click target.
+// Real sprite (round 10, 2026-08-27) — same custom pack. The stone lantern's
+// window is baked in as already-lit, so it reads warm even by day; the
+// amber blur glow is added only at night, on top, for real atmosphere.
 export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
+  const w = 12.5, h = 13.1 // 253×266 source, same aspect ratio
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
-      <rect x={-0.8} y={-22} width={1.6} height={22} fill="var(--slate)" opacity={0.75} />
-      {/* A soft bloom around the lamp head at night (round 4, 2026-08-27) —
-          was just the 3.4r head itself with no halo, easy to lose against a
-          dark sky even while lit. Same layered-glow idea as the sun/moon. */}
-      {dark && <circle cy={-24} r={8} fill="var(--amber)" opacity={0.18} filter="url(#vglow)" />}
-      <circle cy={-24} r={3.4} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--slate)" strokeWidth={0.7}
-        opacity={dark ? 0.9 : 0.6} className={dark ? 'village-glow' : undefined} />
+      <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
+      {dark && <circle cy={-8} r={6} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+      <image href="/village-assets/stone-lantern.png" x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
     </g>
   )
 }
@@ -340,15 +340,15 @@ export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; 
 // district, only on the actual day (see VillageScene's use of
 // soonestBirthdayDays === 0). No new data: the same daysUntilBirthday
 // already driving the district's count badge.
+// Real sprite (round 10, 2026-08-27) — the pack's own pennant banner reads
+// as festive on its own (a flower on cream fabric), replacing the hand-drawn
+// flag string.
 export function BuntingShape({ x, y }: { x: number; y: number }) {
-  const flags = [-14, -7, 0, 7, 14]
+  const w = 14.2, h = 12.5 // 281×247 source, same aspect ratio
   return (
-    <g transform={`translate(${x} ${y})`} opacity={0.85} pointerEvents="none">
-      <path d={`M ${flags[0]} -30 Q 0 -36 ${flags[flags.length - 1]} -30`} fill="none" stroke="var(--border)" strokeWidth={0.6} />
-      {flags.map((fx, i) => {
-        const fy = -30 - Math.sin((i / (flags.length - 1)) * Math.PI) * 6
-        return <path key={i} d={`M ${fx} ${fy} l 3 4 l -6 0 Z`} fill={i % 2 === 0 ? 'var(--gold)' : 'var(--blush)'} />
-      })}
+    <g transform={`translate(${x} ${y})`} opacity={0.95} pointerEvents="none">
+      <image href="/village-assets/pennant.png" x={-w / 2} y={-40} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
     </g>
   )
 }

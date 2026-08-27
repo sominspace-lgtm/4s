@@ -903,6 +903,14 @@ export default function VillageScene({
           <circle r={3} fill="none" stroke="var(--emerald)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
+      {/* Real sprite, round 10 (2026-08-27) — a vegetable crate at the edge
+          of the growing band, "use all of the custom sprites." */}
+      <g transform={`translate(122 ${GROUND_Y + 8})`} opacity={0.9}>
+        <title>Whatever's ready to pick</title>
+        <ellipse cx={0} cy={2} rx={7} ry={1.4} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/veg-crate.png" x={-7} y={-8} width={14.1} height={8}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
       {/* A leaf, literally next to a real plant (2026-08-24, was a fixed
           spot in the forest band) — anchored to the first plant slot's
           actual (x, y) so the icon marks something real growing there, not
@@ -969,6 +977,29 @@ export default function VillageScene({
         <path d="M -6 -3 Q 0 -8 6 -3" fill="none" stroke="var(--gold)" strokeWidth={0.8} opacity={0.6} />
       </g>
 
+      {/* Three more real sprites from the same custom pack, filling out
+          Home's yard (round 10, 2026-08-27, "use all of the custom
+          sprites"). Same purely-decorative idiom as the bike/bird-feeder
+          above — a title for hover-free accessibility, no onClick. */}
+      <g transform={`translate(340 ${GROUND_Y + 8})`} opacity={0.92}>
+        <title>A flower pot by the porch</title>
+        <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/flower-pot.png" x={-4.4} y={-10} width={8.7} height={10}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(448 ${GROUND_Y + 6})`} opacity={0.92}>
+        <title>Laundry, out to dry</title>
+        <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/laundry-basket.png" x={-4.8} y={-8} width={9.6} height={8}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(478 ${GROUND_Y + 8})`} opacity={0.92}>
+        <title>Fresh bread, cooling</title>
+        <ellipse cx={0} cy={2} rx={4.8} ry={1.1} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/bread-basket.png" x={-4.7} y={-8} width={9.5} height={8}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
         <g key={building.id} opacity={back ? 0.55 : 1}>
@@ -1025,6 +1056,26 @@ export default function VillageScene({
         </g>
       </g>
 
+      {/* Two more real sprites, round 10 (2026-08-27) — a tea set on the
+          bench and a picnic blanket spread nearby, so People reads as an
+          actual gathering spot, plus a swing a little further off. */}
+      <g transform={`translate(220 ${GROUND_Y - 5})`} opacity={0.92}>
+        <title>Tea, poured for whoever stops by</title>
+        <image href="/village-assets/tea-set.png" x={-6.4} y={-9} width={12.8} height={9}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(255 ${GROUND_Y + 16})`} opacity={0.92}>
+        <title>A picnic blanket, spread out</title>
+        <image href="/village-assets/picnic-blanket.png" x={-6.2} y={-8} width={12.5} height={8}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+      <g transform={`translate(180 ${GROUND_Y + 6})`} opacity={0.88}>
+        <title>A porch swing</title>
+        <ellipse cx={0} cy={2} rx={13} ry={2} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/swing.png" x={-14.9} y={-20} width={29.7} height={20}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
+
       {/* Places identity (2026-08-25) — a small stack of luggage, marking
           this corner as the departure point rather than another building. */}
       <g transform={`translate(505 ${GROUND_Y + 4})`} opacity={0.8}>
@@ -1033,6 +1084,15 @@ export default function VillageScene({
         <rect x={-8} y={-2} width={9} height={7} rx={1} fill="var(--slate)" opacity={0.6} />
         <rect x={0} y={-6} width={7} height={11} rx={1} fill="var(--gold)" opacity={0.45} stroke="var(--gold)" strokeWidth={0.6} />
         <line x1={3.5} y1={-6} x2={3.5} y2={-8} stroke="var(--gold)" strokeWidth={0.9} strokeLinecap="round" />
+      </g>
+
+      {/* Real sprite, round 10 (2026-08-27) — a blank signpost near the
+          Places kiosk, "use all of the custom sprites." */}
+      <g transform={`translate(540 ${GROUND_Y - 2})`} opacity={0.9}>
+        <title>A signpost, waiting to be marked</title>
+        <ellipse cx={0} cy={3} rx={8} ry={1.4} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/blank-sign.png" x={-8.2} y={-11} width={16.4} height={11}
+          style={{ imageRendering: 'pixelated' }} />
       </g>
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
@@ -1065,15 +1125,19 @@ export default function VillageScene({
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
           <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
-        {/* A small stack of books at the base — library, not just glasshouse. */}
+        {/* Real sprites, round 10 (2026-08-27, same custom pack) — replaces
+            the hand-drawn stack with the pack's own book-stack.png, and adds
+            a garden lantern on the other side for the "library/greenhouse"
+            mood this district has been reaching for since the 2026-08-24
+            reskin. */}
         <g transform="translate(-20 2)">
-          <rect x={-4} y={-3} width={8} height={3} rx={0.5} fill="var(--gold)" opacity={0.55} />
-          <rect x={-3.5} y={-6} width={7} height={3} rx={0.5} fill="var(--slate)" opacity={0.55} />
+          <image href="/village-assets/book-stack.png" x={-5.5} y={-7} width={11} height={7}
+            style={{ imageRendering: 'pixelated' }} />
         </g>
-        {/* A book, literally beside the Life Tree (2026-08-22) — same
-            reasoning as the lake's fish, the forest's leaf, and the
-            district's building above, fixed right next to the tree itself. */}
-        <FeatureIcon kind="book" x={26} y={-6} scale={0.75} opacity={0.55} />
+        <g transform="translate(24 3)">
+          <image href="/village-assets/garden-lantern.png" x={-6.9} y={-12} width={13.9} height={12}
+            style={{ imageRendering: 'pixelated' }} />
+        </g>
       </g>
 
       {/* Bloom Garden — waiting on BloomScan */}
