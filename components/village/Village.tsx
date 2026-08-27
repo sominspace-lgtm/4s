@@ -369,6 +369,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         </p>
       )}
 
+      {/* Pan hint (2026-08-27, round 5) — only shown once zoomed in, since
+          that's the only state where dragging the scene actually does
+          anything (see VillageScene's own pan-clamp comment). */}
+      {!compact && !arranging && zoom > 1 && (
+        <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
+          Drag to look around.
+        </p>
+      )}
+
       {!compact && !ambient && <VillageArrival caption={changes?.caption ?? null} />}
 
       {/* Widgets (2026-08-24) — the useful half of Village for personal

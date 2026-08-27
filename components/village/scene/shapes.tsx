@@ -308,15 +308,23 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // figure per plant/building/district at scale, which doesn't apply to
 // exactly three named, always-present characters — closer in spirit to the
 // Mailbox than to a per-entity pattern.
-export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
-  x: number; y: number; name: string; hairColor: string; outfitColor: string; onClick?: () => void
+export function VillagerShape({ x, y, name, hairColor, outfitColor, scale = 1, onClick }: {
+  x: number; y: number; name: string; hairColor: string; outfitColor: string
+  /** Round 4 bug-fix (2026-08-27) — Sylvia/Harry were drawn at 1x in a
+   *  12×21-unit box, which on the rendered canvas is a couple dozen physical
+   *  pixels: too small for the round-4 outfit-hem/blush detail to actually
+   *  read ("figures look too basic"). The detail was already there; it just
+   *  needed to be big enough to see. Scales from the feet (local origin),
+   *  so a taller figure doesn't float above the ground. */
+  scale?: number
+  onClick?: () => void
 }) {
   // stopPropagation (2026-08-26) — without it a tap also bubbles to the
   // scene's own onClick={() => setSelected(null)}, firing a second state
   // update right behind the figure's own handler on every single tap.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y})`} onClick={handleClick}
+    <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
@@ -358,13 +366,18 @@ const SOMI_BODY = '#F3EFE6'
 const SOMI_POINT = '#8B95A3'
 const SOMI_EYE = '#5C8FB5'
 
-export function CatShape({ x, y, name = 'Somi', onClick }: {
-  x: number; y: number; name?: string; onClick?: () => void
+export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
+  x: number; y: number; name?: string
+  /** Same reasoning as VillagerShape's own `scale` (round 4 bug-fix,
+   *  2026-08-27) — the whiskers/paws/nose added earlier this round were
+   *  too small to actually see at 1x. */
+  scale?: number
+  onClick?: () => void
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y})`} onClick={handleClick}
+    <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
@@ -611,32 +624,42 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           </g>
         </g>
       )
-    case 'building': // Projects — building + crane, same idea as before, more presence.
+    case 'building': // Projects — a workshop, deliberately NOT a gable-roofed house (round 4
+      // fix, 2026-08-27 — the plain box read as an unfinished/roofless house next to Home
+      // and Archive, live report "there are two houses?"). A flat slate roof cap with
+      // exposed beam ends reads as "under construction," not "a smaller house."
       return (
         <g>
           <ellipse cx={0} cy={2} rx={13} ry={2.2} fill="var(--text)" opacity={0.17} />
-          <rect x={-9} y={-20} width={18} height={22} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
-          <rect x={-9} y={-20} width={18} height={22} rx={2} fill="url(#vsheen)" />
+          <rect x={-9} y={-20} width={18} height={22} rx={1.5} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
+          <rect x={-9} y={-20} width={18} height={22} rx={1.5} fill="url(#vsheen)" />
+          <rect x={-10.5} y={-22.5} width={21} height={3} rx={1} fill="var(--slate)" stroke={TRIM} strokeWidth={0.6} opacity={0.85} />
+          {[-8, -3, 2, 7].map((bx, i) => (
+            <rect key={i} x={bx} y={-20} width={1} height={2} fill={TRIM} opacity={0.6} />
+          ))}
           {[[-6, -16], [2.5, -16], [-6, -9], [2.5, -9]].map(([wx, wy], i) => (
             <rect key={i} x={wx} y={wy} width={3.5} height={3.5} rx={0.5}
               fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.8 + (i % 2) * 0.1 : 0.9}
               stroke={TRIM} strokeWidth={0.4} strokeOpacity={0.5}
               className={dark && i === 0 ? 'village-glow' : undefined} />
           ))}
-          <path d="M 9 -20 L 9 -30 L 15 -27" stroke={TRIM} strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 9 -22 L 9 -32 L 15 -29" stroke={TRIM} strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
           {/* A plank leaning at the base — the workshop's own material, not
               just a building with a crane beside it. */}
           <rect x={-11} y={-1} width={7} height={1.6} rx={0.4} fill={ROOF} stroke={TRIM} strokeWidth={0.4} transform="rotate(-8 -7.5 -0.2)" opacity={0.85} />
         </g>
       )
-    case 'book': // Archive — a tiny shed/greenhouse, not a flat book stack.
+    case 'book': // Archive — a domed little library, not a gable-roofed house (round 4 fix,
+      // 2026-08-27, same "two houses" report as Projects above) — a curved roof is enough to
+      // break the house silhouette while keeping the same warm wall material as everything else.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={12} ry={2.1} fill="var(--text)" opacity={0.16} />
-          <rect x={-9} y={-14} width={18} height={16} rx={1.5} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
-          <rect x={-9} y={-14} width={18} height={16} rx={1.5} fill="url(#vsheen)" />
-          <path d="M -11 -14 L 0 -24 L 11 -14 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" />
-          <circle cx={0} cy={-8} r={3}
+          <rect x={-9} y={-12} width={18} height={14} rx={1.5} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
+          <rect x={-9} y={-12} width={18} height={14} rx={1.5} fill="url(#vsheen)" />
+          <path d="M -10 -12 Q 0 -25 10 -12 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" />
+          <path d="M -9 -12.5 Q -5 -21 -0.5 -23 Q -3.5 -17 -7.5 -12 Z" fill={ROOF_LIGHT} opacity={0.65} />
+          <circle cx={0} cy={-6} r={3}
             fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.9 : 0.85}
             className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
           <rect x={-8} y={-2.2} width={6} height={2} rx={0.4} fill="var(--amber)" opacity={0.78} />

@@ -414,6 +414,21 @@ export default function VillageScene({
     return { x: Math.max(15, Math.min(785, local.x)), y: Math.max(15, Math.min(410, local.y)) }
   }
 
+  // Unclamped version of the above, for pan (2026-08-27, round 5) — the
+  // clamping in toSvgPoint exists to keep a dragged landmark on-canvas; for
+  // measuring how far the pointer has moved in SVG units, clamping the raw
+  // point would silently flatten the delta near the edges, making a drag
+  // that starts or crosses near x=15/785 or y=15/410 feel like it stalls.
+  function rawSvgPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+    const svg = svgRef.current
+    const ctm = svg?.getScreenCTM()
+    if (!svg || !ctm) return null
+    const pt = svg.createSVGPoint()
+    pt.x = clientX; pt.y = clientY
+    const local = pt.matrixTransform(ctm.inverse())
+    return { x: local.x, y: local.y }
+  }
+
   function startDrag(id: LandmarkId) {
     return (e: React.PointerEvent) => {
       if (!arranging) return
@@ -428,6 +443,53 @@ export default function VillageScene({
     if (p) onMoveLandmark(draggingId, Math.round(p.x), Math.round(p.y))
   }
   function endDrag() { setDraggingId(null) }
+
+  // Drag-to-pan (2026-08-27, round 5) — "should we make the village like
+  // Stardew/Animal Crossing, users can wander if they want." A full
+  // controllable character and a pixel-art rebuild are a different project
+  // (confirmed with the user); this is the scoped version: once you've
+  // zoomed in, you can drag the scene around like a map instead of only
+  // seeing whatever the zoom's fixed center happened to land on. At zoom 1
+  // there's nothing off-screen to reveal, so panning is a no-op by
+  // construction (see the clamp below) rather than something that needs to
+  // be separately disabled.
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const panDragRef = useRef<{ startClientX: number; startClientY: number; startPanX: number; startPanY: number; moved: boolean } | null>(null)
+  // Swallows the click that would otherwise follow a real pan-drag (e.g.
+  // clearing the selected callout, or firing a district/entity's own
+  // onClick if the drag happened to end over one) — set for one event loop
+  // tick via a capturing listener below, then cleared.
+  const suppressClickRef = useRef(false)
+
+  function onScenePointerDown(e: React.PointerEvent) {
+    if (arranging || zoom <= 1 || draggingId) return
+    panDragRef.current = { startClientX: e.clientX, startClientY: e.clientY, startPanX: pan.x, startPanY: pan.y, moved: false }
+  }
+  function onScenePointerMove(e: React.PointerEvent) {
+    onPointerMove(e) // landmark-drag path, unchanged
+    const s = panDragRef.current
+    if (!s) return
+    const start = rawSvgPoint(s.startClientX, s.startClientY)
+    const cur = rawSvgPoint(e.clientX, e.clientY)
+    if (!start || !cur) return
+    const dx = cur.x - start.x
+    const dy = cur.y - start.y
+    if (!s.moved && Math.hypot(dx, dy) < 3) return
+    s.moved = true
+    setPan({ x: s.startPanX - dx, y: s.startPanY - dy })
+  }
+  function onScenePointerUp() {
+    endDrag()
+    if (panDragRef.current?.moved) suppressClickRef.current = true
+    panDragRef.current = null
+  }
+  function onSceneClickCapture(e: React.MouseEvent) {
+    if (suppressClickRef.current) {
+      e.stopPropagation()
+      e.preventDefault()
+      suppressClickRef.current = false
+    }
+  }
   const grew = new Set(changes?.grownPlantIds ?? [])
   const planted = new Set(changes?.newPlantIds ?? [])
   const landmarked = new Set(changes?.newLandmarkIds ?? [])
@@ -482,19 +544,33 @@ export default function VillageScene({
   // out of range.
   const vbW = 800 / zoom
   const vbH = 440 / zoom
-  const viewBox = `${400 - vbW / 2} ${220 - vbH / 2} ${vbW} ${vbH}`
+  // Pan, clamped so the viewBox can never leave the canvas's own 800×440
+  // bounds — at zoom 1, vbW/vbH already equal the full canvas, so this
+  // clamp collapses to (0, 0) automatically and dragging does nothing,
+  // matching the zoom floor's own "nothing past the edge to reveal" rule.
+  const maxPanX = Math.max(0, (800 - vbW) / 2)
+  const maxPanY = Math.max(0, (440 - vbH) / 2)
+  const panX = Math.min(maxPanX, Math.max(-maxPanX, pan.x))
+  const panY = Math.min(maxPanY, Math.max(-maxPanY, pan.y))
+  const viewBox = `${400 - vbW / 2 - panX} ${220 - vbH / 2 - panY} ${vbW} ${vbH}`
   return (
     <svg
       ref={svgRef}
       viewBox={viewBox}
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
-      style={{ width: '100%', height: 'auto', display: 'block', touchAction: arranging ? 'none' : undefined }}
+      style={{
+        width: '100%', height: 'auto', display: 'block',
+        touchAction: arranging || zoom > 1 ? 'none' : undefined,
+        cursor: !arranging && zoom > 1 ? (panDragRef.current?.moved ? 'grabbing' : 'grab') : undefined,
+      }}
       onClick={() => setSelected(null)}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerLeave={endDrag}
-      onPointerCancel={endDrag}
+      onClickCapture={onSceneClickCapture}
+      onPointerDown={onScenePointerDown}
+      onPointerMove={onScenePointerMove}
+      onPointerUp={onScenePointerUp}
+      onPointerLeave={onScenePointerUp}
+      onPointerCancel={onScenePointerUp}
     >
       <defs>
         <radialGradient id="vvignette" cx="50%" cy="45%" r="75%">
@@ -973,11 +1049,11 @@ export default function VillageScene({
           means the cast always wins any future overlap too, not just this
           one measured case. */}
       <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)" scale={1.7}
           onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
       </g>
       <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)" scale={1.7}
           onClick={locked ? openFigureOrToggle('harry') : undefined} />
       </g>
       {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
@@ -988,7 +1064,7 @@ export default function VillageScene({
           click"). Here she's ~46 units from the Mailbox and ~60 from
           Harry, clear of both. */}
       <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
+        <CatShape x={480} y={GROUND_Y + 30} name="Somi" scale={1.5} onClick={openSomi} />
       </g>
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
