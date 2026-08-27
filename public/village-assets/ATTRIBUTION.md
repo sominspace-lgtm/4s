@@ -41,7 +41,16 @@ Farm pieces above. No third-party license applies to these; they're the user's o
 `fence2.png` and `mailbox3.png` are downloaded but not used yet (see VillageScene.tsx's own
 comments — fence2 doesn't fit FenceShape's variable-length API without restructuring it, and
 mailbox3 would duplicate Home's existing mailbox2). `somi-cat.png` (round 9's single static
-pose) was deleted in round 13 — fully superseded by the seven-pose SpriteCycle animation.
+pose) was deleted in round 13 — fully superseded by SpriteCycle animation.
+
+`somi-idle-1.png`…`-3.png`, `somi-walk.png`, `somi-stretch.png`, `somi-play.png` were replaced
+again in round 15 (2026-08-27) with a cleaner six-pose set the user supplied directly as
+`village-animation-somi-transparent.png` (not part of the three zips above) — genuinely clean
+hard-alpha art (confirmed via a full pixel histogram: every pixel is either 0 or 255 alpha, no
+soft/dithered edges), each frame cropped to its own exact opaque bounding box with zero padding
+so every pose's "ground" lines up identically when SpriteCycle switches between them.
+`somi-belly-up.png` (round 13, a different source file with no equivalent pose here) was
+deleted rather than mixed with this cleaner set.
 
 **There are only ever two people in this village: Sylvia and Harry, rendered once each (real
 sprites, near Home).** `couple-bench.png` (a real couple-on-a-bench crop from

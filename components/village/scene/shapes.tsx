@@ -426,22 +426,27 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  // Real sprite art (round 9), now actually alive (round 13, 2026-08-27,
-  // village-animations-complete.zip) — the single static somi-cat.png
-  // pose is replaced with SpriteCycle across seven real poses: three
-  // subtly different sitting/tail-swish frames (the "idle breathing" of
-  // the cycle), then a walk, a stretch-and-sniff, a play-pounce, and a
-  // belly-up sprawl, in that order, 3s each (21s full loop) — slow enough
-  // to read as "she's actually doing things" rather than a fidgety loop.
-  const h = 22
+  // Real sprite art (round 9), made alive (round 13), then replaced with a
+  // cleaner second animation set the user supplied directly (round 15,
+  // 2026-08-27, village-animation-somi-transparent.png — genuinely clean
+  // hard-alpha art, confirmed via a full histogram: every pixel is either
+  // 0 or 255, no soft/dithered edges at all). Six poses now, not seven —
+  // round 13's belly-up frame came from a different source file and had
+  // no equivalent here, so it's dropped rather than mixed with a
+  // differently-styled art source. Every frame cropped to its own EXACT
+  // opaque bounding box (no padding) specifically so SpriteCycle's
+  // bottom-anchor lines up the same "ground" position in every pose —
+  // the user's own "make sure they are aligned" ask: padding this size
+  // would’ve differed as a fraction of each frame's own height and made
+  // poses visibly hop up/down as they cycled.
+  const h = 20
   const frames = [
-    { src: '/village-assets/somi-idle-1.png', aspect: 172 / 272 },
-    { src: '/village-assets/somi-idle-2.png', aspect: 229 / 272 },
-    { src: '/village-assets/somi-idle-3.png', aspect: 230 / 272 },
-    { src: '/village-assets/somi-walk.png', aspect: 305 / 254 },
-    { src: '/village-assets/somi-stretch.png', aspect: 300 / 248 },
-    { src: '/village-assets/somi-play.png', aspect: 322 / 159 },
-    { src: '/village-assets/somi-belly-up.png', aspect: 1061 / 675 },
+    { src: '/village-assets/somi-idle-1.png', aspect: 272 / 305 },
+    { src: '/village-assets/somi-idle-2.png', aspect: 240 / 301 },
+    { src: '/village-assets/somi-idle-3.png', aspect: 285 / 300 },
+    { src: '/village-assets/somi-walk.png', aspect: 360 / 230 },
+    { src: '/village-assets/somi-stretch.png', aspect: 357 / 223 },
+    { src: '/village-assets/somi-play.png', aspect: 372 / 211 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
@@ -454,7 +459,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
           a stable hit target regardless of which pose is currently up. */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={21} />
+      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={18} />
     </g>
   )
 }
