@@ -22,11 +22,16 @@ export function useSearch() {
     setLoading(true)
     const term = `%${q.trim()}%`
 
-    const [captures, work, wishlist, habits] = await Promise.all([
+    const [captures, work, wishlist, habits, notes] = await Promise.all([
       supabase.from('captures').select('id, text, domain').ilike('text', term).limit(5),
       supabase.from('work_items').select('id, title, status, project').ilike('title', term).limit(5),
       supabase.from('wishlist_items').select('id, name, category').ilike('name', term).limit(5),
       supabase.from('habits').select('id, name, category').ilike('name', term).limit(4),
+      // Notes were never actually searched despite 'note' already being a
+      // real SearchResult type SearchModal knew how to render (2026-08-27
+      // fix) — title only, not body, so a match doesn't require guessing
+      // whether the term is somewhere in a long note.
+      supabase.from('notes').select('id, title, pinned').ilike('title', term).limit(4),
     ])
 
     const out: SearchResult[] = []
@@ -42,6 +47,9 @@ export function useSearch() {
     }
     for (const r of habits.data ?? []) {
       out.push({ id: r.id, type: 'habit', title: r.name, subtitle: r.category ?? 'Habit' })
+    }
+    for (const r of notes.data ?? []) {
+      out.push({ id: r.id, type: 'note', title: r.title, subtitle: r.pinned ? 'Pinned note' : 'Note' })
     }
 
     setResults(out)

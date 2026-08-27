@@ -51,11 +51,16 @@ function goTo(sectionId: string) {
 }
 
 // Where each search result lives, so activating one jumps to the right tab.
-// 'habit' and 'wishlist' are handled separately below — they live in
-// Personal sub-tabs, and landing on Personal's last-open tab instead of the
-// right one would make the search result look like it went nowhere.
+// 'work'/'wishlist'/'habit'/'note' are all handled separately below (see
+// runAt) — they live in Personal sub-tabs, and landing on Personal's
+// last-open tab instead of the right one would make the search result look
+// like it went nowhere. This map is really only load-bearing for 'capture'
+// now; 'work' used to point at a section id ('work') that was never real —
+// same silent-fallback-to-navSections[0] bug goToHousehold/goToSection's own
+// callers hit earlier (2026-08-27 fix) — clicking a task result landed
+// wherever navSections[0] happened to be instead of Tasks.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
-  capture: 'brief', work: 'work', wishlist: 'personal', habit: 'personal', note: 'brief',
+  capture: 'brief', work: 'personal', wishlist: 'personal', habit: 'personal', note: 'personal',
 }
 
 interface Props {
@@ -124,6 +129,8 @@ export default function SearchModal({ open, onClose }: Props) {
     if (r) {
       if (r.type === 'habit') goToPersonal('habits')
       else if (r.type === 'wishlist') goToPersonal('money')
+      else if (r.type === 'work') goToPersonal('tasks')
+      else if (r.type === 'note') goToPersonal('notes')
       else goTo(RESULT_SECTION[r.type] ?? 'brief')
       onClose()
     }
