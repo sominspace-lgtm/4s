@@ -487,6 +487,23 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
   return <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">{body}</g>
 }
 
+// Fixed warm building-material colors (2026-08-27 fix, round two — the first
+// pass reused `var(--gold)` for walls/roofs, following the same convention
+// FeatureIcon already used). That was wrong for this purpose: Village always
+// runs under THEMES.bloom regardless of the user's real theme (see Village.tsx's
+// own header comment), and Bloom's `--gold` is `#4f6350` — a muted dark sage
+// green, repurposed for text-safe contrast on cream, not an actual gold/warm
+// tone. Every building rendered in that same dull green as a result, reading
+// as low-contrast and washed-out against the night sky exactly as reported.
+// Same reasoning CatShape/grass already use fixed hex instead of theme vars
+// ("a specific cat's actual coat isn't themeable") — a little house's walls
+// aren't themeable either; they're just warm.
+const WALL = '#F0DCAE'
+const WALL_SHADOW = '#D8BE87'
+const ROOF = '#B9754A'
+const ROOF_LIGHT = '#CC8B5C'
+const TRIM = '#6B5640'
+
 // Each district as its own small illustrated place (2026-08-27, replaces the
 // 2026-08-24 uniform "iOS widget tile" — same FeatureIcon inside a rounded
 // square for all six). The uniform tile was a deliberate, considered choice
@@ -494,99 +511,105 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
 // purpose: "a little house you'd want to visit" reads very differently from
 // "the Home icon," and that's the whole ask. Same construction language the
 // rest of the scene already uses elsewhere (grounding shadow ellipse,
-// `url(#vsheen)` gloss, gold-family fills, `dark`-gated warm window glow —
-// see BuildingShape/CatShape) instead of the old flat icon-on-a-badge.
+// `url(#vsheen)` gloss, `dark`-gated warm window glow — see BuildingShape/
+// CatShape) instead of the old flat icon-on-a-badge. Scaled up ~30% from the
+// first pass (round two, same reason as the color fix above) — measured
+// against a real screenshot, the buildings read as small props next to their
+// own labels; this wrapper is the single knob that fixes that everywhere.
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
   switch (kind) {
     case 'home': // A little house — mailbox, flowers at the base, windows that glow warm after dark.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={15} ry={2.4} fill="var(--text)" opacity={0.14} />
+          <ellipse cx={0} cy={2} rx={15} ry={2.4} fill="var(--text)" opacity={0.18} />
           <g transform="translate(-13 -1)">
-            <rect x={-0.6} y={-6} width={1.2} height={6} fill="var(--slate)" opacity={0.7} />
-            <path d="M -2.6 -6 L -2.6 -9 Q -2.6 -11 0 -11 Q 2.6 -11 2.6 -9 L 2.6 -6 Z" fill="var(--gold)" fillOpacity={0.7} stroke="var(--gold)" strokeWidth={0.6} />
+            <rect x={-0.6} y={-6} width={1.2} height={6} fill={TRIM} opacity={0.8} />
+            <path d="M -2.6 -6 L -2.6 -9 Q -2.6 -11 0 -11 Q 2.6 -11 2.6 -9 L 2.6 -6 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.6} />
           </g>
-          <circle cx={10} cy={0.5} r={1.4} fill="var(--blush)" opacity={0.8} />
-          <circle cx={13} cy={1.5} r={1.2} fill="var(--gold)" opacity={0.8} />
-          <circle cx={7} cy={2} r={1.1} fill="var(--blush)" opacity={0.7} />
-          <rect x={-11} y={-16} width={22} height={18} rx={2} fill="var(--surface2)" stroke="var(--gold)" strokeWidth={0.9} fillOpacity={0.92} />
+          <circle cx={10} cy={0.5} r={1.4} fill="var(--blush)" opacity={0.9} />
+          <circle cx={13} cy={1.5} r={1.2} fill="var(--amber)" opacity={0.9} />
+          <circle cx={7} cy={2} r={1.1} fill="var(--blush)" opacity={0.8} />
+          <rect x={-11} y={-16} width={22} height={18} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.9} />
           <rect x={-11} y={-16} width={22} height={18} rx={2} fill="url(#vsheen)" />
-          <path d="M -14 -16 L 0 -30 L 14 -16 Z" fill="var(--gold)" fillOpacity={0.85} stroke="var(--gold)" strokeWidth={0.8} strokeLinejoin="round" />
-          <rect x={6} y={-27} width={3} height={7} fill="var(--slate)" opacity={0.8} />
-          <rect x={-3} y={-9} width={6} height={9} rx={1} fill="var(--slate)" opacity={0.75} />
+          <rect x={-11} y={4} width={22} height={2} fill={WALL_SHADOW} />
+          <path d="M -14 -16 L 0 -30 L 14 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.8} strokeLinejoin="round" />
+          <path d="M -14 -16 L 0 -30 L 3 -29 L -10 -16 Z" fill={ROOF_LIGHT} opacity={0.7} />
+          <rect x={6} y={-27} width={3} height={7} fill={TRIM} opacity={0.85} />
+          <rect x={-3} y={-9} width={6} height={9} rx={1} fill={TRIM} opacity={0.85} />
           <rect x={-9} y={-13} width={4.5} height={4.5} rx={0.6}
-            fill={dark ? 'var(--amber)' : 'var(--surface)'} opacity={dark ? 0.85 : 0.7}
-            className={dark ? 'village-glow' : undefined} stroke="var(--gold)" strokeWidth={0.5} strokeOpacity={0.5} />
+            fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.95 : 0.9}
+            className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
           <rect x={4.5} y={-13} width={4.5} height={4.5} rx={0.6}
-            fill={dark ? 'var(--amber)' : 'var(--surface)'} opacity={dark ? 0.7 : 0.6}
-            stroke="var(--gold)" strokeWidth={0.5} strokeOpacity={0.5} />
+            fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.8 : 0.85}
+            stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
         </g>
       )
     case 'leaf': // Growth Forest — a small grove, not one potted sprout.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={14} ry={2.2} fill="var(--text)" opacity={0.13} />
+          <ellipse cx={0} cy={2} rx={14} ry={2.2} fill="var(--text)" opacity={0.16} />
           <g transform="translate(-9 -1)">
-            <rect x={-1} y={-4} width={2} height={5} fill="var(--slate)" opacity={0.7} />
-            <path d="M -6 -3 L 0 -14 L 6 -3 Z" fill="var(--gold)" fillOpacity={0.55} />
+            <rect x={-1} y={-4} width={2} height={5} fill={TRIM} opacity={0.8} />
+            <path d="M -6 -3 L 0 -14 L 6 -3 Z" fill="var(--emerald)" fillOpacity={0.85} />
           </g>
           <g>
-            <rect x={-1.2} y={-5} width={2.4} height={7} fill="var(--slate)" opacity={0.75} />
-            <path d="M -8 -4 L 0 -22 L 8 -4 Z" fill="var(--gold)" fillOpacity={0.85} />
-            <path d="M -6.5 -10 L 0 -24 L 6.5 -10 Z" fill="var(--gold)" fillOpacity={0.95} />
+            <rect x={-1.2} y={-5} width={2.4} height={7} fill={TRIM} opacity={0.85} />
+            <path d="M -8 -4 L 0 -22 L 8 -4 Z" fill="var(--emerald)" />
+            <path d="M -6.5 -10 L 0 -24 L 6.5 -10 Z" fill="var(--emerald)" opacity={0.85} />
           </g>
           <g transform="translate(9 1)">
-            <rect x={-1} y={-3} width={2} height={4} fill="var(--slate)" opacity={0.7} />
-            <circle cx={0} cy={-6} r={5.5} fill="var(--gold)" fillOpacity={0.7} />
+            <rect x={-1} y={-3} width={2} height={4} fill={TRIM} opacity={0.8} />
+            <circle cx={0} cy={-6} r={5.5} fill="var(--emerald)" fillOpacity={0.8} />
           </g>
         </g>
       )
     case 'building': // Projects — building + crane, same idea as before, more presence.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={13} ry={2.2} fill="var(--text)" opacity={0.14} />
-          <rect x={-9} y={-20} width={18} height={22} rx={2} fill="var(--gold)" fillOpacity={0.6} stroke="var(--gold)" strokeWidth={0.8} />
+          <ellipse cx={0} cy={2} rx={13} ry={2.2} fill="var(--text)" opacity={0.17} />
+          <rect x={-9} y={-20} width={18} height={22} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
           <rect x={-9} y={-20} width={18} height={22} rx={2} fill="url(#vsheen)" />
           {[[-6, -16], [2.5, -16], [-6, -9], [2.5, -9]].map(([wx, wy], i) => (
             <rect key={i} x={wx} y={wy} width={3.5} height={3.5} rx={0.5}
-              fill={dark ? 'var(--amber)' : 'var(--surface)'} opacity={dark ? 0.7 + (i % 2) * 0.1 : 0.85}
+              fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.8 + (i % 2) * 0.1 : 0.9}
+              stroke={TRIM} strokeWidth={0.4} strokeOpacity={0.5}
               className={dark && i === 0 ? 'village-glow' : undefined} />
           ))}
-          <path d="M 9 -20 L 9 -30 L 15 -27" stroke="var(--gold)" strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 9 -20 L 9 -30 L 15 -27" stroke={TRIM} strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       )
     case 'book': // Archive — a tiny shed/greenhouse, not a flat book stack.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2.1} fill="var(--text)" opacity={0.13} />
-          <rect x={-9} y={-14} width={18} height={16} rx={1.5} fill="var(--surface2)" stroke="var(--gold)" strokeWidth={0.8} fillOpacity={0.92} />
+          <ellipse cx={0} cy={2} rx={12} ry={2.1} fill="var(--text)" opacity={0.16} />
+          <rect x={-9} y={-14} width={18} height={16} rx={1.5} fill={WALL} stroke={TRIM} strokeWidth={0.8} />
           <rect x={-9} y={-14} width={18} height={16} rx={1.5} fill="url(#vsheen)" />
-          <path d="M -11 -14 L 0 -24 L 11 -14 Z" fill="var(--gold)" fillOpacity={0.8} stroke="var(--gold)" strokeWidth={0.7} strokeLinejoin="round" />
+          <path d="M -11 -14 L 0 -24 L 11 -14 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" />
           <circle cx={0} cy={-8} r={3}
-            fill={dark ? 'var(--amber)' : 'var(--surface)'} opacity={dark ? 0.8 : 0.65}
-            className={dark ? 'village-glow' : undefined} stroke="var(--gold)" strokeWidth={0.5} strokeOpacity={0.5} />
-          <rect x={-8} y={-2} width={5} height={1.6} rx={0.4} fill="var(--gold)" opacity={0.6} />
-          <rect x={-7.6} y={-3.4} width={4.2} height={1.6} rx={0.4} fill="var(--gold)" opacity={0.75} />
+            fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.9 : 0.85}
+            className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
+          <rect x={-8} y={-2} width={5} height={1.6} rx={0.4} fill="var(--amber)" opacity={0.75} />
+          <rect x={-7.6} y={-3.4} width={4.2} height={1.6} rx={0.4} fill="var(--amber)" opacity={0.9} />
         </g>
       )
     case 'places': // Places — a little signpost, same visual family as SignpostShape.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={9} ry={1.8} fill="var(--text)" opacity={0.13} />
-          <rect x={-1} y={-24} width={2} height={26} fill="var(--slate)" opacity={0.75} />
-          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill="var(--gold)" fillOpacity={0.8} stroke="var(--gold)" strokeWidth={0.7} strokeLinejoin="round" />
-          <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" fillOpacity={0.75} stroke="var(--blush)" strokeWidth={0.6} strokeLinejoin="round" />
+          <ellipse cx={0} cy={2} rx={9} ry={1.8} fill="var(--text)" opacity={0.16} />
+          <rect x={-1} y={-24} width={2} height={26} fill={TRIM} opacity={0.85} />
+          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" />
+          <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" />
         </g>
       )
     case 'people': // People — a bench, someone sitting, not another wrapped gift.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.13} />
+          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
           <g transform="translate(-6 0)">
-            <rect x={-6} y={-6} width={12} height={1.6} rx={0.5} fill="var(--slate)" opacity={0.75} />
-            <rect x={-6} y={-9.5} width={12} height={1.4} rx={0.5} fill="var(--slate)" opacity={0.6} />
-            <rect x={-5} y={-4.5} width={1.2} height={4.5} fill="var(--slate)" opacity={0.6} />
-            <rect x={3.8} y={-4.5} width={1.2} height={4.5} fill="var(--slate)" opacity={0.6} />
+            <rect x={-6} y={-6} width={12} height={1.6} rx={0.5} fill={TRIM} opacity={0.85} />
+            <rect x={-6} y={-9.5} width={12} height={1.4} rx={0.5} fill={TRIM} opacity={0.7} />
+            <rect x={-5} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
+            <rect x={3.8} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
           </g>
           <g transform="translate(6 -6)">
             <circle cx={0} cy={-6} r={2.6} fill="#E8C4A0" />
@@ -626,7 +649,13 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
       {draggable && (
         <rect x={-19} y={-31} width={38} height={38} rx={12} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
       )}
-      <DistrictArt kind={icon} dark={dark} />
+      {/* Scaled up ~30% (round two, 2026-08-27) — measured against a real
+          screenshot, the art read as a small prop next to its own label at
+          the original coordinates below. This is the one knob that fixes
+          that for all six at once, independent of Home's own extra 1.25x. */}
+      <g transform="scale(1.3)">
+        <DistrictArt kind={icon} dark={dark} />
+      </g>
       {/* A small numeric corner badge, iOS-notification-style, whenever the
           count actually leads with a number (plants growing, buildings
           standing, tree-rings/months) — a bonus glance, not a replacement
@@ -634,21 +663,23 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
           when you are") with nothing to badge. */}
       {count.match(/^\d+/) && (
         <>
-          <circle cx={11} cy={-27} r={7} fill="var(--rose)" stroke="var(--surface)" strokeWidth={1.4} />
-          <text x={11} y={-27} textAnchor="middle" dominantBaseline="central" fontSize={6} fill="#fff" fontWeight={600}>
+          <circle cx={15} cy={-34} r={7} fill="var(--rose)" stroke="var(--surface)" strokeWidth={1.4} />
+          <text x={15} y={-34} textAnchor="middle" dominantBaseline="central" fontSize={6} fill="#fff" fontWeight={600}>
             {count.match(/^\d+/)![0]}
           </text>
         </>
       )}
-      {/* Name stays always-visible and small (2026-08-27) — the count/detail
-          line moved to hover-only (see .village-district-count in
-          globals.css) so a resting scene reads as a place, not a row of
-          captions; tapping still opens the same richer info card either
-          way (openOrToggle's hover-board), so touch loses nothing. Halo
-          via paintOrder="stroke" so the text reads over any part of the
-          scene behind it, same trick as before. */}
-      <text textAnchor="middle" fontSize={10.5} fill="var(--text)" stroke="var(--surface)" strokeWidth={3} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.04em" y={10}>{label}</text>
-      <text className="village-district-count" textAnchor="middle" fontSize={8.5} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.5} paintOrder="stroke" strokeLinejoin="round" y={21}>{count}</text>
+      {/* Name stays always-visible but genuinely quiet now (round two,
+          2026-08-27 — the first pass dropped the count line but left the
+          name itself as loud, heavily-haloed 10.5px text that competed with
+          the art instead of captioning it). Smaller, thinner halo, muted
+          rather than full --text, brightening to --gold only on hover (see
+          .village-district:hover text in globals.css) — the count/detail
+          line stays hover-only (.village-district-count). Tapping still
+          opens the same richer info card on any device either way, so touch
+          loses nothing from either line being quiet at rest. */}
+      <text textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" opacity={0.85} y={13}>{label}</text>
+      <text className="village-district-count" textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
     </g>
   )
 }
