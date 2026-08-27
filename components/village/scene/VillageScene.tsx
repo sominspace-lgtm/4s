@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -866,13 +866,22 @@ export default function VillageScene({
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
         <rect x={-42} y={-58} width={84} height={58} rx={7} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.3} />
         <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vsheen)" />
-        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill="var(--gold)" fillOpacity={0.55} stroke="var(--gold)" strokeWidth={1.1} strokeOpacity={0.7} />
+        {/* Roof + trim switched from var(--gold)/var(--slate) to the same
+            fixed ROOF/TRIM hex every other building in the scene uses
+            (round 6 fix, 2026-08-27) — var(--gold) is Bloom's dark sage
+            green, not gold, and was rendering this roof green right next
+            to DistrictArt's correctly-orange ROOF, which is what actually
+            made "two houses" look like two different houses instead of one
+            (see this file's own header note and shapes.tsx's ROOF export
+            comment). */}
+        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill={ROOF} fillOpacity={0.85} stroke={TRIM} strokeWidth={1.1} strokeOpacity={0.8} />
+        <path d="M -49 -58 Q -20 -78 0 -80 Q -14 -66 -38 -58 Z" fill={ROOF_LIGHT} opacity={0.55} />
         {/* Porch — a small overhang roof on two posts, framing the door */}
-        <rect x={-20} y={-36} width={40} height={2.4} rx={1} fill="var(--slate)" opacity={0.6} />
-        <rect x={-19} y={-36} width={1.6} height={36} fill="var(--slate)" opacity={0.55} />
-        <rect x={17.4} y={-36} width={1.6} height={36} fill="var(--slate)" opacity={0.55} />
-        <rect x={-24} y={0.5} width={48} height={2} fill="var(--slate)" opacity={0.4} />
-        <rect x={-10} y={-32} width={20} height={32} rx={3.5} fill="var(--gold)" opacity={0.35} />
+        <rect x={-20} y={-36} width={40} height={2.4} rx={1} fill={TRIM} opacity={0.7} />
+        <rect x={-19} y={-36} width={1.6} height={36} fill={TRIM} opacity={0.65} />
+        <rect x={17.4} y={-36} width={1.6} height={36} fill={TRIM} opacity={0.65} />
+        <rect x={-24} y={0.5} width={48} height={2} fill={TRIM} opacity={0.5} />
+        <rect x={-10} y={-32} width={20} height={32} rx={3.5} fill={TRIM} opacity={0.55} />
         {/* Windows glow after dark, same reasoning as BuildingShape's own
             (2026-08-24, were unconditionally lit before). Third small
             "bedroom" window up in the gable, per the redesign brief. */}
@@ -994,7 +1003,11 @@ export default function VillageScene({
             another district. Drawn first so the tree stands inside it. */}
         <path d="M -28 4 L -28 -30 L 0 -46 L 28 -30 L 28 4"
           fill="var(--surface2)" fillOpacity={0.22} stroke="var(--border)" strokeWidth={1} />
-        <path d="M -28 -30 L 0 -46 L 28 -30" fill="none" stroke="var(--gold)" strokeWidth={0.8} opacity={0.5} />
+        {/* Ridge accent switched from var(--gold) (Bloom's dark sage green)
+            to the same fixed ROOF used everywhere else (round 6 fix,
+            2026-08-27) — a stray green line on an otherwise warm-toned
+            scene, same underlying bug as Home's roof above. */}
+        <path d="M -28 -30 L 0 -46 L 28 -30" fill="none" stroke={ROOF} strokeWidth={0.8} opacity={0.55} />
         <path d="M -14 -38 L -14 4 M 14 -38 L 14 4" stroke="var(--border)" strokeWidth={0.6} opacity={0.45} />
         <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
           transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />

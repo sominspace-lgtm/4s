@@ -607,11 +607,20 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
 // Same reasoning CatShape/grass already use fixed hex instead of theme vars
 // ("a specific cat's actual coat isn't themeable") — a little house's walls
 // aren't themeable either; they're just warm.
-const WALL = '#F0DCAE'
-const WALL_SHADOW = '#D8BE87'
-const ROOF = '#B9754A'
-const ROOF_LIGHT = '#CC8B5C'
-const TRIM = '#6B5640'
+// Exported (2026-08-27, round 6) — VillageScene's own dedicated "Home — the
+// anchor" structure (a separate, larger house drawn directly in that file,
+// not through DistrictArt) had never been updated to these fixed colors and
+// was still using var(--gold)/var(--slate) for its roof and trim — the same
+// bug this whole file was fixed for in round two, just in a spot that fix
+// never reached. Its roof rendered dark sage green (Bloom's --gold) right
+// next to this file's correctly-orange ROOF, which is what actually made
+// two houses look different enough to count as two (see VillageScene's own
+// fix comment on that block).
+export const WALL = '#F0DCAE'
+export const WALL_SHADOW = '#D8BE87'
+export const ROOF = '#B9754A'
+export const ROOF_LIGHT = '#CC8B5C'
+export const TRIM = '#6B5640'
 
 // Each district as its own small illustrated place (2026-08-27, replaces the
 // 2026-08-24 uniform "iOS widget tile" — same FeatureIcon inside a rounded
@@ -627,49 +636,15 @@ const TRIM = '#6B5640'
 // own labels; this wrapper is the single knob that fixes that everywhere.
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
   switch (kind) {
-    case 'home': // A little house — mailbox, garden, a bike by the wall, a path leading in, windows that glow warm after dark.
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={15} ry={2.4} fill="var(--text)" opacity={0.18} />
-          {/* A short path stub reaching toward the main path (2026-08-27,
-              round 3) — same dirt-path stroke language as PATH_D itself
-              (VillageScene.tsx), just local to Home, so this is visibly
-              "the place you walk home to," not a building floating in a
-              field. */}
-          <path d="M 0 6 L 0 16" stroke="var(--surface2)" strokeWidth={4} strokeLinecap="round" opacity={0.5} />
-          <path d="M 0 6 L 0 16" stroke="var(--border)" strokeWidth={4} strokeDasharray="1 6" strokeLinecap="round" opacity={0.6} />
-          <g transform="translate(-13 -1)">
-            <rect x={-0.6} y={-6} width={1.2} height={6} fill={TRIM} opacity={0.8} />
-            <path d="M -2.6 -6 L -2.6 -9 Q -2.6 -11 0 -11 Q 2.6 -11 2.6 -9 L 2.6 -6 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.6} />
-          </g>
-          {/* A little garden patch, not just three loose petals — a small
-              cluster reads as tended ground. */}
-          <circle cx={10} cy={0.5} r={1.4} fill="var(--blush)" opacity={0.9} />
-          <circle cx={13} cy={1.5} r={1.2} fill="var(--amber)" opacity={0.9} />
-          <circle cx={7} cy={2} r={1.1} fill="var(--blush)" opacity={0.8} />
-          <circle cx={11.5} cy={-0.5} r={1} fill="var(--amber)" opacity={0.75} />
-          <circle cx={8.5} cy={0.5} r={0.9} fill="var(--emerald)" opacity={0.7} />
-          {/* A bicycle leaned against the wall. */}
-          <g transform="translate(-8 3.5)" opacity={0.85}>
-            <circle cx={-3} cy={0} r={2.4} fill="none" stroke={TRIM} strokeWidth={0.6} />
-            <circle cx={3} cy={0} r={2.4} fill="none" stroke={TRIM} strokeWidth={0.6} />
-            <path d="M -3 0 L 0 -3.5 L 3 0 M 0 -3.5 L -0.5 0 M -1.5 -1.6 L 1.2 -1.6" stroke={TRIM} strokeWidth={0.55} fill="none" strokeLinecap="round" />
-          </g>
-          <rect x={-11} y={-16} width={22} height={18} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.9} />
-          <rect x={-11} y={-16} width={22} height={18} rx={2} fill="url(#vsheen)" />
-          <rect x={-11} y={4} width={22} height={2} fill={WALL_SHADOW} />
-          <path d="M -14 -16 L 0 -30 L 14 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.8} strokeLinejoin="round" />
-          <path d="M -14 -16 L 0 -30 L 3 -29 L -10 -16 Z" fill={ROOF_LIGHT} opacity={0.7} />
-          <rect x={6} y={-27} width={3} height={7} fill={TRIM} opacity={0.85} />
-          <rect x={-3} y={-9} width={6} height={9} rx={1} fill={TRIM} opacity={0.85} />
-          <rect x={-9} y={-13} width={4.5} height={4.5} rx={0.6}
-            fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.95 : 0.9}
-            className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
-          <rect x={4.5} y={-13} width={4.5} height={4.5} rx={0.6}
-            fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.8 : 0.85}
-            stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
-        </g>
-      )
+    case 'home': // Nothing — Home already has its own real house, drawn directly in
+      // VillageScene ("Home — the anchor of the village," translate(400, GROUND_Y-4)).
+      // This case used to draw a SECOND small house right on top of it (round 6 fix,
+      // 2026-08-27 — this was the actual, literal "two houses" the whole time: not
+      // Projects or Archive, which every prior round chased, but Home rendered twice —
+      // once as the big dedicated structure, once again here. DistrictLabel still
+      // renders its hit-rect and "Home" label at this position for click/drag; it just
+      // has nothing left to draw, since the real house already exists a few pixels away.
+      return null
     case 'leaf': // Growth Forest — a small grove, threaded with a path, not one potted sprout.
       return (
         <g>
