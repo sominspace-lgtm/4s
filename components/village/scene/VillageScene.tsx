@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -72,6 +72,65 @@ const POLLEN = [
   { x: 176, y: 185 }, { x: 248, y: 240 }, { x: 496, y: 165 }, { x: 680, y: 350 },
   { x: 340, y: 300 }, { x: 590, y: 220 },
 ]
+
+// A real green palette (2026-08-27, round 6) — the whole scene ran on two
+// tones (#8CA57C/#94AD84) plus a flat --emerald, which is most of why it
+// read as an illustration of a village rather than a place. The reference
+// art the direction is drawn from (Stardew/Animal-Crossing-style cozy tile
+// games) never uses one green: it stacks a light sunlit tone, two or three
+// mid tones, and a deep shadow tone, and lets the variation itself do the
+// work of texture. Ordered light -> dark so callers can index by depth
+// (nearer/lower on the canvas = deeper, since the light comes from the sky).
+const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#586E47']
+
+// The near foreground (2026-08-27, round 6) — the actual fix for "there is
+// too much empty space," which survived four rounds of adding detail because
+// every round added it to the SAME thin band. Everything in this scene lives
+// between roughly GROUND_Y-40 and GROUND_Y+40 (y 170..250); the canvas is 440
+// tall, so the bottom ~43% was bare gradient with nothing in it at all.
+//
+// This is the diorama trick the reference art leans on: a band of scenery
+// nearer the camera than anything else, drawn LARGER and DARKER (less
+// atmospheric light reaches it, and near things are bigger), which does two
+// things at once — it fills the dead space, and it pushes the village itself
+// into the middle distance so the whole picture reads as having depth rather
+// than as one flat plane with props on it.
+//
+// `depth` runs 0..1 from the back of this band to the very front and drives
+// both scale and which GREENS tone gets used, so the layer self-sorts into a
+// gradient of size and darkness instead of being a uniform scatter.
+const FOREGROUND = Array.from({ length: 46 }, (_, i) => {
+  const seed = `fg-${i}`
+  const depth = hashPos(seed + 'd')
+  const y = GROUND_Y + 58 + depth * 172
+  return {
+    id: seed,
+    x: -10 + hashPos(seed) * 820,
+    y,
+    depth,
+    scale: 0.7 + depth * 1.5,
+    // Bushes dominate, with grass clumps and the occasional flower cluster
+    // mixed through — the same three-ingredient ground cover the reference
+    // art uses, rather than one repeated shape.
+    kind: (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.82 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower',
+    tone: Math.min(GREENS.length - 1, 2 + Math.floor(depth * 4)),
+  }
+}).sort((a, b) => a.depth - b.depth)
+
+// Mid-ground bushes (2026-08-27, round 6) — between the treeline and the
+// district row, the other band that was mostly bare. Smaller and lighter
+// than FOREGROUND, so the two layers read as different distances rather
+// than as the same scatter repeated twice.
+const MIDGROUND_BUSHES = Array.from({ length: 22 }, (_, i) => {
+  const seed = `mg-${i}`
+  return {
+    id: seed,
+    x: -5 + hashPos(seed) * 810,
+    y: GROUND_Y + 2 + hashPos(seed + 'y') * 34,
+    scale: 0.5 + hashPos(seed + 's') * 0.5,
+    tone: 1 + Math.floor(hashPos(seed + 't') * 3),
+  }
+})
 
 // A path through the ground, and a few small props along it (2026-08-24) —
 // "less empty, more composed": a dirt path implies the districts are places
@@ -727,6 +786,16 @@ export default function VillageScene({
             <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
           ))}
         </g>
+
+        {/* Mid-ground bushes (2026-08-27, round 6) — see MIDGROUND_BUSHES'
+            own comment. Volume/color between the flat grass-stroke texture
+            above and the district row below, instead of a hard jump from
+            "hairline" straight to "building." */}
+        <g opacity={0.85}>
+          {MIDGROUND_BUSHES.map(b => (
+            <BushShape key={b.id} x={b.x} y={b.y} scale={b.scale} tone={GREENS[b.tone]} light={GREENS[Math.max(0, b.tone - 2)]} />
+          ))}
+        </g>
       </g>
 
       {/* Small props along the path — see PROPS above. */}
@@ -1074,6 +1143,28 @@ export default function VillageScene({
         <SignpostShape x={770} y={GROUND_Y + 30} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
           onClick={nav('Trips', () => goToSection('places'), false)} />
       )}
+
+      {/* The near foreground (2026-08-27, round 6) — see FOREGROUND's own
+          comment: everything above lives in one thin band (y 170..250ish),
+          leaving the bottom ~43% of the canvas bare gradient ("too much
+          empty space," a complaint that survived four rounds of adding
+          detail because every round added it to that same band). Drawn
+          LAST — after the districts and cast, so nearer scenery correctly
+          overlaps the middle distance the way a real foreground would —
+          and sorted back-to-front by its own depth so a far, small bush
+          never paints over a near, large one out of order. Same night
+          dimming filter as the rest of the ground layers, for the same
+          reason: unfiltered, it would sit brighter than everything behind
+          it after dark, the opposite of "nearer, in shadow." */}
+      <g pointerEvents="none" style={dark ? { filter: 'brightness(0.55) saturate(0.82)' } : undefined}>
+        {FOREGROUND.map(f => {
+          const tone = GREENS[f.tone]
+          const light = GREENS[Math.max(0, f.tone - 2)]
+          if (f.kind === 'bush') return <BushShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} light={light} />
+          if (f.kind === 'flower') return <WildflowerShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} hue={f.depth > 0.6 ? 'var(--blush)' : 'var(--amber)'} />
+          return <GrassClumpShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} />
+        })}
+      </g>
 
       {/* The hover-board itself — see openOrToggle above. A transparent
           full-canvas rect behind the card closes it on any outside click;
