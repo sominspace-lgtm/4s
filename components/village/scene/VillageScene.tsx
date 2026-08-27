@@ -458,13 +458,20 @@ export default function VillageScene({
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
   // Zoom is a viewBox computation, not a transform on the content — every
   // coordinate in this file stays exactly as authored. Same 800:440 aspect
-  // at every zoom level (no stretching), centered a little below the
-  // geometric middle (260, not 220) since the district/cast cluster sits
-  // there, not in the empty sky above it — zooming in should bring you
-  // closer to the village, not closer to blank air.
+  // at every zoom level (no stretching). Centered on the scene's true
+  // geometric middle (400, 220) — round 4's first pass centered lower
+  // (260) to favor the ground over the empty sky, which sounded right but
+  // wasn't: the canvas is exactly 440 tall, so at zoom 1 that shifted
+  // viewBox (40..480) cropped 40 units off the TOP of the sky and revealed
+  // 40 units of nothing below y=440 (the canvas has no content past its
+  // own edge) — the "cream bar" reported live. True center + zoom clamped
+  // to [1, 2] in Village.tsx (never below 1) means the box can never
+  // exceed the canvas's own bounds in either direction, at any zoom level,
+  // by construction — no clamping logic needed, the math just can't go
+  // out of range.
   const vbW = 800 / zoom
   const vbH = 440 / zoom
-  const viewBox = `${400 - vbW / 2} ${260 - vbH / 2} ${vbW} ${vbH}`
+  const viewBox = `${400 - vbW / 2} ${220 - vbH / 2} ${vbW} ${vbH}`
   return (
     <svg
       ref={svgRef}

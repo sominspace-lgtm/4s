@@ -76,9 +76,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // in and out of and enjoy doing so." A discrete +/- control rather than
   // wheel/pinch gestures: those need to distinguish a zoom gesture from
   // page scroll and from arrange-mode dragging, real added risk for a
-  // first pass. Clamped 0.7 (a bit more of the world at once) to 2 (close
-  // enough to read one building's detail), reset button only shows once
-  // actually zoomed.
+  // first pass. Floor clamped to 1 (not below), not 0.7 as first shipped —
+  // the canvas is a fixed 800×440 with nothing drawn past its own edges,
+  // so "zooming out" past the full view has no content to reveal and just
+  // exposes blank canvas (the empty band reported live, round 4 point 2).
+  // 1 already shows everything there is; "-" only matters once you've
+  // zoomed in past it. Ceiling of 2 is close enough to read one building's
+  // detail. Reset button only shows once actually zoomed.
   const [zoom, setZoom] = useState(1)
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
@@ -315,15 +319,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               >Reset</button>
             )}
             <button
-              onClick={() => setZoom(z => Math.max(0.7, +(z - 0.25).toFixed(2)))}
-              disabled={zoom <= 0.7}
+              onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))}
+              disabled={zoom <= 1}
               title="Zoom out"
               aria-label="Zoom out"
               className="press"
               style={{
                 background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
                 borderRadius: '8px', width: '1.8rem', height: '1.8rem', color: 'var(--muted)',
-                cursor: zoom <= 0.7 ? 'default' : 'pointer', opacity: zoom <= 0.7 ? 0.4 : 1,
+                cursor: zoom <= 1 ? 'default' : 'pointer', opacity: zoom <= 1 ? 0.4 : 1,
                 fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
               }}
