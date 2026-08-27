@@ -99,20 +99,29 @@ const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#586E47'
 // `depth` runs 0..1 from the back of this band to the very front and drives
 // both scale and which GREENS tone gets used, so the layer self-sorts into a
 // gradient of size and darkness instead of being a uniform scatter.
-const FOREGROUND = Array.from({ length: 46 }, (_, i) => {
+const FOREGROUND_COUNT = 40
+const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
   const y = GROUND_Y + 58 + depth * 172
+  const kind = (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.82 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
+  // One bucket of the canvas width per item, jittered within the bucket
+  // (round 7 fix, 2026-08-27) — the previous fully-random x let several
+  // same-depth items land close together, and at this layer's largest
+  // scale (nearest the bottom edge) a handful of overlapping same-tone
+  // bushes/flowers fused into one solid, shapeless mass instead of reading
+  // as a meadow (live report: "this is not cute"). A guaranteed minimum
+  // spacing fixes that without losing the organic scatter — the jitter
+  // still varies each item's exact position within its own bucket.
+  const bucketW = 860 / FOREGROUND_COUNT
+  const x = -30 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85
+  // Scale ceiling lowered from 2.2x to ~1.55x, and flowers capped lower
+  // still — a giant flower cluster read as a magenta block, while a giant
+  // bush at least still reads as "a bush," just an oversized one.
+  const baseScale = 0.6 + depth * 0.95
   return {
-    id: seed,
-    x: -10 + hashPos(seed) * 820,
-    y,
-    depth,
-    scale: 0.7 + depth * 1.5,
-    // Bushes dominate, with grass clumps and the occasional flower cluster
-    // mixed through — the same three-ingredient ground cover the reference
-    // art uses, rather than one repeated shape.
-    kind: (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.82 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower',
+    id: seed, x, y, depth, kind,
+    scale: kind === 'flower' ? baseScale * 0.7 : baseScale,
     tone: Math.min(GREENS.length - 1, 2 + Math.floor(depth * 4)),
   }
 }).sort((a, b) => a.depth - b.depth)
@@ -121,11 +130,14 @@ const FOREGROUND = Array.from({ length: 46 }, (_, i) => {
 // district row, the other band that was mostly bare. Smaller and lighter
 // than FOREGROUND, so the two layers read as different distances rather
 // than as the same scatter repeated twice.
-const MIDGROUND_BUSHES = Array.from({ length: 22 }, (_, i) => {
+const MIDGROUND_COUNT = 22
+const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   const seed = `mg-${i}`
+  // Bucketed x, same reasoning as FOREGROUND above (round 7 fix).
+  const bucketW = 820 / MIDGROUND_COUNT
   return {
     id: seed,
-    x: -5 + hashPos(seed) * 810,
+    x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85,
     y: GROUND_Y + 2 + hashPos(seed + 'y') * 34,
     scale: 0.5 + hashPos(seed + 's') * 0.5,
     tone: 1 + Math.floor(hashPos(seed + 't') * 3),
