@@ -298,7 +298,7 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
       {/* A soft bloom around the lamp head at night (round 4, 2026-08-27) —
           was just the 3.4r head itself with no halo, easy to lose against a
           dark sky even while lit. Same layered-glow idea as the sun/moon. */}
-      {dark && <circle cy={-24} r={8} fill="var(--amber)" opacity={0.12} />}
+      {dark && <circle cy={-24} r={8} fill="var(--amber)" opacity={0.18} filter="url(#vglow)" />}
       <circle cy={-24} r={3.4} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--slate)" strokeWidth={0.7}
         opacity={dark ? 0.9 : 0.6} className={dark ? 'village-glow' : undefined} />
     </g>
@@ -735,8 +735,8 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <ellipse cx={0} cy={2} rx={9} ry={1.8} fill="var(--text)" opacity={0.16} />
           <rect x={-1} y={-24} width={2} height={26} fill={TRIM} opacity={0.85} />
           {/* A small stand base, so the post reads as a kiosk you'd stop at. */}
-          <rect x={-4} y={0} width={8} height={2.2} rx={0.6} fill={WALL} stroke={TRIM} strokeWidth={0.5} />
-          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" transform="rotate(-3 -1 -19)" />
+          <rect x={-4} y={0} width={8} height={2.2} rx={0.6} fill="url(#vwall)" stroke={TRIM} strokeWidth={0.5} />
+          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill="url(#vroof)" stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" transform="rotate(-3 -1 -19)" />
           <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" transform="rotate(3 -1 -11)" />
         </g>
       )

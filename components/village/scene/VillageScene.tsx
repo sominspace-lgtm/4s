@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -691,6 +691,51 @@ export default function VillageScene({
           <stop offset="55%" stopColor="#fff" stopOpacity="0.06" />
           <stop offset="100%" stopColor="#fff" stopOpacity="0" />
         </radialGradient>
+        {/* Atmosphere pass (2026-08-27, round 8) — "push SVG further," per the
+            user's own direction after seeing painted-game reference art: this
+            scene can't become painted illustration, but flat single-color
+            fills read as clip-art next to ANYTHING with real light in it.
+            Three cheap, reusable defs close some of that gap without a
+            rendering rewrite:
+            vwall/vroof — a top-to-bottom gradient instead of one flat hex, so
+            a wall or roof reads as a lit surface rather than a paper cutout.
+            objectBoundingBox (unspecified gradientUnits, same as vsheen
+            above) means every shape using these gets its own correctly-
+            scaled gradient regardless of size — one def, reused on Home's
+            big house and the Places kiosk alike. */}
+        <linearGradient id="vwall" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={WALL} />
+          <stop offset="100%" stopColor={WALL_SHADOW} />
+        </linearGradient>
+        <linearGradient id="vroof" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={ROOF_LIGHT} />
+          <stop offset="100%" stopColor={ROOF} />
+        </linearGradient>
+        {/* vglow — a real Gaussian blur instead of the flat concentric-circle
+            "glow" trick used everywhere so far (sun/moon in Celestial.tsx,
+            lamp heads in LampShape). Concentric flat-opacity rings have a
+            visible banded edge up close; an actual blur is what a soft light
+            source looks like. feMerge layers the blurred copy behind the
+            crisp original so the source shape stays sharp at its center. */}
+        <filter id="vglow" x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="3.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        {/* vgrain — a faint monochrome noise field, used purely as an alpha
+            mask (feColorMatrix zeroes the RGB channels and reads the noise
+            into the alpha channel instead) so it can sit over the whole
+            scene as a low-opacity multiply without tinting any color. This
+            single texture pass is what separates "illustrated" from "clip
+            art" more than any individual shape does — the reference art's
+            hand-painted surfaces all carry this kind of grain; flat vector
+            fills have none by construction. */}
+        <filter id="vgrain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise" />
+          <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.5 0.5 0.5 0 0" />
+        </filter>
       </defs>
 
       <Sky timeOfDay={v.timeOfDay} live={live} palette={palette} celestial={celestial} />
@@ -876,7 +921,13 @@ export default function VillageScene({
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
-        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="var(--surface2)" stroke="var(--border)" strokeWidth={1.3} />
+        {/* Wall switched from flat var(--surface2) to the vwall gradient
+            (round 8 atmosphere pass, 2026-08-27) — a flat-filled rect this
+            large (84×58, by far the biggest single fill in the scene) was
+            the single most obvious "flat vector" tell in the whole picture.
+            The gradient plus vsheen's own highlight on top gives it real
+            top-lit dimension instead. */}
+        <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vwall)" stroke="var(--border)" strokeWidth={1.3} />
         <rect x={-42} y={-58} width={84} height={58} rx={7} fill="url(#vsheen)" />
         {/* Roof + trim switched from var(--gold)/var(--slate) to the same
             fixed ROOF/TRIM hex every other building in the scene uses
@@ -885,8 +936,9 @@ export default function VillageScene({
             to DistrictArt's correctly-orange ROOF, which is what actually
             made "two houses" look like two different houses instead of one
             (see this file's own header note and shapes.tsx's ROOF export
-            comment). */}
-        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill={ROOF} fillOpacity={0.85} stroke={TRIM} strokeWidth={1.1} strokeOpacity={0.8} />
+            comment). Solid ROOF swapped for the vroof gradient in round 8,
+            same dimensionality reasoning as the wall above. */}
+        <path d="M -49 -58 Q 0 -92 49 -58 Z" fill="url(#vroof)" fillOpacity={0.92} stroke={TRIM} strokeWidth={1.1} strokeOpacity={0.8} />
         <path d="M -49 -58 Q -20 -78 0 -80 Q -14 -66 -38 -58 Z" fill={ROOF_LIGHT} opacity={0.55} />
         {/* Porch — a small overhang roof on two posts, framing the door */}
         <rect x={-20} y={-36} width={40} height={2.4} rx={1} fill={TRIM} opacity={0.7} />
@@ -1350,6 +1402,11 @@ export default function VillageScene({
           SVG rather than as a CSS overlay so it can't intercept the
           clicks on the district labels underneath it. */}
       <rect width="800" height="440" fill="url(#vvignette)" pointerEvents="none" />
+      {/* Grain (round 8 atmosphere pass, 2026-08-27) — see vgrain's own
+          def comment. Drawn last, over everything, at a low enough opacity
+          it reads as texture rather than noise; multiply blend so it can
+          only darken, never wash the scene out or shift its hue. */}
+      <rect width="800" height="440" filter="url(#vgrain)" opacity={0.05} pointerEvents="none" style={{ mixBlendMode: 'multiply' }} />
     </svg>
   )
 }
