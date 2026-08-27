@@ -365,7 +365,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
       {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
-          Drag any landmark to move it. Your layout is saved automatically.
+          Drag any landmark or prop to move it. Your layout is saved automatically.
         </p>
       )}
 

@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, BushShape, GrassClumpShape, WildflowerShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -245,6 +245,42 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   places: { x: 505, y: 180 },
 }
 
+// Default positions for every purely-decorative prop (round 12, 2026-08-27,
+// "make it so we are able to customize the placement of these") — the six
+// district labels above have been draggable in arrange mode since round
+// 2026-08-21; this extends the exact same mechanism (decorPos/startDrag/
+// onMoveLandmark, all now string-keyed) to individual scenery instead of
+// just the six landmarks. Deliberately NOT extended to the two functional
+// nav props (MailboxShape, the Trips SignpostShape — different call
+// pattern, own onClick) or to FOREGROUND/MIDGROUND_BUSHES (62 procedurally
+// scattered, individually-meaningless texture items — dragging one at a
+// time there would be tedium, not customization). Coordinates below are
+// each prop's own original fixed spot, unchanged — this only adds an
+// override path, nothing moves until a user actually drags something.
+const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
+  gate: { x: 58, y: GROUND_Y + 20 },
+  car: { x: 500, y: GROUND_Y + 14 },
+  busStop: { x: 568, y: GROUND_Y + 10 },
+  vegCrate: { x: 122, y: GROUND_Y + 8 },
+  bike: { x: 358, y: GROUND_Y + 2 },
+  birdFeeder: { x: 345, y: GROUND_Y - 20 },
+  flowerPot: { x: 340, y: GROUND_Y + 8 },
+  laundryBasket: { x: 448, y: GROUND_Y + 6 },
+  breadBasket: { x: 478, y: GROUND_Y + 8 },
+  workshopCrane: { x: 690, y: GROUND_Y - 2 },
+  blueprints: { x: 640, y: GROUND_Y - 1 },
+  peopleCorner: { x: 225, y: GROUND_Y + 2 },
+  teaSet: { x: 220, y: GROUND_Y - 5 },
+  picnicBlanket: { x: 255, y: GROUND_Y + 16 },
+  swing: { x: 180, y: GROUND_Y + 6 },
+  luggage: { x: 505, y: GROUND_Y + 4 },
+  blankSign: { x: 540, y: GROUND_Y - 2 },
+  bushMound: { x: 78, y: GROUND_Y - 2 },
+  floweringBush: { x: 611, y: GROUND_Y + 27 },
+  tallGrass: { x: 305, y: GROUND_Y + 31 },
+  rockCluster: { x: 693, y: GROUND_Y + 29 },
+}
+
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
@@ -297,7 +333,10 @@ export default function VillageScene({
    *  pins, they were never glued to the art). */
   layout?: VillageLayout
   arranging?: boolean
-  onMoveLandmark?: (id: LandmarkId, x: number, y: number) => void
+  /** id is now any string, not just LandmarkId (round 12, 2026-08-27) —
+   *  the same drag mechanism now also moves individual decorative props
+   *  (see DECOR_DEFAULTS/decorDrag below), not just the six districts. */
+  onMoveLandmark?: (id: string, x: number, y: number) => void
 }) {
   // Per-district lock (2026-08-25, Home exception added 2026-08-25) —
   // `locked` used to gate every district uniformly, but Places isn't
@@ -469,8 +508,15 @@ export default function VillageScene({
   }
 
   const svgRef = useRef<SVGSVGElement>(null)
-  const [draggingId, setDraggingId] = useState<LandmarkId | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
   const pos = (id: LandmarkId) => layout[id] ?? DEFAULT_LANDMARK_POS[id]
+  // Decorative props' own position lookup (round 12, 2026-08-27) — same
+  // "custom position if dragged, else a fixed default" rule as pos() above,
+  // just for the open-ended prop set in DECOR_DEFAULTS instead of the six
+  // districts. One shared layout blob (VillageLayout is now string-keyed),
+  // so a decor id and a landmark id can never collide as long as
+  // DECOR_DEFAULTS' keys don't reuse a LandmarkId — they don't.
+  const decorPos = (id: string) => layout[id] ?? DECOR_DEFAULTS[id]
 
   // Screen coordinates → the SVG's own 800×440 user space, so a drag tracks
   // correctly regardless of how large the scene is actually rendered on the
@@ -500,7 +546,7 @@ export default function VillageScene({
     return { x: local.x, y: local.y }
   }
 
-  function startDrag(id: LandmarkId) {
+  function startDrag(id: string) {
     return (e: React.PointerEvent) => {
       if (!arranging) return
       e.stopPropagation()
@@ -845,13 +891,18 @@ export default function VillageScene({
         </g>
 
         {/* Mid-ground bushes (2026-08-27, round 6) — see MIDGROUND_BUSHES'
-            own comment. Volume/color between the flat grass-stroke texture
-            above and the district row below, instead of a hard jump from
-            "hairline" straight to "building." */}
-        <g opacity={0.85}>
-          {MIDGROUND_BUSHES.map(b => (
-            <BushShape key={b.id} x={b.x} y={b.y} scale={b.scale} tone={GREENS[b.tone]} light={GREENS[Math.max(0, b.tone - 2)]} />
-          ))}
+            own comment. Volume between the flat grass-stroke texture above
+            and the district row below, instead of a hard jump from
+            "hairline" straight to "building." Real bush-mound.png sprite
+            since round 12, same reasoning as FOREGROUND's own swap below. */}
+        <g opacity={0.8}>
+          {MIDGROUND_BUSHES.map(b => {
+            const w = 12 * b.scale, h = 7 * b.scale
+            return (
+              <image key={b.id} href="/village-assets/bush-mound.png" x={b.x - w / 2} y={b.y - h} width={w} height={h}
+                style={{ imageRendering: 'pixelated' }} />
+            )
+          })}
         </g>
       </g>
 
@@ -862,40 +913,38 @@ export default function VillageScene({
       {PROPS.fences.map((f, i) => <FenceShape key={i} x={f.x} y={f.y} length={f.length} />)}
       {PROPS.lamps.map((l, i) => <LampShape key={i} x={l.x} y={l.y} dark={dark} />)}
 
-      {/* Six more real sprites, round 11 (2026-08-27, the user's own
-          village-matching-expansion-pack) — a gate marking the village's
-          own entrance, a car and a bus stop for two more districts to lean
-          on, and four ground-cover accents (bush/flowering bush/tall grass/
-          rock) scattered for variety beyond the procedural FOREGROUND
-          layer's own three shapes. All purely decorative — a title for
-          hover-free accessibility, no onClick, same idiom as every other
-          fixed prop in this file. */}
-      <g transform={`translate(58 ${GROUND_Y + 20})`} opacity={0.92}>
-        <title>The way into the village</title>
-        <ellipse cx={0} cy={4} rx={13} ry={2} fill="var(--text)" opacity={0.14} />
-        <image href="/village-assets/gate.png" x={-13.4} y={-16} width={26.7} height={16}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(500 ${GROUND_Y + 14})`} opacity={0.92}>
-        <title>Parked by the house</title>
-        <ellipse cx={0} cy={4.5} rx={13} ry={2} fill="var(--text)" opacity={0.14} />
-        <image href="/village-assets/car.png" x={-12.9} y={-12} width={25.8} height={12}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(568 ${GROUND_Y + 10})`} opacity={0.92}>
-        <title>A bus stop</title>
-        <ellipse cx={0} cy={4.5} rx={11} ry={1.8} fill="var(--text)" opacity={0.14} />
-        <image href="/village-assets/bus-stop.png" x={-10.5} y={-15.5} width={21} height={15.5}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <image href="/village-assets/bush-mound.png" x={78} y={GROUND_Y - 6} width={14.3} height={8.5}
-        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
-      <image href="/village-assets/flowering-bush.png" x={598} y={GROUND_Y + 22} width={13.6} height={10}
-        style={{ imageRendering: 'pixelated' }} opacity={0.88} />
-      <image href="/village-assets/tall-grass.png" x={300} y={GROUND_Y + 26} width={10} height={9.8}
-        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
-      <image href="/village-assets/rock-cluster.png" x={686} y={GROUND_Y + 24} width={13.8} height={9.8}
-        style={{ imageRendering: 'pixelated' }} opacity={0.85} />
+      {/* Ten more real sprites, rounds 11–12 (2026-08-27, the user's own
+          village-matching-expansion-pack, v2 with real alpha) — a gate
+          marking the village's own entrance, a car and a bus stop for two
+          more districts to lean on, and four ground-cover accents (bush/
+          flowering bush/tall grass/rock) for variety beyond the procedural
+          FOREGROUND layer's own three shapes. All draggable in arrange
+          mode now (round 12) — see decorPos/DECOR_DEFAULTS. */}
+      {[
+        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 26.7, h: 16 },
+        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 25.8, h: 12 },
+        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 21, h: 15.5 },
+        { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 13.6, h: 8 },
+        { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },
+        { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 10.1, h: 9.5 },
+        { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 13.2, h: 9 },
+      ].map(p => {
+        const p0 = decorPos(p.id)
+        return (
+          <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={0.9}
+            onPointerDown={startDrag(p.id)} style={{ cursor: arranging ? (draggingId === p.id ? 'grabbing' : 'grab') : undefined }}>
+            <title>{p.title}</title>
+            <ellipse cx={0} cy={p.h * 0.28} rx={p.w * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
+            <image href={`/village-assets/${p.href}`} x={-p.w / 2} y={-p.h} width={p.w} height={p.h}
+              style={{ imageRendering: 'pixelated' }} />
+            {arranging && (
+              <rect x={-p.w / 2 - 2} y={-p.h - 2} width={p.w + 4} height={p.h + 6} rx={4}
+                fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+                opacity={draggingId === p.id ? 0.9 : 0.4} />
+            )}
+          </g>
+        )
+      })}
 
       {/* Memory map (2026-08-24) — one small marker per date-idea area,
           scattered near the path via the same hashPos-by-id determinism
@@ -940,7 +989,8 @@ export default function VillageScene({
       )}
       {/* Real sprite, round 10 (2026-08-27) — a vegetable crate at the edge
           of the growing band, "use all of the custom sprites." */}
-      <g transform={`translate(122 ${GROUND_Y + 8})`} opacity={0.9}>
+      <g transform={`translate(${decorPos('vegCrate').x} ${decorPos('vegCrate').y})`} opacity={0.9}
+        onPointerDown={startDrag('vegCrate')} style={{ cursor: arranging ? (draggingId === 'vegCrate' ? 'grabbing' : 'grab') : undefined }}>
         <title>Whatever's ready to pick</title>
         <ellipse cx={0} cy={2} rx={7} ry={1.4} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/veg-crate.png" x={-7} y={-8} width={14.1} height={8}
@@ -999,13 +1049,15 @@ export default function VillageScene({
           rather than another functional prop. Purely decorative, no
           onClick, same as the benches/flower beds scattered elsewhere. */}
       {/* Real sprite, round 9 (2026-08-27) — same pack as the cottage/cast. */}
-      <g transform={`translate(358 ${GROUND_Y + 2})`} opacity={0.9}>
+      <g transform={`translate(${decorPos('bike').x} ${decorPos('bike').y})`} opacity={0.9}
+        onPointerDown={startDrag('bike')} style={{ cursor: arranging ? (draggingId === 'bike' ? 'grabbing' : 'grab') : undefined }}>
         <title>A bike, leaning by the door</title>
         <ellipse cx={0} cy={7.5} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/bicycle.png" x={-13} y={-1} width={26} height={16.5}
           style={{ imageRendering: 'pixelated' }} />
       </g>
-      <g transform={`translate(345 ${GROUND_Y - 20})`} opacity={0.85}>
+      <g transform={`translate(${decorPos('birdFeeder').x} ${decorPos('birdFeeder').y})`} opacity={0.85}
+        onPointerDown={startDrag('birdFeeder')} style={{ cursor: arranging ? (draggingId === 'birdFeeder' ? 'grabbing' : 'grab') : undefined }}>
         <title>A bird feeder in the yard</title>
         <line x1={0} y1={0} x2={0} y2={16} stroke="var(--slate)" strokeWidth={1.2} />
         <path d="M -6 -3 L 6 -3 L 4 3 L -4 3 Z" fill="var(--gold)" fillOpacity={0.5} stroke="var(--gold)" strokeWidth={0.8} />
@@ -1016,19 +1068,22 @@ export default function VillageScene({
           Home's yard (round 10, 2026-08-27, "use all of the custom
           sprites"). Same purely-decorative idiom as the bike/bird-feeder
           above — a title for hover-free accessibility, no onClick. */}
-      <g transform={`translate(340 ${GROUND_Y + 8})`} opacity={0.92}>
+      <g transform={`translate(${decorPos('flowerPot').x} ${decorPos('flowerPot').y})`} opacity={0.92}
+        onPointerDown={startDrag('flowerPot')} style={{ cursor: arranging ? (draggingId === 'flowerPot' ? 'grabbing' : 'grab') : undefined }}>
         <title>A flower pot by the porch</title>
         <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/flower-pot.png" x={-4.4} y={-10} width={8.7} height={10}
           style={{ imageRendering: 'pixelated' }} />
       </g>
-      <g transform={`translate(448 ${GROUND_Y + 6})`} opacity={0.92}>
+      <g transform={`translate(${decorPos('laundryBasket').x} ${decorPos('laundryBasket').y})`} opacity={0.92}
+        onPointerDown={startDrag('laundryBasket')} style={{ cursor: arranging ? (draggingId === 'laundryBasket' ? 'grabbing' : 'grab') : undefined }}>
         <title>Laundry, out to dry</title>
         <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/laundry-basket.png" x={-4.8} y={-8} width={9.6} height={8}
           style={{ imageRendering: 'pixelated' }} />
       </g>
-      <g transform={`translate(478 ${GROUND_Y + 8})`} opacity={0.92}>
+      <g transform={`translate(${decorPos('breadBasket').x} ${decorPos('breadBasket').y})`} opacity={0.92}
+        onPointerDown={startDrag('breadBasket')} style={{ cursor: arranging ? (draggingId === 'breadBasket' ? 'grabbing' : 'grab') : undefined }}>
         <title>Fresh bread, cooling</title>
         <ellipse cx={0} cy={2} rx={4.8} ry={1.1} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/bread-basket.png" x={-4.7} y={-8} width={9.5} height={8}
@@ -1063,14 +1118,16 @@ export default function VillageScene({
           as an active construction yard rather than the same tile-icon
           language as every other district. One-time scenery, not tied to
           any building count. */}
-      <g transform={`translate(690 ${GROUND_Y - 2})`} opacity={0.7}>
+      <g transform={`translate(${decorPos('workshopCrane').x} ${decorPos('workshopCrane').y})`} opacity={0.7}
+        onPointerDown={startDrag('workshopCrane')} style={{ cursor: arranging ? (draggingId === 'workshopCrane' ? 'grabbing' : 'grab') : undefined }}>
         <title>The workshop crane</title>
         <line x1={0} y1={0} x2={0} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
         <line x1={-2} y1={-46} x2={22} y2={-46} stroke="var(--slate)" strokeWidth={1.6} />
         <line x1={-2} y1={-46} x2={-10} y2={-40} stroke="var(--slate)" strokeWidth={1.6} />
         <line x1={18} y1={-46} x2={18} y2={-30} stroke="var(--slate)" strokeWidth={1} opacity={0.8} />
       </g>
-      <g transform={`translate(640 ${GROUND_Y - 1})`} opacity={0.75}>
+      <g transform={`translate(${decorPos('blueprints').x} ${decorPos('blueprints').y})`} opacity={0.75}
+        onPointerDown={startDrag('blueprints')} style={{ cursor: arranging ? (draggingId === 'blueprints' ? 'grabbing' : 'grab') : undefined }}>
         <title>Blueprints, rolled out on a sawhorse</title>
         <rect x={-10} y={-6} width={20} height={7} rx={0.6} fill="var(--surface)" stroke="var(--gold)" strokeWidth={0.7} />
         <line x1={-7} y1={-3.5} x2={3} y2={-3.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
@@ -1082,7 +1139,8 @@ export default function VillageScene({
           one already scattered near this district (see PROPS.benches
           above) plus a small stack of letters, so People reads as a social
           corner rather than the same tile language as everywhere else. */}
-      <g transform={`translate(225 ${GROUND_Y + 2})`} opacity={0.75}>
+      <g transform={`translate(${decorPos('peopleCorner').x} ${decorPos('peopleCorner').y})`} opacity={0.75}
+        onPointerDown={startDrag('peopleCorner')} style={{ cursor: arranging ? (draggingId === 'peopleCorner' ? 'grabbing' : 'grab') : undefined }}>
         <title>A quiet corner to sit and talk</title>
         <BenchShape x={0} y={0} />
         <g transform="translate(16 -2) rotate(-8)">
@@ -1094,17 +1152,20 @@ export default function VillageScene({
       {/* Two more real sprites, round 10 (2026-08-27) — a tea set on the
           bench and a picnic blanket spread nearby, so People reads as an
           actual gathering spot, plus a swing a little further off. */}
-      <g transform={`translate(220 ${GROUND_Y - 5})`} opacity={0.92}>
+      <g transform={`translate(${decorPos('teaSet').x} ${decorPos('teaSet').y})`} opacity={0.92}
+        onPointerDown={startDrag('teaSet')} style={{ cursor: arranging ? (draggingId === 'teaSet' ? 'grabbing' : 'grab') : undefined }}>
         <title>Tea, poured for whoever stops by</title>
         <image href="/village-assets/tea-set.png" x={-6.4} y={-9} width={12.8} height={9}
           style={{ imageRendering: 'pixelated' }} />
       </g>
-      <g transform={`translate(255 ${GROUND_Y + 16})`} opacity={0.92}>
+      <g transform={`translate(${decorPos('picnicBlanket').x} ${decorPos('picnicBlanket').y})`} opacity={0.92}
+        onPointerDown={startDrag('picnicBlanket')} style={{ cursor: arranging ? (draggingId === 'picnicBlanket' ? 'grabbing' : 'grab') : undefined }}>
         <title>A picnic blanket, spread out</title>
         <image href="/village-assets/picnic-blanket.png" x={-6.2} y={-8} width={12.5} height={8}
           style={{ imageRendering: 'pixelated' }} />
       </g>
-      <g transform={`translate(180 ${GROUND_Y + 6})`} opacity={0.88}>
+      <g transform={`translate(${decorPos('swing').x} ${decorPos('swing').y})`} opacity={0.88}
+        onPointerDown={startDrag('swing')} style={{ cursor: arranging ? (draggingId === 'swing' ? 'grabbing' : 'grab') : undefined }}>
         <title>A porch swing</title>
         <ellipse cx={0} cy={2} rx={13} ry={2} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/swing.png" x={-14.9} y={-20} width={29.7} height={20}
@@ -1113,7 +1174,8 @@ export default function VillageScene({
 
       {/* Places identity (2026-08-25) — a small stack of luggage, marking
           this corner as the departure point rather than another building. */}
-      <g transform={`translate(505 ${GROUND_Y + 4})`} opacity={0.8}>
+      <g transform={`translate(${decorPos('luggage').x} ${decorPos('luggage').y})`} opacity={0.8}
+        onPointerDown={startDrag('luggage')} style={{ cursor: arranging ? (draggingId === 'luggage' ? 'grabbing' : 'grab') : undefined }}>
         <title>Luggage, ready for the next trip</title>
         <ellipse cx={0} cy={5} rx={9} ry={1.4} fill="var(--text)" opacity={0.12} />
         <rect x={-8} y={-2} width={9} height={7} rx={1} fill="var(--slate)" opacity={0.6} />
@@ -1123,7 +1185,8 @@ export default function VillageScene({
 
       {/* Real sprite, round 10 (2026-08-27) — a blank signpost near the
           Places kiosk, "use all of the custom sprites." */}
-      <g transform={`translate(540 ${GROUND_Y - 2})`} opacity={0.9}>
+      <g transform={`translate(${decorPos('blankSign').x} ${decorPos('blankSign').y})`} opacity={0.9}
+        onPointerDown={startDrag('blankSign')} style={{ cursor: arranging ? (draggingId === 'blankSign' ? 'grabbing' : 'grab') : undefined }}>
         <title>A signpost, waiting to be marked</title>
         <ellipse cx={0} cy={3} rx={8} ry={1.4} fill="var(--text)" opacity={0.12} />
         <image href="/village-assets/blank-sign.png" x={-8.2} y={-11} width={16.4} height={11}
@@ -1320,13 +1383,28 @@ export default function VillageScene({
           dimming filter as the rest of the ground layers, for the same
           reason: unfiltered, it would sit brighter than everything behind
           it after dark, the opposite of "nearer, in shadow." */}
+      {/* Real sprites, round 12 (2026-08-27) — BushShape/WildflowerShape/
+          GrassClumpShape (flat hand-drawn SVG) replaced with the user's
+          own bush-mound/flowering-bush/tall-grass art, the same "remove
+          old elements that don't fit anymore" direction applied to the
+          scattered ground layer, not just the named props. Depth still
+          drives size (f.scale, unchanged) and now opacity too, standing in
+          for the old per-tone darkening (a fixed-color sprite can't be
+          retinted the way a fill color could) — nearer items stay fuller,
+          farther ones fade slightly toward the ground plane. Not made
+          individually draggable (see DECOR_DEFAULTS' own comment) — 62
+          procedurally-scattered items is texture, not something anyone
+          wants to hand-place one at a time. */}
       <g pointerEvents="none" style={dark ? { filter: 'brightness(0.55) saturate(0.82)' } : undefined}>
         {FOREGROUND.map(f => {
-          const tone = GREENS[f.tone]
-          const light = GREENS[Math.max(0, f.tone - 2)]
-          if (f.kind === 'bush') return <BushShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} light={light} />
-          if (f.kind === 'flower') return <WildflowerShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} hue={f.depth > 0.6 ? 'var(--blush)' : 'var(--amber)'} />
-          return <GrassClumpShape key={f.id} x={f.x} y={f.y} scale={f.scale} tone={tone} />
+          const spec = f.kind === 'bush' ? { href: 'bush-mound.png', w: 13.6, h: 8 }
+            : f.kind === 'flower' ? { href: 'flowering-bush.png', w: 10.6, h: 8 }
+            : { href: 'tall-grass.png', w: 8.5, h: 8 }
+          const w = spec.w * f.scale, h = spec.h * f.scale
+          return (
+            <image key={f.id} href={`/village-assets/${spec.href}`} x={f.x - w / 2} y={f.y - h} width={w} height={h}
+              opacity={0.5 + f.depth * 0.45} style={{ imageRendering: 'pixelated' }} />
+          )
         })}
       </g>
 

@@ -23,9 +23,13 @@ import { hashPos } from './state'
 
 export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people'] as const
 export type LandmarkId = typeof LANDMARK_IDS[number]
-/** Custom x/y per landmark, only for the ones a user has actually dragged —
- *  anything missing falls back to its default position below. */
-export type VillageLayout = Partial<Record<LandmarkId, { x: number; y: number }>>
+/** Custom x/y per landmark (or, since round 12, per decorative prop — see
+ *  VillageScene's own DECOR_DEFAULTS/DecorProp), only for the ones a user
+ *  has actually dragged. Broadened from Partial<Record<LandmarkId, ...>>
+ *  to a plain string key (2026-08-27) — this is a JSON blob in user_prefs
+ *  already, so widening what it can hold needed no DB change, just a
+ *  looser type. Anything missing still falls back to its own default. */
+export type VillageLayout = Partial<Record<string, { x: number; y: number }>>
 
 export interface Slot {
   id: string

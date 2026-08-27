@@ -192,74 +192,11 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
 //
 // A bush is drawn as overlapping circles with a lighter cap and a darker
 // underside rather than one flat blob, for the same reason PlantShape has a
-// sheen: a flat-filled shape reads as a paper cutout, and volume is most of
-// what makes this style feel cozy rather than diagrammatic. `tone` and
-// `light` are passed in by the caller so a whole scattered layer can share
-// one depth-appropriate palette slice — see VillageScene's GREENS.
-export function BushShape({ x, y, scale = 1, tone, light, opacity = 1 }: {
-  x: number; y: number; scale?: number; tone: string; light: string; opacity?: number
-}) {
-  return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">
-      <ellipse cx={0} cy={1.5} rx={11} ry={2.2} fill="var(--text)" opacity={0.13} />
-      {/* A soft dark edge on the base circles (round 7 fix, 2026-08-27) — the
-          bush's own tone sits close in hue to the ground it's drawn on, so
-          without an edge it barely registered against the grass at all
-          (live report showed a foreground almost entirely grass/flowers,
-          no visible bushes). A thin var(--text) stroke at low opacity reads
-          as a shadow line, same idiom as this file's grounding ellipses,
-          without needing a second darker color. */}
-      <circle cx={-6} cy={-3.5} r={5.4} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
-      <circle cx={6} cy={-3} r={5} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
-      <circle cx={0} cy={-6.5} r={6.6} fill={tone} stroke="var(--text)" strokeWidth={0.6} strokeOpacity={0.18} />
-      {/* Sunlit cap and shadowed base — the volume, in two shapes. */}
-      <circle cx={-1.5} cy={-8.5} r={4} fill={light} opacity={0.75} />
-      <circle cx={4} cy={-4.5} r={2.6} fill={light} opacity={0.4} />
-      <path d="M -11 -1 Q 0 3.5 11 -1 Q 0 1.5 -11 -1 Z" fill="var(--text)" opacity={0.12} />
-    </g>
-  )
-}
-
-// A clump of grass blades, not one stroke — the existing GRASS_TUFTS draw a
-// single 4-9 unit arc each, which at real render size is a hairline. A clump
-// of five blades at varying heights reads as actual ground cover.
-export function GrassClumpShape({ x, y, scale = 1, tone, opacity = 1 }: {
-  x: number; y: number; scale?: number; tone: string; opacity?: number
-}) {
-  const blades = [
-    { dx: -4.5, h: 6, lean: -2.5 }, { dx: -2.2, h: 9, lean: -1 },
-    { dx: 0, h: 11, lean: 0.5 }, { dx: 2.3, h: 8.5, lean: 1.8 },
-    { dx: 4.6, h: 5.5, lean: 3 },
-  ]
-  return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">
-      {blades.map((b, i) => (
-        <path key={i} d={`M ${b.dx} 0 Q ${b.dx + b.lean * 0.4} ${-b.h * 0.6} ${b.dx + b.lean} ${-b.h}`}
-          fill="none" stroke={tone} strokeWidth={1.6} strokeLinecap="round" />
-      ))}
-    </g>
-  )
-}
-
-// A small cluster of wildflowers on a bed of leaves — the pop of color the
-// reference art scatters through otherwise-green ground.
-export function WildflowerShape({ x, y, scale = 1, tone, hue, opacity = 1 }: {
-  x: number; y: number; scale?: number; tone: string; hue: string; opacity?: number
-}) {
-  const stems = [{ dx: -3.5, h: 7 }, { dx: 0, h: 9.5 }, { dx: 3.5, h: 6.5 }]
-  return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={opacity} pointerEvents="none">
-      <ellipse cx={0} cy={0.5} rx={7} ry={1.8} fill={tone} opacity={0.45} />
-      {stems.map((s, i) => (
-        <g key={i}>
-          <path d={`M ${s.dx} 0 Q ${s.dx + 0.6} ${-s.h * 0.6} ${s.dx} ${-s.h}`} fill="none" stroke={tone} strokeWidth={1} strokeLinecap="round" />
-          <circle cx={s.dx} cy={-s.h - 1} r={2} fill={hue} />
-          <circle cx={s.dx - 0.5} cy={-s.h - 1.6} r={0.8} fill="#FFFDF5" opacity={0.55} />
-        </g>
-      ))}
-    </g>
-  )
-}
+// BushShape/GrassClumpShape/WildflowerShape (hand-drawn SVG ground cover)
+// removed (round 12, 2026-08-27, "remove all old elements that do not fit
+// anymore") — VillageScene's FOREGROUND/MIDGROUND_BUSHES now render the
+// user's own bush-mound.png/flowering-bush.png/tall-grass.png sprites
+// instead, matching the rest of the scene's real pixel art.
 
 // A short picket fence run (2026-08-25) — pure scenery, same "small fixed
 // prop near the path" idiom as Bench/FlowerBed above. `length` is how many
