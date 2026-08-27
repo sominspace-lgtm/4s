@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { format, isSameDay, isToday, setHours, setMinutes } from 'date-fns'
 import { AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
+import ShareMenu from '@/components/ui/ShareMenu'
 
 const HOUR_HEIGHT = 44 // px per hour row
 const START_HOUR = 0
@@ -17,7 +18,7 @@ const END_HOUR = 24
 // comment) — tasks/renewals/refills/gifts, and any event created without a
 // time, all render in the all-day band, exactly like Google Calendar treats
 // an untimed item.
-export default function CalendarTimeGrid({ days, entries }: { days: Date[]; entries: AgendaEntry[] }) {
+export default function CalendarTimeGrid({ days, entries, userId }: { days: Date[]; entries: AgendaEntry[]; userId: string }) {
   const { add: addEvent, remove: removeEvent } = useEvents()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [addSlot, setAddSlot] = useState<{ day: Date; hour: number } | null>(null)
@@ -63,6 +64,7 @@ export default function CalendarTimeGrid({ days, entries }: { days: Date[]; entr
                   display: 'flex', alignItems: 'center', gap: '0.3em',
                 }}>
                   <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.label}</span>
+                  {e.type === 'event' && e.id && <ShareMenu itemType="event" itemId={e.id} userId={userId} />}
                   {e.type === 'event' && e.id && (
                     <button onClick={() => removeEvent(e.id!)} aria-label="Remove event"
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.6, fontSize: '0.62rem', padding: 0, lineHeight: 1 }}>✕</button>

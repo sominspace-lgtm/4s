@@ -7,8 +7,8 @@ import CalendarTimeGrid from './CalendarTimeGrid'
 
 // Day view (2026-08-27, "inspired off Google Calendar") — a single column
 // over the same shared hour grid Week view uses.
-export default function CalendarDay() {
-  const entries = useAgendaEntries()
+export default function CalendarDay({ userId, spaceId = null }: { userId: string; spaceId?: string | null }) {
+  const entries = useAgendaEntries(spaceId)
   const [day, setDay] = useState(() => new Date())
 
   const navBtn: React.CSSProperties = {
@@ -32,7 +32,7 @@ export default function CalendarDay() {
         <button onClick={() => setDay(d => addDays(d, 1))} style={navBtn} aria-label="Next day">→</button>
       </div>
 
-      <CalendarTimeGrid days={[day]} entries={entries} />
+      <CalendarTimeGrid days={[day]} entries={entries} userId={userId} />
     </div>
   )
 }

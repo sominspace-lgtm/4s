@@ -9,6 +9,7 @@ import { choreDue, type Chore, type Meal } from '@/lib/hooks/useHousehold'
 import { routineDue, type Routine } from '@/lib/hooks/useRoutines'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { useSharedWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
+import { useSharedEvents, useEvents } from '@/lib/hooks/useEvents'
 
 // One calendar for everything the household has going on: chores, meals,
 // routines/maintenance, trips, and — as of 2026-08-22 — any personal task a
@@ -27,7 +28,12 @@ import { useSharedWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 // fortnight is denser and better for "what's coming up this week", a month
 // grid is better for "what does next week look like at a glance".
 
-type Entry = { kind: 'chore' | 'meal' | 'routine' | 'trip' | 'task'; label: string; sub?: string; overdue?: boolean }
+// 'event' added 2026-08-27 — events shared into this space (ShareMenu, on
+// a private personal event) or made directly here (see the add-event form
+// in MonthView below, which shares on creation). id is only ever set on
+// 'event' entries — the only kind this calendar can delete directly; every
+// other kind is derived from its own hub and edited there.
+type Entry = { kind: 'chore' | 'meal' | 'routine' | 'trip' | 'task' | 'event'; label: string; sub?: string; overdue?: boolean; id?: string }
 
 const KIND_COLOR: Record<Entry['kind'], string> = {
   chore: 'var(--amber)',
@@ -38,6 +44,7 @@ const KIND_COLOR: Record<Entry['kind'], string> = {
   routine: 'var(--slate)',
   trip:  'var(--purple)',
   task:  'var(--gold)',
+  event: 'var(--rose)',
 }
 
 const AGENDA_DAYS = 14
@@ -61,6 +68,8 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const { items: sharedTasks } = useSharedWorkItems(spaceId)
+  const { items: sharedEvents } = useSharedEvents(spaceId)
+  const { remove: removeEvent, addShared: addSharedEvent } = useEvents()
 
   const today = new Date()
 
@@ -114,6 +123,12 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
       }
     }
 
+    for (const e of sharedEvents) {
+      if (isSameDay(parseISO(e.event_date), day)) {
+        out.push({ kind: 'event', label: e.title, sub: e.event_time ?? undefined, id: e.id })
+      }
+    }
+
     return out
   }
 
@@ -130,7 +145,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
         <div className="t-card">{view === 'agenda' ? 'The next two weeks' : format(month, 'MMMM yyyy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
           <div className="t-meta" style={{ display: 'flex', gap: '0.7rem' }}>
-            {(['chore', 'meal', 'routine', 'trip', 'task'] as const).map(k => (
+            {(['chore', 'meal', 'routine', 'trip', 'task', 'event'] as const).map(k => (
               <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                 <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: KIND_COLOR[k], display: 'inline-block' }} />
                 {k}s
@@ -149,7 +164,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
       ) : (
         <MonthView
           month={month} setMonth={setMonth} selected={selected} setSelected={setSelected}
-          entriesFor={entriesFor}
+          entriesFor={entriesFor} spaceId={spaceId} removeEvent={removeEvent} addSharedEvent={addSharedEvent}
         />
       )}
     </section>
@@ -217,13 +232,18 @@ function AgendaView({ today, entriesFor }: { today: Date; entriesFor: (day: Date
 
 const MAX_DOTS = 4
 
-function MonthView({ month, setMonth, selected, setSelected, entriesFor }: {
+function MonthView({ month, setMonth, selected, setSelected, entriesFor, spaceId, removeEvent, addSharedEvent }: {
   month: Date
   setMonth: React.Dispatch<React.SetStateAction<Date>>
   selected: Date | null
   setSelected: React.Dispatch<React.SetStateAction<Date | null>>
   entriesFor: (day: Date) => Entry[]
+  spaceId: string | null
+  removeEvent: (id: string) => Promise<{ error: Error | null }>
+  addSharedEvent: (title: string, event_date: string, spaceId: string, event_time?: string | null, notes?: string | null) => Promise<{ error: Error | null }>
 }) {
+  const [newTitle, setNewTitle] = useState('')
+  const [newTime, setNewTime] = useState('')
   const gridStart = startOfWeek(startOfMonth(month))
   const gridEnd = endOfWeek(endOfMonth(month))
   const days: Date[] = []
@@ -316,8 +336,60 @@ function MonthView({ month, setMonth, selected, setSelected, entriesFor }: {
               }}>{e.kind}</span>
               <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', fontWeight: 300 }}>{e.label}</span>
               {e.sub && <span style={{ fontSize: '0.62rem', color: e.overdue ? 'var(--rose)' : 'var(--muted)' }}>{e.sub}</span>}
+              {/* Only 'event' entries are directly deletable here — same
+                  rule CalendarMonth already follows: a chore/meal/routine/
+                  trip/task row is derived from its own hub. */}
+              {e.kind === 'event' && e.id && (
+                <button
+                  onClick={() => removeEvent(e.id!)}
+                  aria-label="Remove event"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.2rem', flexShrink: 0 }}
+                >✕</button>
+              )}
             </div>
           ))}
+
+          {/* Add an event directly here (2026-08-27, "made in household")
+              — shares to this space on creation (useEvents' addShared), so
+              it shows up for every member's own calendar too, not just this
+              one. Needs a real space — a solo/unshared household has
+              nowhere to share an event INTO, so the form only renders once
+              one's selected (same gate the picker above already enforces
+              for chores/meals). */}
+          {spaceId && (
+            <form
+              onSubmit={async ev => {
+                ev.preventDefault()
+                if (!newTitle.trim() || !selected) return
+                await addSharedEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'), spaceId, newTime || null)
+                setNewTitle('')
+                setNewTime('')
+              }}
+              style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}
+            >
+              <input
+                value={newTitle}
+                onChange={ev => setNewTitle(ev.target.value)}
+                placeholder="+ Add an event to this day"
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                  outline: 'none', fontSize: '0.74rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
+                  padding: '0.3rem 0.1rem',
+                }}
+              />
+              <input
+                type="time"
+                value={newTime}
+                onChange={ev => setNewTime(ev.target.value)}
+                aria-label="Time (optional)"
+                style={{
+                  background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                  outline: 'none', fontSize: '0.74rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
+                  padding: '0.3rem 0.1rem', width: '5.5em',
+                }}
+              />
+            </form>
+          )}
         </div>
       )}
 

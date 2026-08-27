@@ -36,8 +36,8 @@ function Row({ entry, overdue, onRemoveEvent }: { entry: AgendaEntry; overdue: b
 // Native 4S agenda built from what the app already knows — dated tasks,
 // renewals, refill run-outs, gift dates. Google Calendar stays a separate
 // embed below; this works with or without it.
-export default function CalendarSummary() {
-  const entries = useAgendaEntries()
+export default function CalendarSummary({ spaceId = null }: { spaceId?: string | null }) {
+  const entries = useAgendaEntries(spaceId)
   const { remove: removeEvent } = useEvents()
   const now = new Date()
 

@@ -6,7 +6,7 @@ import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { addDays } from 'date-fns'
 import { useBuyItems, runoutDate, computeStatus } from '@/lib/hooks/useBuyItems'
-import { useEvents } from '@/lib/hooks/useEvents'
+import { useEvents, useSharedEvents } from '@/lib/hooks/useEvents'
 
 export interface AgendaEntry {
   key: string
@@ -33,12 +33,25 @@ export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; colo
 // run-outs, gift dates, and standalone calendar events. Consumers
 // window/bucket as needed (agenda list, month grid). No external calendar
 // here; Google stays in its embed.
-export function useAgendaEntries(): AgendaEntry[] {
+//
+// spaceId (2026-08-27) — private by default: your own events always show.
+// Pass the household space's id to also pull in events either shared into
+// it (via ShareMenu) or created directly from the Household calendar
+// (useEvents' addShared, which shares on creation) — "has to share, or be
+// made in household" per the user's own framing. Omit it (or pass null) to
+// see only your own, e.g. a context with no household space at all.
+export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
   const { items: workItems } = useWorkItems()
   const { subs } = useSubscriptions()
   const giftItems = useGiftOccasions()
   const { items: buyItems } = useBuyItems()
-  const { items: events } = useEvents()
+  const { items: ownEvents } = useEvents()
+  const { items: sharedEvents } = useSharedEvents(spaceId)
+  // De-duped by id — the space's own owner sees their event via both
+  // useEvents (they own it) and useSharedEvents (RLS also grants it to
+  // accepted members, which the owner usually also is), so without this a
+  // self-created household event would double up in the owner's own view.
+  const events = [...ownEvents, ...sharedEvents.filter(s => !ownEvents.some(o => o.id === s.id))]
 
   const entries: AgendaEntry[] = []
 

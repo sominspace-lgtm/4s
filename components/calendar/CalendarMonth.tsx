@@ -7,6 +7,7 @@ import {
 } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
+import ShareMenu from '@/components/ui/ShareMenu'
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MAX_DOTS = 4
@@ -19,8 +20,8 @@ function formatTime(hhmm: string): string {
 
 // Month grid over the same native entries as the agenda — tasks, renewals,
 // refills, gifts. Click a day to see its items below the grid.
-export default function CalendarMonth() {
-  const entries = useAgendaEntries()
+export default function CalendarMonth({ userId, spaceId = null }: { userId: string; spaceId?: string | null }) {
+  const entries = useAgendaEntries(spaceId)
   const { add: addEvent, remove: removeEvent } = useEvents()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
@@ -136,6 +137,13 @@ export default function CalendarMonth() {
                 {/* Only standalone events are directly deletable here — a
                     task/renewal/refill/gift row is derived from its own hub
                     and should be edited there, not silently forked here. */}
+                {/* Share to household (2026-08-27) — private by default;
+                    this is the "has to share" half of making an event
+                    visible outside your own calendar. See ShareMenu / the
+                    events_sharing.sql migration. */}
+                {e.type === 'event' && e.id && (
+                  <ShareMenu itemType="event" itemId={e.id} userId={userId} />
+                )}
                 {e.type === 'event' && e.id && (
                   <button
                     onClick={() => removeEvent(e.id!)}

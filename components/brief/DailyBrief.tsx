@@ -519,7 +519,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
           {!isHidden('calendar') && (
             <div id="brief-calendar" style={{ flex: '1 1 380px', minWidth: 0 }}>
-              <CalendarEmbed />
+              <CalendarEmbed userId={userId} />
             </div>
           )}
         </div>
@@ -538,7 +538,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         it always used to sit in. */}
     {!isHidden('calendar') && !tailOrder.includes('village') && (
       <div id="brief-calendar">
-        <CalendarEmbed />
+        <CalendarEmbed userId={userId} />
       </div>
     )}
 

@@ -5,6 +5,7 @@ import CalendarSummary from './CalendarSummary'
 import CalendarMonth from './CalendarMonth'
 import CalendarWeek from './CalendarWeek'
 import CalendarDay from './CalendarDay'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 // 4S's own calendar. The Google Calendar iframe that used to sit below this
 // is gone (2026-08-07): an embed we couldn't read, search, theme, or connect
@@ -17,13 +18,20 @@ import CalendarDay from './CalendarDay'
 // calendars come back later as an ICS *import* (one implementation covers
 // Google, Apple and Outlook) — as a layer on top of this, never the
 // foundation underneath it.
-export default function CalendarEmbed() {
+export default function CalendarEmbed({ userId }: { userId: string }) {
   // Month by default (2026-08-25, reverses the 2026-08-21 change) — every
   // calendar in the app should open on the same view, and the user asked
   // for that view to be the month grid. Week/day added 2026-08-27,
   // "inspired off Google Calendar" — an hourly grid with an all-day band,
   // see CalendarTimeGrid.
   const [view, setView] = useState<'agenda' | 'month' | 'week' | 'day'>('month')
+  // Private by default; events shared into (or made directly in) the
+  // household space also show here (2026-08-27) — see useAgendaEntries'
+  // own header comment. spaces[0] matches every other "the household
+  // space" lookup already in the app (Village.tsx, etc.) — a single
+  // primary space, not a picker.
+  const { spaces } = useSharedSpaces(userId)
+  const spaceId = spaces[0]?.id ?? null
 
   const toggleBtn = (active: boolean): React.CSSProperties => ({
     fontSize: '0.66rem', padding: '0.3em 0.75em', borderRadius: '7px', cursor: 'pointer',
@@ -54,10 +62,10 @@ export default function CalendarEmbed() {
         </div>
       </div>
 
-      {view === 'agenda' && <CalendarSummary />}
-      {view === 'month' && <CalendarMonth />}
-      {view === 'week' && <CalendarWeek />}
-      {view === 'day' && <CalendarDay />}
+      {view === 'agenda' && <CalendarSummary spaceId={spaceId} />}
+      {view === 'month' && <CalendarMonth userId={userId} spaceId={spaceId} />}
+      {view === 'week' && <CalendarWeek userId={userId} spaceId={spaceId} />}
+      {view === 'day' && <CalendarDay userId={userId} spaceId={spaceId} />}
     </div>
   )
 }

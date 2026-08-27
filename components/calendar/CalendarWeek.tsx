@@ -8,8 +8,8 @@ import CalendarTimeGrid from './CalendarTimeGrid'
 // Week view (2026-08-27, "inspired off Google Calendar") — seven day
 // columns over CalendarTimeGrid's shared hour grid, same nav-header idiom
 // CalendarMonth already uses (‹ label today ›).
-export default function CalendarWeek() {
-  const entries = useAgendaEntries()
+export default function CalendarWeek({ userId, spaceId = null }: { userId: string; spaceId?: string | null }) {
+  const entries = useAgendaEntries(spaceId)
   const [anchor, setAnchor] = useState(() => new Date())
 
   const weekStart = startOfWeek(anchor)
@@ -41,7 +41,7 @@ export default function CalendarWeek() {
         <button onClick={() => setAnchor(a => addWeeks(a, 1))} style={navBtn} aria-label="Next week">→</button>
       </div>
 
-      <CalendarTimeGrid days={days} entries={entries} />
+      <CalendarTimeGrid days={days} entries={entries} userId={userId} />
     </div>
   )
 }
