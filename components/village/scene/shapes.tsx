@@ -465,13 +465,19 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
       {/* Tail, curled behind the body — a point, like the ears */}
       <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke={SOMI_POINT} strokeWidth={2} strokeLinecap="round" />
       {/* Sitting body, with two front paws suggested at the base — round 4
-          (2026-08-27), was a plain rounded blob with no feet at all. */}
-      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
+          (2026-08-27), was a plain rounded blob with no feet at all.
+          Outline strengthened round 8 (2026-08-27) — SOMI_BODY is a near-
+          white cream sitting on the scene's own pale-green ground, and at
+          0.35 stroke opacity the two were close enough in value that Somi
+          nearly disappeared (live report: barely visible, same low-
+          contrast problem BushShape had against the same ground before
+          its own edge fix). */}
+      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.7} strokeOpacity={0.6} />
       <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.6} />
-      <ellipse cx={-2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.4} strokeOpacity={0.3} />
-      <ellipse cx={2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.4} strokeOpacity={0.3} />
+      <ellipse cx={-2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.5} />
+      <ellipse cx={2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.5} />
       {/* Head + ears (points) */}
-      <circle cx={0} cy={-10} r={4} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
+      <circle cx={0} cy={-10} r={4} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.7} strokeOpacity={0.6} />
       <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill={SOMI_POINT} />
       <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill={SOMI_POINT} />
       {/* Whiskers and a tiny nose — round 4, the one thing missing that
