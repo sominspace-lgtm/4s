@@ -34,15 +34,15 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
     <g pointerEvents="none" className="village-fade">
       {/* Chimney smoke, only when the chimney itself is drawn and only when
           someone would plausibly have lit something. */}
-      {/* x nudged 420→429 (round 8, 2026-08-27) — Home's chimney moved a few
-          units when the hand-drawn house was replaced with the real
-          home-house.png sprite; this keeps the smoke rising from the actual
-          chimney instead of just beside it. */}
+      {/* Repositioned again for cottage.png (round 9, 2026-08-27) — Home's
+          chimney moved once more when the free-tier farm-pack house was
+          replaced with the user's own custom cottage sprite; its chimney
+          sits further right and higher than the previous sprite's. */}
       {lived && (cold || dark) && (
         <g className="village-smoke" opacity={0.22}>
-          <circle cx={430} cy={groundY - 88} r={3.5} fill="var(--text)" />
-          <circle cx={433} cy={groundY - 99} r={4.5} fill="var(--text)" opacity={0.7} />
-          <circle cx={429} cy={groundY - 111} r={5.5} fill="var(--text)" opacity={0.45} />
+          <circle cx={436} cy={groundY - 92} r={3.5} fill="var(--text)" />
+          <circle cx={439} cy={groundY - 103} r={4.5} fill="var(--text)" opacity={0.7} />
+          <circle cx={435} cy={groundY - 115} r={5.5} fill="var(--text)" opacity={0.45} />
         </g>
       )}
 

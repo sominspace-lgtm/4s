@@ -300,17 +300,19 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
 // to open the Brief and focus the capture box; removing the lake removed
 // that entry point too. This gives "jot something down" a small, real place
 // in the scene again without needing a whole district for it.
+// Real sprite (round 9, 2026-08-27) — same pack as the cottage/cast, see
+// their own header comments.
 export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  const w = 12.6, h = 15.6 // 262×325 source, same aspect ratio
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={0} cy={-8} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
         <title>Jot something down</title>
         <ellipse cx={0} cy={1.5} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
-        <rect x={-1} y={-14} width={2} height={14} fill="var(--slate)" opacity={0.7} />
-        <path d="M -5 -14 L -5 -20 Q -5 -23 0 -23 Q 5 -23 5 -20 L 5 -14 Z" fill="var(--gold)" fillOpacity={0.7} stroke="var(--gold)" strokeWidth={0.8} />
-        <rect x={-3.5} y={-19.5} width={3} height={2} rx={0.5} fill="var(--surface)" opacity={0.8} />
+        <image href="/village-assets/mailbox2.png" x={-w / 2} y={-h} width={w} height={h}
+          style={{ imageRendering: 'pixelated' }} />
       </g>
     </g>
   )
@@ -376,51 +378,49 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // figure per plant/building/district at scale, which doesn't apply to
 // exactly three named, always-present characters — closer in spirit to the
 // Mailbox than to a per-entity pattern.
-export function VillagerShape({ x, y, name, hairColor, outfitColor, scale = 1, onClick }: {
-  x: number; y: number; name: string; hairColor: string; outfitColor: string
-  /** Round 4 bug-fix (2026-08-27) — Sylvia/Harry were drawn at 1x in a
-   *  12×21-unit box, which on the rendered canvas is a couple dozen physical
-   *  pixels: too small for the round-4 outfit-hem/blush detail to actually
-   *  read ("figures look too basic"). The detail was already there; it just
-   *  needed to be big enough to see. Scales from the feet (local origin),
-   *  so a taller figure doesn't float above the ground. */
+//
+// Real sprite art (round 9, 2026-08-27) — replaces the hand-drawn faceless
+// blob-body from every prior round. This was the actual, structural ceiling
+// flagged before committing to this direction: no amount of stroke-width or
+// scale tuning on flat SVG paths reads as "a person" the way real character
+// art does. The user supplied a matching custom sprite pack
+// (simple-cozy-village-sprite-pack.zip, self-made — see public/village-assets/
+// for the cropped individual PNGs, sourced from village-core-sprites.png).
+// `hairColor`/`outfitColor` are now unused (sprite art has its own fixed
+// coloring) but kept in the prop signature rather than removed — deleting
+// them would touch both call sites in VillageScene.tsx for zero behavioral
+// gain, and a future non-sprite fallback might want them again.
+const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
+  Sylvia: { src: '/village-assets/sylvia.png', w: 156, h: 319 },
+  Harry: { src: '/village-assets/harry.png', w: 175, h: 312 },
+}
+
+export function VillagerShape({ x, y, name, scale = 1, onClick }: {
+  x: number; y: number; name: string
+  /** Unused now that this renders a fixed-art sprite — see this file's own
+   *  header note on why the props stayed rather than being removed. */
+  hairColor?: string; outfitColor?: string
   scale?: number
   onClick?: () => void
 }) {
-  // stopPropagation (2026-08-26) — without it a tap also bubbles to the
-  // scene's own onClick={() => setSelected(null)}, firing a second state
-  // update right behind the figure's own handler on every single tap.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  const sprite = VILLAGER_SPRITE[name] ?? VILLAGER_SPRITE.Harry
+  // Fixed render height in scene units, width derived from the sprite's own
+  // aspect ratio so it's never stretched.
+  const h = 30
+  const w = h * (sprite.w / sprite.h)
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
-      {/* Invisible hit-padding (2026-08-25 fix) — the figure itself is only
-          ~12×21 SVG units, which becomes a genuinely hard-to-tap target once
-          scaled to a real screen ("can't click the figures"). Every other
-          clickable prop in the scene (Mailbox, memory markers, district
-          labels) has this same oversized transparent hit circle; this one
-          was missing it. */}
-      {onClick && <circle cx={0} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
-      {/* Body — rounded, faceless, matching the flat object style used
-          everywhere else in the scene. Round 4 (2026-08-27): a two-tone
-          outfit (a small darker hem) and simple feet, so the silhouette
-          reads as clothed rather than a single flat blob — still faceless
-          on purpose, that part of the style stays. */}
-      <path d="M -6 0 Q -6 -12 0 -12 Q 6 -12 6 0 Z" fill={outfitColor} />
-      <path d="M -6 -1 Q -6 1.5 -4.5 2 L -3.5 2 L -4 -1 Z" fill={outfitColor} opacity={0.7} />
-      <path d="M 6 -1 Q 6 1.5 4.5 2 L 3.5 2 L 4 -1 Z" fill={outfitColor} opacity={0.7} />
-      <ellipse cx={-4} cy={2.2} rx={1.6} ry={0.9} fill="var(--slate)" opacity={0.5} />
-      <ellipse cx={4} cy={2.2} rx={1.6} ry={0.9} fill="var(--slate)" opacity={0.5} />
-      {/* Head + hair — a simple cap shape is enough to read as a person
-          without drawing an actual face. A soft blush pair adds warmth
-          without needing actual features. */}
-      <circle cx={0} cy={-15} r={5} fill="#E8C4A0" />
-      <circle cx={-2.6} cy={-13.5} r={1} fill="var(--blush)" opacity={0.4} />
-      <circle cx={2.6} cy={-13.5} r={1} fill="var(--blush)" opacity={0.4} />
-      <path d="M -5 -16 Q -5 -21 0 -21 Q 5 -21 5 -16 Q 5 -18.5 0 -19 Q -5 -18.5 -5 -16 Z" fill={hairColor} />
+      {/* Invisible hit-padding — same oversized-hit-circle idiom as every
+          other clickable prop in this scene (see this file's other shapes'
+          own 2026-08-25 comments on why). */}
+      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
+      <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
     </g>
   )
 }
@@ -430,10 +430,6 @@ export function VillagerShape({ x, y, name, hairColor, outfitColor, scale = 1, o
 // elsewhere in this file: a specific cat's actual coat isn't themeable.
 // Siamese "points" (ears, tail, face mask) run a cooler blue-grey against
 // a warm white body/chest.
-const SOMI_BODY = '#F3EFE6'
-const SOMI_POINT = '#8B95A3'
-const SOMI_EYE = '#5C8FB5'
-
 export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
   x: number; y: number; name?: string
   /** Same reasoning as VillagerShape's own `scale` (round 4 bug-fix,
@@ -444,6 +440,14 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  // Real sprite art (round 9, 2026-08-27) — same reasoning and same source
+  // pack as VillagerShape's own header comment. Somi's actual siamese
+  // coloring (cream body, blue-grey points, blue eyes — formerly hand-drawn
+  // as SOMI_BODY/SOMI_POINT/SOMI_EYE, now removed) turns out to match this
+  // sprite almost exactly.
+  const spriteW = 186, spriteH = 272
+  const h = 22
+  const w = h * (spriteW / spriteH)
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
@@ -451,38 +455,10 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
       <title>{name}</title>
       {/* Same oversized invisible hit circle as VillagerShape — see its own
           2026-08-25 fix comment ("can't click the figures"). */}
-      {onClick && <circle cx={0} cy={-6} r={14} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
-      {/* Tail, curled behind the body — a point, like the ears */}
-      <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke={SOMI_POINT} strokeWidth={2} strokeLinecap="round" />
-      {/* Sitting body, with two front paws suggested at the base — round 4
-          (2026-08-27), was a plain rounded blob with no feet at all.
-          Outline strengthened round 8 (2026-08-27) — SOMI_BODY is a near-
-          white cream sitting on the scene's own pale-green ground, and at
-          0.35 stroke opacity the two were close enough in value that Somi
-          nearly disappeared (live report: barely visible, same low-
-          contrast problem BushShape had against the same ground before
-          its own edge fix). */}
-      <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.7} strokeOpacity={0.6} />
-      <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.6} />
-      <ellipse cx={-2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.5} />
-      <ellipse cx={2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.5} />
-      {/* Head + ears (points) */}
-      <circle cx={0} cy={-10} r={4} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.7} strokeOpacity={0.6} />
-      <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill={SOMI_POINT} />
-      <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill={SOMI_POINT} />
-      {/* Whiskers and a tiny nose — round 4, the one thing missing that
-          makes a cat silhouette read as "cat" rather than "small animal." */}
-      <g stroke={SOMI_POINT} strokeWidth={0.35} strokeLinecap="round" opacity={0.55}>
-        <line x1={-1.5} y1={-8.7} x2={-5} y2={-9.2} />
-        <line x1={-1.5} y1={-8.3} x2={-5} y2={-8.1} />
-        <line x1={1.5} y1={-8.7} x2={5} y2={-9.2} />
-        <line x1={1.5} y1={-8.3} x2={5} y2={-8.1} />
-      </g>
-      <path d="M -0.6 -8.6 L 0.6 -8.6 L 0 -7.9 Z" fill="var(--blush)" opacity={0.75} />
-      {/* Blue eyes */}
-      <circle cx={-1.4} cy={-10} r={0.7} fill={SOMI_EYE} />
-      <circle cx={1.4} cy={-10} r={0.7} fill={SOMI_EYE} />
+      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      <ellipse cx={0} cy={1} rx={w / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
+      <image href="/village-assets/somi-cat.png" x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
     </g>
   )
 }

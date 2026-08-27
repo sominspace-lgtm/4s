@@ -921,26 +921,22 @@ export default function VillageScene({
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
-        {/* Real pixel-art sprite, not hand-drawn paths (round 8, 2026-08-27) —
-            "make it more aesthetic or artistic," after establishing pushing
-            the flat-SVG style further had a real ceiling (see globals'/this
-            file's own atmosphere-pass comments from earlier this round).
-            User direction: "use free tier [shubibubi's Cozy Farm pack] then
-            make own" for what it doesn't cover — Home, being the single
-            biggest and most-looked-at element in the whole scene, is the
-            highest-value swap to an actual licensed sprite. Cropped from the
-            pack's own sheet (public/village-assets/home-house.png), non-
-            commercial free-tier license — fine for a private household app,
-            revisit if 4S is ever sold. Source crop is 63×80px; scaled here
-            to 79×100 (same ~0.79 aspect ratio) for a footprint close to the
-            old hand-drawn house's visual weight. imageRendering: pixelated
-            keeps the pixel edges crisp instead of blurring on upscale. */}
-        <image href="/village-assets/home-house.png" x={-39.5} y={-100} width={79} height={100}
+        {/* Upgraded to the user's own custom sprite pack (round 9, 2026-08-27,
+            simple-cozy-village-sprite-pack.zip — see public/village-assets/
+            cottage.png, cropped from village-core-sprites.png) — the same
+            pack that supplies Sylvia/Harry/Somi below, so Home and the cast
+            now share one consistent art style instead of two different
+            sources (round 8's free-tier farm-pack house next to hand-drawn
+            figures). Self-made by the user; no licensing question. 432×354
+            source, kept at that ~1.22 aspect ratio here. */}
+        <image href="/village-assets/cottage.png" x={-55} y={-98} width={110} height={90}
           style={{ imageRendering: 'pixelated' }} />
         {/* Window glow after dark — the sprite has no baked-in light state,
-            so this is a soft blurred amber ellipse roughly over the round
-            window, same vglow filter as the sun/moon/lamps. */}
-        {dark && <ellipse cx={0} cy={-60} rx={9} ry={9} fill="var(--amber)" opacity={0.35} filter="url(#vglow)" />}
+            so this is a soft blurred amber ellipse roughly over the small
+            square window, same vglow filter as the sun/moon/lamps.
+            Repositioned for the new cottage sprite's own window location
+            (round 9, 2026-08-27). */}
+        {dark && <ellipse cx={-3} cy={-70} rx={8} ry={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 28 -88 L 28 -102 L 35 -102 L 35 -88" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
@@ -959,12 +955,12 @@ export default function VillageScene({
           fixed just off the porch — small, specific, lived-in details
           rather than another functional prop. Purely decorative, no
           onClick, same as the benches/flower beds scattered elsewhere. */}
-      <g transform={`translate(358 ${GROUND_Y + 2})`} opacity={0.85}>
+      {/* Real sprite, round 9 (2026-08-27) — same pack as the cottage/cast. */}
+      <g transform={`translate(358 ${GROUND_Y + 2})`} opacity={0.9}>
         <title>A bike, leaning by the door</title>
-        <ellipse cx={0} cy={9} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
-        <circle cx={-7} cy={6} r={6} fill="none" stroke="var(--slate)" strokeWidth={1.3} />
-        <circle cx={7} cy={6} r={6} fill="none" stroke="var(--slate)" strokeWidth={1.3} />
-        <path d="M -7 6 L 0 -3 L 7 6 M 0 -3 L -3 -8 M -3 -8 L 3 -8 M 0 -3 L 3 -3" fill="none" stroke="var(--slate)" strokeWidth={1.3} strokeLinecap="round" />
+        <ellipse cx={0} cy={7.5} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
+        <image href="/village-assets/bicycle.png" x={-13} y={-1} width={26} height={16.5}
+          style={{ imageRendering: 'pixelated' }} />
       </g>
       <g transform={`translate(345 ${GROUND_Y - 20})`} opacity={0.85}>
         <title>A bird feeder in the yard</title>
@@ -1182,12 +1178,17 @@ export default function VillageScene({
           different pair of neighbors. Being last in the whole scene now
           means the cast always wins any future overlap too, not just this
           one measured case. */}
+      {/* scale dropped from 1.7 to 1 (round 9, 2026-08-27) — that 1.7x was
+          tuned for the old hand-drawn figures' much smaller ~12×21 base
+          size; VillagerShape's new sprite-based rendering already targets a
+          sensible height (30 units) on its own, so the old multiplier would
+          now make the cast nearly as tall as the house. */}
       <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)" scale={1.7}
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia"
           onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
       </g>
       <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)" scale={1.7}
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry"
           onClick={locked ? openFigureOrToggle('harry') : undefined} />
       </g>
       {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
@@ -1198,7 +1199,10 @@ export default function VillageScene({
           click"). Here she's ~46 units from the Mailbox and ~60 from
           Harry, clear of both. */}
       <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        <CatShape x={480} y={GROUND_Y + 30} name="Somi" scale={1.5} onClick={openSomi} />
+        {/* scale dropped from 1.5 to 1, same reasoning as VillagerShape's
+            own call sites above — CatShape's new sprite base size is
+            already tuned. */}
+        <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
       </g>
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
