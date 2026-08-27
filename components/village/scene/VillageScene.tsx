@@ -168,7 +168,7 @@ export default function VillageScene({
   horizon = [], changes, locked = false, onLockedNavigate,
   layout = {}, arranging = false, onMoveLandmark,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0,
+  timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
 }: {
   village: VillageState
   live: boolean
@@ -199,6 +199,12 @@ export default function VillageScene({
   moonLabel?: string | null
   /** Trips not done/cancelled — drives the Trips signpost, see useTrips(). */
   tripCount?: number
+  /** 1 = the full 800×440 scene (default/unchanged). Below 1 shows more of
+   *  the world at once; above 1 zooms in. Purely a `viewBox` computation —
+   *  every coordinate inside the scene stays exactly as authored, see
+   *  Village.tsx's own zoom-control comment for why this is a discrete
+   *  +/- control rather than a gesture. */
+  zoom?: number
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -450,10 +456,19 @@ export default function VillageScene({
   }
   const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
+  // Zoom is a viewBox computation, not a transform on the content — every
+  // coordinate in this file stays exactly as authored. Same 800:440 aspect
+  // at every zoom level (no stretching), centered a little below the
+  // geometric middle (260, not 220) since the district/cast cluster sits
+  // there, not in the empty sky above it — zooming in should bring you
+  // closer to the village, not closer to blank air.
+  const vbW = 800 / zoom
+  const vbH = 440 / zoom
+  const viewBox = `${400 - vbW / 2} ${260 - vbH / 2} ${vbW} ${vbH}`
   return (
     <svg
       ref={svgRef}
-      viewBox="0 0 800 440"
+      viewBox={viewBox}
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
       style={{ width: '100%', height: 'auto', display: 'block', touchAction: arranging ? 'none' : undefined }}

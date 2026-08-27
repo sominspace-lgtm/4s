@@ -218,6 +218,10 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
       <rect x={-0.8} y={-22} width={1.6} height={22} fill="var(--slate)" opacity={0.75} />
+      {/* A soft bloom around the lamp head at night (round 4, 2026-08-27) —
+          was just the 3.4r head itself with no halo, easy to lose against a
+          dark sky even while lit. Same layered-glow idea as the sun/moon. */}
+      {dark && <circle cy={-24} r={8} fill="var(--amber)" opacity={0.12} />}
       <circle cy={-24} r={3.4} fill={dark ? 'var(--amber)' : 'var(--surface2)'} stroke="var(--slate)" strokeWidth={0.7}
         opacity={dark ? 0.9 : 0.6} className={dark ? 'village-glow' : undefined} />
     </g>
@@ -325,11 +329,21 @@ export function VillagerShape({ x, y, name, hairColor, outfitColor, onClick }: {
       {onClick && <circle cx={0} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
       {/* Body — rounded, faceless, matching the flat object style used
-          everywhere else in the scene. */}
+          everywhere else in the scene. Round 4 (2026-08-27): a two-tone
+          outfit (a small darker hem) and simple feet, so the silhouette
+          reads as clothed rather than a single flat blob — still faceless
+          on purpose, that part of the style stays. */}
       <path d="M -6 0 Q -6 -12 0 -12 Q 6 -12 6 0 Z" fill={outfitColor} />
+      <path d="M -6 -1 Q -6 1.5 -4.5 2 L -3.5 2 L -4 -1 Z" fill={outfitColor} opacity={0.7} />
+      <path d="M 6 -1 Q 6 1.5 4.5 2 L 3.5 2 L 4 -1 Z" fill={outfitColor} opacity={0.7} />
+      <ellipse cx={-4} cy={2.2} rx={1.6} ry={0.9} fill="var(--slate)" opacity={0.5} />
+      <ellipse cx={4} cy={2.2} rx={1.6} ry={0.9} fill="var(--slate)" opacity={0.5} />
       {/* Head + hair — a simple cap shape is enough to read as a person
-          without drawing an actual face. */}
+          without drawing an actual face. A soft blush pair adds warmth
+          without needing actual features. */}
       <circle cx={0} cy={-15} r={5} fill="#E8C4A0" />
+      <circle cx={-2.6} cy={-13.5} r={1} fill="var(--blush)" opacity={0.4} />
+      <circle cx={2.6} cy={-13.5} r={1} fill="var(--blush)" opacity={0.4} />
       <path d="M -5 -16 Q -5 -21 0 -21 Q 5 -21 5 -16 Q 5 -18.5 0 -19 Q -5 -18.5 -5 -16 Z" fill={hairColor} />
     </g>
   )
@@ -360,13 +374,25 @@ export function CatShape({ x, y, name = 'Somi', onClick }: {
       <ellipse cx={0} cy={1} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
       {/* Tail, curled behind the body — a point, like the ears */}
       <path d="M 5 -3 Q 10 -2 9 -7 Q 8.5 -9.5 6 -8.5" fill="none" stroke={SOMI_POINT} strokeWidth={2} strokeLinecap="round" />
-      {/* Sitting body */}
+      {/* Sitting body, with two front paws suggested at the base — round 4
+          (2026-08-27), was a plain rounded blob with no feet at all. */}
       <path d="M -6 0 Q -6 -8 0 -8 Q 6 -8 6 0 Z" fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
       <path d="M -3.5 0 Q -3.5 -4 0 -4 Q 3.5 -4 3.5 0 Z" fill="var(--surface)" opacity={0.6} />
+      <ellipse cx={-2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.4} strokeOpacity={0.3} />
+      <ellipse cx={2.2} cy={0.3} rx={1.6} ry={1} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.4} strokeOpacity={0.3} />
       {/* Head + ears (points) */}
       <circle cx={0} cy={-10} r={4} fill={SOMI_BODY} stroke={SOMI_POINT} strokeWidth={0.5} strokeOpacity={0.35} />
       <path d="M -3.5 -13 L -5 -17 L -1.5 -14 Z" fill={SOMI_POINT} />
       <path d="M 3.5 -13 L 5 -17 L 1.5 -14 Z" fill={SOMI_POINT} />
+      {/* Whiskers and a tiny nose — round 4, the one thing missing that
+          makes a cat silhouette read as "cat" rather than "small animal." */}
+      <g stroke={SOMI_POINT} strokeWidth={0.35} strokeLinecap="round" opacity={0.55}>
+        <line x1={-1.5} y1={-8.7} x2={-5} y2={-9.2} />
+        <line x1={-1.5} y1={-8.3} x2={-5} y2={-8.1} />
+        <line x1={1.5} y1={-8.7} x2={5} y2={-9.2} />
+        <line x1={1.5} y1={-8.3} x2={5} y2={-8.1} />
+      </g>
+      <path d="M -0.6 -8.6 L 0.6 -8.6 L 0 -7.9 Z" fill="var(--blush)" opacity={0.75} />
       {/* Blue eyes */}
       <circle cx={-1.4} cy={-10} r={0.7} fill={SOMI_EYE} />
       <circle cx={1.4} cy={-10} r={0.7} fill={SOMI_EYE} />

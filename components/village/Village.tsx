@@ -72,6 +72,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   compact?: boolean
 }) {
   const [arranging, setArranging] = useState(false)
+  // Zoom (2026-08-27, round 4) — "make it like a mini village we can zoom
+  // in and out of and enjoy doing so." A discrete +/- control rather than
+  // wheel/pinch gestures: those need to distinguish a zoom gesture from
+  // page scroll and from arrange-mode dragging, real added risk for a
+  // first pass. Clamped 0.7 (a bit more of the world at once) to 2 (close
+  // enough to read one building's detail), reset button only shows once
+  // actually zoomed.
+  const [zoom, setZoom] = useState(1)
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
   // Finished work, which useWorkItems deliberately excludes. Without this the
@@ -229,7 +237,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
             peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
-            timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} />
+            timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom} />
         </div>
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the
@@ -285,6 +293,55 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}
             >{arranging ? <><Icon name="check" size={10} /> Done</> : <><Icon name="gear" size={10} /> Arrange</>}</button>
+          </div>
+        )}
+
+        {/* Zoom controls — bottom-right, clear of Arrange (top-right) and
+            the weather card (top-left). Not shown while arranging: a zoom
+            change mid-drag would be disorienting, and the two controls
+            competing for the same corner language isn't worth it. */}
+        {!compact && !ambient && !arranging && (
+          <div style={{ position: 'absolute', bottom: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.3rem' }}>
+            {zoom !== 1 && (
+              <button
+                onClick={() => setZoom(1)}
+                title="Reset zoom"
+                className="press"
+                style={{
+                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                  borderRadius: '8px', padding: '0.3rem 0.55rem', color: 'var(--muted)', cursor: 'pointer',
+                  fontSize: '0.62rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                }}
+              >Reset</button>
+            )}
+            <button
+              onClick={() => setZoom(z => Math.max(0.7, +(z - 0.25).toFixed(2)))}
+              disabled={zoom <= 0.7}
+              title="Zoom out"
+              aria-label="Zoom out"
+              className="press"
+              style={{
+                background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                borderRadius: '8px', width: '1.8rem', height: '1.8rem', color: 'var(--muted)',
+                cursor: zoom <= 0.7 ? 'default' : 'pointer', opacity: zoom <= 0.7 ? 0.4 : 1,
+                fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+              }}
+            >−</button>
+            <button
+              onClick={() => setZoom(z => Math.min(2, +(z + 0.25).toFixed(2)))}
+              disabled={zoom >= 2}
+              title="Zoom in"
+              aria-label="Zoom in"
+              className="press"
+              style={{
+                background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                borderRadius: '8px', width: '1.8rem', height: '1.8rem', color: 'var(--muted)',
+                cursor: zoom >= 2 ? 'default' : 'pointer', opacity: zoom >= 2 ? 0.4 : 1,
+                fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+              }}
+            >+</button>
           </div>
         )}
 

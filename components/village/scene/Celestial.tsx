@@ -5,8 +5,16 @@ import type { Celestial as CelestialData } from '@/lib/village/sky'
 /**
  * The sun, or the moon with tonight's actual phase.
  *
- * The shadow is a second circle filled with the sky colour rather than a mask
- * or a filter — masks don't inherit `color-mix` custom properties reliably
+ * Round 4 (2026-08-27) — both were previously a flat circle at low opacity
+ * (var(--amber)/var(--text) at ~0.3), which read as a dull grey or amber
+ * dot rather than an actual sun or moon ("make the moon and sun pretty").
+ * Real radial gradients + a warmer/cooler fixed palette (same reasoning
+ * WALL/ROOF/TRIM in shapes.tsx already established — a sun's warmth and a
+ * moon's pale glow aren't themeable any more than a cat's coat is) plus a
+ * soft multi-layer glow instead of one faint halo ring.
+ *
+ * The shadow is still a second circle filled with the sky colour rather
+ * than a mask — masks don't inherit `color-mix` custom properties reliably
  * across themes, and a crescent is two circles anyway.
  */
 export default function Celestial({ c }: { c: CelestialData }) {
@@ -15,8 +23,21 @@ export default function Celestial({ c }: { c: CelestialData }) {
   if (c.body === 'sun') {
     return (
       <g className="village-fade" pointerEvents="none">
-        <circle cx={c.x} cy={c.y} r={r + 9} fill="var(--amber)" opacity={0.07} />
-        <circle cx={c.x} cy={c.y} r={r} fill="var(--amber)" opacity={0.28} />
+        <defs>
+          <radialGradient id="vsun" cx="35%" cy="30%" r="65%">
+            <stop offset="0%" stopColor="#FFF6D8" />
+            <stop offset="45%" stopColor="#FFD874" />
+            <stop offset="100%" stopColor="#F0A83C" />
+          </radialGradient>
+        </defs>
+        {/* Layered glow, soft to sharp, instead of one flat halo ring. */}
+        <circle cx={c.x} cy={c.y} r={r + 16} fill="#FFD874" opacity={0.06} />
+        <circle cx={c.x} cy={c.y} r={r + 9} fill="#FFD874" opacity={0.14} />
+        <circle cx={c.x} cy={c.y} r={r + 3} fill="#FFE9AE" opacity={0.35} />
+        <circle cx={c.x} cy={c.y} r={r} fill="url(#vsun)" />
+        {/* A small bright highlight — the one thing that reads as "lit
+            sphere" rather than "flat disc" at this size. */}
+        <circle cx={c.x - r * 0.3} cy={c.y - r * 0.3} r={r * 0.28} fill="#FFFCF0" opacity={0.55} />
       </g>
     )
   }
@@ -28,9 +49,23 @@ export default function Celestial({ c }: { c: CelestialData }) {
 
   return (
     <g className="village-fade" pointerEvents="none">
-      <circle cx={c.x} cy={c.y} r={r + 8} fill="var(--text)" opacity={0.05} />
-      <circle cx={c.x} cy={c.y} r={r} fill="var(--text)" opacity={0.3} />
-      {/* Bites the disc back down to the current phase. */}
+      <defs>
+        <radialGradient id="vmoon" cx="38%" cy="32%" r="70%">
+          <stop offset="0%" stopColor="#FDFBF4" />
+          <stop offset="55%" stopColor="#E9E4D6" />
+          <stop offset="100%" stopColor="#C7C6DA" />
+        </radialGradient>
+      </defs>
+      <circle cx={c.x} cy={c.y} r={r + 12} fill="#D8DCF2" opacity={0.10} />
+      <circle cx={c.x} cy={c.y} r={r + 6} fill="#E9E9F6" opacity={0.22} />
+      <circle cx={c.x} cy={c.y} r={r} fill="url(#vmoon)" />
+      {/* A couple of faint, fixed "craters" — pure texture, not a real
+          lunar map — so the disc doesn't read as a flat painted circle. */}
+      <circle cx={c.x - r * 0.28} cy={c.y + r * 0.15} r={r * 0.18} fill="#C9C6D8" opacity={0.35} />
+      <circle cx={c.x + r * 0.15} cy={c.y - r * 0.35} r={r * 0.12} fill="#C9C6D8" opacity={0.3} />
+      {/* Bites the disc back down to the current phase. Drawn last, so it
+          correctly covers the gradient/craters/highlight at every phase
+          including new moon (no highlight left floating on a "dark" moon). */}
       <circle cx={c.x + offset * dir} cy={c.y} r={r} fill="url(#vsky)" />
     </g>
   )
