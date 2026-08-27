@@ -773,35 +773,6 @@ export default function VillageScene({
         <line x1={-7} y1={-1.5} x2={6} y2={-1.5} stroke="var(--gold)" strokeWidth={0.5} opacity={0.6} />
       </g>
 
-      {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
-          dots with the three actual, always-present characters, standing in
-          Home's yard. See VillagerShape/CatShape's own header comment for
-          why this is a deliberate exception to the district icons' "objects,
-          not figures" rule. A slow, staggered idle bob (village-bob, see
-          globals.css) is the one bit of "tiny people walking" life this
-          scene gets — full movement/pathing is out of scope for now.
-          Drawn AFTER plants/buildings (2026-08-25 fix, was right after the
-          Mailbox) — a scattered plant/building slot could otherwise land on
-          top of the cast's fixed spot and steal its clicks, since SVG paints
-          later elements over earlier ones ("can't click the figures"). */}
-      <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
-          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
-      </g>
-      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
-          onClick={locked ? openFigureOrToggle('harry') : undefined} />
-      </g>
-      {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
-          invisible hit-circle (r=14) and the Mailbox's (r=14, x=462) only
-          ~27.9 units apart center-to-center against a combined radius of
-          28 — functionally touching, so a click near the boundary could
-          land on either depending on sub-pixel rounding ("glitchy, hard to
-          click"). Here she's ~46 units from the Mailbox and ~60 from
-          Harry, clear of both. */}
-      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
-      </g>
 
       {/* People identity (2026-08-25) — a second bench angled toward the
           one already scattered near this district (see PROPS.benches
@@ -944,6 +915,43 @@ export default function VillageScene({
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
       {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}
+
+      {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
+          dots with the three actual, always-present characters, standing in
+          Home's yard. See VillagerShape/CatShape's own header comment for
+          why this is a deliberate exception to the district icons' "objects,
+          not figures" rule. A slow, staggered idle bob (village-bob, see
+          globals.css) is the one bit of "tiny people walking" life this
+          scene gets — full movement/pathing is out of scope for now.
+          Drawn AFTER every district label now too (2026-08-27 fix, was only
+          after plants/buildings) — Sylvia (372, GROUND_Y+8) and Harry (428,
+          GROUND_Y+8) both genuinely overlap the Home tile's own 44×56
+          invisible hit-rect (pos('home') = 400, 250) in a real corner
+          region, and Home was painted AFTER the cast, so it silently won
+          that overlap — a tap meant for Sylvia or Harry could land on the
+          Home tile instead ("glitchy, hard to select the figures"), same
+          root cause the plants/buildings fix above already solved for a
+          different pair of neighbors. Being last in the whole scene now
+          means the cast always wins any future overlap too, not just this
+          one measured case. */}
+      <g className="village-bob" style={{ animationDelay: '0s' }}>
+        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia" hairColor="#8B5E3C" outfitColor="var(--blush)"
+          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+      </g>
+      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
+        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry" hairColor="#4A3728" outfitColor="var(--emerald)"
+          onClick={locked ? openFigureOrToggle('harry') : undefined} />
+      </g>
+      {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
+          invisible hit-circle (r=14) and the Mailbox's (r=14, x=462) only
+          ~27.9 units apart center-to-center against a combined radius of
+          28 — functionally touching, so a click near the boundary could
+          land on either depending on sub-pixel rounding ("glitchy, hard to
+          click"). Here she's ~46 units from the Mailbox and ~60 from
+          Harry, clear of both. */}
+      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
+        <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
+      </g>
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
           no district of its own; this points off-canvas at the village

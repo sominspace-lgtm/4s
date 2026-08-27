@@ -436,7 +436,9 @@ select, option {
    only entities with a continuous idle animation of their own). Pausing on
    :hover stabilizes the target the moment the cursor lands on it, instead
    of only after the hover state has already started flickering. */
-.village-bob:has(.village-entity:hover) { animation-play-state: paused; }
+@media (hover: hover) and (pointer: fine) {
+  .village-bob:has(.village-entity:hover) { animation-play-state: paused; }
+}
 
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
@@ -459,7 +461,18 @@ select, option {
    position. Support: Safari 14.1+, Chrome 104+, Firefox 72+ — covers every
    iPad/iPhone this needs to run on. */
 .village-entity { cursor: pointer; transform-box: fill-box; transform-origin: 50% 100%; transition: filter 160ms ease, scale 160ms ease; }
-.village-entity:hover { filter: drop-shadow(0 0 3px var(--gold)); scale: 1.08; }
+/* Hover glow/scale gated to real pointer devices (2026-08-27) — a touch tap
+   still matches CSS :hover (there's no mouse to "leave" and clear it), so on
+   a phone/iPad the glow+scale would fire on the FIRST tap and then often
+   stick, get retriggered, or visibly flash before the actual click lands —
+   exactly the kind of thing that reads as "glitchy" tapping a figure. Mice/
+   trackpads (hover: hover, pointer: fine) keep the effect; touch just gets a
+   clean, immediate tap with no hover state to fight with. Same reasoning as
+   the bob-freeze rule above, which is scoped to the same media query for
+   consistency even though :hover itself already limits when it can apply. */
+@media (hover: hover) and (pointer: fine) {
+  .village-entity:hover { filter: drop-shadow(0 0 3px var(--gold)); scale: 1.08; }
+}
 .village-entity-selected { filter: drop-shadow(0 0 4px var(--gold)) drop-shadow(0 0 1px var(--gold)); }
 
 /* The sky eases between times of day rather than snapping. This is also the
