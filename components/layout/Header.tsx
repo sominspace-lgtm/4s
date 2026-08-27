@@ -31,7 +31,6 @@ interface HeaderProps {
   onSearch: () => void
   onCapture: () => void
   onArchive: () => void
-  onHelp: () => void
   onConnect: () => void
 }
 
@@ -91,7 +90,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onHelp, onConnect }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -251,7 +250,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           // The shared view is deliberately read-mostly; this is the way out
           // of it without signing out and back in.
           ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
-          { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },
@@ -268,7 +266,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
           { icon: '◻', label: 'Archive', onClick: onArchive },
           { divider: true, icon: '', label: '' },
-          { icon: '?', label: 'Help & tutorial', onClick: onHelp },
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '○', label: 'Account', href: '/account' },
           // Same tiled-profile login every device uses — picking a different

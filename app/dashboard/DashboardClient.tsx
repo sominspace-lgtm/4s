@@ -11,13 +11,11 @@ import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
-import HelpPanel from '@/components/ui/HelpPanel'
 import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
-import JourneyBar from '@/components/ui/JourneyBar'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
@@ -211,7 +209,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   // Village's Archive district needs to open this same panel from deep
   // inside the scene, where a direct prop callback can't reach (2026-08-24)
@@ -531,7 +528,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           onCustomize={() => setCustomizeOpen(true)}
           onSearch={() => setSearchOpen(true)}
           onArchive={() => setArchiveOpen(true)}
-          onHelp={() => setHelpOpen(true)}
           onConnect={() => setConnectOpen(true)}
         />
       )}
@@ -539,22 +535,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <QuickCapture />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
 
-      {/* Journey bar — progress + a one-click tutorial. Quiet, disappears
-          forever once everything is open. Not XP: no levels, no streaks,
-          just "your OS grows as you use it" plus an unlock-now choice. */}
-      {!ambient && !prog.loading && !prog.done && (
-        <JourneyBar
-          unlockedCount={prog.unlockedCount}
-          total={prog.total}
-          percent={prog.percent}
-          stages={prog.stages}
-          next={prog.next}
-          onOpenEverything={openEverything}
-        />
-      )}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
-      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} lang={lang} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
