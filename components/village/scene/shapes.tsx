@@ -518,17 +518,34 @@ const TRIM = '#6B5640'
 // own labels; this wrapper is the single knob that fixes that everywhere.
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
   switch (kind) {
-    case 'home': // A little house — mailbox, flowers at the base, windows that glow warm after dark.
+    case 'home': // A little house — mailbox, garden, a bike by the wall, a path leading in, windows that glow warm after dark.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={15} ry={2.4} fill="var(--text)" opacity={0.18} />
+          {/* A short path stub reaching toward the main path (2026-08-27,
+              round 3) — same dirt-path stroke language as PATH_D itself
+              (VillageScene.tsx), just local to Home, so this is visibly
+              "the place you walk home to," not a building floating in a
+              field. */}
+          <path d="M 0 6 L 0 16" stroke="var(--surface2)" strokeWidth={4} strokeLinecap="round" opacity={0.5} />
+          <path d="M 0 6 L 0 16" stroke="var(--border)" strokeWidth={4} strokeDasharray="1 6" strokeLinecap="round" opacity={0.6} />
           <g transform="translate(-13 -1)">
             <rect x={-0.6} y={-6} width={1.2} height={6} fill={TRIM} opacity={0.8} />
             <path d="M -2.6 -6 L -2.6 -9 Q -2.6 -11 0 -11 Q 2.6 -11 2.6 -9 L 2.6 -6 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.6} />
           </g>
+          {/* A little garden patch, not just three loose petals — a small
+              cluster reads as tended ground. */}
           <circle cx={10} cy={0.5} r={1.4} fill="var(--blush)" opacity={0.9} />
           <circle cx={13} cy={1.5} r={1.2} fill="var(--amber)" opacity={0.9} />
           <circle cx={7} cy={2} r={1.1} fill="var(--blush)" opacity={0.8} />
+          <circle cx={11.5} cy={-0.5} r={1} fill="var(--amber)" opacity={0.75} />
+          <circle cx={8.5} cy={0.5} r={0.9} fill="var(--emerald)" opacity={0.7} />
+          {/* A bicycle leaned against the wall. */}
+          <g transform="translate(-8 3.5)" opacity={0.85}>
+            <circle cx={-3} cy={0} r={2.4} fill="none" stroke={TRIM} strokeWidth={0.6} />
+            <circle cx={3} cy={0} r={2.4} fill="none" stroke={TRIM} strokeWidth={0.6} />
+            <path d="M -3 0 L 0 -3.5 L 3 0 M 0 -3.5 L -0.5 0 M -1.5 -1.6 L 1.2 -1.6" stroke={TRIM} strokeWidth={0.55} fill="none" strokeLinecap="round" />
+          </g>
           <rect x={-11} y={-16} width={22} height={18} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.9} />
           <rect x={-11} y={-16} width={22} height={18} rx={2} fill="url(#vsheen)" />
           <rect x={-11} y={4} width={22} height={2} fill={WALL_SHADOW} />
@@ -544,10 +561,15 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
             stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
         </g>
       )
-    case 'leaf': // Growth Forest — a small grove, not one potted sprout.
+    case 'leaf': // Growth Forest — a small grove, threaded with a path, not one potted sprout.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={14} ry={2.2} fill="var(--text)" opacity={0.16} />
+          {/* A path segment between the trees (2026-08-27, round 3) — same
+              stroke language as PATH_D — so this reads as a place you walk
+              INTO, not three trees standing in a row. */}
+          <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
+          <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
           <g transform="translate(-9 -1)">
             <rect x={-1} y={-4} width={2} height={5} fill={TRIM} opacity={0.8} />
             <path d="M -6 -3 L 0 -14 L 6 -3 Z" fill="var(--emerald)" fillOpacity={0.85} />
@@ -576,6 +598,9 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
               className={dark && i === 0 ? 'village-glow' : undefined} />
           ))}
           <path d="M 9 -20 L 9 -30 L 15 -27" stroke={TRIM} strokeWidth={1.1} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          {/* A plank leaning at the base — the workshop's own material, not
+              just a building with a crane beside it. */}
+          <rect x={-11} y={-1} width={7} height={1.6} rx={0.4} fill={ROOF} stroke={TRIM} strokeWidth={0.4} transform="rotate(-8 -7.5 -0.2)" opacity={0.85} />
         </g>
       )
     case 'book': // Archive — a tiny shed/greenhouse, not a flat book stack.
@@ -588,30 +613,41 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <circle cx={0} cy={-8} r={3}
             fill={dark ? 'var(--amber)' : '#FAF3E4'} opacity={dark ? 0.9 : 0.85}
             className={dark ? 'village-glow' : undefined} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.6} />
-          <rect x={-8} y={-2} width={5} height={1.6} rx={0.4} fill="var(--amber)" opacity={0.75} />
-          <rect x={-7.6} y={-3.4} width={4.2} height={1.6} rx={0.4} fill="var(--amber)" opacity={0.9} />
+          <rect x={-8} y={-2.2} width={6} height={2} rx={0.4} fill="var(--amber)" opacity={0.78} />
+          <rect x={-7.5} y={-4} width={5} height={2} rx={0.4} fill="var(--amber)" opacity={0.92} />
         </g>
       )
-    case 'places': // Places — a little signpost, same visual family as SignpostShape.
+    case 'places': // Places — a little kiosk: signpost with an awning and a stand, not a bare sign.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={9} ry={1.8} fill="var(--text)" opacity={0.16} />
           <rect x={-1} y={-24} width={2} height={26} fill={TRIM} opacity={0.85} />
-          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" />
-          <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" />
+          {/* A small stand base, so the post reads as a kiosk you'd stop at. */}
+          <rect x={-4} y={0} width={8} height={2.2} rx={0.6} fill={WALL} stroke={TRIM} strokeWidth={0.5} />
+          <path d="M -1 -22 L 12 -19 L -1 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.7} strokeLinejoin="round" transform="rotate(-3 -1 -19)" />
+          <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" transform="rotate(3 -1 -11)" />
         </g>
       )
-    case 'people': // People — a bench, someone sitting, not another wrapped gift.
+    case 'people': // People — a bench, someone sitting, and a second small house — a neighborhood, not one bench.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
+          <ellipse cx={0} cy={2} rx={14} ry={2} fill="var(--text)" opacity={0.16} />
+          {/* A second, smaller house — reuses Home's own wall/roof
+              construction at a smaller scale rather than inventing a third
+              building type, so "neighborhood" reads without a full new
+              asset. */}
+          <g transform="translate(9 -1) scale(0.55)">
+            <rect x={-11} y={-16} width={22} height={18} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.9} />
+            <path d="M -14 -16 L 0 -30 L 14 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.8} strokeLinejoin="round" />
+            <rect x={-3} y={-9} width={6} height={9} rx={1} fill={TRIM} opacity={0.85} />
+          </g>
           <g transform="translate(-6 0)">
             <rect x={-6} y={-6} width={12} height={1.6} rx={0.5} fill={TRIM} opacity={0.85} />
             <rect x={-6} y={-9.5} width={12} height={1.4} rx={0.5} fill={TRIM} opacity={0.7} />
             <rect x={-5} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
             <rect x={3.8} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
           </g>
-          <g transform="translate(6 -6)">
+          <g transform="translate(-3 -6)">
             <circle cx={0} cy={-6} r={2.6} fill="#E8C4A0" />
             <path d="M -3 0 Q -3 -6.5 0 -6.5 Q 3 -6.5 3 0 Z" fill="var(--blush)" />
           </g>
@@ -669,17 +705,22 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
           </text>
         </>
       )}
-      {/* Name stays always-visible but genuinely quiet now (round two,
-          2026-08-27 — the first pass dropped the count line but left the
-          name itself as loud, heavily-haloed 10.5px text that competed with
-          the art instead of captioning it). Smaller, thinner halo, muted
-          rather than full --text, brightening to --gold only on hover (see
-          .village-district:hover text in globals.css) — the count/detail
-          line stays hover-only (.village-district-count). Tapping still
-          opens the same richer info card on any device either way, so touch
-          loses nothing from either line being quiet at rest. */}
-      <text textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" opacity={0.85} y={13}>{label}</text>
-      <text className="village-district-count" textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
+      {/* Name now hidden until you look too (round three, 2026-08-27 — round
+          two only quieted it down and moved the count/detail line to
+          hover-only, but a permanently-visible name under every building
+          still made the scene read as an annotated diagram, not a place).
+          Same .village-district-count pattern, new sibling class: opacity 0
+          at rest, revealed on hover (real pointer devices only, same
+          @media (hover: hover) and (pointer: fine) guard as the figure-hover
+          fix). Forced visible via inline style while `draggable` — you need
+          to see what you're moving in arrange mode regardless of hover
+          state, and an inline style always wins over the stylesheet rule
+          here. Touch still gets the full name+detail through the existing
+          tap-triggered hover-board (openOrToggle/openPanel), unchanged. */}
+      <text className="village-district-name" style={draggable ? { opacity: 0.85 } : undefined}
+        textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
+      <text className="village-district-count" style={draggable ? { opacity: 0.85 } : undefined}
+        textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
     </g>
   )
 }

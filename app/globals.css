@@ -441,16 +441,19 @@ select, option {
 }
 
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
-.village-district:hover text { fill: var(--gold); opacity: 1; }
-/* The count/detail line only appears on hover now (2026-08-27) — a resting
-   scene shouldn't read as a row of captions ("your projects", "friends &
-   connections" sitting under every building at all times). The name above
-   stays always-visible; tapping still opens the same richer info card on any
-   device via openOrToggle's hover-board, so touch loses nothing by never
-   getting a real :hover state — see DistrictLabel's own comment. */
-.village-district-count { opacity: 0; }
+.village-district:hover text { fill: var(--gold); }
+/* Both the name and the count/detail line only appear on hover now
+   (round 3, 2026-08-27 — round 2 only hid the count line; a permanently-
+   visible name under every building still made the scene read as an
+   annotated diagram, not a place). Tapping still opens the same richer
+   info card on any device via openOrToggle's hover-board, so touch loses
+   nothing by never getting a real :hover state — see DistrictLabel's own
+   comment. Forced visible via inline style while arranging (draggable),
+   which wins over these rules regardless of hover. */
+.village-district-name, .village-district-count { opacity: 0; }
 @media (hover: hover) and (pointer: fine) {
-  .village-district-count { transition: opacity 160ms ease; }
+  .village-district-name, .village-district-count { transition: opacity 160ms ease; }
+  .village-district:hover .village-district-name,
   .village-district:hover .village-district-count { opacity: 1; }
 }
 

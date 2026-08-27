@@ -61,6 +61,19 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
     happenings.push({ label: tonight.title, sub: tonight.kind === 'eating_out' ? 'eating out tonight' : 'dinner tonight' })
   }
 
+  // An observation instead of a stat dump (2026-08-27, round 3) — "Your
+  // village is quiet today." named a state but explained nothing; this
+  // reads the same real data (happenings/choresToday, both already computed
+  // above) as a sentence about the place instead. Still grounded in real
+  // numbers, just said once as prose rather than a fallback line plus a
+  // separate always-visible stat row (which moved into the expanded
+  // section below — "tiny data underneath if wanted", not up front).
+  const villageObservation = happenings.length > 0
+    ? `${happenings.length} thing${happenings.length > 1 ? 's are' : ' is'} happening`
+    : choresToday.length > 0
+      ? `Quiet, but ${choresToday.length} thing${choresToday.length > 1 ? 's' : ''} could use your attention.`
+      : 'The village is quiet — nothing waiting on you right now.'
+
   return (
     <div className="lift organic" style={{
       marginTop: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
@@ -76,9 +89,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
       >
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
-            {happenings.length === 0
-              ? 'Your village is quiet today.'
-              : `${happenings.length} thing${happenings.length > 1 ? 's are' : ' is'} happening`}
+            {villageObservation}
           </span>
           <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{open ? '▾ less' : '▸ more'}</span>
         </div>
@@ -93,20 +104,19 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
             ))}
           </div>
         )}
-
-        {/* THIS WEEK — a compact stat row, real counts only. */}
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.1rem', fontSize: '0.66rem', color: 'var(--muted)' }}>
-          <StatChip icon="heart">{plannedIdeas.length} plan{plannedIdeas.length === 1 ? '' : 's'}</StatChip>
-          <StatChip icon="pin">{newPlacesThisWeek} new place{newPlacesThisWeek === 1 ? '' : 's'}</StatChip>
-          <StatChip icon="basket">{choresToday.length} chore{choresToday.length === 1 ? '' : 's'} today</StatChip>
-        </div>
       </button>
 
       {open && (
-        <div style={{
-          borderTop: '1px solid var(--border)', padding: '0.9rem 1rem 1.1rem',
-          display: 'grid', gap: '0.7rem', gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))',
-        }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '0.9rem 1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          {/* THIS WEEK — moved in here from the always-visible header row
+              (round 3, 2026-08-27) — "tiny data underneath if wanted," not
+              stacked on top of the observation sentence above. */}
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.66rem', color: 'var(--muted)' }}>
+            <StatChip icon="heart">{plannedIdeas.length} plan{plannedIdeas.length === 1 ? '' : 's'}</StatChip>
+            <StatChip icon="pin">{newPlacesThisWeek} new place{newPlacesThisWeek === 1 ? '' : 's'}</StatChip>
+            <StatChip icon="basket">{choresToday.length} chore{choresToday.length === 1 ? '' : 's'} today</StatChip>
+          </div>
+          <div style={{ display: 'grid', gap: '0.7rem', gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))' }}>
           {/* Tonight — the single most-asked household question there is */}
           <Section icon="plate" tint="var(--amber)" title="Tonight" onOpen={() => goToHousehold('home')}>
             {tonight ? (
@@ -179,6 +189,7 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
               </div>
             </Section>
           )}
+          </div>
         </div>
       )}
     </div>

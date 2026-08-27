@@ -117,21 +117,19 @@ const PROPS = {
 
 export type { Slot } from '@/lib/village/layout'
 
-// A small postcard sentence for the readout (2026-08-25) — "10:05 AM · 63°"
-// is data; "A quiet morning in your village" is the same data read as a
-// place rather than a dashboard. Real time-of-day only (no invented mood),
-// with rain folded in when it's actually raining — everything else about
-// the weather already shows on the line above via weatherMeta's own label.
-const POSTCARD_LINE: Record<VillageState['timeOfDay'], string> = {
-  dawn: 'A quiet morning in your village.',
-  day: 'A bright day in your village.',
-  dusk: 'Evening settles over your village.',
-  night: 'A still night in your village.',
+// The weather card's own short phrase (round 3, 2026-08-27) — "1:12 AM 61° /
+// Thursday, August 27 · Clear · full moon / A still night in your village."
+// was three lines of increasingly specific data; "Still tonight / 61° · Full
+// moon" says the same thing as a place, not a readout, and matches what the
+// brief actually asked for. A separate short map rather than trimming
+// POSTCARD_LINE itself — that one's still used at full sentence length
+// elsewhere (its own three lines' worth of context is the point there).
+const SHORT_POSTCARD: Record<VillageState['timeOfDay'], string> = {
+  dawn: 'Quiet morning', day: 'Bright day', dusk: 'Evening settles', night: 'Still tonight',
 }
-function postcardLine(timeOfDay: VillageState['timeOfDay'], condition?: WeatherCondition | null): string {
-  const base = POSTCARD_LINE[timeOfDay]
-  if (condition === 'rain' || condition === 'storm') return base.replace('village.', 'village, rain on the path.')
-  return base
+function shortPostcard(timeOfDay: VillageState['timeOfDay'], condition?: WeatherCondition | null): string {
+  if (condition === 'rain' || condition === 'storm') return 'Rain on the path'
+  return SHORT_POSTCARD[timeOfDay]
 }
 
 // Village district labels read as a dashboard the moment a number leads a
@@ -584,9 +582,13 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
-      {/* The path — see PATH_D above. */}
-      <path d={PATH_D} fill="none" stroke="var(--surface2)" strokeWidth={5} strokeLinecap="round" opacity={0.5} />
-      <path d={PATH_D} fill="none" stroke="var(--border)" strokeWidth={5} strokeDasharray="1 7" strokeLinecap="round" opacity={0.6} />
+      {/* The path — see PATH_D above. Opacity/width bumped (round 3,
+          2026-08-27) — flagged in round 2's own report as possibly too
+          faint to read at night; it's already outside the grass/stone
+          dimming filter below so its own colors don't change with time of
+          day, but a lighter touch here makes it hold its own regardless. */}
+      <path d={PATH_D} fill="none" stroke="var(--surface2)" strokeWidth={6} strokeLinecap="round" opacity={0.7} />
+      <path d={PATH_D} fill="none" stroke="var(--border)" strokeWidth={6} strokeDasharray="1 7" strokeLinecap="round" opacity={0.75} />
 
       {/* Grass and stones — same dark-mode dimming as the ground-plane
           group above, kept as a second filtered group rather than merged
@@ -1080,8 +1082,8 @@ export default function VillageScene({
               a small sun/moon/cloud glyph (hand-drawn, same construction as
               everything else in this file — no external icon set) plus a
               slightly taller card to fit the glyph without crowding. */}
-          <rect x={-8} y={-17} width={186} height={48} rx={10} fill="var(--text)" opacity={0.1} transform="translate(0 2)" />
-          <rect x={-8} y={-17} width={186} height={48} rx={10} fill="var(--surface)" opacity={0.6} />
+          <rect x={-8} y={-17} width={160} height={38} rx={10} fill="var(--text)" opacity={0.1} transform="translate(0 2)" />
+          <rect x={-8} y={-17} width={160} height={38} rx={10} fill="var(--surface)" opacity={0.6} />
           {/* Glyph: moon (crescent) at night, sun (rayed circle) by day, a
               plain cloud puff when it's actually cloudy/rainy regardless of
               hour — reuses weatherMeta's own condition string, no new data. */}
@@ -1102,17 +1104,18 @@ export default function VillageScene({
               </>
             )}
           </g>
-          <text x={18} fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
-            {[timeLabel, weather ? `${weather.tempF}°` : null]
-              .filter(Boolean).join('   ')}
+          {/* Two lines now (round 3, 2026-08-27) — was three lines building
+              from a short phrase down to the most literal data (exact time,
+              exact date); condensed toward the brief's own "Still tonight /
+              61° · Full moon" example, which drops the literal clock time
+              and date entirely (both already shown elsewhere — Header's own
+              date line) in favor of reading as a place, not a readout. */}
+          <text x={18} fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500} fontStyle="italic">
+            {shortPostcard(v.timeOfDay, weather?.condition)}
           </text>
-          <text x={18} y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">
-            {[dateLabel, weather ? weatherMeta(weather.condition).label : null, moonLabel]
+          <text x={18} y={15} fontSize={9.5} fill="var(--text)" opacity={0.75} fontFamily="var(--font-body)">
+            {[weather ? `${weather.tempF}°` : null, weather ? weatherMeta(weather.condition).label : null, moonLabel]
               .filter(Boolean).join(' · ')}
-          </text>
-          {/* The postcard line — see postcardLine() above. */}
-          <text x={18} y={27} fontSize={9} fill="var(--text)" opacity={0.62} fontFamily="var(--font-body)" fontStyle="italic">
-            {postcardLine(v.timeOfDay, weather?.condition)}
           </text>
         </g>
       )}
