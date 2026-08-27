@@ -14,6 +14,11 @@ export interface AgendaEntry {
   label: string
   type: 'task' | 'renewal' | 'refill' | 'gift' | 'event'
   id?: string   // raw row id — only 'event' entries are directly editable/deletable from the calendar
+  /** 'HH:MM', only ever set on 'event' entries (see useEvents' own comment
+   *  on why nothing else in the app has a time). Week/day views use this to
+   *  place an entry on the hour grid; undefined means "all-day," same as
+   *  every task/renewal/refill/gift already renders. */
+  time?: string
 }
 
 export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; color: string }> = {
@@ -58,7 +63,10 @@ export function useAgendaEntries(): AgendaEntry[] {
     entries.push({ key: `gift-${g.id}`, date: addDays(new Date(), g.days), label: `${g.name}'s birthday`, type: 'gift' })
   }
   for (const e of events) {
-    entries.push({ key: `event-${e.id}`, id: e.id, date: parseISO(e.event_date), label: e.title, type: 'event' })
+    entries.push({
+      key: `event-${e.id}`, id: e.id, date: parseISO(e.event_date), label: e.title, type: 'event',
+      time: e.event_time ?? undefined,
+    })
   }
 
   return entries

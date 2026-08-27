@@ -7,6 +7,13 @@ export interface CalendarEvent {
   id: string
   title: string
   event_date: string   // YYYY-MM-DD
+  /** Optional (2026-08-27, see supabase/migrations/events_time.sql) —
+   *  'HH:MM' 24-hour, or null for an all-day event. Only week/day views
+   *  place an event by this; month view and the agenda never needed it and
+   *  still don't. No end-time/duration field — this app has never modeled
+   *  duration anywhere, so a timed event renders as a single marker at its
+   *  start time, not a block. */
+  event_time: string | null
   notes: string | null
   created_at: string
 }
@@ -39,11 +46,11 @@ export function useEvents() {
 
   function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:events-changed')) }
 
-  async function add(title: string, event_date: string, notes: string | null = null) {
+  async function add(title: string, event_date: string, notes: string | null = null, event_time: string | null = null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('events')
-      .insert({ user_id: user.id, title, event_date, notes })
+      .insert({ user_id: user.id, title, event_date, notes, event_time })
       .select().single()
     if (error) return { error }
     if (data) setItems(prev => [...prev, data as CalendarEvent].sort((a, b) => a.event_date.localeCompare(b.event_date)))

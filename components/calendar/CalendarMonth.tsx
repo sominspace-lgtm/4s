@@ -3,13 +3,19 @@
 import { useState } from 'react'
 import {
   addMonths, subMonths, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addDays, isSameMonth, isSameDay, isToday,
+  addDays, isSameMonth, isSameDay, isToday, setHours, setMinutes,
 } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MAX_DOTS = 4
+
+// 'HH:MM' (24h, straight from the DB) → '9:00 AM' for display.
+function formatTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  return format(setMinutes(setHours(new Date(), h), m), 'h:mm a')
+}
 
 // Month grid over the same native entries as the agenda — tasks, renewals,
 // refills, gifts. Click a day to see its items below the grid.
@@ -19,6 +25,7 @@ export default function CalendarMonth() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const [newTitle, setNewTitle] = useState('')
+  const [newTime, setNewTime] = useState('')
 
   const gridStart = startOfWeek(startOfMonth(month))
   const gridEnd = endOfWeek(endOfMonth(month))
@@ -122,7 +129,10 @@ export default function CalendarMonth() {
                   color: meta.color, background: `color-mix(in srgb, ${meta.color} 10%, transparent)`,
                   padding: '0.12em 0.5em', borderRadius: '4px', minWidth: '52px', textAlign: 'center',
                 }}>{meta.label}</span>
-                <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', fontWeight: 300 }}>{e.label}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', fontWeight: 300 }}>
+                  {e.time && <span style={{ color: 'var(--muted)', marginRight: '0.5em' }}>{formatTime(e.time)}</span>}
+                  {e.label}
+                </span>
                 {/* Only standalone events are directly deletable here — a
                     task/renewal/refill/gift row is derived from its own hub
                     and should be edited there, not silently forked here. */}
@@ -139,13 +149,17 @@ export default function CalendarMonth() {
 
           {/* Add a standalone event to this day — the one thing the native
               calendar couldn't do before: anything that isn't already a
-              task/renewal/refill/gift (an appointment, a birthday party). */}
+              task/renewal/refill/gift (an appointment, a birthday party).
+              Optional time (2026-08-27) — matches week/day view's own
+              hour-grid add; leaving it blank still makes an all-day event,
+              same as before this field existed. */}
           <form
             onSubmit={async e => {
               e.preventDefault()
               if (!newTitle.trim() || !selected) return
-              await addEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'))
+              await addEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'), null, newTime || null)
               setNewTitle('')
+              setNewTime('')
             }}
             style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}
           >
@@ -157,6 +171,17 @@ export default function CalendarMonth() {
                 flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
                 outline: 'none', fontSize: '0.74rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
                 padding: '0.3rem 0.1rem',
+              }}
+            />
+            <input
+              type="time"
+              value={newTime}
+              onChange={e => setNewTime(e.target.value)}
+              aria-label="Time (optional)"
+              style={{
+                background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                outline: 'none', fontSize: '0.74rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
+                padding: '0.3rem 0.1rem', width: '5.5em',
               }}
             />
           </form>
