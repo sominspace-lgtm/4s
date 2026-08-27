@@ -58,7 +58,21 @@ export default function Sky({ timeOfDay, live, palette, celestial }: {
   return (
     <>
       <defs>
-        <linearGradient id="vsky" x1="0" y1="0" x2="0" y2="1">
+        {/* gradientUnits="userSpaceOnUse" (2026-08-27 fix) — without it this
+            defaults to objectBoundingBox, which rescales the WHOLE 0%-100%
+            gradient to fit whatever shape it's painted on. That's fine for
+            the big 800×440 sky rect below, but url(#vsky) is also used
+            elsewhere to "erase" a shape back to the real sky color behind
+            it (Celestial.tsx's moon-phase shadow circle) — on a small
+            circle, objectBoundingBox compresses the entire zenith-to-
+            horizon gradient into that circle's own tiny height instead of
+            sampling the true sky color at that position, so the "invisible
+            against the sky" trick instead painted a visibly wrong,
+            unrelated blob (live report: "the moon is weird, is that the
+            sun?"). userSpaceOnUse + real canvas coordinates (0 to 440, the
+            actual scene height) makes every user of this gradient sample
+            the correct color for its real position, at any size. */}
+        <linearGradient id="vsky" x1="0" y1="0" x2="0" y2="440" gradientUnits="userSpaceOnUse">
           <stop offset="0%" className="village-sky-stop" stopColor={zenith} />
           <stop offset="55%" className="village-sky-stop" stopColor={mid} />
           <stop offset="100%" className="village-sky-stop" stopColor={horizon} />

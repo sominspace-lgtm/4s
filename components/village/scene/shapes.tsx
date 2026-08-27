@@ -654,28 +654,26 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <path d="M -1 -14 L -10 -11 L -1 -8 Z" fill="var(--blush)" stroke={TRIM} strokeWidth={0.6} strokeLinejoin="round" transform="rotate(3 -1 -11)" />
         </g>
       )
-    case 'people': // People — a bench, someone sitting, and a second small house — a neighborhood, not one bench.
+    case 'people': // People — a bench with two people sharing it, not a house (round 4 point 2, 2026-08-27 —
+      // the round-3 "second small house" read as a confusing duplicate of Home itself, live report
+      // "there are two houses?" — a second FIGURE reads as "people," a second house just reads as
+      // another house).
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={14} ry={2} fill="var(--text)" opacity={0.16} />
-          {/* A second, smaller house — reuses Home's own wall/roof
-              construction at a smaller scale rather than inventing a third
-              building type, so "neighborhood" reads without a full new
-              asset. */}
-          <g transform="translate(9 -1) scale(0.55)">
-            <rect x={-11} y={-16} width={22} height={18} rx={2} fill={WALL} stroke={TRIM} strokeWidth={0.9} />
-            <path d="M -14 -16 L 0 -30 L 14 -16 Z" fill={ROOF} stroke={TRIM} strokeWidth={0.8} strokeLinejoin="round" />
-            <rect x={-3} y={-9} width={6} height={9} rx={1} fill={TRIM} opacity={0.85} />
-          </g>
+          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
           <g transform="translate(-6 0)">
             <rect x={-6} y={-6} width={12} height={1.6} rx={0.5} fill={TRIM} opacity={0.85} />
             <rect x={-6} y={-9.5} width={12} height={1.4} rx={0.5} fill={TRIM} opacity={0.7} />
             <rect x={-5} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
             <rect x={3.8} y={-4.5} width={1.2} height={4.5} fill={TRIM} opacity={0.7} />
           </g>
-          <g transform="translate(-3 -6)">
+          <g transform="translate(-8.5 -6)">
             <circle cx={0} cy={-6} r={2.6} fill="#E8C4A0" />
             <path d="M -3 0 Q -3 -6.5 0 -6.5 Q 3 -6.5 3 0 Z" fill="var(--blush)" />
+          </g>
+          <g transform="translate(-2 -6)">
+            <circle cx={0} cy={-6} r={2.6} fill="#D4A574" />
+            <path d="M -3 0 Q -3 -6.5 0 -6.5 Q 3 -6.5 3 0 Z" fill="var(--emerald)" />
           </g>
         </g>
       )

@@ -305,7 +305,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             change mid-drag would be disorienting, and the two controls
             competing for the same corner language isn't worth it. */}
         {!compact && !ambient && !arranging && (
-          <div style={{ position: 'absolute', bottom: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.3rem' }}>
+          // Buttons sized 1.8rem->2.4rem (round 4 iPad fix, 2026-08-27) —
+          // ~32px was noticeably under Apple's own 44pt touch-target
+          // guidance; 2.4rem (43.2px at this app's 18px root) gets close
+          // without the corner control cluster overwhelming the frame.
+          <div style={{ position: 'absolute', bottom: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
             {zoom !== 1 && (
               <button
                 onClick={() => setZoom(1)}
@@ -326,7 +330,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               className="press"
               style={{
                 background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                borderRadius: '8px', width: '1.8rem', height: '1.8rem', color: 'var(--muted)',
+                borderRadius: '8px', width: '2.4rem', height: '2.4rem', color: 'var(--muted)',
                 cursor: zoom <= 1 ? 'default' : 'pointer', opacity: zoom <= 1 ? 0.4 : 1,
                 fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
@@ -340,7 +344,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               className="press"
               style={{
                 background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                borderRadius: '8px', width: '1.8rem', height: '1.8rem', color: 'var(--muted)',
+                borderRadius: '8px', width: '2.4rem', height: '2.4rem', color: 'var(--muted)',
                 cursor: zoom >= 2 ? 'default' : 'pointer', opacity: zoom >= 2 ? 0.4 : 1,
                 fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,

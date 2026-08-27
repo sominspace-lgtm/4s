@@ -81,7 +81,14 @@ const POLLEN = [
 // above) and a path wired to their literal position would tear the moment
 // someone rearranges one. This is scenery, not wiring: one gentle curve
 // through the ground band, fixed regardless of layout.
-const PATH_D = `M 40 ${GROUND_Y - 24} Q 130 ${GROUND_Y - 40} 220 ${GROUND_Y - 30} T 400 ${GROUND_Y - 22} T 580 ${GROUND_Y - 32} T 760 ${GROUND_Y - 20}`
+//
+// Moved from GROUND_Y-40..-20 down to GROUND_Y+14..+40 (round 4, 2026-08-27
+// fix) — that original band sat almost exactly on top of the separate hill-
+// ridge silhouette line just below (same GROUND_Y-8..-26 range), so the two
+// unrelated lines visually tangled into one confusing squiggle instead of
+// reading as "a ridge behind a path" (live report: "the path looks off").
+// Now clearly BELOW the ridge, in the actual grass the buildings stand in.
+const PATH_D = `M 40 ${GROUND_Y + 24} Q 130 ${GROUND_Y + 40} 220 ${GROUND_Y + 30} T 400 ${GROUND_Y + 22} T 580 ${GROUND_Y + 32} T 760 ${GROUND_Y + 20}`
 
 // A pond, two benches, three flower beds — small fixed props scattered near
 // the path, same "pure atmosphere, deterministic position" rule as
@@ -108,10 +115,14 @@ const PROPS = {
     { x: 350, y: GROUND_Y + 6, length: 4 },
     { x: 450, y: GROUND_Y + 10, length: 4 },
   ],
+  // y shifted from GROUND_Y-24..-36 to GROUND_Y+18..+34 (round 4,
+  // 2026-08-27) — PATH_D itself moved down the same amount this round (see
+  // its own comment), and these are specifically meant to mark the path,
+  // not just decorate the general area.
   lamps: [
-    { x: 240, y: GROUND_Y - 32 },
-    { x: 500, y: GROUND_Y - 36 },
-    { x: 690, y: GROUND_Y - 24 },
+    { x: 240, y: GROUND_Y + 26 },
+    { x: 500, y: GROUND_Y + 34 },
+    { x: 690, y: GROUND_Y + 18 },
   ],
 }
 
@@ -604,13 +615,14 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
-      {/* The path — see PATH_D above. Opacity/width bumped (round 3,
-          2026-08-27) — flagged in round 2's own report as possibly too
-          faint to read at night; it's already outside the grass/stone
-          dimming filter below so its own colors don't change with time of
-          day, but a lighter touch here makes it hold its own regardless. */}
-      <path d={PATH_D} fill="none" stroke="var(--surface2)" strokeWidth={6} strokeLinecap="round" opacity={0.7} />
-      <path d={PATH_D} fill="none" stroke="var(--border)" strokeWidth={6} strokeDasharray="1 7" strokeLinecap="round" opacity={0.75} />
+      {/* The path — see PATH_D above. Fixed warm dirt-brown now, not theme
+          vars (round 4, 2026-08-27) — same reasoning WALL/ROOF/TRIM in
+          shapes.tsx already established for buildings: a dirt path's color
+          isn't themeable, and var(--surface2)/var(--border) (translucent
+          cream/brown under Bloom) read too close to the ridge line's own
+          var(--border) to tell apart at a glance. */}
+      <path d={PATH_D} fill="none" stroke="#C9A876" strokeWidth={7} strokeLinecap="round" opacity={0.55} />
+      <path d={PATH_D} fill="none" stroke="#8A6B47" strokeWidth={7} strokeDasharray="1 7" strokeLinecap="round" opacity={0.7} />
 
       {/* Grass and stones — same dark-mode dimming as the ground-plane
           group above, kept as a second filtered group rather than merged
