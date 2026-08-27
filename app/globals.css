@@ -442,6 +442,17 @@ select, option {
 
 .village-district text { transition: fill 160ms ease, opacity 160ms ease; }
 .village-district:hover text { fill: var(--gold); opacity: 1; }
+/* The count/detail line only appears on hover now (2026-08-27) — a resting
+   scene shouldn't read as a row of captions ("your projects", "friends &
+   connections" sitting under every building at all times). The name above
+   stays always-visible; tapping still opens the same richer info card on any
+   device via openOrToggle's hover-board, so touch loses nothing by never
+   getting a real :hover state — see DistrictLabel's own comment. */
+.village-district-count { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .village-district-count { transition: opacity 160ms ease; }
+  .village-district:hover .village-district-count { opacity: 1; }
+}
 
 /* Per-entity hover/selection (2026-08-21) — until now only the 5 district
    labels were interactive at all; every individual plant and building sat

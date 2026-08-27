@@ -890,15 +890,17 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today"
+      {/* Home reads 1.25x the rest (2026-08-27) — "this is where you live,"
+          everything else branches outward from it. */}
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1.25}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
-      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))}
+      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
@@ -906,10 +908,10 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} dark={dark}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')}
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} dark={dark}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
@@ -1072,24 +1074,44 @@ export default function VillageScene({
           shown if the caller has nothing real to say yet. */}
       {(timeLabel || weather) && (
         <g transform="translate(16 24)" pointerEvents="none">
-          {/* A soft plate behind the text (2026-08-25 fix) — the readout was
-              reported too small and too grey to read: fontSize 9/7 with the
-              second line in --muted AND an extra 0.8 group-opacity stacked
-              on top of muted's own alpha. Bigger type, a real background so
-              contrast doesn't depend on whatever's behind it in the scene
-              (sky color varies by time of day), and --text at a gentle
-              opacity instead of double-dimmed --muted. */}
-          <rect x={-8} y={-15} width={186} height={44} rx={8} fill="var(--surface)" opacity={0.55} />
-          <text fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
+          {/* Pinned-card treatment (2026-08-27) — was a plain rounded plate,
+              which read as a conventional dashboard widget sitting ON the
+              scene rather than a little card pinned INTO it. A drop shadow +
+              a small sun/moon/cloud glyph (hand-drawn, same construction as
+              everything else in this file — no external icon set) plus a
+              slightly taller card to fit the glyph without crowding. */}
+          <rect x={-8} y={-17} width={186} height={48} rx={10} fill="var(--text)" opacity={0.1} transform="translate(0 2)" />
+          <rect x={-8} y={-17} width={186} height={48} rx={10} fill="var(--surface)" opacity={0.6} />
+          {/* Glyph: moon (crescent) at night, sun (rayed circle) by day, a
+              plain cloud puff when it's actually cloudy/rainy regardless of
+              hour — reuses weatherMeta's own condition string, no new data. */}
+          <g transform="translate(4 -1)">
+            {weather && weather.condition !== 'clear' ? (
+              <g fill="var(--text)" opacity={0.55}>
+                <circle cx={-2} cy={0} r={3.2} /><circle cx={2} cy={-1.5} r={3.8} /><circle cx={5.5} cy={0.5} r={2.6} />
+              </g>
+            ) : v.timeOfDay === 'night' || v.timeOfDay === 'dusk' ? (
+              <path d="M 4 -4 A 5 5 0 1 0 4 6 A 4 4 0 0 1 4 -4 Z" fill="var(--text)" opacity={0.6} />
+            ) : (
+              <>
+                <circle cx={2} cy={1} r={3.4} fill="var(--amber)" opacity={0.75} />
+                <g stroke="var(--amber)" strokeWidth={1} strokeLinecap="round" opacity={0.6}>
+                  <line x1={2} y1={-4.5} x2={2} y2={-2.8} /><line x1={2} y1={4.8} x2={2} y2={6.5} />
+                  <line x1={-3.5} y1={1} x2={-1.8} y2={1} /><line x1={5.8} y1={1} x2={7.5} y2={1} />
+                </g>
+              </>
+            )}
+          </g>
+          <text x={18} fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500}>
             {[timeLabel, weather ? `${weather.tempF}°` : null]
               .filter(Boolean).join('   ')}
           </text>
-          <text y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">
+          <text x={18} y={13} fontSize={9.5} fill="var(--text)" opacity={0.8} fontFamily="var(--font-body)">
             {[dateLabel, weather ? weatherMeta(weather.condition).label : null, moonLabel]
               .filter(Boolean).join(' · ')}
           </text>
           {/* The postcard line — see postcardLine() above. */}
-          <text y={27} fontSize={9} fill="var(--text)" opacity={0.62} fontFamily="var(--font-body)" fontStyle="italic">
+          <text x={18} y={27} fontSize={9} fill="var(--text)" opacity={0.62} fontFamily="var(--font-body)" fontStyle="italic">
             {postcardLine(v.timeOfDay, weather?.condition)}
           </text>
         </g>

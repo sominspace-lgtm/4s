@@ -30,7 +30,10 @@ export function guideGreetingLine(mode: Mode, hour: number): string {
   const time = timeOfDay(hour)
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
   switch (mode) {
-    case 'peaceful':   return time === 'night' ? 'Rest easy' : 'Welcome back'
+    // Full 4-way split (2026-08-27, was night vs. everything-else) — the
+    // village itself is meant to feel like it's speaking to you differently
+    // through the day, not just switching between two states.
+    case 'peaceful':   return time === 'morning' ? 'Good morning' : time === 'afternoon' ? 'Hope your day is going gently' : time === 'evening' ? 'The village is winding down' : 'Rest easy'
     case 'friend':     return time === 'morning' ? 'Morning' : time === 'night' ? 'Still up' : 'Hey there'
     case 'executive':  return time === 'morning' ? "Today's priorities" : 'Where things stand'
     default:           return `Good ${cap(time)}`

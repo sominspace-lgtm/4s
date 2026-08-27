@@ -338,7 +338,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',
-      padding: '1.2rem 1.5rem', position: 'relative', overflow: 'hidden',
+      padding: '0.8rem 1.3rem', position: 'relative', overflow: 'hidden',
       boxShadow: 'var(--elev-1)',
     }}>
       <div style={{
@@ -346,14 +346,18 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         background: 'radial-gradient(ellipse at top right, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%)',
       }} />
 
-      {/* Now that One thing carries the page, the greeting steps down from
-          hero to context — it's a nicety, not the headline. */}
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--muted)', lineHeight: 1.3, marginBottom: '0.7rem' }}>
+      {/* Stepped down again (2026-08-27) — this card used to be the page's
+          own header; now the village below it is the actual hero, so this
+          is a quiet line ABOVE the world, not a header the world sits under.
+          Smaller size, tighter margin, same "steps down from hero to
+          context" reasoning as the 2026-08-25 comment this replaces, just
+          carried one step further now that there's a real hero to defer to. */}
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 400, color: 'var(--muted)', lineHeight: 1.3, marginBottom: '0.4rem' }}>
         {greeting}
       </div>
 
       {recovery ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.6rem', marginBottom: '0.7rem', padding: '1.2rem 1rem', borderRadius: '14px', background: 'color-mix(in srgb, var(--emerald) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.6rem', marginBottom: '0.5rem', padding: '1.2rem 1rem', borderRadius: '14px', background: 'color-mix(in srgb, var(--emerald) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
           <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Just the essentials today — you&apos;re doing enough.</span>
           <Breathing />
           <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
@@ -362,7 +366,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.7rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
           <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', opacity: 0.7, marginRight: '0.2rem' }}>Energy</span>
           {(['low', 'normal', 'high'] as const).map(v => (
             <button key={v} onClick={() => chooseEnergy(v)} style={{
@@ -380,7 +384,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       )}
 
       {!lowDay && summaryParts.length > 0 && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.7rem', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginBottom: '0.5rem', lineHeight: 1.4 }}>
           {summaryParts.slice(0, maxParts).join(' · ')}
         </div>
       )}
@@ -494,13 +498,18 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       // like before; Calendar keeps its own hide toggle from Customize
       // Today, it just lives next to Village now instead of after
       // everything else.
+      // Village leads Calendar now, not the other way around (2026-08-27) —
+      // the world is meant to read as the hero of Today, not one panel among
+      // equals. flex-grow 2 vs Calendar's 1 (was reversed), and the clamp's
+      // ceiling raised from 640 to 760 so it actually dominates a normal
+      // desktop width instead of topping out well before Calendar does.
       if (id === 'village') return (
         <div key="village" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 420px', maxWidth: 'clamp(420px, 45vw, 640px)' }}>
+          <div style={{ flex: '2 1 420px', maxWidth: 'clamp(420px, 55vw, 760px)' }}>
             <Village compact userId={userId} />
           </div>
           {!isHidden('calendar') && (
-            <div id="brief-calendar" style={{ flex: '2 1 480px', minWidth: 0 }}>
+            <div id="brief-calendar" style={{ flex: '1 1 380px', minWidth: 0 }}>
               <CalendarEmbed />
             </div>
           )}
