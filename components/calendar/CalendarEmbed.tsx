@@ -5,6 +5,7 @@ import CalendarSummary from './CalendarSummary'
 import CalendarMonth from './CalendarMonth'
 import CalendarWeek from './CalendarWeek'
 import CalendarDay from './CalendarDay'
+import CalendarQuickAdd from './CalendarQuickAdd'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 // 4S's own calendar. The Google Calendar iframe that used to sit below this
@@ -54,11 +55,18 @@ export default function CalendarEmbed({ userId }: { userId: string }) {
             tasks, renewals, refills, gifts &amp; events
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem', flexWrap: 'wrap' }}>
-          <button className="press" onClick={() => setView('agenda')} style={toggleBtn(view === 'agenda')}>Agenda</button>
-          <button className="press" onClick={() => setView('month')} style={toggleBtn(view === 'month')}>Month</button>
-          <button className="press" onClick={() => setView('week')} style={toggleBtn(view === 'week')}>Week</button>
-          <button className="press" onClick={() => setView('day')} style={toggleBtn(view === 'day')}>Day</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem' }}>
+            <button className="press" onClick={() => setView('agenda')} style={toggleBtn(view === 'agenda')}>Agenda</button>
+            <button className="press" onClick={() => setView('month')} style={toggleBtn(view === 'month')}>Month</button>
+            <button className="press" onClick={() => setView('week')} style={toggleBtn(view === 'week')}>Week</button>
+            <button className="press" onClick={() => setView('day')} style={toggleBtn(view === 'day')}>Day</button>
+          </div>
+          {/* One-click add from anywhere in the calendar (2026-08-27) —
+              every view already lets you add something, but each requires
+              navigating to the right day/hour first. See its own header
+              comment. */}
+          <CalendarQuickAdd />
         </div>
       </div>
 
