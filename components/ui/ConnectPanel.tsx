@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
-import CompanionSync from '@/components/relationships/CompanionSync'
 
 // One place for every external connection (2026-08-11): Discord and Alexa
 // each had their own home (Household → Setup, Account respectively) — this
@@ -80,15 +79,6 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
         <div style={sectionStyle}>
           <div style={sectionLabel}>Alexa</div>
           <AlexaConnect userId={userId} />
-        </div>
-
-        <div style={sectionStyle}>
-          <div style={sectionLabel}>Partner</div>
-          {/* CompanionSync is the same component rendered in Household →
-              Setup — this isn't a summary or a link out to it, it's the
-              actual widget, so confirming/inviting/connecting Companion all
-              work right here without leaving Connect. */}
-          <CompanionSync userId={userId} userEmail={userEmail} />
         </div>
       </div>
     </>
