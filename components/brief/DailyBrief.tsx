@@ -352,7 +352,16 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           Smaller size, tighter margin, same "steps down from hero to
           context" reasoning as the 2026-08-25 comment this replaces, just
           carried one step further now that there's a real hero to defer to. */}
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 400, color: 'var(--muted)', lineHeight: 1.3, marginBottom: '0.4rem' }}>
+      {/* suppressHydrationWarning (2026-08-27 fix) — greeting depends on the
+          browser's own local hour (`new Date().getHours()` above), which
+          genuinely and correctly differs from the server's guess at
+          whatever hour it happens to be wherever the server actually is.
+          Without this, React treats that as a real mismatch on every load:
+          discards the server-rendered tree, does a full client re-render —
+          which reads as "the screen flashes," not just the theme swap
+          fixed separately in ThemeProvider. Same fix as Header.tsx's own
+          greeting/date spans. */}
+      <div suppressHydrationWarning style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 400, color: 'var(--muted)', lineHeight: 1.3, marginBottom: '0.4rem' }}>
         {greeting}
       </div>
 
@@ -407,7 +416,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
           {showInbox     && <Stat label={t('in inbox', lang)}        value={inboxCount} color="var(--muted)" />}
         </div>
 
-        <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
+        <div suppressHydrationWarning style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
           {lang === 'ko' ? fmtDate(new Date(), 'ko') : format(new Date(), 'EEEE, MMM d')}
         </div>
       </div>

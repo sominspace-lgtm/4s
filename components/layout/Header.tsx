@@ -154,7 +154,23 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           fontWeight: 300, letterSpacing: '0.02em', lineHeight: 1.1,
           display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.2em',
         }}>
-          {prefix && <span>{prefix}{' '}</span>}
+          {/* suppressHydrationWarning (2026-08-27 fix) — prefix/suffix
+              depend on the LOCAL hour (see `h` above), which genuinely and
+              correctly differs between the server's render (wherever
+              Vercel's region happens to be) and the browser's own
+              timezone. That's not a bug to silence generally — it's the
+              literal point of "Computed client-side to respect user's
+              local timezone" above — but React's hydration diff doesn't
+              know that, and was treating every single load as a mismatch:
+              discarding the server-rendered tree and doing a full client
+              re-render, which is what was actually causing "the screen
+              flashes on load" (a full repaint, not just the theme swap
+              fixed separately). suppressHydrationWarning is React's own
+              sanctioned answer for "this text legitimately differs
+              server-to-client and that's fine" — it only silences the
+              warning/mismatch-recovery for THIS element's own text, not
+              the rest of the tree. */}
+          {prefix && <span suppressHydrationWarning>{prefix}{' '}</span>}
 
           {/* Shared never shows or edits the real backing account's name —
               that would both leak whose account it is and let a shared-device
@@ -188,13 +204,16 @@ export default function Header({ email, userId, initialName, sharedMode = false,
             </em>
           )}
 
-          {suffix && <span style={{ fontSize: '0.55em', color: 'var(--muted)', fontStyle: 'normal', letterSpacing: '0.03em' }}>{' '}{suffix}</span>}
+          {suffix && <span suppressHydrationWarning style={{ fontSize: '0.55em', color: 'var(--muted)', fontStyle: 'normal', letterSpacing: '0.03em' }}>{' '}{suffix}</span>}
           <span>.</span>
         </div>
 
         <div style={{ marginTop: '0.4rem', fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <span>
-            {format(now, "EEEE, MMMM d · yyyy")}
+            {/* Same reasoning as the greeting spans above — the date is
+                computed from the browser's own local `now`, which can
+                legitimately differ from the server's guess. */}
+            <span suppressHydrationWarning>{format(now, "EEEE, MMMM d · yyyy")}</span>
             {mode !== 'peaceful' && !sharedMode && (
               <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} guide</span>
             )}
