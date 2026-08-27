@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import { resolveThemeVars, DEFAULT_THEME, type CustomThemeSeed } from '@/lib/constants/themes'
 
 // Theme data + normalizeTheme() live in lib/constants/themes.ts (a plain
@@ -17,29 +16,35 @@ export {
   type CustomThemeSeed,
 } from '@/lib/constants/themes'
 
-const ALL_VARS = [
-  '--scheme',
-  '--bg','--surface','--surface2','--border','--text','--muted','--faint',
-  '--gold','--purple','--emerald','--rose','--danger','--blush','--amber','--slate','--lavender',
-  '--accent-2','--shadow','--glow','--selection','--hover-bg',
-  '--font-display','--font-body','--font-mono',
-  '--aurora-1','--aurora-2','--aurora-3','--aurora-pos-1','--aurora-pos-2','--aurora-pos-3',
-  '--radius','--radius-sm',
-  '--radius-organic','--radius-organic-b','--radius-organic-c','--card-border-style',
-]
-
+// Renders the resolved theme as an inline <style> tag instead of setting
+// CSS custom properties imperatively from a useEffect (2026-08-27 fix — was
+// the actual cause of "the screen flashes on load" for anyone not on Bloom).
+// An effect never runs during SSR and doesn't run before the browser's
+// first paint on the client either, so :root's hardcoded light-Bloom
+// fallback (see globals.css's own comment on it) painted first on EVERY
+// load, then the whole page's colors snapped to the real theme a moment
+// later — a full light-to-dark flash for any dark-theme account. A <style>
+// tag is ordinary JSX: it's part of the server-rendered HTML (correct
+// colors in the very first response, no JS required) and reactive on the
+// client (edit `theme`/`customTheme` and it just re-renders), so this is
+// strictly more correct than the old imperative version, not just faster —
+// no more "clear every known var, then reapply" dance for switching
+// themes live, since replacing the tag's whole text content each render
+// can never leave a stale property behind the way incremental
+// setProperty/removeProperty calls could.
 export default function ThemeProvider({ theme = DEFAULT_THEME, customTheme = null, children }: {
   theme?: string
   /** The active palette when theme === 'custom'. Ignored otherwise. */
   customTheme?: CustomThemeSeed | null
   children: React.ReactNode
 }) {
-  useEffect(() => {
-    const vars = resolveThemeVars(theme, customTheme)
-    const root = document.documentElement
-    ALL_VARS.forEach(k => root.style.removeProperty(k))
-    Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v))
-  }, [theme, customTheme])
+  const vars = resolveThemeVars(theme, customTheme)
+  const css = `:root{${Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';')}}`
 
-  return <>{children}</>
+  return (
+    <>
+      <style>{css}</style>
+      {children}
+    </>
+  )
 }
