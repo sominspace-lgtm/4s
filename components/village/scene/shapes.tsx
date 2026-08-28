@@ -437,6 +437,31 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
   )
 }
 
+// The village clock tower (round 54, 2026-08-28) — from
+// village-civic-landmarks-alpha.png, which drew it four times, one per time
+// of day (plain face by day, warm/gold at dusk, orange at dawn, a moon face
+// lit blue at night). `timeOfDay` picks the frame, same idea as
+// BuildingShape/LampShape swapping on `dark`.
+const CLOCK_SRC: Record<string, string> = {
+  dawn: '/village-assets/clock-tower-dawn.png',
+  day: '/village-assets/clock-tower-day.png',
+  dusk: '/village-assets/clock-tower-dusk.png',
+  night: '/village-assets/clock-tower-night.png',
+}
+export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
+  x: number; y: number; timeOfDay: string; dark?: boolean; scale?: number
+}) {
+  const h = 40, w = h * (236 / 438) // 236x438 source
+  return (
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <ellipse cx={0} cy={1.6} rx={w / 2.2} ry={2} fill="var(--text)" opacity={0.14} />
+      {dark && <circle cy={-h * 0.62} r={7} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
+      <image href={CLOCK_SRC[timeOfDay] ?? CLOCK_SRC.day} x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
+    </g>
+  )
+}
+
 // A mailbox, standing in for capture (2026-08-24) — Rest Lake's click used
 // to open the Brief and focus the capture box; removing the lake removed
 // that entry point too. This gives "jot something down" a small, real place

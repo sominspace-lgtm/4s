@@ -93,6 +93,12 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'sled', label: 'Sled', href: 'sled.png', aspect: 300 / 354, h: 10 },
   { key: 'gazebo', label: 'Gazebo', href: 'gazebo.png', aspect: 249 / 259, h: 26 },
   { key: 'wildflowerStrip', label: 'Wildflowers', href: 'wildflower-strip.png', aspect: 512 / 341, h: 9 },
+  // Round 54 batch 2 — arbor (village-structures-decor-paths), firewood
+  // (village-left-behind-objects). The village clock tower from
+  // village-civic-landmarks is drawn directly in VillageScene instead (its
+  // face tracks the time of day), not placed from here.
+  { key: 'arbor', label: 'Flowered arbor', href: 'arbor.png', aspect: 363 / 225, h: 16 },
+  { key: 'firewood', label: 'Firewood', href: 'firewood.png', aspect: 255 / 160, h: 8 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

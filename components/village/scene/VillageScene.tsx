@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, SMALL_TREE_SWAY_FRAMES, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, SMALL_TREE_SWAY_FRAMES, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The flower-sprig sway (round 13, 2026-08-27; re-sourced round 51,
 // 2026-08-28, "all of these new animations elements") — now a real 4-frame
@@ -408,6 +408,10 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // x nudged 770 -> 745 (round 40, "zoom in but make sure everything is
   // still in frame") — sat right at the tighter viewBox's own edge.
   signpost: { x: 745, y: GROUND_Y + 30 },
+  // The village clock tower (round 54 batch 2, "import all" —
+  // village-civic-landmarks-alpha.png) — stands back-left, its face shows
+  // the current time of day.
+  clockTower: { x: 120, y: GROUND_Y + 4 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 345, y: GROUND_Y + 20 },
@@ -1341,6 +1345,11 @@ export default function VillageScene({
           <LampShape x={0} y={0} dark={dark} scale={1.1} />
         </Draggable>
       ) })}
+      {(() => { const p = decorPos('clockTower'); return (
+        <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={16}>
+          <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={itemScale('clockTower')} />
+        </Draggable>
+      ) })()}
 
       {/* Ten more real sprites, rounds 11–12 (2026-08-27, the user's own
           village-matching-expansion-pack, v2 with real alpha) — a gate
