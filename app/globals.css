@@ -505,43 +505,85 @@ select, option {
   8%, 92% { --together: 0; }
   96%, 100% { --together: 1; }
 }
-.village-couple-cycle { animation: village-couple-together 48s steps(1) infinite; }
-.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; opacity: calc(1 - var(--together, 0)); }
-.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; opacity: calc(1 - var(--together, 0)); }
+/* --wander-seed (round 52) offsets the whole lap ensemble by a random
+   phase per load — every lap-synced animation below shares the same
+   negative delay so they all stay in step with each other, just starting
+   somewhere other than 0%. */
+.village-couple-cycle { animation: village-couple-together 48s steps(1) infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
+.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); opacity: calc(1 - var(--together, 0)); }
+.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); opacity: calc(1 - var(--together, 0)); }
 .village-couple-interact-vis { opacity: var(--together, 0); }
 
-/* Harry's wave — the recurring "near Sylvia" window from round 46, PLUS a
-   0-6% window (round 47) so he greets with a real wave the moment the
-   village loads, before the loop's own back-and-forth starts. Sylvia's
-   own walk cycle plays for the whole rest of the loop once she sets off
-   (no gate needed there, see VillagerShape's own comment) but round 47
-   gives her a matching idle hold for this same opening window — she pauses
-   in place rather than starting to walk mid-frame, since she has no wave
-   art of her own to greet with. */
+/* Pose tracks (round 52, 2026-08-28, "add all the animations in a random
+   cycle that makes sense", character/animation/) — both figures now carry
+   the full idle / walk / wave vocabulary from their core-animation sheets,
+   and each figure's three tracks partition the 48s lap with no gaps or
+   overlaps (steps(1) holds each segment's start value until the next stop,
+   same trick round 46 used). What reads as "makes sense": both wave during
+   the 0-~8% opening greeting, walk while crossing the yard, wave again as
+   their paths pass near the 50% mark. What reads as "not a fixed loop":
+   Sylvia and Harry run DIFFERENT timings (not mirror images), Harry stops
+   for an idle "look around" beat mid-lap that Sylvia doesn't, the couple-
+   interaction pose differs every one of 9 meetings (CoupleInteraction's
+   9*48s meta-cycle), and --wander-seed (set once per load in VillageScene
+   from Math.random) offsets the whole lap ensemble by a random phase via
+   animation-delay, so no two sessions start at the same point. */
+
+/* Sylvia — wave / walk only (she keeps moving between greetings). */
+@keyframes village-sylvia-wave-vis {
+  0%, 8% { opacity: 1; }
+  12%, 44% { opacity: 0; }
+  46%, 56% { opacity: 1; }
+  60%, 92% { opacity: 0; }
+  96%, 100% { opacity: 1; }
+}
+@keyframes village-sylvia-walk-vis {
+  0%, 8% { opacity: 0; }
+  12%, 44% { opacity: 1; }
+  46%, 56% { opacity: 0; }
+  60%, 92% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes village-sylvia-idle-vis { 0%, 100% { opacity: 0; } }
+
+/* Harry — wave / walk / a mid-lap idle pause, all on his own offsets. */
 @keyframes village-harry-wave-vis {
-  0%, 6% { opacity: 1; }
-  10%, 42% { opacity: 0; }
-  46%, 54% { opacity: 1; }
-  58%, 100% { opacity: 0; }
+  0%, 7% { opacity: 1; }
+  11%, 43% { opacity: 0; }
+  44%, 54% { opacity: 1; }
+  58%, 93% { opacity: 0; }
+  97%, 100% { opacity: 1; }
+}
+@keyframes village-harry-walk-vis {
+  0%, 7% { opacity: 0; }
+  11%, 43% { opacity: 1; }
+  44%, 68% { opacity: 0; }
+  72%, 93% { opacity: 1; }
+  97%, 100% { opacity: 0; }
 }
 @keyframes village-harry-idle-vis {
-  0%, 6% { opacity: 0; }
-  10%, 42% { opacity: 1; }
-  46%, 54% { opacity: 0; }
-  58%, 100% { opacity: 1; }
+  0%, 54% { opacity: 0; }
+  58%, 68% { opacity: 1; }
+  72%, 100% { opacity: 0; }
 }
-.village-harry-wave-vis { animation: village-harry-wave-vis 48s steps(1) infinite; }
-.village-harry-idle-vis { animation: village-harry-idle-vis 48s steps(1) infinite; }
-@keyframes village-sylvia-walk-vis {
-  0%, 6% { opacity: 0; }
-  10%, 100% { opacity: 1; }
+
+.village-sylvia-wave-vis,
+.village-sylvia-walk-vis,
+.village-sylvia-idle-vis,
+.village-harry-wave-vis,
+.village-harry-walk-vis,
+.village-harry-idle-vis {
+  animation-duration: 48s;
+  animation-timing-function: steps(1);
+  animation-iteration-count: infinite;
+  animation-delay: calc(var(--wander-seed, 0) * -48s);
 }
-@keyframes village-sylvia-idle-vis {
-  0%, 6% { opacity: 1; }
-  10%, 100% { opacity: 0; }
-}
-.village-sylvia-walk-vis { animation: village-sylvia-walk-vis 48s steps(1) infinite; }
-.village-sylvia-idle-vis { animation: village-sylvia-idle-vis 48s steps(1) infinite; }
+.village-sylvia-wave-vis { animation-name: village-sylvia-wave-vis; }
+.village-sylvia-walk-vis { animation-name: village-sylvia-walk-vis; }
+.village-sylvia-idle-vis { animation-name: village-sylvia-idle-vis; }
+.village-harry-wave-vis { animation-name: village-harry-wave-vis; }
+.village-harry-walk-vis { animation-name: village-harry-walk-vis; }
+.village-harry-idle-vis { animation-name: village-harry-idle-vis; }
 
 /* A brief periodic smile on the standing idle pose (round 51, 2026-08-28,
    "all of these new animations elements") — the smile frame sits stacked
@@ -583,8 +625,8 @@ select, option {
   50% { scale: 1 1; }
   80% { scale: -1 1; }
 }
-.village-face-sylvia { animation: village-face-sylvia 48s steps(1) infinite; }
-.village-face-harry { animation: village-face-harry 48s steps(1) infinite; }
+.village-face-sylvia { animation: village-face-sylvia 48s steps(1) infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
+.village-face-harry { animation: village-face-harry 48s steps(1) infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
 
 /* Somi's own wander + gated walk-pose visibility (round 31, 2026-08-27,
    "only use somi walking animation if she is walking around. when she is

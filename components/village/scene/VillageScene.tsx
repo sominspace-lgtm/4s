@@ -529,6 +529,12 @@ export default function VillageScene({
   // it's a URL param, not a setting, and it only ever touches this one
   // render's local `v.timeOfDay`, never the real clock or any stored data.
   const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
+  // A random phase offset for the whole wander/pose ensemble (round 52,
+  // 2026-08-28) — set after mount (not in the initializer, which would run
+  // on the server too and desync hydration) so the couple's lap doesn't
+  // start at the same point every session; see globals.css --wander-seed.
+  const [wanderSeed, setWanderSeed] = useState(0)
+  useEffect(() => { setWanderSeed(Math.random()) }, [])
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('vtod')
@@ -1881,7 +1887,8 @@ export default function VillageScene({
           animated value inherited by every descendant can't drift from
           itself. quiet/bench mode is unaffected — it already replaces this
           whole subtree outright rather than opacity-swapping within it. */}
-      <g className={!arranging && !quiet ? 'village-couple-cycle' : undefined}>
+      <g className={!arranging && !quiet ? 'village-couple-cycle' : undefined}
+        style={{ '--wander-seed': wanderSeed } as React.CSSProperties}>
         {!arranging && !quiet && (() => {
           const sp = decorPos('sylvia'), hp = decorPos('harry')
           const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2

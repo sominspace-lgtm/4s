@@ -594,18 +594,43 @@ const VILLAGER_SMILE: Record<string, string> = {
 // more; and a facing flip (village-face-sylvia/-harry) on a dedicated
 // inner <g>, timed to the exact same movement keyframes, so each of them
 // visibly turns toward whichever way they're currently headed.
+// Round 52 (2026-08-28, "add all the animations in a random cycle that
+// makes sense", character/animation/ folder) — re-sourced from the two
+// core-animation sheets so each figure's whole vocabulary (idle / walk /
+// wave / smile) comes from ONE sheet: consistent proportions, anchor and
+// three-quarter view. Both figures now have a real walk cycle AND a real
+// wave — before, Harry only ever slid across the ground in his standing
+// pose (no walk art) and Sylvia had no wave to greet with. The old
+// back-view walk-wave sheet crops (sylvia-walk / harry-wave, round 46) are
+// retired. Widths vary per wave frame because the raised arm sticks out
+// past the body — SpriteCycle derives width per frame and bottom-center
+// anchors, so the body stays planted while the arm extends.
 const SYLVIA_WALK_FRAMES = [
-  { src: '/village-assets/sylvia-walk-1.png', aspect: 196 / 433 },
-  { src: '/village-assets/sylvia-walk-2.png', aspect: 193 / 427 },
-  { src: '/village-assets/sylvia-walk-3.png', aspect: 206 / 427 },
-  { src: '/village-assets/sylvia-walk-4.png', aspect: 192 / 432 },
+  { src: '/village-assets/sylvia-walk-1.png', aspect: 144 / 293 },
+  { src: '/village-assets/sylvia-walk-2.png', aspect: 140 / 290 },
+  { src: '/village-assets/sylvia-walk-3.png', aspect: 142 / 290 },
+  { src: '/village-assets/sylvia-walk-4.png', aspect: 142 / 290 },
+]
+const SYLVIA_WAVE_FRAMES = [
+  { src: '/village-assets/sylvia-wave-1.png', aspect: 150 / 312 },
+  { src: '/village-assets/sylvia-wave-2.png', aspect: 168 / 312 },
+  { src: '/village-assets/sylvia-wave-3.png', aspect: 185 / 311 },
+  { src: '/village-assets/sylvia-wave-4.png', aspect: 149 / 287 },
+]
+const HARRY_WALK_FRAMES = [
+  { src: '/village-assets/harry-walk-1.png', aspect: 154 / 268 },
+  { src: '/village-assets/harry-walk-2.png', aspect: 151 / 271 },
+  { src: '/village-assets/harry-walk-3.png', aspect: 151 / 268 },
+  { src: '/village-assets/harry-walk-4.png', aspect: 151 / 268 },
 ]
 const HARRY_WAVE_FRAMES = [
-  { src: '/village-assets/harry-wave-1.png', aspect: 208 / 400 },
-  { src: '/village-assets/harry-wave-2.png', aspect: 243 / 401 },
-  { src: '/village-assets/harry-wave-3.png', aspect: 257 / 400 },
-  { src: '/village-assets/harry-wave-4.png', aspect: 245 / 401 },
+  { src: '/village-assets/harry-wave-1.png', aspect: 161 / 313 },
+  { src: '/village-assets/harry-wave-2.png', aspect: 180 / 317 },
+  { src: '/village-assets/harry-wave-3.png', aspect: 190 / 313 },
+  { src: '/village-assets/harry-wave-4.png', aspect: 162 / 312 },
 ]
+const VILLAGER_WALK: Record<string, { src: string; aspect: number }[]> = { Sylvia: SYLVIA_WALK_FRAMES, Harry: HARRY_WALK_FRAMES }
+const VILLAGER_WAVE: Record<string, { src: string; aspect: number }[]> = { Sylvia: SYLVIA_WAVE_FRAMES, Harry: HARRY_WAVE_FRAMES }
 
 // Real two-character interaction art (round 49, 2026-08-28, "there are
 // interactions for harry and sylvia... update all elements and
@@ -689,41 +714,42 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
           keep their native facing. */}
       <g className={wander ? (isSylvia ? 'village-face-sylvia' : 'village-face-harry') : undefined}>
         <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
-        {isSylvia ? (
-          <>
-            <g className={wander ? 'village-sylvia-idle-vis' : undefined}>
-              <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-                style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
-              {wander && (
-                <image href={VILLAGER_SMILE.Sylvia} x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite' }}
-                  preserveAspectRatio="none" />
-              )}
-            </g>
-            {wander && (
-              <g className="village-sylvia-walk-vis">
-                <SpriteCycle frames={SYLVIA_WALK_FRAMES} x={0} y={0} height={h} periodSec={1.6} />
+        {(() => {
+          const k = isSylvia ? 'sylvia' : 'harry'
+          return (
+            <>
+              {/* Idle — the resting pose, plus the round 51 periodic smile.
+                  With `wander` off (arrange/locked) this is all that shows;
+                  otherwise it takes its turn with walk and wave, gated by
+                  the mutually-exclusive village-<k>-*-vis tracks in
+                  globals.css. */}
+              <g className={wander ? `village-${k}-idle-vis` : undefined}>
+                <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+                  style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+                {wander && (
+                  <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
+                    style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
+                    preserveAspectRatio="none" />
+                )}
               </g>
-            )}
-          </>
-        ) : (
-          <>
-            <g className={wander ? 'village-harry-idle-vis' : undefined}>
-              <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-                style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+              {/* Walk — while they're actually crossing the yard. Slightly
+                  different gait speed per figure so the two aren't in
+                  lockstep. */}
               {wander && (
-                <image href={VILLAGER_SMILE.Harry} x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: '-3.5s' }}
-                  preserveAspectRatio="none" />
+                <g className={`village-${k}-walk-vis`}>
+                  <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 1.5 : 1.7} />
+                </g>
               )}
-            </g>
-            {wander && (
-              <g className="village-harry-wave-vis">
-                <SpriteCycle frames={HARRY_WAVE_FRAMES} x={0} y={0} height={h} periodSec={2} />
-              </g>
-            )}
-          </>
-        )}
+              {/* Wave — the opening greeting when the village loads, and
+                  again each time their paths bring them close. */}
+              {wander && (
+                <g className={`village-${k}-wave-vis`}>
+                  <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />
+                </g>
+              )}
+            </>
+          )
+        })()}
       </g>
     </g>
   )
