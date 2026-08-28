@@ -271,17 +271,20 @@ const PATH_PAVERS = Array.from({ length: PATH_PAVER_COUNT }, (_, i) => {
 // A pond, two benches, three flower beds — small fixed props scattered near
 // the path, same "pure atmosphere, deterministic position" rule as
 // STONES/POLLEN above.
+// Positions baked from Sylvia's own arrangement round 61 where she moved
+// one (bench-1, lamp-2, flowerBed-2, pond); the rest keep their earlier
+// composed spots.
 const PROPS = {
-  pond: { x: 460, y: GROUND_Y + 30 },
+  pond: { x: 663, y: 320 },
   benches: [
     { x: 260, y: GROUND_Y - 6 },
-    { x: 660, y: GROUND_Y + 4 },
+    { x: 551, y: 280 },
     { x: 130, y: GROUND_Y + 26 },
   ],
   flowerBeds: [
     { x: 90, y: GROUND_Y + 14, hue: 'var(--blush)' },
     { x: 340, y: GROUND_Y - 30, hue: 'var(--gold)' },
-    { x: 570, y: GROUND_Y + 20, hue: 'var(--blush)' },
+    { x: 623, y: 210, hue: 'var(--blush)' },
     { x: 700, y: GROUND_Y - 8, hue: 'var(--gold)' },
     { x: 200, y: GROUND_Y + 32, hue: 'var(--blush)' },
   ],
@@ -301,8 +304,15 @@ const PROPS = {
   lamps: [
     { x: 240, y: GROUND_Y + 26 },
     { x: 500, y: GROUND_Y + 34 },
-    { x: 690, y: GROUND_Y + 18 },
+    { x: 577, y: 285 },
   ],
+}
+
+// Default scale for a few items Sylvia sized in her arrangement (round 61)
+// — layout[id].scale still wins when set.
+const DEFAULT_ITEM_SCALE: Record<string, number> = {
+  busStop: 1.15,
+  wildflowerScene: 0.4,
 }
 
 export type { Slot } from '@/lib/village/layout'
@@ -351,13 +361,15 @@ function spellCount(n: number): string {
 // districts' real sprite buildings were rendering up in the hillside band
 // above the path instead of sitting on it — a genuine positioning bug, not
 // a rendering one. All six now share the same ground line; x stays put.
+// Round 61 ("make the village default what it is right now") — baked in
+// from Sylvia's own arrangement (Arrange → Copy layout).
 const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
-  forest: { x: 175, y: 250 },
-  home: { x: 400, y: 250 },
-  projects: { x: 620, y: 250 },
-  archive: { x: 725, y: 250 },
-  people: { x: 265, y: 250 },
-  places: { x: 505, y: 250 },
+  forest: { x: 133, y: 200 },
+  home: { x: 400, y: 188 },
+  projects: { x: 69, y: 311 },
+  archive: { x: 730, y: 302 },
+  people: { x: 340, y: 318 },
+  places: { x: 502, y: 211 },
 }
 
 // Default positions for every purely-decorative prop (round 12, 2026-08-27,
@@ -385,15 +397,16 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
 // items where dragging one at a time would be tedium, not customization.
 const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // 'gate' removed round 35 (2026-08-27) — see the item-prop list below.
-  busStop: { x: 568, y: GROUND_Y + 10 },
+  // Round 61 ("make the village default what it is right now") — positions
+  // for everything Sylvia moved are baked in from her Copy layout dump;
+  // the rest keep their earlier spots.
+  busStop: { x: 662, y: 210 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
-  bushMound: { x: 78, y: GROUND_Y - 2 },
-  floweringBush: { x: 611, y: GROUND_Y + 27 },
-  tallGrass: { x: 305, y: GROUND_Y + 31 },
-  rockCluster: { x: 693, y: GROUND_Y + 29 },
-  // Round 13 (2026-08-27) additions.
-  flowerCluster: { x: 240, y: GROUND_Y + 33 },
-  paperLantern: { x: 565, y: GROUND_Y + 10 },
+  bushMound: { x: 166, y: 310 },
+  floweringBush: { x: 586, y: 248 },
+  tallGrass: { x: 264, y: 290 },
+  rockCluster: { x: 751, y: 238 },
+  paperLantern: { x: 602, y: 213 },
   // Round 27 additions — previously-fixed scenery, now draggable too.
   pond: PROPS.pond,
   ...Object.fromEntries(PROPS.benches.map((p, i) => [`bench-${i}`, p])),
@@ -401,30 +414,18 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
-  // x nudged 770 -> 745 (round 40, "zoom in but make sure everything is
-  // still in frame") — sat right at the tighter viewBox's own edge.
-  signpost: { x: 745, y: GROUND_Y + 30 },
-  // The village clock tower (round 54 batch 2, "import all" —
-  // village-civic-landmarks-alpha.png) — stands back-left, its face shows
-  // the current time of day.
-  clockTower: { x: 92, y: GROUND_Y + 2 },
-  // The wishing well (round 57) — tap it to drop a thank-you in.
-  wishingWell: { x: 335, y: GROUND_Y + 48 },
-  // The picnic mat (round 59) — a "known element" the couple sit on.
-  picnicMat: { x: 235, y: GROUND_Y + 40 },
-  // Round 56 ("remake the village design to look the best with everything")
-  // — a curated layer of the imported decor placed as real scenery instead
-  // of leaving it all in the Inventory, spread to balance the composition
-  // rather than pile onto the already-busy Growth Forest side. Draggable
-  // like everything else.
-  gazebo: { x: 648, y: GROUND_Y + 26 },
-  footBridgeScene: { x: 470, y: GROUND_Y + 34 },
+  signpost: { x: 698, y: 215 },
+  clockTower: { x: 533, y: 318 },
+  wishingWell: { x: 455, y: 285 },
+  picnicMat: { x: 430, y: 300 },
+  gazebo: { x: 667, y: 287 },
+  footBridgeScene: { x: 239, y: 285 },
   firewoodScene: { x: 458, y: GROUND_Y + 6 },
-  wildflowerScene: { x: 250, y: GROUND_Y + 42 },
-  waterPumpScene: { x: 560, y: GROUND_Y + 12 },
+  wildflowerScene: { x: 634, y: 328 },
+  waterPumpScene: { x: 616, y: 316 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
-  somi: { x: 345, y: GROUND_Y + 20 },
+  somi: { x: 330, y: 237 },
   // Round 27's seven community-props items (well, clothesline, an
   // alternate mailbox, bird bath, bench-and-arbor, bike+flower pot, a veg
   // crate) are gone (round 32, 2026-08-27, "delete any elements that are
@@ -849,7 +850,7 @@ export default function VillageScene({
     setDraggingId(null)
   }
   useEffect(() => { if (!arranging) setResizingId(null) }, [arranging])
-  const itemScale = (id: string) => layout[id]?.scale ?? 1
+  const itemScale = (id: string) => layout[id]?.scale ?? DEFAULT_ITEM_SCALE[id] ?? 1
   function resizeItem(id: string, x: number, y: number, delta: number) {
     if (!onResizeItem) return
     const next = Math.max(0.4, Math.min(2.5, +(itemScale(id) + delta).toFixed(2)))
@@ -1685,29 +1686,39 @@ export default function VillageScene({
           and one firewood.png pile per project: faint while it's underway,
           solid once it's finished. Each pile keeps its click → the project
           callout, so selection still works. */}
-      {(() => { const hx = 586, hy = GROUND_Y + 2, w = 46, h = w / (390 / 293); return (
-        <g>
-          <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
-            style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
-        </g>
-      ) })()}
-      {buildingSlots.map(({ building }, i) => {
-        const done = building.phase === 'complete' || building.phase === 'landmark'
-        const lx = 616 + (i % 4) * 15 + Math.floor(i / 4) * 6
-        const ly = GROUND_Y + 8 + Math.floor(i / 4) * 12
-        const w = done ? 13 : 10, h = w * (160 / 255)
+      {(() => {
+        // Anchored to the Projects district badge (round 61) so the cabin,
+        // its logs, and the "Projects" label stay one coherent unit
+        // wherever the badge is dragged. Clamped so a badge near the very
+        // edge doesn't push the cabin off-canvas.
+        const bp = pos('projects')
+        const hx = Math.max(96, Math.min(704, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 4, bp.y - 24))
+        const w = 46, h = w / (390 / 293)
         return (
-          <g key={building.id} opacity={done ? 1 : 0.45} className={landmarked.has(building.id) ? 'village-changed' : undefined}>
-            <image href="/village-assets/firewood.png" x={lx - w / 2} y={ly - h} width={w} height={h}
-              style={{ imageRendering: 'pixelated', cursor: 'pointer' }}
-              onClick={selectBuilding(building.id, lx, ly)} />
-            <title>{`${building.title} — ${done ? 'finished' : 'in progress'}`}</title>
-          </g>
+          <>
+            <g>
+              <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3} fill="var(--text)" opacity={0.16} />
+              <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
+                style={{ imageRendering: 'pixelated' }} />
+              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+            </g>
+            {buildingSlots.map(({ building }, i) => {
+              const done = building.phase === 'complete' || building.phase === 'landmark'
+              const lx = hx + w / 2 - 2 + (i % 4) * 14 + Math.floor(i / 4) * 6
+              const ly = hy + 6 + Math.floor(i / 4) * 12
+              const bw = done ? 13 : 10, bh = bw * (160 / 255)
+              return (
+                <g key={building.id} opacity={done ? 1 : 0.45} className={landmarked.has(building.id) ? 'village-changed' : undefined}>
+                  <image href="/village-assets/firewood.png" x={lx - bw / 2} y={ly - bh} width={bw} height={bh}
+                    style={{ imageRendering: 'pixelated', cursor: 'pointer' }}
+                    onClick={selectBuilding(building.id, lx, ly)} />
+                  <title>{`${building.title} — ${done ? 'finished' : 'in progress'}`}</title>
+                </g>
+              )
+            })}
+          </>
         )
-      })}
-      <FeatureIcon kind="building" x={992} y={GROUND_Y - 6} scale={0.75} opacity={0.55} />
+      })()}
 
       {/* The hand-drawn crane and blueprint sheet (2026-08-25) that used to
           stand in for Projects' identity are gone (round 14, 2026-08-27,
