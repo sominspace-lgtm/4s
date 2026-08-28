@@ -16,6 +16,7 @@ import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
+import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
@@ -265,6 +266,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     setVillageLayout(next)
     await saveLayout(userId, layoutState(), { villageLayout: next })
   }
+  // The village arrangement is shared across the couple (round 62) — one
+  // row per shared space, both partners on the same layout, live. Falls
+  // back to the personal layout above when there's no shared space (or the
+  // migration hasn't run).
+  const sharedVillage = useSharedVillageLayout(userId, villageLayout, changeVillageLayout)
 
   async function changeHouseholdTabs(next: SectionConfig[]) {
     setHouseholdTabs(next)
@@ -477,7 +483,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={villageLayout} onChangeLayout={changeVillageLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} />
         case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
