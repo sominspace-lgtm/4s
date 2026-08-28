@@ -471,20 +471,30 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   // Real sprite art (round 9), made alive (round 13), replaced (round 15),
-  // replaced again (round 20), updated once more (round 22), and cut down
-  // to just these two (round 25, 2026-08-27, "make sure only the animation
-  // in the folder shows for somi") — every earlier round's Somi art came
-  // from sheets the user pasted directly, never actually part of the
-  // village-master-visual-assets folder itself; this folder's OWN Somi
-  // content is a small two-pose pair on its
-  // village-expansion-cat-night-ambient-states.png sheet (a play-bow
-  // stretch and a curled sleeping face-closeup, alongside a moon/lantern/
-  // flower set that isn't Somi at all). Down from 8 frames to these 2 — a
-  // real reduction in richness, but it's what's actually in the folder.
+  // replaced again (round 20), updated (round 22), briefly cut to a 2-pose
+  // "night ambient" sheet (round 25) that turned out to be a mistake — the
+  // folder's own cat-night-ambient-states.png was REPLACED by the user
+  // with a different sheet (community-props-alpha.png) in the very next
+  // update, meaning that 2-pose source no longer exists in the folder at
+  // all. Round 26 (2026-08-27, "updated folder. only use what is in here")
+  // corrects this: exec-1a806105….png — one of the folder's four
+  // generically-named export files — is the REAL source of round 20's
+  // richer 12-pose set all along (confirmed pixel-identical crops), so
+  // this is back to 8 of those 12 poses, legitimately re-sourced from
+  // what's actually in the folder right now rather than a stray direct
+  // paste. The other 4 (a second back-view sit/blink pair, two more
+  // walk-cycle frames, a second pounce) are cropped and sitting in
+  // public/village-assets/ but not in this cycle.
   const h = 20
   const frames = [
-    { src: '/village-assets/somi-playbow.png', aspect: 223 / 174 },
-    { src: '/village-assets/somi-sleepy.png', aspect: 156 / 126 },
+    { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
+    { src: '/village-assets/somi-sit-2.png', aspect: 159 / 195 },
+    { src: '/village-assets/somi-look-back.png', aspect: 165 / 195 },
+    { src: '/village-assets/somi-walk-1.png', aspect: 226 / 192 },
+    { src: '/village-assets/somi-walk-2.png', aspect: 230 / 185 },
+    { src: '/village-assets/somi-pounce.png', aspect: 216 / 183 },
+    { src: '/village-assets/somi-sit-tall.png', aspect: 180 / 188 },
+    { src: '/village-assets/somi-curled.png', aspect: 163 / 187 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}

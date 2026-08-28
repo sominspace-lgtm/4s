@@ -174,6 +174,41 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // Now clearly BELOW the ridge, in the actual grass the buildings stand in.
 const PATH_D = `M 40 ${GROUND_Y + 24} Q 130 ${GROUND_Y + 40} 220 ${GROUND_Y + 30} T 400 ${GROUND_Y + 22} T 580 ${GROUND_Y + 32} T 760 ${GROUND_Y + 20}`
 
+// Stepping-stone pavers along the path (round 26, 2026-08-27, "make the
+// path look more like a path... fit the style and theme more") — the
+// smooth gradient-stroke trail from round 25 read more like a road-with-
+// lane-markings than the flat, blocky, muted-earth-tone pixel language
+// every sprite in this scene actually uses (see ATTRIBUTION.md's own style
+// guardrail: "large clean pixel blocks... avoid photorealism"). Small
+// rounded squares in the same TRIM-family palette as the buildings, placed
+// along PATH_D's own through-points (a straight-segment approximation of
+// its Q/T curve — close enough at paver scale) via the same hashPos
+// determinism GRASS_TUFTS/STONES already use for "same spot, every load."
+const PATH_WAYPOINTS = [
+  { x: 40, y: GROUND_Y + 24 }, { x: 220, y: GROUND_Y + 30 }, { x: 400, y: GROUND_Y + 22 },
+  { x: 580, y: GROUND_Y + 32 }, { x: 760, y: GROUND_Y + 20 },
+]
+function pointOnPathWaypoints(t: number) {
+  const segs = PATH_WAYPOINTS.length - 1
+  const scaled = Math.min(segs - 0.0001, t * segs)
+  const i = Math.floor(scaled)
+  const localT = scaled - i
+  const a = PATH_WAYPOINTS[i], b = PATH_WAYPOINTS[i + 1]
+  return { x: a.x + (b.x - a.x) * localT, y: a.y + (b.y - a.y) * localT }
+}
+const PATH_PAVER_COUNT = 32
+const PATH_PAVERS = Array.from({ length: PATH_PAVER_COUNT }, (_, i) => {
+  const t = i / (PATH_PAVER_COUNT - 1)
+  const { x, y } = pointOnPathWaypoints(t)
+  const seed = `paver-${i}`
+  return {
+    id: seed, x, y: y + (hashPos(seed + 'y') - 0.5) * 3,
+    rot: (hashPos(seed + 'r') - 0.5) * 16,
+    size: 5.2 + hashPos(seed + 's') * 1.8,
+    tone: hashPos(seed + 't') < 0.5,
+  }
+})
+
 // A pond, two benches, three flower beds — small fixed props scattered near
 // the path, same "pure atmosphere, deterministic position" rule as
 // STONES/POLLEN above.
@@ -901,24 +936,29 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
-      {/* The path — see PATH_D above. Fixed warm dirt-brown now, not theme
-          vars (round 4, 2026-08-27) — same reasoning WALL/ROOF/TRIM in
-          shapes.tsx already established for buildings: a dirt path's color
-          isn't themeable, and var(--surface2)/var(--border) (translucent
-          cream/brown under Bloom) read too close to the ridge line's own
-          var(--border) to tell apart at a glance.
-          Rebuilt as a real worn-trail band (round 25, 2026-08-27, "make the
-          path look more like a path") — the old version was two thin,
-          same-width strokes (a wash + a dash) that read as a scribbled line
-          rather than ground you'd actually walk on. Now four layered
-          strokes, widest to narrowest: a soft grassy-edge shoulder where the
-          trail blends into the lawn, the dirt body itself, a worn darker
-          tread down the well-walked center, and a thin warm highlight on
-          top suggesting sun on packed earth. */}
-      <path d={PATH_D} fill="none" stroke="#A9C096" strokeWidth={15} strokeLinecap="round" opacity={0.35} />
-      <path d={PATH_D} fill="none" stroke="#D8B98A" strokeWidth={11} strokeLinecap="round" opacity={0.85} />
-      <path d={PATH_D} fill="none" stroke="#9C7B4F" strokeWidth={5.5} strokeDasharray="1 4.5" strokeLinecap="round" opacity={0.55} />
-      <path d={PATH_D} fill="none" stroke="#E8CFA0" strokeWidth={1.6} strokeDasharray="10 14" strokeLinecap="round" opacity={0.4} />
+      {/* The path — see PATH_D/PATH_PAVERS above. Fixed warm earth tones,
+          not theme vars (round 4, 2026-08-27) — same reasoning WALL/ROOF/
+          TRIM in shapes.tsx already established for buildings: a path's
+          color isn't themeable.
+          Rebuilt again (round 26, 2026-08-27, "make the path look more
+          like a path... fit the style and theme more") — round 25's smooth
+          gradient-stroke band was a real improvement over round 4's plain
+          line, but it's still a vector-illustration technique (blurred
+          soft edges, a gradient shoulder) sitting next to flat, blocky
+          pixel-art sprites everywhere else in the scene; it read as a
+          painted road, not this village's own stepping-stone dirt trail.
+          Now a soft low-opacity dirt-tone connector (just enough to read as
+          "these stones are on the same trail," not a road surface) under a
+          scatter of small rounded pavers in the same TRIM-family palette
+          the buildings use, each with its own tiny hashPos-seeded jitter/
+          rotation/tone so they read as hand-laid stones, not a repeating
+          tile. */}
+      <path d={PATH_D} fill="none" stroke="#B08659" strokeWidth={6} strokeLinecap="round" opacity={0.22} />
+      {PATH_PAVERS.map(p => (
+        <rect key={p.id} x={-p.size / 2} y={-p.size / 2} width={p.size} height={p.size} rx={1.3}
+          fill={p.tone ? '#C9A876' : '#A9835A'} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.5} opacity={0.92}
+          transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
+      ))}
 
       {/* Grass and stones — same dark-mode dimming as the ground-plane
           group above, kept as a second filtered group rather than merged
@@ -1364,17 +1404,16 @@ export default function VillageScene({
         onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
       <VillagerShape x={428} y={GROUND_Y + 8} name="Harry"
         onClick={locked ? openFigureOrToggle('harry') : undefined} />
-      {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
-          invisible hit-circle (r=14) and the Mailbox's (r=14, x=462) only
-          ~27.9 units apart center-to-center against a combined radius of
-          28 — functionally touching, so a click near the boundary could
-          land on either depending on sub-pixel rounding ("glitchy, hard to
-          click"). Here she's ~46 units from the Mailbox and ~60 from
-          Harry, clear of both. */}
-      {/* scale dropped from 1.5 to 1, same reasoning as VillagerShape's
-          own call sites above — CatShape's new sprite base size is
-          already tuned. */}
-      <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
+      {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
+          next to sylvia and make smaller") — was at (480, GROUND_Y+30,
+          scale 1), clear of the Mailbox/Harry per the 2026-08-25 fix noted
+          above but off on her own past Harry rather than with the family.
+          x=345 sits ~27 units left of Sylvia (372) — clear of Sylvia's own
+          hit-circle (r≈19) and Somi's own (r≈14 at this smaller scale)
+          combined (~33 with a small margin). y dropped to GROUND_Y+20, well
+          below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
+          same x — Somi reads as standing in front of it, not through it. */}
+      <CatShape x={345} y={GROUND_Y + 20} scale={0.75} name="Somi" onClick={openSomi} />
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
           no district of its own; this points off-canvas at the village
@@ -1487,8 +1526,8 @@ export default function VillageScene({
           spot, no PIN gate (her card just navigates, never calls
           onLockedNavigate). */}
       {openSomiCard && (() => {
-        const somiX = 480
-        const somiY = GROUND_Y + 30
+        const somiX = 345
+        const somiY = GROUND_Y + 20
         const width = 150
         const height = 34 + somiInfo.lines.length * 13 + 22
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiX))

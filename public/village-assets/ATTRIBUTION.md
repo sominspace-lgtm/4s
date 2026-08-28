@@ -263,3 +263,34 @@ for somi. please update and make better."
   same-width strokes, which read as a scribbled line rather than ground.
 - **Fences** — already resolved in round 24 (`fence-rail.png` is the only fence file; `FenceShape`
   already draws it exclusively). No further change needed here.
+
+## Round 26 (2026-08-27) — Somi corrected again, next to Sylvia, a real stepping-stone path
+
+"updated folder. only use what is in here. delete all else. put somi next to sylvia and make
+smaller. make the path fit the style and theme more."
+
+The user's folder changed between rounds: `village-expansion-cat-night-ambient-states.png` (the
+source behind round 25's 2-pose Somi cut-down) is gone, replaced by
+`village-expansion-community-props-alpha.png` (a magenta-background clothesline/mailbox/bird-bath/
+well/bicycle/flower-pot/veg-crate/bench-and-arbor sheet — not yet mined for use). This meant round
+25's Somi source no longer exists in the folder at all, and prompted a closer look: one of the
+folder's four generic `exec-…png` export files, `exec-1a806105-….png`, is a pixel-identical match
+for round 20's original 12-pose Somi sheet — it's been sitting in this folder the whole time,
+under a name that gave no hint what it was. Somi is back to 8 of those 12 poses (`somi-sit-1/2.png`,
+`somi-look-back.png`, `somi-walk-1/2.png`, `somi-pounce.png`, `somi-sit-tall.png`,
+`somi-curled.png`), legitimately re-sourced from what's actually in the folder now, replacing round
+25's `somi-playbow.png`/`somi-sleepy.png` (deleted — their source sheet is gone).
+
+Somi also moved next to Sylvia (was standing apart, past Harry and the Mailbox) and shrunk to
+`scale={0.75}` — see `VillageScene.tsx`'s own cast section.
+
+The path was rebuilt a third time as a scatter of small rounded stepping-stone pavers in the
+TRIM-family palette, replacing round 25's smooth gradient-stroke band — that band was a genuine
+improvement over the original thin double-stroke line, but it's a vector-illustration technique
+(blurred soft edges, a gradient shoulder) that read as a painted road next to this scene's flat,
+blocky pixel-art sprites everywhere else. See `PATH_PAVERS`' own comment in `VillageScene.tsx`.
+
+The new `village-expansion-community-props-alpha.png` sheet (clothesline, an alternate mailbox,
+bird bath, well, bicycle + flower pot, veg crate, bench-and-arbor) is not wired into anything yet —
+real content for a future round, and notably includes fresh equivalents for a few props round 23
+had to remove outright for lack of one (bicycle, flower pot, veg crate).
