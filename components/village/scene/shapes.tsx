@@ -502,26 +502,35 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   // Real sprite art (round 9), made alive (round 13), replaced (round 15),
   // replaced again (round 20), updated (round 22), briefly cut to a 2-pose
-  // "night ambient" sheet (round 25) that turned out to be a mistake — the
-  // folder's own cat-night-ambient-states.png was REPLACED by the user
-  // with a different sheet (community-props-alpha.png) in the very next
-  // update, meaning that 2-pose source no longer exists in the folder at
-  // all. Round 26 (2026-08-27, "updated folder. only use what is in here")
-  // corrects this: exec-1a806105….png — one of the folder's four
-  // generically-named export files — is the REAL source of round 20's
-  // richer 12-pose set all along (confirmed pixel-identical crops), so
-  // this is back to 8 of those 12 poses, legitimately re-sourced from
-  // what's actually in the folder right now rather than a stray direct
-  // paste. The other 4 (a second back-view sit/blink pair, two more
-  // walk-cycle frames, a second pounce) are cropped and sitting in
-  // public/village-assets/ but not in this cycle.
+  // "night ambient" sheet (round 25), corrected back to 8 poses from the
+  // folder's real 12-pose sheet (round 26) — see that round's own note on
+  // exec-1a806105….png.
+  //
+  // Round 28 (2026-08-27, "make the animation loops make sense and make it
+  // change more rarely") rebuilds the cycle two ways:
+  // 1. All 12 poses now, in an actual narrative order instead of a
+  //    grab-bag: sit, blink, look back (both angles), a full 4-frame walk
+  //    cycle in its real left-to-right sequence (round 26 had walk frames
+  //    3-then-2 out of order, which is exactly the kind of cut this
+  //    request is about), a pounce crouch into the pounce itself, sitting
+  //    up tall and alert, then curling up to rest — and the loop starts
+  //    back at frame 1 as if she just woke up. One lap reads as a small
+  //    "a little while in Somi's day," not a shuffle of unrelated poses.
+  // 2. periodSec way up (24s → 144s, and now spread over 12 frames instead
+  //    of 8) — each pose holds for a full 12 seconds instead of 3, so she
+  //    reads as a still, real photo most of the time and only occasionally
+  //    changes, rather than visibly flicking through poses.
   const h = 20
   const frames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
     { src: '/village-assets/somi-sit-2.png', aspect: 159 / 195 },
-    { src: '/village-assets/somi-look-back.png', aspect: 165 / 195 },
-    { src: '/village-assets/somi-walk-1.png', aspect: 226 / 192 },
-    { src: '/village-assets/somi-walk-2.png', aspect: 230 / 185 },
+    { src: '/village-assets/somi-look-back-1.png', aspect: 165 / 195 },
+    { src: '/village-assets/somi-look-back-2.png', aspect: 174 / 195 },
+    { src: '/village-assets/somi-walk-1.png', aspect: 235 / 185 },
+    { src: '/village-assets/somi-walk-2.png', aspect: 226 / 193 },
+    { src: '/village-assets/somi-walk-3.png', aspect: 230 / 185 },
+    { src: '/village-assets/somi-walk-4.png', aspect: 226 / 192 },
+    { src: '/village-assets/somi-pounce-crouch.png', aspect: 210 / 178 },
     { src: '/village-assets/somi-pounce.png', aspect: 216 / 183 },
     { src: '/village-assets/somi-sit-tall.png', aspect: 180 / 188 },
     { src: '/village-assets/somi-curled.png', aspect: 163 / 187 },
@@ -537,7 +546,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
           a stable hit target regardless of which pose is currently up. */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={24} />
+      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={144} />
     </g>
   )
 }

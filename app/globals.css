@@ -433,6 +433,10 @@ select, option {
 @keyframes village-cycle-2 { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes village-cycle-4 { 0%, 24.9% { opacity: 1; } 25%, 100% { opacity: 0; } }
 @keyframes village-cycle-8 { 0%, 12.4% { opacity: 1; } 12.5%, 100% { opacity: 0; } }
+/* Somi's full 12-pose cycle (round 28, 2026-08-27, "make the animation
+   loops make sense and make it change more rarely") — same steps(1)
+   hard-cut idiom as the others, one slice per pose (100%/12 ≈ 8.33%). */
+@keyframes village-cycle-12 { 0%, 8.24% { opacity: 1; } 8.33%, 100% { opacity: 0; } }
 
 /* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
    make anything bob") — VillagerShape/CatShape's cast figures render

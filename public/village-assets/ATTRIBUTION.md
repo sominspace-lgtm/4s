@@ -313,3 +313,20 @@ had to remove outright for lack of one (bicycle, flower pot, veg crate).
   a `<Draggable>` wrapper (a new small helper in `shapes.tsx`) at its render call. Still
   deliberately NOT draggable: `FOREGROUND`/`MIDGROUND_BUSHES`, the 62 procedurally-scattered texture
   items — dragging one at a time there would be tedium, not customization, same reasoning as always.
+
+## Round 28 (2026-08-27) — Somi's cycle rebuilt for real, and slowed way down
+
+"make the animation loops make sense and make it change more rarely."
+
+Two real problems with the round 26 cycle, not just polish: it only used 8 of the sheet's 12 poses
+in a fairly arbitrary order, and round 26's own walk frames were picked out of sequence (the
+3rd-column pose before the 2nd), so "walking" visibly jumped mid-stride instead of reading as one
+gait. Both fixed:
+- All 12 poses now, in an actual order: sit → blink → look back (both angles) → a real 4-frame
+  walk cycle in its left-to-right sequence → a pounce crouch → the pounce → sitting up tall and
+  alert → curling up to rest, looping back to the start as if she just woke up. New crops:
+  `somi-look-back-1.png`/`-2.png` (replacing the single `somi-look-back.png`), `somi-walk-1.png`
+  …`-4.png` (all four, correctly ordered — round 26's `somi-walk-1/2.png` are overwritten with the
+  correct frames), `somi-pounce-crouch.png`.
+- `periodSec` raised from 24s to 144s, spread across 12 frames instead of 8 — each pose now holds
+  for 12 real seconds instead of 3. A new `village-cycle-12` keyframe (`globals.css`) drives it.
