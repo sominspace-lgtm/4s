@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -106,11 +106,14 @@ const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#586E47'
 // `depth` runs 0..1 from the back of this band to the very front and drives
 // both scale and which GREENS tone gets used, so the layer self-sorts into a
 // gradient of size and darkness instead of being a uniform scatter.
-const FOREGROUND_COUNT = 40
+const FOREGROUND_COUNT = 28
 const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
-  const y = GROUND_Y + 58 + depth * 172
+  // Round 58 ("fix the random trees and bushes (scale and placement)") —
+  // held to a ~110-unit band (was 172, which flung the near ones almost to
+  // the canvas edge) and a lower scale ceiling.
+  const y = GROUND_Y + 56 + depth * 110
   const kind = (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.82 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
   // One bucket of the canvas width per item, jittered within the bucket
   // (round 7 fix, 2026-08-27) — the previous fully-random x let several
@@ -125,7 +128,7 @@ const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   // Scale ceiling lowered from 2.2x to ~1.55x, and flowers capped lower
   // still — a giant flower cluster read as a magenta block, while a giant
   // bush at least still reads as "a bush," just an oversized one.
-  const baseScale = 0.6 + depth * 0.95
+  const baseScale = 0.55 + depth * 0.72
   return {
     id: seed, x, y, depth, kind,
     scale: kind === 'flower' ? baseScale * 0.7 : baseScale,
@@ -137,21 +140,21 @@ const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
 // district row, the other band that was mostly bare. Smaller and lighter
 // than FOREGROUND, so the two layers read as different distances rather
 // than as the same scatter repeated twice.
-const MIDGROUND_COUNT = 22
+const MIDGROUND_COUNT = 16
 const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   const seed = `mg-${i}`
   // Bucketed x, same reasoning as FOREGROUND above (round 7 fix).
   const bucketW = 820 / MIDGROUND_COUNT
   return {
     id: seed,
-    x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85,
+    x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.8,
     // Extended from +2..+36 to +2..+56 (round 14, 2026-08-27) — that left a
     // bare 22-unit gap (y 246..268) between where MIDGROUND stopped and
     // FOREGROUND started, undoing some of round 6's own "close the empty
     // space" fix now that there's a real named prop or two also sitting in
     // that band.
-    y: GROUND_Y + 2 + hashPos(seed + 'y') * 54,
-    scale: 0.5 + hashPos(seed + 's') * 0.5,
+    y: GROUND_Y + 4 + hashPos(seed + 'y') * 40,
+    scale: 0.45 + hashPos(seed + 's') * 0.4,
     tone: 1 + Math.floor(hashPos(seed + 't') * 3),
   }
 })
@@ -182,28 +185,28 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // spans a much wider band (GROUND_Y+8..+72) so trees actually sit at
 // different depths, and height/opacity follow that same depth (nearer =
 // bigger and fuller) the way FOREGROUND's own scatter already does.
-const GROVE_TREE_COUNT = 7
+// Round 58 ("fix the random trees and bushes (scale and placement)") —
+// fewer trees (7 -> 5), held to a shallow depth band (GROUND_Y+10..+32)
+// instead of scattering across 64 units of the whole yard, and a tighter
+// height range so they read as one grove at one distance rather than a
+// jumble. Still hashPos-deterministic per seed.
+const GROVE_TREE_COUNT = 4
 const GROVE_TREES = Array.from({ length: GROVE_TREE_COUNT }, (_, i) => {
   const seed = `grove-${i}`
-  // x0 nudged 20 -> 65 (round 40, "zoom in but make sure everything is
-  // still in frame") — the tighter viewBox's own left edge sits at 50 (see
-  // BASE_VB_W/CX below); 65 leaves real margin for a tree's own width past
-  // its trunk-center x, not just the trunk itself.
-  const bucketW = 300 / GROVE_TREE_COUNT
-  const x = 65 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.9
+  const bucketW = 320 / GROVE_TREE_COUNT
+  const x = 62 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.55
   const depth = hashPos(seed + 'd')
-  const y = GROUND_Y + 8 + depth * 64
+  const y = GROUND_Y + 10 + depth * 22
   return {
     x, y, kind: (hashPos(seed + 'k') < 0.5 ? 'pine' : 'round') as 'pine' | 'round',
-    h: 17 + depth * 12, opacity: 0.65 + depth * 0.3,
+    h: 21 + depth * 7, opacity: 0.78 + depth * 0.18,
   }
 })
-// Two fixed ambient trees outside the forest band, near Archive/Home —
-// unrelated to the grove, unchanged from round 37.
+// The two fixed ambient trees near Archive/Home are gone round 58 ("remove
+// the tree from top right", plus the tree-clutter cleanup) — the grove and
+// each district's own scenery cover the tree line now.
 const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; opacity?: number }[] = [
   ...GROVE_TREES,
-  { x: 680, y: GROUND_Y + 36, kind: 'round', h: 25 },
-  { x: 470, y: GROUND_Y + 32, kind: 'pine', h: 22 },
 ]
 
 // A path through the ground, and a few small props along it (2026-08-24) —
@@ -406,7 +409,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // the current time of day.
   clockTower: { x: 92, y: GROUND_Y + 2 },
   // The wishing well (round 57) — tap it to drop a thank-you in.
-  wishingWell: { x: 300, y: GROUND_Y + 34 },
+  wishingWell: { x: 335, y: GROUND_Y + 48 },
   // Round 56 ("remake the village design to look the best with everything")
   // — a curated layer of the imported decor placed as real scenery instead
   // of leaving it all in the Inventory, spread to balance the composition
@@ -1603,7 +1606,7 @@ export default function VillageScene({
         <title>Home — Smart Home</title>
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
-        <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
+        <ellipse cx={0} cy={1.5} rx={37} ry={3.2} fill="var(--text)" opacity={0.12} />
         {/* Swapped to the master-visual-assets folder's own house-lighting-
             states sheet (round 23, 2026-08-27, "update only using these
             elements. delete all old ones") — this is the real
@@ -1614,12 +1617,15 @@ export default function VillageScene({
             warmly lit) swaps in for cottage-dark.png on the same real Smart
             Home occupancy signal that used to just toggle an ellipse.
             313×262 source, ~1.19 aspect. */}
+        {/* Smaller round 58 ("make house smaller and other buildings a bit
+            bigger") — 107 -> 90 wide, so Home anchors the scene without
+            dwarfing the districts. */}
         <image href={`/village-assets/cottage-${(homeOccupied ?? dark) ? 'lit' : 'dark'}.png`}
-          x={-53.5} y={-89.6} width={107} height={89.6}
+          x={-45} y={-75.3} width={90} height={75.3}
           style={{ imageRendering: 'pixelated' }} />
-        {(homeOccupied ?? dark) && <circle cx={-3} cy={-62} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" />}
+        {(homeOccupied ?? dark) && <circle cx={-3} cy={-52} r={10} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
-          <path d="M 28 -80 L 28 -94 L 35 -94 L 35 -80" fill="none" stroke="var(--border)" strokeWidth={2} />
+          <path d="M 24 -67 L 24 -79 L 30 -79 L 30 -67" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
       </g>
 
@@ -1644,28 +1650,37 @@ export default function VillageScene({
           assets folder, and leaving mismatched old art in Home's yard
           didn't fit the same standard applied everywhere else this round. */}
 
-      {/* Project District */}
-      {buildingSlots.map(({ building, x, y, scale, back }) => (
-        <g key={building.id} opacity={back ? 0.55 : 1}>
-          <BuildingShape building={building} x={x} y={y} scale={scale}
-            changed={landmarked.has(building.id)}
-            selected={selected?.type === 'building' && selected.id === building.id}
-            cared={caredId === building.id}
-            onClick={selectBuilding(building.id, x, y)}
-            dark={dark} />
+      {/* Projects — the log house, and a pile of logs for every project
+          (round 58, "remove the building growth, when projects finish we
+          will add logs near the projects log house"). No more blueprint /
+          foundation / under-construction phases growing into a landmark —
+          just workshop.png as the fixed log house, and one firewood.png
+          pile per project: faint while it's still underway, solid once it's
+          finished (phase complete/landmark). Each pile keeps its click →
+          the project callout, so selection still works. */}
+      {(() => { const hx = 588, hy = GROUND_Y + 2; return (
+        <g>
+          <ellipse cx={hx} cy={hy + 2} rx={22} ry={3} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/workshop.png" x={hx - 22} y={hy - 34} width={44} height={34}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cx={hx + 5} cy={hy - 21} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
-      ))}
-      {buildingSlots.length === 0 && (
-        <g transform={`translate(600 ${GROUND_Y - 2})`} opacity={0.35}>
-          <rect x={-3} y={-6} width={6} height={6} fill="none" stroke="var(--slate)" strokeWidth={1} strokeDasharray="2 2" />
-        </g>
-      )}
-      {/* A building marker, literally next to a real building (2026-08-24,
-          was a fixed spot in the district band) — anchored to the first
-          building slot's actual (x, y), same reasoning as the forest's leaf
-          above. Falls back near the empty-state dashed square when there
-          are no buildings yet. */}
-      <FeatureIcon kind="building" x={(buildingSlots[0]?.x ?? 600) - 16} y={(buildingSlots[0]?.y ?? GROUND_Y - 2) - 4} scale={0.75} opacity={0.55} />
+      ) })()}
+      {buildingSlots.map(({ building }, i) => {
+        const done = building.phase === 'complete' || building.phase === 'landmark'
+        const lx = 616 + (i % 4) * 15 + Math.floor(i / 4) * 6
+        const ly = GROUND_Y + 8 + Math.floor(i / 4) * 12
+        const w = done ? 13 : 10, h = w * (160 / 255)
+        return (
+          <g key={building.id} opacity={done ? 1 : 0.45} className={landmarked.has(building.id) ? 'village-changed' : undefined}>
+            <image href="/village-assets/firewood.png" x={lx - w / 2} y={ly - h} width={w} height={h}
+              style={{ imageRendering: 'pixelated', cursor: 'pointer' }}
+              onClick={selectBuilding(building.id, lx, ly)} />
+            <title>{`${building.title} — ${done ? 'finished' : 'in progress'}`}</title>
+          </g>
+        )
+      })}
+      <FeatureIcon kind="building" x={992} y={GROUND_Y - 6} scale={0.75} opacity={0.55} />
 
       {/* The hand-drawn crane and blueprint sheet (2026-08-25) that used to
           stand in for Projects' identity are gone (round 14, 2026-08-27,
@@ -2086,7 +2101,7 @@ export default function VillageScene({
       {selectedBuilding && (
         <EntityCallout x={selectedBuilding.x} y={selectedBuilding.y}
           title={selectedBuilding.building.title}
-          subtitle={selectedBuilding.building.phase} />
+          subtitle={selectedBuilding.building.phase === 'complete' || selectedBuilding.building.phase === 'landmark' ? 'finished' : 'in progress'} />
       )}
 
       {/* Time/season/weather readout (2026-08-24) — small, top-left, purely

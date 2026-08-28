@@ -1079,8 +1079,8 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // reads more directly as a briefcase than the workshop shed (rounds 11-56) did.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={14} ry={2.4} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/briefcase.png" x={-14} y={-20} width={28} height={28 / (189 / 136)}
+          <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/briefcase.png" x={-17} y={-24.5} width={34} height={34 / (189 / 136)}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
@@ -1093,12 +1093,13 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // upgraded this round to real tree art, see its own comment.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={17.2} ry={2.75} fill="var(--text)" opacity={0.17} />
+          <ellipse cx={0} cy={2} rx={20} ry={2.9} fill="var(--text)" opacity={0.17} />
           {/* Back to greenhouse.png round 57 — library.png's source sheet
-              (village-social-town-spaces) is no longer in the master folder. */}
-          <image href="/village-assets/greenhouse.png" x={-17.2} y={-30} width={34.4} height={30}
+              (village-social-town-spaces) is no longer in the master folder.
+              Sized up round 58 ("other buildings a bit bigger"). */}
+          <image href="/village-assets/greenhouse.png" x={-20} y={-35} width={40} height={35}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-16.25} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-19} r={11} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
     case 'places': // Places — the car (round 30, 2026-08-27, "make the car the symbol for

@@ -467,28 +467,28 @@ select, option {
    (see CatShape) using the exact same percentages with steps(1) hard cuts,
    so the walk-pose SpriteCycle is only ever visible while she's actually
    in motion. */
+/* Round 58 ("allow somi to wander but make her stationary or sleeping
+   more") — a 90s loop she's still for ~80% of: one short amble out and
+   back around the 45-60% mark, otherwise she just sits. Dusk/night she's
+   asleep anyway (CatShape `sleeping`). */
 @keyframes village-somi-move {
-  0%, 15% { transform: translate(0, 0); }
-  35%, 50% { transform: translate(-20px, -2px); }
-  70%, 100% { transform: translate(0, 0); }
+  0%, 44% { transform: translate(0, 0); }
+  50%, 54% { transform: translate(-15px, -2px); }
+  60%, 100% { transform: translate(0, 0); }
 }
 @keyframes village-somi-idle-vis {
-  0%, 15% { opacity: 1; }
-  20%, 30% { opacity: 0; }
-  35%, 50% { opacity: 1; }
-  55%, 65% { opacity: 0; }
-  70%, 100% { opacity: 1; }
+  0%, 43% { opacity: 1; }
+  46%, 58% { opacity: 0; }
+  61%, 100% { opacity: 1; }
 }
 @keyframes village-somi-walk-vis {
-  0%, 15% { opacity: 0; }
-  20%, 30% { opacity: 1; }
-  35%, 50% { opacity: 0; }
-  55%, 65% { opacity: 1; }
-  70%, 100% { opacity: 0; }
+  0%, 43% { opacity: 0; }
+  46%, 58% { opacity: 1; }
+  61%, 100% { opacity: 0; }
 }
-.village-somi-move { animation: village-somi-move 60s ease-in-out infinite; }
-.village-somi-idle-vis { animation: village-somi-idle-vis 60s steps(1) infinite; }
-.village-somi-walk-vis { animation: village-somi-walk-vis 60s steps(1) infinite; }
+.village-somi-move { animation: village-somi-move 90s ease-in-out infinite; }
+.village-somi-idle-vis { animation: village-somi-idle-vis 90s steps(1) infinite; }
+.village-somi-walk-vis { animation: village-somi-walk-vis 90s steps(1) infinite; }
 /* Facing (round 47, "for any figure including somi they should face the
    direction they are walking") — same idea as village-face-sylvia/-harry
    above (the standalone `scale` property, composing with village-somi-
@@ -497,10 +497,10 @@ select, option {
    changes, on the same 60s timeline. */
 @keyframes village-face-somi {
   0% { scale: 1 1; }
-  15% { scale: -1 1; }
-  50% { scale: 1 1; }
+  46% { scale: -1 1; }
+  57% { scale: 1 1; }
 }
-.village-face-somi { animation: village-face-somi 60s steps(1) infinite; }
+.village-face-somi { animation: village-face-somi 90s steps(1) infinite; }
 
 /* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
    make anything bob") — VillagerShape/CatShape's cast figures render
