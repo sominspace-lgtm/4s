@@ -474,3 +474,20 @@ right now."
   is a real 4-frame Sylvia walk cycle that could replace the CSS-only glide from round 30 with an
   actual walking animation, closing the loop the way round 31 did for Somi - not done this round,
   a real candidate for the next one.
+
+## Round 35 (2026-08-27) - the gate was the real "fence", bus stop sized up again
+
+Screenshot feedback: "things like bus stop still too small. the fences are wrong still (have
+white in middle)."
+
+Investigated further - the fence itself really is gone (removed round 34); what the user was
+still seeing is gate.png, which is a genuinely open wooden-lattice gate (real transparent
+diamond-shaped gaps by design, not a crop bug) that reads exactly like a fence at village scale.
+Removed for the same reason the fence was - rather than argue the art is "correct," it's gone
+from both DECOR_DEFAULTS and the item-prop render list. gate.png itself stays in the assets
+folder (real, folder-sourced content) in case a future round wants a solid (non-lattice) gate
+instead.
+
+bus-stop.png sized up again (18 -> 26 tall), and MailboxShape/SignpostShape grew too (15->20 and
+20->26 tall respectively) - the same "still reads small at real full-scene zoom, even after
+round 24's bump" issue the screenshot flagged for the bus stop specifically.

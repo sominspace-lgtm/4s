@@ -335,7 +335,7 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
 // BUSHES — 62 procedurally-scattered, individually-meaningless texture
 // items where dragging one at a time would be tedium, not customization.
 const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
-  gate: { x: 58, y: GROUND_Y + 20 },
+  // 'gate' removed round 35 (2026-08-27) — see the item-prop list below.
   busStop: { x: 568, y: GROUND_Y + 10 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
   bushMound: { x: 78, y: GROUND_Y - 2 },
@@ -1111,12 +1111,19 @@ export default function VillageScene({
         // up again round 24 ("make sure things are scaled properly but so
         // we can also see them") — the round 23 sizes read a little small
         // next to the buildings they stand beside.
-        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 33, h: 18.4 },
+        // The gate is gone (round 35, 2026-08-27) — same "fence with white
+        // in the middle" complaint as the actual fence, still standing
+        // after that one was removed: gate.png is genuinely an open
+        // wooden-lattice gate (real transparent gaps by design, not a
+        // crop bug), and it reads exactly like a fence for the same
+        // reason. Removed rather than patched, same call as the fence.
         // The standalone car near Home is gone (round 31, 2026-08-27,
         // "delete second car") — Places' own district badge became the
         // car (round 30), and having a second one parked by the house too
         // read as a duplicate rather than two different things.
-        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 28.5, h: 18 },
+        // Sized up again round 35 (2026-08-27, "things like bus stop still
+        // too small") — 18 units tall still read small at full-scene zoom.
+        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
         // smaller than everything else in the scene.

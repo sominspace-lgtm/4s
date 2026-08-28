@@ -357,7 +357,7 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
 // their own header comments.
 export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 14.8, h = 15 // re-sourced round 23 from the master-assets folder (256×260), sized up round 24 for visibility
+  const w = 19.7, h = 20 // re-sourced round 23 from the master-assets folder (256×260), sized up rounds 24/35 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
@@ -379,7 +379,7 @@ export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?
 // toward Trips" than the hand-drawn flag it replaces.
 export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 15.2, h = 20 // re-sourced round 23 from the master-assets folder (205×270), sized up round 24 for visibility
+  const w = 19.75, h = 26 // re-sourced round 23 from the master-assets folder (205×270), sized up rounds 24/35 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={4} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
