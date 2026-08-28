@@ -301,7 +301,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
           ...(fullscreen ? {
             position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, border: 'none',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+            // dvh so an iPad's dynamic browser chrome doesn't leave a strip
+            // (round 63, "make sure optimized for ipad").
+            height: '100dvh', background: 'var(--bg)',
           } : {}),
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
@@ -327,7 +330,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             warm surface tone showing as a mat around it. */}
         <div style={
           compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
-          : fullscreen ? { width: 'min(100%, 1400px)', maxHeight: '100vh', margin: '0 auto' }
+          : fullscreen ? { width: 'min(100vw, 165vh, 1800px)', margin: '0 auto' }
           : undefined
         }>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}

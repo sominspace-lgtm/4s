@@ -435,7 +435,7 @@ const CLOCK_SRC: Record<string, string> = {
 export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
   x: number; y: number; timeOfDay: string; dark?: boolean; scale?: number
 }) {
-  const h = 66, w = h * (236 / 438) // 236x438 source — sized up round 62 ("make ... clock tower bigger"); reads as a real civic landmark
+  const h = 76, w = h * (236 / 438) // 236x438 source — sized up rounds 62/63 ("make ... clock tower bigger" / "a bit bigger"); reads as a real civic landmark
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.6} rx={w / 2.2} ry={2} fill="var(--text)" opacity={0.14} />
@@ -452,16 +452,22 @@ export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
 // the caller saves it (see VillageScene's onGratitude).
 export function WishingWellShape({ x, y, onClick, glow = false }: { x: number; y: number; onClick?: () => void; glow?: boolean }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 30, h = 30 // 330x322 source, ~1:1 — sized up round 62 ("make ... wishing well bigger")
+  const w = 38, h = 38 // 330x322 source, ~1:1 — sized up rounds 62/63 ("make ... wishing well bigger" / "a bit bigger")
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={0} cy={-h / 2} r={20} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <circle cx={0} cy={-h / 2} r={24} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>Drop a thank-you in the well</title>
-        <ellipse cx={0} cy={1.5} rx={8} ry={2} fill="var(--text)" opacity={0.13} />
-        {glow && <circle cx={0} cy={-h * 0.55} r={11} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-sparkle" />}
+        <ellipse cx={0} cy={1.5} rx={10} ry={2.4} fill="var(--text)" opacity={0.13} />
         <image href="/village-assets/well.png" x={-w / 2} y={-h} width={w} height={h}
           style={{ imageRendering: 'pixelated' }} />
+        {/* Always a soft warm light down in the well (round 63, "make well ...
+            like it is glowing inside") — sits over the opening below the
+            bucket, gently pulsing via village-glow. The submit-flash `glow`
+            is a brighter burst on top of it. */}
+        <ellipse cx={0} cy={-h * 0.36} rx={w * 0.2} ry={w * 0.13} fill="var(--amber)"
+          opacity={0.45} filter="url(#vglow)" className="village-glow" />
+        {glow && <circle cx={0} cy={-h * 0.4} r={12} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" className="village-sparkle" />}
       </g>
     </g>
   )
@@ -1052,19 +1058,30 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // habits still grow as plants in the grove nearby; the symbol itself is
       // flowers now, and the one big tree that used to sit here is gone (only
       // People keeps a big tree).
-      // flower-4.png is already a small clump of flowers with foliage and a
-      // soil base — two of them, one behind and smaller, read as a fuller
-      // flower patch without stacking into a shapeless mass. Each sways on
-      // its own negative delay so they don't lean in lockstep.
+      // Several single blooms (round 63, "make growth garden symbol multiple
+      // small flowers swaying") — bloom-red/-white-a/-white-b.png are single
+      // flowers cropped from the flower growth sheet. Spread across the
+      // symbol's footprint at mixed heights, each swaying on its own delay
+      // AND its own slightly different duration, so the little patch ripples
+      // rather than leaning as one block.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={16} ry={2.4} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/flower-4.png" x={-3 - 9} y={-18} width={18} height={18}
-            className="village-flower-sway" opacity={0.8}
-            style={{ imageRendering: 'pixelated', animationDelay: '-2.2s' }} />
-          <image href="/village-assets/flower-4.png" x={2 - 12} y={-24} width={24} height={24}
-            className="village-flower-sway"
-            style={{ imageRendering: 'pixelated', animationDelay: '0s' }} />
+          <ellipse cx={0} cy={2} rx={17} ry={2.4} fill="var(--text)" opacity={0.16} />
+          {[
+            { src: 'bloom-white-a', x: -13, h: 12, ar: 140 / 232, d: '-0.4s', dur: '4.3s' },
+            { src: 'bloom-red', x: -6, h: 16, ar: 128 / 224, d: '-2.1s', dur: '4.9s' },
+            { src: 'bloom-white-b', x: 3, h: 13, ar: 128 / 220, d: '-1.2s', dur: '3.9s' },
+            { src: 'bloom-red', x: 11, h: 10, ar: 128 / 224, d: '-3.0s', dur: '4.6s' },
+            { src: 'bloom-white-a', x: 17, h: 9, ar: 140 / 232, d: '-0.8s', dur: '4.1s' },
+          ].map((b, i) => {
+            const w = b.h * b.ar
+            return (
+              <image key={i} href={`/village-assets/${b.src}.png`}
+                x={b.x - w / 2} y={-b.h} width={w} height={b.h}
+                className="village-flower-sway"
+                style={{ imageRendering: 'pixelated', animationDelay: b.d, animationDuration: b.dur }} />
+            )
+          })}
         </g>
       )
     case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom

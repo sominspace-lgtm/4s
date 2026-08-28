@@ -440,6 +440,13 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   firewoodScene: { x: 458, y: GROUND_Y + 6 },
   wildflowerScene: { x: 634, y: 328 },
   waterPumpScene: { x: 616, y: 316 },
+  // Round 63 ("import all elements ... place some too") — a raised garden
+  // bed and a flower planter box near Growth Garden, and a warm garden
+  // lantern on the path. All from the village/ master folder's
+  // progress-garden-beds / left-behind-objects / decor-lanterns sheets.
+  gardenBed: { x: 96, y: GROUND_Y + 40 },
+  flowerPlanter: { x: 250, y: GROUND_Y + 44 },
+  gardenLantern: { x: 300, y: GROUND_Y + 30 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 330, y: 237 },
@@ -1405,13 +1412,28 @@ export default function VillageScene({
         </Draggable>
       ) })}
       {(() => { const p = decorPos('clockTower'); return (
-        <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={22}>
+        <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={26}>
           <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={itemScale('clockTower')} />
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('wishingWell'); return (
-        <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={18}>
+        <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={22}>
           <WishingWellShape x={0} y={0} glow={wellGlow} onClick={!arranging ? submitGratitude : undefined} />
+        </Draggable>
+      ) })()}
+      {/* A standing garden lantern (round 63, "import all elements ... place
+          some too") — garden-lantern.png from the village/ decor-lanterns
+          sheet. Warm all the time, brighter after dark, same dark-gated
+          vglow idiom as LampShape. */}
+      {(() => { const p = decorPos('gardenLantern'); const s = itemScale('gardenLantern'); const h = 15 * s, w = h * (115 / 176); return (
+        <Draggable x={p.x} y={p.y} id="gardenLantern" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('gardenLantern')} r={11}>
+          <g>
+            <title>A garden lantern</title>
+            <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
+            <circle cx={0} cy={-h * 0.5} r={dark ? 8 : 5} fill="var(--amber)" opacity={dark ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
+            <image href="/village-assets/garden-lantern.png" x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
+          </g>
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('picnicMat'); const w = 22, h = w * (280 / 460); return (
@@ -1459,6 +1481,11 @@ export default function VillageScene({
         { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
         { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
         { id: 'waterPumpScene', title: 'A water pump', href: 'water-pump.png', w: 15 * (207 / 253), h: 15 },
+        // Round 63 — near Growth Garden. A raised bed and a planter box of
+        // flowers; decorative, not a second way to plant a habit (real
+        // plants only ever come from habit data, see PlantShape).
+        { id: 'gardenBed', title: 'A raised garden bed', href: 'garden-bed.png', w: 16 * (289 / 171), h: 16 },
+        { id: 'flowerPlanter', title: 'A flower planter', href: 'flower-planter.png', w: 14 * (286 / 172), h: 14 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
         // smaller than everything else in the scene.

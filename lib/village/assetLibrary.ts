@@ -88,6 +88,16 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   // face tracks the time of day), not placed from here.
   { key: 'arbor', label: 'Flowered arbor', href: 'arbor.png', aspect: 363 / 225, h: 16 },
   { key: 'firewood', label: 'Firewood', href: 'firewood.png', aspect: 255 / 160, h: 8 },
+
+  // Round 63 ("import all elements from [village/]") — a raised garden bed
+  // and a flower planter box (decorative, not a way to plant a habit — same
+  // "nothing that plants a flower" reasoning as flowerPatch/flowerVase
+  // above; these are containers, the planter's flowers are baked art) plus
+  // a warm garden lantern. Sources: progress-garden-beds /
+  // left-behind-objects / decor-lanterns.
+  { key: 'gardenBed', label: 'Raised bed', href: 'garden-bed.png', aspect: 289 / 171, h: 12 },
+  { key: 'flowerPlanter', label: 'Flower planter', href: 'flower-planter.png', aspect: 286 / 172, h: 11 },
+  { key: 'gardenLantern', label: 'Garden lantern', href: 'garden-lantern.png', aspect: 115 / 176, h: 14 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {
