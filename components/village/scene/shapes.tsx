@@ -715,7 +715,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
   }
 }
 
-export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, dark = false, scale = 1 }: {
+export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, dark = false, scale = 1, selected = false }: {
   x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
   /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
   draggable?: boolean
@@ -729,6 +729,10 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
    *  you live," everything else branches outward from it. 1 for everyone
    *  else, 1.25 for Home's own call site. */
   scale?: number
+  /** This district's tap-panel is open right now (round 18, 2026-08-27) —
+   *  touch's equivalent of :hover for revealing the label, see the name/
+   *  count text below. VillageScene passes `openPanel === id`. */
+  selected?: boolean
 }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={onClick} onPointerDown={onPointerDown}
@@ -744,6 +748,12 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
       {draggable && (
         <rect x={-19} y={-31} width={38} height={38} rx={12} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3" opacity={dragging ? 0.9 : 0.45} />
       )}
+      {/* A soft ambient glow behind every symbol (round 18, 2026-08-27,
+          "make the symbols glow a bit too") — same vglow blur filter every
+          other light source in the scene shares, at a low, constant
+          opacity (not gated on `dark`) so it reads as the building's own
+          warm presence rather than a night-only light. */}
+      <circle r={16} fill="var(--amber)" opacity={0.1} filter="url(#vglow)" />
       {/* Scaled up ~30% (round two, 2026-08-27) — measured against a real
           screenshot, the art read as a small prop next to its own label at
           the original coordinates below. This is the one knob that fixes
@@ -766,19 +776,20 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
       )}
       {/* Name now hidden until you look too (round three, 2026-08-27 — round
           two only quieted it down and moved the count/detail line to
-          hover-only, but a permanently-visible name under every building
-          still made the scene read as an annotated diagram, not a place).
-          Same .village-district-count pattern, new sibling class: opacity 0
-          at rest, revealed on hover (real pointer devices only, same
+          hover-only. Round 10 made both permanently visible ("do not make
+          anything hover"); round 18 reverses that back on explicit later
+          direction ("only show when hover or selected") — opacity 0 at
+          rest, revealed on hover (real pointer devices only, same
           @media (hover: hover) and (pointer: fine) guard as the figure-hover
-          fix). Forced visible via inline style while `draggable` — you need
-          to see what you're moving in arrange mode regardless of hover
-          state, and an inline style always wins over the stylesheet rule
-          here. Touch still gets the full name+detail through the existing
-          tap-triggered hover-board (openOrToggle/openPanel), unchanged. */}
-      <text className="village-district-name" style={draggable ? { opacity: 0.85 } : undefined}
+          fix). Forced visible via inline style while `draggable` OR
+          `selected` — you need to see what you're moving in arrange mode
+          regardless of hover state, and touch gets the same reveal via its
+          own tap-triggered `selected` (openPanel) rather than a real
+          :hover it can't produce. An inline style always wins over the
+          stylesheet rule here. */}
+      <text className="village-district-name" style={draggable || selected ? { opacity: 0.85 } : undefined}
         textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
-      <text className="village-district-count" style={draggable ? { opacity: 0.85 } : undefined}
+      <text className="village-district-count" style={draggable || selected ? { opacity: 0.85 } : undefined}
         textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
     </g>
   )

@@ -113,3 +113,14 @@ wired into the existing Ambient.tsx weather-particle system.
 Still genuinely missing: `memory-elements-and-postcards.png` and `house-smart-home-states.png`
 (Home's occupancy signal was implemented instead by extending the EXISTING cottage.png sprite's
 glow — see VillageScene.tsx — so that one may no longer be needed at all).
+
+## Round 18 (2026-08-27) — sun.png, cloud-big.png, cloud-small.png
+
+Cropped from `village-matching-expansion-nature-sky-transparent.png` (round 12's own source,
+re-fetched from the consolidated folder) — that sheet's sun/cloud icons were skipped back in
+round 12 in favor of Celestial.tsx's own gradient-drawn sun and Clouds.tsx's flat hand-drawn
+ellipses. Both were swapped out this round ("update all elements with the file i sent (like
+the sun)", "everything should be same style except background") — the gradient sun and flat
+ellipse clouds were genuinely different visual languages from every real sprite elsewhere in
+the scene. The moon (no sprite available for it) was flattened from a 3-stop to a 2-stop
+gradient instead, for the same reason without new art to replace it outright.

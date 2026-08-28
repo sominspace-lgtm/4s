@@ -21,28 +21,19 @@ export default function Celestial({ c }: { c: CelestialData }) {
   const r = c.body === 'sun' ? 15 : 12
 
   if (c.body === 'sun') {
+    // Real pixel-art sprite (round 18, 2026-08-27, the user's own
+    // village-matching-expansion-pack nature-sky sheet — "update all
+    // elements with the file i sent (like the sun)") — replaces the
+    // gradient-drawn disc from round 4. The layered blur glow stays: it's
+    // real atmosphere a flat sprite can't provide on its own, same
+    // reasoning as every other light source's glow in this scene.
+    const sunSize = r * 2.9
     return (
       <g className="village-fade" pointerEvents="none">
-        <defs>
-          <radialGradient id="vsun" cx="35%" cy="30%" r="65%">
-            <stop offset="0%" stopColor="#FFF6D8" />
-            <stop offset="45%" stopColor="#FFD874" />
-            <stop offset="100%" stopColor="#F0A83C" />
-          </radialGradient>
-        </defs>
-        {/* Layered glow, soft to sharp, instead of one flat halo ring. The
-            outer two rings get a real Gaussian blur (round 8 atmosphere
-            pass, 2026-08-27, url(#vglow) — defined in VillageScene.tsx,
-            reachable here because this renders into that same <svg>) —
-            concentric flat-opacity circles have a visible banded edge up
-            close; an actual blur is what soft light looks like. */}
         <circle cx={c.x} cy={c.y} r={r + 20} fill="#FFD874" opacity={0.14} filter="url(#vglow)" />
         <circle cx={c.x} cy={c.y} r={r + 11} fill="#FFD874" opacity={0.24} filter="url(#vglow)" />
-        <circle cx={c.x} cy={c.y} r={r + 3} fill="#FFE9AE" opacity={0.35} />
-        <circle cx={c.x} cy={c.y} r={r} fill="url(#vsun)" />
-        {/* A small bright highlight — the one thing that reads as "lit
-            sphere" rather than "flat disc" at this size. */}
-        <circle cx={c.x - r * 0.3} cy={c.y - r * 0.3} r={r * 0.28} fill="#FFFCF0" opacity={0.55} />
+        <image href="/village-assets/sun.png" x={c.x - sunSize / 2} y={c.y - sunSize / 2} width={sunSize} height={sunSize}
+          style={{ imageRendering: 'pixelated' }} />
       </g>
     )
   }
@@ -55,10 +46,16 @@ export default function Celestial({ c }: { c: CelestialData }) {
   return (
     <g className="village-fade" pointerEvents="none">
       <defs>
+        {/* Flattened from 3 soft-blended stops to 2 with a crisper break
+            (round 18, 2026-08-27, "everything should be same style" — the
+            sun switched to a real flat pixel-art sprite this round, and
+            the moon's own smooth photoreal shading was the next most
+            obvious mismatch against it with no sprite available to
+            replace it outright). */}
         <radialGradient id="vmoon" cx="38%" cy="32%" r="70%">
-          <stop offset="0%" stopColor="#FDFBF4" />
-          <stop offset="55%" stopColor="#E9E4D6" />
-          <stop offset="100%" stopColor="#C7C6DA" />
+          <stop offset="0%" stopColor="#F5F1E4" />
+          <stop offset="65%" stopColor="#F5F1E4" />
+          <stop offset="100%" stopColor="#D6D2C8" />
         </radialGradient>
       </defs>
       <circle cx={c.x} cy={c.y} r={r + 15} fill="#D8DCF2" opacity={0.22} filter="url(#vglow)" />

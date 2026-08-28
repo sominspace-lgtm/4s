@@ -1356,14 +1356,14 @@ export default function VillageScene({
           removing the badge and rewording the caption were the same fix. */}
       <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
-        draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} />
+        draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* Home reads 1.25x the rest (2026-08-27) — "this is where you live,"
           everything else branches outward from it. */}
       <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1.25}
-        draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} />
+        draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
       <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
-        draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} />
+        draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
       <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
@@ -1374,10 +1374,10 @@ export default function VillageScene({
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
       <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} dark={dark}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
-        draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} />
+        draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
       <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} dark={dark}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
-        draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} />
+        draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
       {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}

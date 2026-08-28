@@ -440,14 +440,17 @@ select, option {
 .village-bob { animation: village-bob 3.6s ease-in-out infinite; }
 .village-district text { transition: fill 160ms ease; }
 
-/* Labels always visible, no hover required (round 10, 2026-08-27, explicit
-   user direction: "do not make anything hover") — rounds 3–9 hid the name/
-   count behind :hover on the theory that a permanently-visible label reads
-   as an annotated diagram rather than a place. That traded away real
-   information (a click-through screenshot workflow, and any real device
-   without a precise pointer, never sees a :hover state at all) for a
-   marginal aesthetic preference. Just show it. */
-.village-district-name, .village-district-count { opacity: 1; }
+/* Hover/select-only again (round 18, 2026-08-27, explicit reversal of
+   round 10's "do not make anything hover" — "remove the words and only
+   show when hover or selected for the symbols"). Real pointer devices get
+   :hover; touch gets the same effect via DistrictLabel's own `selected`
+   prop (the existing tap-triggered hover-board/openPanel state), forced
+   visible with an inline style the same way `draggable` already was. */
+.village-district-name, .village-district-count { opacity: 0; transition: opacity 160ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .village-district:hover .village-district-name,
+  .village-district:hover .village-district-count { opacity: 1; }
+}
 
 /* Per-entity hover/selection (2026-08-21) — until now only the 5 district
    labels were interactive at all; every individual plant and building sat
