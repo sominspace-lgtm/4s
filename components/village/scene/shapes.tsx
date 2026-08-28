@@ -586,9 +586,12 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // standing pose can carry a small periodic "smile" beat instead of holding
 // one dead expression. Walk/wave stay on their own sheets (SYLVIA_WALK_
 // FRAMES / HARRY_WAVE_FRAMES) — those are already tuned and gated.
+// Idle + smile re-sourced round 55 (2026-08-28, "update sylvia and harry
+// figures") to the crisper *-everyday-message-states-alpha.png sheets in
+// character/animation/ — same characters, cleaner line and a matched smile.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 150, h: 293 },
-  Harry: { src: '/village-assets/harry-idle.png', w: 162, h: 271 },
+  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 196, h: 384 },
+  Harry: { src: '/village-assets/harry-idle.png', w: 200, h: 330 },
 }
 const VILLAGER_SMILE: Record<string, string> = {
   Sylvia: '/village-assets/sylvia-smile.png',
@@ -630,11 +633,12 @@ const VILLAGER_SMILE: Record<string, string> = {
 // retired. Widths vary per wave frame because the raised arm sticks out
 // past the body — SpriteCycle derives width per frame and bottom-center
 // anchors, so the body stays planted while the arm extends.
+// Just the two profile stride frames (round 55) — the core sheet's other
+// two walk poses are near-frontal, which broke the "facing the way they
+// walk" read; a clean 2-frame contact/contact cycle sells the direction.
 const SYLVIA_WALK_FRAMES = [
   { src: '/village-assets/sylvia-walk-1.png', aspect: 144 / 293 },
-  { src: '/village-assets/sylvia-walk-2.png', aspect: 140 / 290 },
   { src: '/village-assets/sylvia-walk-3.png', aspect: 142 / 290 },
-  { src: '/village-assets/sylvia-walk-4.png', aspect: 142 / 290 },
 ]
 const SYLVIA_WAVE_FRAMES = [
   { src: '/village-assets/sylvia-wave-1.png', aspect: 150 / 312 },
@@ -644,9 +648,7 @@ const SYLVIA_WAVE_FRAMES = [
 ]
 const HARRY_WALK_FRAMES = [
   { src: '/village-assets/harry-walk-1.png', aspect: 154 / 268 },
-  { src: '/village-assets/harry-walk-2.png', aspect: 151 / 271 },
   { src: '/village-assets/harry-walk-3.png', aspect: 151 / 268 },
-  { src: '/village-assets/harry-walk-4.png', aspect: 151 / 268 },
 ]
 const HARRY_WAVE_FRAMES = [
   { src: '/village-assets/harry-wave-1.png', aspect: 161 / 313 },
@@ -748,8 +750,10 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       {/* Facing via the standalone CSS `scale` property (composes with the
           outer `transform` rather than replacing it — see this file's round
-          47 note). Native facing while stationary/arranging. */}
-      <g style={wander ? { scale: `${face} 1`, transition: 'scale 0.15s linear' } : undefined}>
+          47 note) — flipped the instant a walk starts (round 55, "always
+          walk looking towards direction they walk"). Native facing while
+          idle/arranging. */}
+      <g style={wander ? { scale: `${face} 1` } : undefined}>
         <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
         {showIdle && (
           <g>
@@ -762,7 +766,7 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
             )}
           </g>
         )}
-        {showWalk && <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 0.75 : 0.8} />}
+        {showWalk && <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={1} />}
         {showWave && <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />}
       </g>
     </g>

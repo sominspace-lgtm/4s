@@ -37,7 +37,8 @@ export interface CoupleLife {
   walkTo: (x: number, y: number) => void
 }
 
-const SPEED = 52 // scene units / second
+const SPEED = 24 // scene units / second — an unhurried stroll (round 55)
+const HOME_IF_UNATTENDED_MS = 22_000 // away this long with nothing queued -> walk home
 
 interface Pt { x: number; y: number }
 
@@ -79,6 +80,7 @@ export function useCoupleLife(opts: {
     }
 
     let alive = true
+    let lastActive = Date.now()
     const at = (ms: number, fn: () => void) => {
       timers.current.push(window.setTimeout(() => { if (alive) fn() }, ms))
     }
@@ -89,14 +91,23 @@ export function useCoupleLife(opts: {
       const cx = who === 'sylvia' ? L.sx : L.hx
       const cy = who === 'sylvia' ? L.sy : L.hy
       const dist = Math.hypot(tx - cx, ty - cy)
-      const dur = dist < 3 ? 0 : Math.max(500, Math.min(4500, (dist / SPEED) * 1000))
+      // Slower now (round 55) — the walk cycle sells a stroll, not a dash.
+      const dur = dist < 3 ? 0 : Math.max(600, Math.min(6500, (dist / SPEED) * 1000))
+      // Face the way we're about to move — a hair either side of dead-ahead
+      // is enough to commit (round 55, "always walk looking towards
+      // direction they walk").
       const curFace = who === 'sylvia' ? L.sf : L.hf
-      const face: 1 | -1 = tx < cx - 2 ? 1 : tx > cx + 2 ? -1 : curFace
+      const face: 1 | -1 = tx < cx - 0.5 ? 1 : tx > cx + 0.5 ? -1 : curFace
       if (who === 'sylvia') { L.sx = tx; L.sy = ty; L.sf = face } else { L.hx = tx; L.hy = ty; L.hf = face }
       const set = who === 'sylvia' ? setSylvia : setHarry
       set(pr => ({ x: tx, y: ty, pose: dist < 3 ? pr.pose : 'walk', face, dur }))
-      if (dist >= 3) at(dur, () => set(pr => ({ ...pr, pose: 'idle', dur: 0 })))
+      if (dist >= 3) { lastActive = Date.now(); at(dur, () => set(pr => ({ ...pr, pose: 'idle', dur: 0 }))) }
       return dur
+    }
+
+    const atHome = () => {
+      const L = liveRef.current
+      return Math.hypot(L.sx - shx, L.sy - shy) < 4 && Math.hypot(L.hx - hhx, L.hy - hhy) < 4
     }
 
     const goHome = () => {
@@ -140,7 +151,22 @@ export function useCoupleLife(opts: {
     }
 
     at(600, loop)
-    return () => { alive = false; clearTimers() }
+
+    // Safety net (round 55, "always walk back home if unattended") — if the
+    // couple end up away from home and nothing has moved them for a while
+    // (a dropped timer, a rapid tap that cut a sequence short), march them
+    // home and restart the rhythm.
+    const guard = window.setInterval(() => {
+      if (!alive) return
+      if (!atHome() && Date.now() - lastActive > HOME_IF_UNATTENDED_MS) {
+        clearTimers()
+        setTogether(false)
+        goHome()
+        at(5000, loop)
+      }
+    }, 3000)
+
+    return () => { alive = false; clearTimers(); clearInterval(guard) }
   }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1])
 
   const walkTo = useCallback((x: number, y: number) => {
