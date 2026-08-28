@@ -653,3 +653,15 @@ and ambience"
 computation). Round 40/41's tightening read as a bit too close in practice; this keeps round 42's
 sun/moon visibility fix (BASE_VB_CY=180) intact with plenty of margin at the new, slightly larger
 window.
+
+## Round 44 (2026-08-28) - zoomed out again, fence/bench scale fixed
+
+"zoom out again. make everything better scale."
+
+- BASE_VB_W back to 800 (the full canvas width), BASE_VB_H up to 350 (from 330) - close to round
+  21's original 380-tall crop. Capped at 350 rather than 380 so BASE_VB_CY (180) - H/2 stays >= 5;
+  going negative would expose real blank canvas above y=0, the "cream bar" bug class flagged
+  earlier this project, not more sky.
+- FenceShape and BenchShape sized up (fence 6.7 -> 9 tall, bench 6.4 -> 7.5) - both read
+  noticeably thinner/smaller than everything else in the scene (the 30-unit cast, ~39-unit
+  building badges) at the new, wider view.

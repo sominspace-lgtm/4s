@@ -843,10 +843,14 @@ export default function VillageScene({
   // not a rare edge case. Recentering higher trades a little more
   // foreground crop (already partial by design, see FOREGROUND's own
   // comment) for the sky actually being able to show what's in it.
-  // Eased back out a little (round 43, 2026-08-28, "zoom a little out
-  // now") — round 40/41's tightening read as a bit too close in practice.
-  const BASE_VB_W = 760
-  const BASE_VB_H = 330
+  // Eased back out a little (round 43, "zoom a little out now"), then out
+  // again (round 44, 2026-08-28, "zoom out again") — back to the full
+  // 800-wide canvas and close to round 21's original 380-tall crop. H
+  // capped at 350, not 380, so BASE_VB_CY (180) - H/2 stays ≥ 5 — going
+  // negative here would expose real blank canvas above y=0 (the exact
+  // "cream bar" class of bug flagged earlier this project), not more sky.
+  const BASE_VB_W = 800
+  const BASE_VB_H = 350
   const BASE_VB_CX = 400
   const BASE_VB_CY = 180
   const vbW = BASE_VB_W / zoom

@@ -274,7 +274,7 @@ export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: n
 // second parallel rail), so this can go back to real art without
 // reintroducing the fence-lookalike problem the plain-SVG redraw fixed.
 export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
-  const w = 15.7, h = 6.4 // 307×126 source, ~2.44 aspect
+  const w = 18.3, h = 7.5 // 307×126 source, ~2.44 aspect, sized up round 44 ("make everything better scale")
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={2} rx={9} ry={1.6} fill="var(--text)" opacity={0.1} />
@@ -336,7 +336,10 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
 // removed round 35 for reading like a see-through barrier). Back in the
 // scene now that there's real art for it.
 export function FenceShape({ x, y, length = 4, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
-  const baseW = 13.4, baseH = 6.7 // 251×125 source, ~2.01 aspect
+  // Sized up round 44 ("make everything better scale") — 6.7 tall read
+  // noticeably thinner/smaller than everything else in the scene (the
+  // 30-unit cast, ~39-unit building badges).
+  const baseW = 17.9, baseH = 9 // 251×125 source, ~2.01 aspect
   const w = baseW * (length / 4), h = baseH * (length / 4)
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.95}>
