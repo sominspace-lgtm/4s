@@ -440,74 +440,11 @@ select, option {
    hard-cut idiom as the others, one slice per pose (100%/12 ≈ 8.33%). */
 @keyframes village-cycle-12 { 0%, 8.24% { opacity: 1; } 8.33%, 100% { opacity: 0; } }
 
-/* Sylvia/Harry's wander loop (round 30, 2026-08-27; reworked round 52
-   follow-up #2, "they are moving too much, should be stills too") — see
-   VillageScene.tsx's own comment on the inner-<g>-under-Draggable structure
-   this rides on. A 48s transform-only loop (cheap, never triggers layout)
-   that now holds them STILL at home for most of the lap and only glides
-   them to the centre and back once, for the mid-lap meeting.
-   --home-x/-y and --nudge-x/-y (round 50) are optional CSS custom
-   properties VillageScene sets inline, only when relevant; every var()
-   falls back to 0px. --home-x/-y shift the at-home hold (dawn living-
-   painting beat). --nudge-x/-y lean the meeting point toward a tapped
-   flower bed / pond for whichever figure resolveNudgeThisLap picked. */
-/* Mostly-still wander (round 52 follow-up #2, "they are moving too much,
-   should be stills too"). One 48s lap: stand at home 0-52%, glide to meet
-   at centre 52-61%, hold together 61-80% (individuals hidden, interaction
-   art shows — VillageScene's coupleTogether), glide home 80-88%, stand
-   still again. ease-in-out on the animation makes the two glides read as a
-   walk between held spots. --home-x/-y (dawn beat) and --nudge-x/-y
-   (attention taps) still fold in. */
-@keyframes village-wander-sylvia {
-  0%, 52% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
-  61%, 80% { transform: translate(calc(13px + var(--nudge-x, 0px)), calc(1px + var(--nudge-y, 0px))); }
-  88%, 100% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
-}
-@keyframes village-wander-harry {
-  0%, 52% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
-  61%, 80% { transform: translate(calc(-13px + var(--nudge-x, 0px)), calc(2px + var(--nudge-y, 0px))); }
-  88%, 100% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
-}
-.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
-.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
-
-/* Pose tracks — one shared set for both figures now (round 52 follow-up
-   #2). Idle dominates: stand still 0-51% and 89-100%, a short wave hello at
-   51-54%, walk to centre 54-61%, (hidden 61-80% while the interaction
-   plays), walk home 80-86%, wave goodbye 86-89%. The three tracks
-   partition the lap with no gap or overlap; steps(1) holds each segment's
-   start value. */
-@keyframes village-couple-idle-vis {
-  0% { opacity: 1; }
-  51% { opacity: 0; }
-  61% { opacity: 1; }
-  80% { opacity: 0; }
-  89%, 100% { opacity: 1; }
-}
-@keyframes village-couple-wave-vis {
-  0% { opacity: 0; }
-  51% { opacity: 1; }
-  54% { opacity: 0; }
-  86% { opacity: 1; }
-  89%, 100% { opacity: 0; }
-}
-@keyframes village-couple-walk-vis {
-  0% { opacity: 0; }
-  54% { opacity: 1; }
-  61% { opacity: 0; }
-  80% { opacity: 1; }
-  86%, 100% { opacity: 0; }
-}
-.village-couple-idle-vis,
-.village-couple-wave-vis,
-.village-couple-walk-vis {
-  animation-duration: 48s;
-  animation-timing-function: steps(1);
-  animation-iteration-count: infinite;
-}
-.village-couple-idle-vis { animation-name: village-couple-idle-vis; }
-.village-couple-wave-vis { animation-name: village-couple-wave-vis; }
-.village-couple-walk-vis { animation-name: village-couple-walk-vis; }
+/* Sylvia & Harry's movement, pose and facing are all JS-driven now (round
+   53, useCoupleLife.ts) — the old CSS village-wander-* / village-couple-
+   *-vis / village-face-* keyframes are retired. Positions animate via an
+   inline `transition: transform` sized per walk; facing is an inline
+   `scale`. Only village-idle-smile below stays. */
 
 /* A brief periodic smile on the standing idle pose (round 51, 2026-08-28,
    "all of these new animations elements") — the smile frame sits stacked
@@ -519,35 +456,6 @@ select, option {
   0%, 88%, 100% { opacity: 0; }
   91%, 97% { opacity: 1; }
 }
-
-/* Facing (round 47, 2026-08-28, "for any figure including somi they should
-   face the direction they are walking") — a horizontal mirror timed to
-   the exact same movement keyframes above, using the standalone CSS
-   `scale` property rather than `transform: scaleX()` specifically so it
-   can live on the SAME element as village-wander-sylvia/-harry's own
-   `transform: translate(...)` animation without the two fighting over one
-   property (translate/scale/rotate compose independently per spec;
-   `transform` itself does not compose across two separate `animation`
-   declarations — same reasoning Draggable/wander already had to work
-   around for the position drift vs. a plain SVG transform attribute).
-   steps(1) so the flip is a hard cut at each direction change, never an
-   interpolated squish through scale 0. Sylvia/Harry's art is a back-view
-   walk (no true left/right profile), so this is an approximation, same as
-   most 2D games flipping a sprite regardless of its exact facing — still
-   reads as "turned toward where they're headed" rather than always facing
-   the same way. */
-@keyframes village-face-sylvia {
-  0%, 52% { scale: 1 1; }
-  56%, 80% { scale: -1 1; }
-  85%, 100% { scale: 1 1; }
-}
-@keyframes village-face-harry {
-  0%, 80% { scale: 1 1; }
-  83% { scale: -1 1; }
-  88%, 100% { scale: 1 1; }
-}
-.village-face-sylvia { animation: village-face-sylvia 48s steps(1) infinite; }
-.village-face-harry { animation: village-face-harry 48s steps(1) infinite; }
 
 /* Somi's own wander + gated walk-pose visibility (round 31, 2026-08-27,
    "only use somi walking animation if she is walking around. when she is
@@ -687,6 +595,22 @@ select, option {
 }
 .village-butterfly-0 { animation: village-butterfly-0 9s ease-in-out infinite; }
 .village-butterfly-1 { animation: village-butterfly-1 11s ease-in-out infinite 1.4s; }
+
+/* Dust motes / drifting fireflies (round 53, "more ambience or glow") — a
+   slow, barely-there wander, four staggered paths so a cluster of them
+   doesn't move as one. Well within the ambient budget: nothing fast,
+   nothing opaque. */
+@keyframes village-mote {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(9px, -7px); }
+  50%  { transform: translate(3px, -13px); }
+  75%  { transform: translate(-8px, -5px); }
+  100% { transform: translate(0, 0); }
+}
+.village-mote   { animation: village-mote 14s ease-in-out infinite; }
+.village-mote-1 { animation-duration: 18s; animation-delay: -4s; }
+.village-mote-2 { animation-duration: 21s; animation-delay: -9s; }
+.village-mote-3 { animation-duration: 16s; animation-delay: -13s; }
 
 /* Petals drift, leaves sway wider, snow just falls. All fall the full height
    of the scene and restart, so there's no visible seam. */

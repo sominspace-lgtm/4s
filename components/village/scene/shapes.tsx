@@ -688,71 +688,57 @@ export function CoupleBenchShape({ x, y }: { x: number; y: number }) {
   )
 }
 
-export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }: {
+export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, pose = 'idle', face = 1 }: {
   x: number; y: number; name: string
   /** Unused now that this renders a fixed-art sprite — see this file's own
    *  header note on why the props stayed rather than being removed. */
   hairColor?: string; outfitColor?: string
   scale?: number
   onClick?: () => void
-  /** Off during arrange mode (round 46, 2026-08-28) — same reasoning as
-   *  CatShape's own `wander` prop: a moving/animating figure fighting a
-   *  real drag would be unusable, and while genuinely stationary neither
-   *  the walk cycle nor the wave should show at all. */
+  /** Off during arrange mode (round 46) — a moving/animating figure
+   *  fighting a real drag would be unusable, so the caller forces a static
+   *  idle pose, native facing. */
   wander?: boolean
+  /** Which sprite set to show (round 53, 2026-08-28) — driven by
+   *  useCoupleLife's state machine now, not a CSS visibility track. */
+  pose?: 'idle' | 'walk' | 'wave'
+  /** 1 = native facing, -1 = mirrored (round 53). */
+  face?: 1 | -1
 }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const sprite = VILLAGER_SPRITE[name] ?? VILLAGER_SPRITE.Harry
   // Fixed render height in scene units, width derived from the sprite's own
-  // aspect ratio so it's never stretched. 30 -> 33 (round 50, 2026-08-28,
-  // "make all items a bit bigger... make scaling make sense but nothing too
-  // big or small") — a modest bump, not a re-tune.
+  // aspect ratio so it's never stretched.
   const h = 33
   const w = h * (sprite.w / sprite.h)
   const isSylvia = name === 'Sylvia'
+  const showWalk = wander && pose === 'walk'
+  const showWave = wander && pose === 'wave'
+  const showIdle = !showWalk && !showWave
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
-      {/* Invisible hit-padding — same oversized-hit-circle idiom as every
-          other clickable prop in this scene (see this file's other shapes'
-          own 2026-08-25 comments on why). */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      {/* Facing flip — a separate inner <g> from the outer translate/scale
-          above (a CSS transform on the SAME element would replace that
-          attribute-based one, not add to it — see this file's own round 47
-          note). Only while actually wandering; arrange mode/locked figures
-          keep their native facing. */}
-      <g className={wander ? (isSylvia ? 'village-face-sylvia' : 'village-face-harry') : undefined}>
+      {/* Facing via the standalone CSS `scale` property (composes with the
+          outer `transform` rather than replacing it — see this file's round
+          47 note). Native facing while stationary/arranging. */}
+      <g style={wander ? { scale: `${face} 1`, transition: 'scale 0.15s linear' } : undefined}>
         <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
-        {/* Idle — the resting pose (most of the lap), plus the round 51
-            periodic smile. With `wander` off (arrange/locked) this is all
-            that shows; otherwise it takes its turn with walk and wave via
-            the mutually-exclusive village-couple-*-vis tracks in
-            globals.css (round 52 follow-up #2: one shared set, idle
-            dominant — "should be stills too"). */}
-        <g className={wander ? 'village-couple-idle-vis' : undefined}>
-          <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-            style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
-          {wander && (
-            <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
-              style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
-              preserveAspectRatio="none" />
-          )}
-        </g>
-        {/* Walk — only the two short glides to the centre and back. */}
-        {wander && (
-          <g className="village-couple-walk-vis">
-            <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 1.5 : 1.7} />
+        {showIdle && (
+          <g>
+            <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+            {wander && (
+              <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
+                style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
+                preserveAspectRatio="none" />
+            )}
           </g>
         )}
-        {/* Wave — a quick hello before setting off and goodbye on the way back. */}
-        {wander && (
-          <g className="village-couple-wave-vis">
-            <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />
-          </g>
-        )}
+        {showWalk && <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 0.75 : 0.8} />}
+        {showWave && <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />}
       </g>
     </g>
   )

@@ -28,10 +28,41 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
 }) {
   const cold = v.season === 'winter' || v.season === 'autumn'
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
+  const golden = v.timeOfDay === 'dawn' || v.timeOfDay === 'dusk'
   const lived = v.buildings.length + v.plants.length > 6
 
   return (
     <g pointerEvents="none" className="village-fade">
+      {/* Golden-hour wash (round 53) — a wide, very soft warm bloom over the
+          village at dawn and dusk. Low enough opacity to read as light, not
+          a colour filter. */}
+      {golden && (
+        <ellipse cx={400} cy={groundY - 34} rx={540} ry={250} fill="var(--amber)"
+          opacity={v.timeOfDay === 'dusk' ? 0.09 : 0.07} filter="url(#vglow)" />
+      )}
+
+      {/* Warm glow pooling on the ground after dark (round 53) — under Home
+          and a couple of spots along the path, the light everyone's windows
+          and lamps are casting. Gated on `dark` like the smoke/fireflies. */}
+      {dark && (
+        <g>
+          {[[432, 0.16], [150, 0.1], [600, 0.1], [300, 0.08]].map(([cx, op], i) => (
+            <ellipse key={i} cx={cx} cy={groundY + 8} rx={i === 0 ? 60 : 42} ry={i === 0 ? 15 : 11}
+              fill="var(--amber)" opacity={op} filter="url(#vglow)" />
+          ))}
+        </g>
+      )}
+
+      {/* Dust / pollen drifting in the daylight (round 53) — seven tiny warm
+          motes on slow, uneven paths. Daytime only, so it never fights the
+          fireflies or the falling-particle layer. */}
+      {v.timeOfDay === 'day' && (
+        <g opacity={0.5} fill="var(--amber)">
+          {[[120, 150], [260, 120], [380, 175], [520, 135], [640, 160], [190, 200], [710, 190]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={1.5} className={`village-mote village-mote-${i % 4}`} />
+          ))}
+        </g>
+      )}
       {/* Chimney smoke, only when the chimney itself is drawn and only when
           someone would plausibly have lit something. */}
       {/* Repositioned again for cottage.png (round 9, 2026-08-27) — Home's
@@ -62,14 +93,17 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
         </g>
       )}
 
-      {/* Fireflies over the forest, and only if there is one — six now
-          instead of four (round 29, "add more ambient elements"), still the
-          header comment's own ceiling for one group. */}
-      {dark && v.plants.length > 0 && (
-        <g opacity={0.9}>
-          {[[92, 336], [148, 320], [214, 344], [268, 328], [122, 352], [190, 330]].map(([cx, cy], i) => (
-            <circle key={i} cx={cx} cy={cy} r={1.7} fill="var(--amber)"
-              className={`village-firefly village-firefly-${i % 3}`} />
+      {/* Fireflies (round 53: spread across the whole village at dusk/night,
+          not just the forest corner, and a few more of them — 11 now). Each
+          also drifts a little on its own slow path. */}
+      {dark && (
+        <g opacity={0.95}>
+          {[[92, 336], [148, 320], [214, 344], [268, 328], [122, 352], [190, 330],
+            [360, 316], [470, 340], [560, 322], [640, 348], [710, 330]].map(([cx, cy], i) => (
+            <g key={i} className={`village-mote village-mote-${i % 4}`}>
+              <circle cx={cx} cy={cy} r={i % 3 === 0 ? 2 : 1.6} fill="var(--amber)"
+                className={`village-firefly village-firefly-${i % 3}`} style={{ filter: 'url(#vglow)' }} />
+            </g>
           ))}
         </g>
       )}

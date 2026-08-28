@@ -7,8 +7,6 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { isNudgeActive, resolveNudgeThisLap, lapIndexAt, NUDGE_TTL_MS, type Nudge, type NudgeKind } from '@/lib/village/nudge'
-import { vignetteVariant } from '@/lib/village/vignette'
 import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, SMALL_TREE_SWAY_FRAMES, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The flower-sprig sway (round 13, 2026-08-27; re-sourced round 51,
@@ -31,6 +29,7 @@ import type { VillageChanges } from '@/lib/village/state'
 import { hashPos } from '@/lib/village/state'
 import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
+import { useCoupleLife } from './useCoupleLife'
 
 // Raised from 372 (2026-08-25) — the ground used to be a thin strip at the
 // very bottom of the canvas (68px of 440, ~15%) with almost the whole frame
@@ -529,19 +528,6 @@ export default function VillageScene({
   // it's a URL param, not a setting, and it only ever touches this one
   // render's local `v.timeOfDay`, never the real clock or any stored data.
   const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
-  // The couple's lap clock (round 52 follow-up #2, "they are moving too
-  // much, should be stills too, and their interaction doesn't show — just
-  // interactions, different ones too"). One 48s lap: both stand STILL at
-  // home for ~0-52%, walk to meet at center ~52-61%, hold TOGETHER (the
-  // interaction art, individuals hidden) ~61-80%, walk home ~80-88%, still
-  // again. Driven off plain Date.now() against a mount timestamp — the CSS
-  // position/pose animations start at the same mount with no delay, so JS
-  // and CSS stay in step without depending on getAnimations()/a custom-
-  // property metronome (which proved unreliable). `interactPose` advances
-  // each time they come together, so it's a different pose every meeting. */
-  const lapStartRef = useRef(Date.now())
-  const [coupleTogether, setCoupleTogether] = useState(false)
-  const [interactPose, setInteractPose] = useState(0)
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('vtod')
@@ -574,24 +560,6 @@ export default function VillageScene({
   // mood. Dusk keeps the bench.
   const night = v.timeOfDay === 'night'
 
-  useEffect(() => {
-    if (arranging || quiet) { setCoupleTogether(false); return }
-    let timer = 0
-    let prev = false
-    const tick = () => {
-      const prog = ((Date.now() - lapStartRef.current) / 48000) % 1
-      const together = prog >= 0.61 && prog < 0.80
-      if (together !== prev) {
-        prev = together
-        setCoupleTogether(together)
-        if (together) setInteractPose(p => (p + 1) % 9)
-      }
-      timer = window.setTimeout(tick, 300)
-    }
-    tick()
-    return () => window.clearTimeout(timer)
-  }, [arranging, quiet])
-
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
   // leaderboard, just a soft warm patch of ground under whichever landmark
@@ -620,52 +588,9 @@ export default function VillageScene({
   // shouldn't already look like a favorite spot.
   const wornPath = totalVisits >= 5 ? visitEntries.sort((a, b) => b[1] - a[1])[0]?.[0] : null
 
-  // The "attention" system (round 50, 2026-08-28, "The user shouldn't
-  // directly control Sylvia/Harry. Instead, tapping something can influence
-  // their attention.") — same localStorage-backed-interaction-history shape
-  // as visitCounts just above, not a stored village (see its own comment).
-  // Tapping a flower bed or the pond doesn't move anyone; it only raises the
-  // odds ONE of them drifts that way for a beat of their own already-running
-  // wander lap (lib/village/nudge.ts's resolveNudgeThisLap decides which
-  // lap, if any, and who — a real chance, not a command).
-  const [nudge, setNudgeState] = useState<Nudge | null>(null)
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('4s-village-nudge')
-      if (raw) {
-        const parsed = JSON.parse(raw) as Nudge
-        if (isNudgeActive(parsed, Date.now())) setNudgeState(parsed)
-      }
-    } catch { /* ignore */ }
-  }, [])
-  function setNudge(kind: NudgeKind, targetId: string) {
-    const next: Nudge = { kind, targetId, expiresAt: Date.now() + NUDGE_TTL_MS }
-    setNudgeState(next)
-    try { localStorage.setItem('4s-village-nudge', JSON.stringify(next)) } catch { /* ignore */ }
-  }
-  const activeNudge = isNudgeActive(nudge, Date.now()) ? nudge : null
-  const nudgeThisLap = activeNudge ? resolveNudgeThisLap(activeNudge, lapIndexAt(Date.now())) : null
-  // Resolved once per render into a per-actor CSS custom-property style,
-  // rather than threaded as several separate props — VillagerShape's own
-  // wander wrapper just spreads whichever of these applies, or nothing.
-  function nudgeStyle(actor: 'sylvia' | 'harry'): React.CSSProperties | undefined {
-    if (!activeNudge || !nudgeThisLap || nudgeThisLap.actor !== actor || !nudgeThisLap.on || arranging || quiet) return undefined
-    const base = actor === 'sylvia' ? decorPos('sylvia') : decorPos('harry')
-    const targetPos = activeNudge.kind === 'picnic' ? decorPos('pond') : decorPos(activeNudge.targetId)
-    return { '--nudge-x': `${Math.round(targetPos.x - base.x)}px`, '--nudge-y': `${Math.round(targetPos.y - base.y)}px` } as React.CSSProperties
-  }
-
-  // "Living painting" dawn beat (round 50) — Sylvia/Harry's lap starts a
-  // little nearer where their day begins instead of always the same exact
-  // pixel, a cheap stand-in for "the couple leaves the house" (no door art
-  // exists to animate a literal exit). Small and deterministic per real day
-  // via vignetteVariant, not random per render — see lib/village/vignette.ts.
-  const homeStyle: React.CSSProperties | undefined = (dateKey && v.timeOfDay === 'dawn' && !arranging && !quiet)
-    ? {
-        '--home-x': `${Math.round((vignetteVariant(dateKey, 'dawn', 'home-x') - 0.5) * 10)}px`,
-        '--home-y': `${Math.round((vignetteVariant(dateKey, 'dawn', 'home-y') - 0.5) * 4)}px`,
-      } as React.CSSProperties
-    : undefined
+  // Tapping the pond or a flower bed now literally sends the couple there
+  // (round 53) — walkTo, wired at the call sites below. The round-50
+  // localStorage "nudge / attention" indirection is retired.
 
   const navLandmark = (id: LandmarkId, label: string, go: () => void) => () => {
     if (arranging) return
@@ -803,6 +728,22 @@ export default function VillageScene({
   // so a decor id and a landmark id can never collide as long as
   // DECOR_DEFAULTS' keys don't reuse a LandmarkId — they don't.
   const decorPos = (id: string) => layout[id] ?? DECOR_DEFAULTS[id]
+
+  // Sylvia & Harry's day (round 53, 2026-08-28, "figures can wander around
+  // the map / walk to clicked area and interact / usually still and smiling
+  // but wander and interact time to time"). A JS state machine — see
+  // useCoupleLife — replacing the retired CSS village-wander-* loop. `life`
+  // gives each figure an absolute target position + pose + facing, plus
+  // `walkTo(x,y)` for tap-to-walk and a `together`/`interactPose` gate for
+  // the interaction art. Off entirely during arrange and quiet/night.
+  const life = useCoupleLife({
+    enabled: !arranging && !quiet,
+    sylviaHome: decorPos('sylvia'),
+    harryHome: decorPos('harry'),
+    bounds: { x0: 70, x1: 730, y0: GROUND_Y + 2, y1: GROUND_Y + 74 },
+  })
+  const coupleTogether = life.together
+  const interactPose = life.interactPose
 
   // Screen coordinates → the SVG's own 800×440 user space, so a drag tracks
   // correctly regardless of how large the scene is actually rendered on the
@@ -1247,6 +1188,16 @@ export default function VillageScene({
       <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
         fill="none" stroke="var(--border)" strokeWidth="1.5" />
 
+      {/* Tap the open ground to send Sylvia & Harry over there for an
+          interaction (round 53). Sits under every prop/figure/district in
+          paint order, so those keep their own clicks; only a bare-ground
+          tap reaches here. Off in arrange/quiet. */}
+      {!arranging && !quiet && (
+        <rect x={0} y={GROUND_Y - 6} width={800} height={440 - (GROUND_Y - 6)} fill="transparent"
+          style={{ pointerEvents: 'all', cursor: 'pointer' }}
+          onClick={e => { const pt = toSvgPoint(e.clientX, e.clientY); if (pt) life.walkTo(pt.x, pt.y) }} />
+      )}
+
       {/* The path — see PATH_D/PATH_PAVERS above. Fixed warm earth tones,
           not theme vars (round 4, 2026-08-27) — same reasoning WALL/ROOF/
           TRIM in shapes.tsx already established for buildings: a path's
@@ -1363,7 +1314,7 @@ export default function VillageScene({
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
-          <PondShape x={0} y={0} scale={1.15} onClick={!arranging ? () => setNudge('picnic', 'pond') : undefined} />
+          <PondShape x={0} y={0} scale={1.15} onClick={!arranging ? () => life.walkTo(p.x, p.y + 8) : undefined} />
         </Draggable>
       ) })()}
       {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
@@ -1373,7 +1324,7 @@ export default function VillageScene({
       ) })}
       {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
-          <FlowerBedShape x={0} y={0} scale={1.15} hue={f.hue} onClick={!arranging ? () => setNudge('garden', id) : undefined} />
+          <FlowerBedShape x={0} y={0} scale={1.15} hue={f.hue} onClick={!arranging ? () => life.walkTo(p.x, p.y + 6) : undefined} />
         </Draggable>
       ) })}
       {/* The fence is back (round 39, 2026-08-27, "sync all new elements
@@ -1885,58 +1836,38 @@ export default function VillageScene({
           round 27 ("make everything moveable") — the click handlers below
           only fire outside arrange mode (openFigureOrToggle/openSomi both
           bail on `arranging`), so wrapping in Draggable is safe. */}
-      {/* Sylvia/Harry wander round Home and drift toward each other (round
-          30, 2026-08-27, "make the two figures be able to act as npc and
-          walk around and interact with each other") — a pure-CSS transform
-          loop (village-wander-sylvia/-harry in globals.css) on an inner
-          wrapping <g>, layered on top of Draggable's own position (so
-          arrange-mode dragging still works — the wander class is dropped
-          entirely while `arranging`, rather than fighting it). Both share
-          one 48s period with their midpoint keyframes moving toward each
-          other, so once a cycle they visibly close some of the gap between
-          them — the "interact" part — before drifting back apart. No new
-          walk-cycle art exists for them (only a single standing pose per
-          person, see VILLAGER_SPRITE), so this is a glide, not a
-          leg-animated walk. */}
-      {/* The two-character interaction art (round 49) and Sylvia/Harry's own
-          individual figures are siblings under one <g>. `coupleTogether`
-          (JS, off the lap clock above) does a hard visibility swap: during
-          the mid-lap "together" stretch the interaction pose shows and BOTH
-          individuals are `visibility: hidden` — never four figures — and
-          `interactPose` makes it a different pose each meeting. Their CSS
-          position animations keep running under the hidden wrapper so
-          they're back in place when shown. quiet/bench mode replaces this
-          whole subtree outright and is unaffected. */}
+      {/* Sylvia/Harry live their day here (round 53, 2026-08-28) — useCoupleLife
+          drives an absolute target position + pose + facing for each. The
+          inner <g> glides there with a CSS transition sized to the walk
+          distance; the walk sprite plays while it moves. During a meeting
+          `coupleTogether` swaps both individuals out for the one interaction
+          pose (a different one each time), placed where they actually met.
+          Still off entirely during arrange (Draggable wants a static target)
+          and quiet/night (the bench / sleepwear block below takes over). */}
       <g>
-        {!arranging && !quiet && (() => {
-          const sp = decorPos('sylvia'), hp = decorPos('harry')
-          const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
-          return (
-            <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
-              <CoupleInteraction x={midX} y={midY} poseIndex={interactPose} />
-            </g>
-          )
-        })()}
-        {/* The two individual figures — hidden outright while the interaction
-            plays (see coupleTogether), so it's the pair OR the couple pose,
-            never both. Their wander animations keep running underneath the
-            visibility swap, so they're at the right spot when shown again. */}
+        {!arranging && !quiet && (
+          <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
+            <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} />
+          </g>
+        )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
-        {(() => { const p = decorPos('sylvia'); return (
+        {(() => { const p = decorPos('sylvia'); const active = !arranging && !quiet; return (
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
             {!(quiet && !arranging) && (
-              <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined} style={{ ...homeStyle, ...nudgeStyle('sylvia') }}>
-                <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
+              <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
+                <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined}
+                  wander={active} pose={life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
               </g>
             )}
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
           </Draggable>
         ) })()}
-        {(() => { const p = decorPos('harry'); return (
+        {(() => { const p = decorPos('harry'); const active = !arranging && !quiet; return (
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
             {!(quiet && !arranging) && (
-              <g className={!arranging && !quiet ? 'village-wander-harry' : undefined} style={{ ...homeStyle, ...nudgeStyle('harry') }}>
-                <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
+              <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
+                <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined}
+                  wander={active} pose={life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
               </g>
             )}
             <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
