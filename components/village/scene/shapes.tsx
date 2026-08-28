@@ -446,27 +446,30 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  // Real sprite art (round 9), made alive (round 13), then replaced with a
-  // cleaner second animation set the user supplied directly (round 15,
-  // 2026-08-27, village-animation-somi-transparent.png — genuinely clean
-  // hard-alpha art, confirmed via a full histogram: every pixel is either
-  // 0 or 255, no soft/dithered edges at all). Six poses now, not seven —
-  // round 13's belly-up frame came from a different source file and had
-  // no equivalent here, so it's dropped rather than mixed with a
-  // differently-styled art source. Every frame cropped to its own EXACT
-  // opaque bounding box (no padding) specifically so SpriteCycle's
-  // bottom-anchor lines up the same "ground" position in every pose —
-  // the user's own "make sure they are aligned" ask: padding this size
-  // would’ve differed as a fraction of each frame's own height and made
-  // poses visibly hop up/down as they cycled.
+  // Real sprite art (round 9), made alive (round 13), replaced once
+  // (round 15), and replaced again with a much richer 18-pose sheet the
+  // user supplied directly (round 20, 2026-08-27, "update somi animation,
+  // remove all old ones" — every round-15 frame deleted, none reused).
+  // 8 of the 18 poses picked for a fuller "day in the life" cycle: sit
+  // (blink pair), look back over her shoulder, walk (two mid-stride
+  // angles), a pounce, curled asleep, and peeking out from under a
+  // blanket — the other 10 (a second walk-cycle direction, two more
+  // close-up poses, two more sleep variants, two more blanket-peek
+  // frames) are cropped and available in public/village-assets/ but not
+  // in this cycle, kept for a future round rather than an even longer
+  // loop. Every frame cropped to its own exact opaque bounding box (same
+  // "keep them aligned" reasoning as round 15 — SpriteCycle's bottom-
+  // anchor needs a consistent "ground" position per frame).
   const h = 20
   const frames = [
-    { src: '/village-assets/somi-idle-1.png', aspect: 272 / 305 },
-    { src: '/village-assets/somi-idle-2.png', aspect: 240 / 301 },
-    { src: '/village-assets/somi-idle-3.png', aspect: 285 / 300 },
-    { src: '/village-assets/somi-walk.png', aspect: 360 / 230 },
-    { src: '/village-assets/somi-stretch.png', aspect: 357 / 223 },
-    { src: '/village-assets/somi-play.png', aspect: 372 / 211 },
+    { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
+    { src: '/village-assets/somi-sit-2.png', aspect: 158 / 195 },
+    { src: '/village-assets/somi-look-back.png', aspect: 165 / 195 },
+    { src: '/village-assets/somi-walk-1.png', aspect: 226 / 192 },
+    { src: '/village-assets/somi-walk-2.png', aspect: 230 / 185 },
+    { src: '/village-assets/somi-pounce.png', aspect: 215 / 183 },
+    { src: '/village-assets/somi-sleep.png', aspect: 166 / 123 },
+    { src: '/village-assets/somi-peek.png', aspect: 214 / 113 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
@@ -479,7 +482,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
           a stable hit target regardless of which pose is currently up. */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={18} />
+      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={24} />
     </g>
   )
 }

@@ -124,3 +124,20 @@ the sun)", "everything should be same style except background") — the gradient
 ellipse clouds were genuinely different visual languages from every real sprite elsewhere in
 the scene. The moon (no sprite available for it) was flattened from a 3-stop to a 2-stop
 gradient instead, for the same reason without new art to replace it outright.
+
+## Round 20 (2026-08-27) — richer Somi animation, round 15's frames deleted
+
+The user sent a much bigger 18-pose Somi sheet directly ("update somi animation, remove all old
+ones"). All six of round 15's frames (`somi-idle-1.png`…`-3.png`, `somi-walk.png`,
+`somi-stretch.png`, `somi-play.png`) were deleted, not kept alongside — this is a full
+replacement, not an addition.
+
+CatShape's animation now cycles 8 of the 18 poses: `somi-sit-1.png`, `somi-sit-2.png`
+(a blink pair), `somi-look-back.png`, `somi-walk-1.png`, `somi-walk-2.png`, `somi-pounce.png`,
+`somi-sleep.png`, `somi-peek.png` (peeking out from under a blanket).
+
+The other 10 poses are cropped and sitting in this folder, imported but not in the cycle:
+`somi-look-back-2.png`, `somi-walk-3.png`, `somi-walk-4.png` (a second walk-cycle facing the
+other way), `somi-pounce-2.png`, `somi-closeup-1.png`, `somi-closeup-2.png` (two close-up
+sitting poses), `somi-sleep-2.png`, `somi-sleep-rolled.png`, `somi-peek-2.png`, `somi-peek-3.png`
+— real content, available for a future round rather than an even longer cycle right now.
