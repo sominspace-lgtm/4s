@@ -267,16 +267,25 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
 
 // A short picket fence run (2026-08-25) — pure scenery, same "small fixed
 // prop near the path" idiom as Bench/FlowerBed above. `length` is how many
-// pickets, so one component covers both a short garden-edge run and a
+// rail segments, so one component covers both a short garden-edge run and a
 // longer stretch without a second shape.
+// Real sprite (round 24, 2026-08-27, "add everything from
+// [structures-clean.png] onto the village") — fence-rail.png, cropped from
+// the same master-visual-assets sheet as shop/greenhouse/workshop/gate/car/
+// signpost/mailbox/bus-stop, the one item from that sheet not yet wired
+// anywhere. Repeats the sprite `length` times rather than stretching one
+// crop, so a longer run reads as more rail, not a distorted one.
 export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
-  const spacing = 6
+  const segW = 9.9, segH = 4.8 // 367×177 source, ~2.07 aspect, sized up round 24 for visibility
+  const spacing = segW * 0.92 // slight overlap so posts line up between segments
   const width = (length - 1) * spacing
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.75}>
-      <rect x={-width / 2 - 1} y={-3.5} width={width + 2} height={1.4} fill="var(--border)" />
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.9}>
+      <ellipse cx={0} cy={0.6} rx={width / 2 + segW / 2} ry={1.2} fill="var(--text)" opacity={0.12} />
       {[...Array(length)].map((_, i) => (
-        <rect key={i} x={-width / 2 + i * spacing - 0.7} y={-7} width={1.4} height={7} rx={0.5} fill="var(--border)" />
+        <image key={i} href="/village-assets/fence-rail.png"
+          x={-width / 2 - segW / 2 + i * spacing} y={-segH} width={segW} height={segH}
+          style={{ imageRendering: 'pixelated' }} />
       ))}
     </g>
   )
@@ -311,7 +320,7 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
 // their own header comments.
 export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 12.3, h = 12.5 // re-sourced round 23 from the master-assets folder, 256×260
+  const w = 14.8, h = 15 // re-sourced round 23 from the master-assets folder (256×260), sized up round 24 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
@@ -333,7 +342,7 @@ export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?
 // toward Trips" than the hand-drawn flag it replaces.
 export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 13.7, h = 18 // re-sourced round 23 from the master-assets folder, 205×270
+  const w = 15.2, h = 20 // re-sourced round 23 from the master-assets folder (205×270), sized up round 24 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={4} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}

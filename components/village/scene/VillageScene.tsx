@@ -972,10 +972,13 @@ export default function VillageScene({
         // gate/car/busStop re-sourced round 23, 2026-08-27 ("update only
         // using these elements") from the master-visual-assets folder's own
         // structures-clean.png — dims recomputed from their real crop aspect
-        // ratios, not carried over from the old custom-pack sprites.
-        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 28.7, h: 16 },
-        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 20, h: 16 },
-        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 24.5, h: 15.5 },
+        // ratios, not carried over from the old custom-pack sprites. Sized
+        // up again round 24 ("make sure things are scaled properly but so
+        // we can also see them") — the round 23 sizes read a little small
+        // next to the buildings they stand beside.
+        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 33, h: 18.4 },
+        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 22.6, h: 18 },
+        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 28.5, h: 18 },
         { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 13.6, h: 8 },
         { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },
         { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 10.1, h: 9.5 },
@@ -983,7 +986,7 @@ export default function VillageScene({
       ].map(p => {
         const p0 = decorPos(p.id)
         return (
-          <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={0.9}
+          <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={1}
             onPointerDown={startDrag(p.id)} style={{ cursor: arranging ? (draggingId === p.id ? 'grabbing' : 'grab') : undefined }}>
             <title>{p.title}</title>
             <ellipse cx={0} cy={p.h * 0.28} rx={p.w * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
@@ -1341,15 +1344,13 @@ export default function VillageScene({
           tuned for the old hand-drawn figures' much smaller ~12×21 base
           size; VillagerShape's new sprite-based rendering already targets a
           sensible height (30 units) on its own, so the old multiplier would
-          now make the cast nearly as tall as the house. */}
-      <g className="village-bob" style={{ animationDelay: '0s' }}>
-        <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia"
-          onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
-      </g>
-      <g className="village-bob" style={{ animationDelay: '0.6s' }}>
-        <VillagerShape x={428} y={GROUND_Y + 8} name="Harry"
-          onClick={locked ? openFigureOrToggle('harry') : undefined} />
-      </g>
+          now make the cast nearly as tall as the house. The idle bob
+          (village-bob) is gone (round 24, 2026-08-27, "do not make
+          anything bob") — the cast stands still now. */}
+      <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia"
+        onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+      <VillagerShape x={428} y={GROUND_Y + 8} name="Harry"
+        onClick={locked ? openFigureOrToggle('harry') : undefined} />
       {/* Moved 452->480, y+20->+30 (2026-08-25 fix) — her old spot put her
           invisible hit-circle (r=14) and the Mailbox's (r=14, x=462) only
           ~27.9 units apart center-to-center against a combined radius of
@@ -1357,12 +1358,10 @@ export default function VillageScene({
           land on either depending on sub-pixel rounding ("glitchy, hard to
           click"). Here she's ~46 units from the Mailbox and ~60 from
           Harry, clear of both. */}
-      <g className="village-bob" style={{ animationDelay: '1.2s' }}>
-        {/* scale dropped from 1.5 to 1, same reasoning as VillagerShape's
-            own call sites above — CatShape's new sprite base size is
-            already tuned. */}
-        <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
-      </g>
+      {/* scale dropped from 1.5 to 1, same reasoning as VillagerShape's
+          own call sites above — CatShape's new sprite base size is
+          already tuned. */}
+      <CatShape x={480} y={GROUND_Y + 30} name="Somi" onClick={openSomi} />
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
           no district of its own; this points off-canvas at the village

@@ -434,10 +434,10 @@ select, option {
 @keyframes village-cycle-4 { 0%, 24.9% { opacity: 1; } 25%, 100% { opacity: 0; } }
 @keyframes village-cycle-8 { 0%, 12.4% { opacity: 1; } 12.5%, 100% { opacity: 0; } }
 
-/* The cast's idle sway (2026-08-25) — see VillagerShape/CatShape in
-   shapes.tsx. Same slow/low-amplitude budget as drift/lantern above. */
-@keyframes village-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
-.village-bob { animation: village-bob 3.6s ease-in-out infinite; }
+/* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
+   make anything bob") — VillagerShape/CatShape's cast figures render
+   perfectly still now; no more translateY loop. Kept out of the reduced-
+   motion list below since the class no longer exists to guard. */
 .village-district text { transition: fill 160ms ease; }
 
 /* Hover/select-only again (round 18, 2026-08-27, explicit reversal of
@@ -687,7 +687,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-fade, .village-bob,
+  .village-drift, .village-glow, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,

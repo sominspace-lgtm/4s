@@ -216,3 +216,25 @@ real replacement).
 
 The playable view window was also narrowed again this round ("make the playable window of the
 village smaller") — see VillageScene.tsx's own `BASE_VB_W`/`BASE_VB_H` comment.
+
+## Round 24 (2026-08-27) — no more bob, the fence, Somi's reserve poses cleared out
+
+"do not make anything bob. remove old somi animations. make sure to add everything from
+[structures-clean.png] onto the village and make sure things are scaled properly but so we can
+also see them."
+
+- The cast's idle sway (`village-bob`, a 2026-08-25 keyframe/class in `globals.css`, applied to
+  Sylvia/Harry/Somi) is removed outright — the three of them stand still now.
+- Somi's 12 imported-but-unused reserve poses (a second walk direction, two close-ups, and 6
+  weather-reactive poses — sit-tall, sleep-glow, playing, hiding-tail, walk-snow, wind-leaves)
+  are deleted. Only the 8 poses in her live cycle remain: `somi-sit-1/2.png`, `somi-look-back.png`,
+  `somi-walk-1/2.png`, `somi-pounce.png`, `somi-curled.png`, `somi-stretch.png`.
+- `fence-rail.png` — the one item from `village-matching-expansion-structures-clean.png` round 23
+  hadn't wired yet (round 23's own notes flagged `fence2.png`, a different older crop, as unused
+  reserve). `FenceShape` now draws this real sprite, repeated `length` times, instead of hand-drawn
+  picket rects — the two `PROPS.fences` instances near Home pick it up automatically. All nine
+  items on that sheet (shop, greenhouse, workshop, gate, car, fence, signpost, mailbox, bus stop)
+  are now genuinely in the scene.
+- Gate/car/bus-stop/mailbox/signpost/fence sized up (their round 23 sizes read a little small next
+  to the buildings they stand beside) and set to full opacity — see each shape's own updated size
+  comment for the exact numbers.
