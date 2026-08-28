@@ -529,14 +529,19 @@ export default function VillageScene({
   // it's a URL param, not a setting, and it only ever touches this one
   // render's local `v.timeOfDay`, never the real clock or any stored data.
   const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
-  // A random phase offset for the whole wander/pose ensemble (round 52,
-  // 2026-08-28) — set after mount (not in the initializer, which would run
-  // on the server too and desync hydration) so the couple's lap doesn't
-  // start at the same point every session; see globals.css --wander-seed.
-  const [wanderSeed, setWanderSeed] = useState(0)
-  useEffect(() => { setWanderSeed(Math.random()) }, [])
-  const coupleCycleRef = useRef<SVGGElement>(null)
+  // The couple's lap clock (round 52 follow-up #2, "they are moving too
+  // much, should be stills too, and their interaction doesn't show — just
+  // interactions, different ones too"). One 48s lap: both stand STILL at
+  // home for ~0-52%, walk to meet at center ~52-61%, hold TOGETHER (the
+  // interaction art, individuals hidden) ~61-80%, walk home ~80-88%, still
+  // again. Driven off plain Date.now() against a mount timestamp — the CSS
+  // position/pose animations start at the same mount with no delay, so JS
+  // and CSS stay in step without depending on getAnimations()/a custom-
+  // property metronome (which proved unreliable). `interactPose` advances
+  // each time they come together, so it's a different pose every meeting. */
+  const lapStartRef = useRef(Date.now())
   const [coupleTogether, setCoupleTogether] = useState(false)
+  const [interactPose, setInteractPose] = useState(0)
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('vtod')
@@ -569,39 +574,23 @@ export default function VillageScene({
   // mood. Dusk keeps the bench.
   const night = v.timeOfDay === 'night'
 
-  // Is the couple "together" right now? — the ~4s window at each lap
-  // boundary when the two-figure interaction art plays. Read off the real
-  // animation clock (village-couple-together, the metronome on
-  // .village-couple-cycle) and applied as a hard React visibility swap: when
-  // the interaction shows, the two individual figures are hidden outright,
-  // so it's never four figures at once (round 52 follow-up, "when 2 figures
-  // interact make the figures invisible and just the interaction show").
-  // The old approach animated a CSS custom property the individuals'
-  // opacity read via calc(); unregistered, it half-applied.
   useEffect(() => {
     if (arranging || quiet) { setCoupleTogether(false); return }
     let timer = 0
-    let lastT = -1
-    let stuck = 0
+    let prev = false
     const tick = () => {
-      const anims = coupleCycleRef.current?.getAnimations?.() ?? []
-      const anim = anims.find(a => (a as CSSAnimation).animationName === 'village-couple-together') ?? anims[0]
-      const t = anim && anim.currentTime != null ? Number(anim.currentTime) : null
-      if (t != null) {
-        if (t === lastT) stuck++
-        else { stuck = 0; lastT = t }
-        // If the animation clock isn't advancing (frozen tab, no compositor)
-        // fall back to "not together" — the individual figures walking is
-        // the important state to keep; a stuck-open interaction pose is not.
-        const prog = ((t / 48000) % 1 + 1) % 1
-        const together = stuck < 3 && (prog < 0.08 || prog >= 0.96)
-        setCoupleTogether(v => (v === together ? v : together))
+      const prog = ((Date.now() - lapStartRef.current) / 48000) % 1
+      const together = prog >= 0.61 && prog < 0.80
+      if (together !== prev) {
+        prev = together
+        setCoupleTogether(together)
+        if (together) setInteractPose(p => (p + 1) % 9)
       }
-      timer = window.setTimeout(tick, 350)
+      timer = window.setTimeout(tick, 300)
     }
     tick()
     return () => window.clearTimeout(timer)
-  }, [arranging, quiet, wanderSeed])
+  }, [arranging, quiet])
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -1910,24 +1899,21 @@ export default function VillageScene({
           person, see VILLAGER_SPRITE), so this is a glide, not a
           leg-animated walk. */}
       {/* The two-character interaction art (round 49) and Sylvia/Harry's own
-          individual figures live under one `village-couple-cycle` <g> whose
-          animation is now just a 48s metronome (globals.css). `coupleTogether`
-          above samples its currentTime and this block does a hard visibility
-          swap: at a lap boundary the interaction shows and BOTH individuals
-          are `visibility: hidden` — never four figures. Rounds 49-50 did this
-          swap in CSS via an animated `--together` custom property the
-          figures' opacity read; unregistered custom-property animation
-          half-applied and left everyone visible. quiet/bench mode replaces
-          this whole subtree outright and is unaffected. */}
-      <g className={!arranging && !quiet ? 'village-couple-cycle' : undefined}
-        ref={coupleCycleRef}
-        style={{ '--wander-seed': wanderSeed } as React.CSSProperties}>
+          individual figures are siblings under one <g>. `coupleTogether`
+          (JS, off the lap clock above) does a hard visibility swap: during
+          the mid-lap "together" stretch the interaction pose shows and BOTH
+          individuals are `visibility: hidden` — never four figures — and
+          `interactPose` makes it a different pose each meeting. Their CSS
+          position animations keep running under the hidden wrapper so
+          they're back in place when shown. quiet/bench mode replaces this
+          whole subtree outright and is unaffected. */}
+      <g>
         {!arranging && !quiet && (() => {
           const sp = decorPos('sylvia'), hp = decorPos('harry')
           const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
           return (
-            <g className="village-couple-interact-vis" style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
-              <CoupleInteraction x={midX} y={midY} />
+            <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
+              <CoupleInteraction x={midX} y={midY} poseIndex={interactPose} />
             </g>
           )
         })()}

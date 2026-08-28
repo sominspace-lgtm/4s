@@ -658,8 +658,20 @@ const COUPLE_INTERACT_FRAMES = [
   { src: '/village-assets/sh-int-umbrella.png', aspect: 435 / 429 },
 ]
 
-export function CoupleInteraction({ x, y }: { x: number; y: number }) {
-  return <SpriteCycle frames={COUPLE_INTERACT_FRAMES} x={x} y={y} height={34} periodSec={9 * 48} />
+// One interaction pose, chosen by the caller (round 52 follow-up) — was a
+// slow auto-cycling SpriteCycle, but the couple only actually meet for one
+// stretch per lap, so VillageScene now holds a `poseIndex` it bumps each
+// meeting and this just draws that frame. A different interaction every
+// time they come together, and nothing animating while they're apart.
+export function CoupleInteraction({ x, y, poseIndex = 0 }: { x: number; y: number; poseIndex?: number }) {
+  const n = COUPLE_INTERACT_FRAMES.length
+  const f = COUPLE_INTERACT_FRAMES[((poseIndex % n) + n) % n]
+  const h = 34
+  const w = h * f.aspect
+  return (
+    <image href={f.src} x={x - w / 2} y={y - h} width={w} height={h}
+      style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+  )
 }
 
 // The tenth pose from the same interactions sheet — sitting together on a
@@ -714,42 +726,33 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
           keep their native facing. */}
       <g className={wander ? (isSylvia ? 'village-face-sylvia' : 'village-face-harry') : undefined}>
         <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
-        {(() => {
-          const k = isSylvia ? 'sylvia' : 'harry'
-          return (
-            <>
-              {/* Idle — the resting pose, plus the round 51 periodic smile.
-                  With `wander` off (arrange/locked) this is all that shows;
-                  otherwise it takes its turn with walk and wave, gated by
-                  the mutually-exclusive village-<k>-*-vis tracks in
-                  globals.css. */}
-              <g className={wander ? `village-${k}-idle-vis` : undefined}>
-                <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
-                {wander && (
-                  <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
-                    style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
-                    preserveAspectRatio="none" />
-                )}
-              </g>
-              {/* Walk — while they're actually crossing the yard. Slightly
-                  different gait speed per figure so the two aren't in
-                  lockstep. */}
-              {wander && (
-                <g className={`village-${k}-walk-vis`}>
-                  <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 1.5 : 1.7} />
-                </g>
-              )}
-              {/* Wave — the opening greeting when the village loads, and
-                  again each time their paths bring them close. */}
-              {wander && (
-                <g className={`village-${k}-wave-vis`}>
-                  <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />
-                </g>
-              )}
-            </>
-          )
-        })()}
+        {/* Idle — the resting pose (most of the lap), plus the round 51
+            periodic smile. With `wander` off (arrange/locked) this is all
+            that shows; otherwise it takes its turn with walk and wave via
+            the mutually-exclusive village-couple-*-vis tracks in
+            globals.css (round 52 follow-up #2: one shared set, idle
+            dominant — "should be stills too"). */}
+        <g className={wander ? 'village-couple-idle-vis' : undefined}>
+          <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+            style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+          {wander && (
+            <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
+              preserveAspectRatio="none" />
+          )}
+        </g>
+        {/* Walk — only the two short glides to the centre and back. */}
+        {wander && (
+          <g className="village-couple-walk-vis">
+            <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={isSylvia ? 1.5 : 1.7} />
+          </g>
+        )}
+        {/* Wave — a quick hello before setting off and goodbye on the way back. */}
+        {wander && (
+          <g className="village-couple-wave-vis">
+            <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />
+          </g>
+        )}
       </g>
     </g>
   )
