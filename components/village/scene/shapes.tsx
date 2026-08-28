@@ -457,9 +457,14 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // -harry.png, cropped in round 16 from sylvia-harry-outfit-states.png and
 // sitting unused ever since; the earlier sylvia.png/harry.png (a different,
 // older custom pack) are deleted, not kept alongside.
+// Re-cropped again round 32 (2026-08-27, "delete any elements that are not
+// from my folder") — sylvia-harry-outfit-states.png itself was replaced by
+// the user with sylvia-harry-outfit-states-remade-alpha.png; this pulls the
+// overalls pose (row 3 of that sheet — a separable, non-hand-holding pair)
+// instead of row 1's hand-holding pose, which crops as one joined sprite.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 97, h: 175 },
-  Harry: { src: '/village-assets/sh-default-harry.png', w: 96, h: 168 },
+  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 245, h: 387 },
+  Harry: { src: '/village-assets/sh-default-harry.png', w: 191, h: 360 },
 }
 
 export function VillagerShape({ x, y, name, scale = 1, onClick }: {

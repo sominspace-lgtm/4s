@@ -360,20 +360,13 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 345, y: GROUND_Y + 20 },
-  // Round 27 (2026-08-27, "upload all item elements onto the village") —
-  // village-expansion-community-props-alpha.png, imported round 26 but not
-  // yet wired: a well, a clothesline, an alternate mailbox (purely
-  // decorative — the functional capture entry stays MailboxShape above,
-  // see its own render comment), a bird bath, a bench-and-arbor, a bike
-  // leaned against a flower pot, and a real veg-crate.png replacement for
-  // the one round 23 had to remove outright for lack of a source.
-  well: { x: 540, y: GROUND_Y - 4 },
-  clothesline: { x: 440, y: GROUND_Y + 4 },
-  mailboxAlt: { x: 100, y: GROUND_Y + 16 },
-  birdbath: { x: 210, y: GROUND_Y - 8 },
-  benchArbor: { x: 300, y: GROUND_Y + 24 },
-  bikeFlowerpot: { x: 358, y: GROUND_Y + 2 },
-  vegCrate: { x: 122, y: GROUND_Y + 8 },
+  // Round 27's seven community-props items (well, clothesline, an
+  // alternate mailbox, bird bath, bench-and-arbor, bike+flower pot, a veg
+  // crate) are gone (round 32, 2026-08-27, "delete any elements that are
+  // not from my folder and currently not in my folder right now") — their
+  // source, village-expansion-community-props-alpha.png, is no longer in
+  // the user's master-assets folder (replaced by a foliage/path-tile sheet
+  // and a festival-props sheet, neither of which covers the same items).
 }
 
 export default function VillageScene({
@@ -1130,18 +1123,11 @@ export default function VillageScene({
         { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 17.2, h: 13 },
         { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 13.8, h: 13 },
         { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 18.3, h: 12.5 },
-        // Round 27 (2026-08-27, "upload all item elements onto the
-        // village") — village-expansion-community-props-alpha.png,
-        // imported round 26 but not wired until now. A real veg-crate.png
-        // replacement for the one round 23 had to remove outright, plus
-        // six genuinely new props.
-        { id: 'well', title: 'The old well', href: 'well.png', w: 13.8, h: 16 },
-        { id: 'clothesline', title: 'Laundry, out to dry', href: 'clothesline.png', w: 16.8, h: 13 },
-        { id: 'mailboxAlt', title: 'Another mailbox, down the lane', href: 'mailbox-alt.png', w: 9.1, h: 15 },
-        { id: 'birdbath', title: 'A bird bath', href: 'birdbath.png', w: 11.1, h: 13 },
-        { id: 'benchArbor', title: 'A bench under the arbor', href: 'bench-arbor.png', w: 18.9, h: 18 },
-        { id: 'bikeFlowerpot', title: 'A bike, and flowers by the porch', href: 'bike-flowerpot.png', w: 22.8, h: 12 },
-        { id: 'vegCrate', title: "Whatever's ready to pick", href: 'veg-crate.png', w: 10.2, h: 11 },
+        // Round 27's seven community-props items are gone (round 32,
+        // 2026-08-27, "delete any elements that are not from my folder and
+        // currently not in my folder right now") — see DECOR_DEFAULTS' own
+        // comment above on why (their source sheet is no longer in the
+        // folder).
       ].map(p => {
         const p0 = decorPos(p.id)
         return (

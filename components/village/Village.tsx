@@ -82,10 +82,30 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // uses. See lib/village/assetLibrary.ts for the full "why this list,
   // why this id scheme" reasoning.
   const [inventoryOpen, setInventoryOpen] = useState(false)
+  // A handful of candidate drop spots spread around the scene rather than
+  // one fixed point (round 32, 2026-08-27, "when we place new item make
+  // sure it shows up on empty space") — every item used to land at the
+  // exact same (400, GROUND_Y+10), so a second or third addition landed
+  // right on top of whatever was already there instead of somewhere you
+  // could actually see it. Picked loosely around the scene's own open
+  // ground (between districts, off the main path/Home cluster), not a
+  // real collision solver — just enough spread that a fresh item is
+  // visible immediately, with the closest-to-nothing spot chosen from
+  // whichever of these is currently least crowded.
+  const INVENTORY_DROP_SPOTS: { x: number; y: number }[] = [
+    { x: 150, y: GROUND_Y - 25 }, { x: 650, y: GROUND_Y - 20 },
+    { x: 400, y: GROUND_Y - 45 }, { x: 250, y: GROUND_Y + 50 },
+    { x: 550, y: GROUND_Y + 50 }, { x: 90, y: GROUND_Y + 48 },
+    { x: 730, y: GROUND_Y + 48 }, { x: 400, y: GROUND_Y + 55 },
+  ]
   function addInventoryItem(assetKey: string) {
     if (!onChangeLayout) return
     const id = makeCustomItemId(assetKey)
-    onChangeLayout({ ...layout, [id]: { x: 400, y: GROUND_Y + 10 } })
+    const existing = Object.values(layout).filter((p): p is { x: number; y: number } => !!p)
+    const spot = INVENTORY_DROP_SPOTS.map(s => ({
+      s, minDist: existing.reduce((m, p) => Math.min(m, Math.hypot(p.x - s.x, p.y - s.y)), Infinity),
+    })).sort((a, b) => b.minDist - a.minDist)[0]?.s ?? { x: 400, y: GROUND_Y + 10 }
+    onChangeLayout({ ...layout, [id]: spot })
   }
   // Zoom (2026-08-27, round 4) — "make it like a mini village we can zoom
   // in and out of and enjoy doing so." A discrete +/- control rather than

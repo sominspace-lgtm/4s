@@ -394,3 +394,42 @@ from asset library."
   `startDrag`/`onMoveLandmark` all work unchanged; `VillageScene` renders any `custom:` key
   generically. A small × button (visible only while arranging) removes one — the one kind of prop
   in this scene a user can delete entirely, not just move.
+
+## Round 32 (2026-08-27) - the folder changed again, a real cleanup, and empty-space placement
+
+"when we place new item make sure it shows up on empty space. additionally delete any elemetns
+that are not from my folder and currently not in my folder right now."
+
+The user's folder changed substantially between rounds - gone: exec-2347fef5-....png (the
+weather/environment sheet wx-rain-1/2.png/wx-snow-mound.png came from - never wired, deleted),
+exec-ee38c3ce-....png (the house-lighting sheet), growth-neglect-recovery-states.png,
+sylvia-harry-outfit-states.png, village-expansion-community-props-alpha.png, and
+village-moment-effects.png (the fx-*.png effects - never wired, deleted). New in their place:
+village-home-states-remade-alpha.png, growth-neglect-recovery-states-remade-alpha.png (plus a
+second, unused bush-tree-growth-neglect-recovery-alpha.png covering the same idea for
+bushes/trees instead of flowers), sylvia-harry-outfit-states-remade-alpha.png, a genuinely new
+sylvia-harry-walk-wave-animation-alpha.png (a real 4-frame Sylvia walk cycle + a Harry wave -
+cropped and worth wiring into the round 30 wander loop in a future round, not done this round),
+village-foliage-flowers-paths-alpha.png (bush/pine/grass/flower-cluster/mushroom/path-tile art -
+no community-props equivalent), and village-festival-ambient-elements-alpha.png (bunting/
+lanterns/a flag/picnic set - also no community-props equivalent).
+
+Re-sourced from the new files: cottage-dark.png/cottage-lit.png (from
+village-home-states-remade-alpha.png), sh-default-sylvia.png/-harry.png (row 3 of
+sylvia-harry-outfit-states-remade-alpha.png - the overalls pose, picked because it's two
+separable figures, unlike row 1's hand-holding pair which crops as one joined sprite), and
+flower-0...4.png/flower-dormant-1/2.png (from growth-neglect-recovery-states-remade-alpha.png,
+which only has 3-4 distinct states rather than 5 - stages 0/1 and 2/3 now intentionally reuse the
+same art at different rendered sizes, same "size drives the growth read" mechanism PlantShape
+already uses).
+
+Deleted outright, no replacement: well.png, clothesline.png, mailbox-alt.png, birdbath.png,
+bench-arbor.png, bike-flowerpot.png, veg-crate.png (round 27's seven community-props items -
+removed from DECOR_DEFAULTS, the scene's render list, AND ASSET_LIBRARY/the Inventory picker),
+plus the never-wired wx-*/fx-* reserve files and four stale sh-overalls-*/sh-sweater-*/
+sh-rain-umbrella-pair.png outfit-reserve crops (round 16, sourced from the now-gone original
+outfit sheet).
+
+Inventory items also no longer all land on the same spot - Village.tsx's addInventoryItem now
+picks the least-crowded of eight spread-out candidate spots (by distance to every existing layout
+position) instead of a single fixed (400, GROUND_Y+10).

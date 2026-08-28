@@ -33,13 +33,12 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'gate', label: 'Gate', href: 'gate.png', aspect: 380 / 212, h: 18 },
   { key: 'car', label: 'Car', href: 'car.png', aspect: 256 / 204, h: 24 },
   { key: 'busStop', label: 'Bus stop', href: 'bus-stop.png', aspect: 434 / 274, h: 18 },
-  { key: 'well', label: 'Well', href: 'well.png', aspect: 264 / 307, h: 18 },
-  { key: 'clothesline', label: 'Clothesline', href: 'clothesline.png', aspect: 299 / 231, h: 14 },
-  { key: 'mailboxAlt', label: 'Mailbox', href: 'mailbox-alt.png', aspect: 162 / 268, h: 16 },
-  { key: 'birdbath', label: 'Bird bath', href: 'birdbath.png', aspect: 210 / 245, h: 14 },
-  { key: 'benchArbor', label: 'Bench & arbor', href: 'bench-arbor.png', aspect: 308 / 293, h: 18 },
-  { key: 'bikeFlowerpot', label: 'Bike & flowers', href: 'bike-flowerpot.png', aspect: 367 / 193, h: 13 },
-  { key: 'vegCrate', label: 'Veg crate', href: 'veg-crate.png', aspect: 171 / 185, h: 11 },
+  // well/clothesline/mailboxAlt/birdbath/benchArbor/bikeFlowerpot/vegCrate
+  // removed (round 32, 2026-08-27, "delete any elements that are not from
+  // my folder and currently not in my folder right now") — their source
+  // sheet is no longer in the folder. Any layout the user already saved
+  // with one of these placed just stops rendering it (VillageScene skips
+  // an unknown asset key silently); the stale position entry is harmless.
   { key: 'bushMound', label: 'Bush', href: 'bush-mound.png', aspect: 218 / 129, h: 12 },
   { key: 'floweringBush', label: 'Flowering bush', href: 'flowering-bush.png', aspect: 276 / 209, h: 13 },
   { key: 'tallGrass', label: 'Tall grass', href: 'tall-grass.png', aspect: 222 / 209, h: 13 },
