@@ -598,3 +598,33 @@ addition), weather-puddles-wind-leaves-alpha.png, progress-garden-beds-alpha.png
 growth-neglect-recovery-alpha.png, memory-postcard-rack-alpha.png, and (in the "New folder"
 subfolder) sylvia-harry-interactions-special-moments-alpha.png (paired vignettes - per the
 standing "only ever two people" rule, not something to wire as a separate scene element).
+
+## Round 41 (2026-08-28) - picnic mat, real cobblestone, tighter zoom, more glow
+
+"make people symbol a picnic mat or community center. -zoom in but make sure everything is still
+in frame. -use the cobblestone paths -add all elements in -add glow and ambience to light sources
+and ambience"
+
+- **People's district badge** is a picnic mat now (picnic-mat.png, from village-decor-lanterns-
+  alpha.png), not a bench - "a spot to gather" reads more like a community space. The real
+  People-corner bench elsewhere in the scene is unrelated and unchanged.
+- **The path is real cobblestone now, not a fence lookalike**: round 39's path-tile.png (a
+  rectangular stone-bordered dirt segment, repeated ~32 times edge-to-edge) turned out to read as
+  a continuous rail/fence line rather than a path - the exact complaint pattern this whole thread
+  kept hitting, just from a new source this time. Swapped for path-stone.png - individual rounded
+  cobblestones from the same sheet, scattered rather than tiled, which is what actually reads as
+  a cobblestone path.
+- **Tighter default zoom**: BASE_VB_H (VillageScene's own viewBox height) dropped from 340 to
+  300. Width stayed at 720 - real habit-plants can land as far left as `forestSlots`' own
+  `FOREST.x0=40`, and clipping an actual habit is worse than clipping decor, so that axis kept
+  its round 29 safety margin. GROVE_TREES and the Trips signpost's default position were nudged
+  inward a little more for extra breathing room on top of that.
+- **More glow**: `vglow`'s blur (`stdDeviation`) went from 5.5 to 7.5 - every light source in the
+  scene shares this one filter (sun, moon, lamps, lanterns, window accents, district-symbol
+  glows), so this softens/enlarges all of them at once. District-symbol glow opacity/radius and
+  Home's window glow both bumped up too.
+- Looked at progress-garden-beds-alpha.png for "add all elements in" - an empty raised garden-bed
+  frame, close enough to "a place to grow a plant" that it risked reading as a second way to add
+  a flower (round 33's rule); left unwired rather than guess wrong. weather-puddles-wind-leaves-
+  alpha.png and memory-postcard-rack-alpha.png remain unwired too - real content for a future
+  round.

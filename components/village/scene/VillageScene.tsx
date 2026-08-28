@@ -187,8 +187,12 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 const GROVE_TREE_COUNT = 7
 const GROVE_TREES = Array.from({ length: GROVE_TREE_COUNT }, (_, i) => {
   const seed = `grove-${i}`
-  const bucketW = 340 / GROVE_TREE_COUNT
-  const x = 20 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.9
+  // x0 nudged 20 -> 65 (round 40, "zoom in but make sure everything is
+  // still in frame") — the tighter viewBox's own left edge sits at 50 (see
+  // BASE_VB_W/CX below); 65 leaves real margin for a tree's own width past
+  // its trunk-center x, not just the trunk itself.
+  const bucketW = 300 / GROVE_TREE_COUNT
+  const x = 65 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.9
   const depth = hashPos(seed + 'd')
   const y = GROUND_Y + 8 + depth * 64
   return {
@@ -389,7 +393,9 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
-  signpost: { x: 770, y: GROUND_Y + 30 },
+  // x nudged 770 -> 745 (round 40, "zoom in but make sure everything is
+  // still in frame") — sat right at the tighter viewBox's own edge.
+  signpost: { x: 745, y: GROUND_Y + 30 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 345, y: GROUND_Y + 20 },
@@ -813,8 +819,17 @@ export default function VillageScene({
   // tighter on both axes. Still comfortably wider than the two farthest
   // props (the gate at x=58, the Trips signpost at x=770), so nothing real
   // falls off-canvas.
+  // Tightened again round 40 (2026-08-28, "zoom in but make sure everything
+  // is still in frame") — width stays 720 (real habit-plants can land as
+  // far left as forestSlots' own FOREST.x0=40 in lib/village/layout.ts,
+  // and clipping someone's actual habit is worse than clipping decor, so
+  // this axis keeps its round 29 safety margin). Height drops instead —
+  // vertical content is far more tightly bounded (everything real lives
+  // within GROUND_Y-90..+70), so this is where an actual tighter crop is
+  // safe. GROVE_TREES/DECOR_DEFAULTS.signpost were still nudged inward a
+  // touch for a little extra breathing room on this same axis.
   const BASE_VB_W = 720
-  const BASE_VB_H = 340
+  const BASE_VB_H = 300
   const BASE_VB_CX = 400
   const BASE_VB_CY = 232
   const vbW = BASE_VB_W / zoom
@@ -926,8 +941,13 @@ export default function VillageScene({
             moon, lamps, lanterns, the house/workshop/greenhouse/shop window
             accents) shares this one filter, so widening the blur here softens
             all of them at once instead of hand-tuning each source separately. */}
-        <filter id="vglow" x="-200%" y="-200%" width="500%" height="500%">
-          <feGaussianBlur stdDeviation="5.5" result="blur" />
+        <filter id="vglow" x="-250%" y="-250%" width="600%" height="600%">
+          {/* stdDeviation bumped 5.5 → 7.5 (round 40, 2026-08-28, "add glow
+              and ambience to light sources and ambience") — every light
+              source in the scene shares this one filter (sun, moon, lamps,
+              lanterns, window accents, district-symbol glows), so widening
+              it here softens/enlarges all of them at once. */}
+          <feGaussianBlur stdDeviation="7.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -1033,19 +1053,20 @@ export default function VillageScene({
           the buildings use, each with its own tiny hashPos-seeded jitter/
           rotation/tone so they read as hand-laid stones, not a repeating
           tile. */}
-      {/* Real path-tile.png sprite now (round 39, 2026-08-27, "sync all new
-          elements and animations") — cropped from village-structures-
-          decor-paths-alpha.png, an actual stone-bordered dirt path
-          segment, replacing the hand-drawn rounded-rect pavers round 26
-          used (no path sprite existed in the folder at the time). Same
-          per-tile hashPos jitter/rotation as before so the repeat doesn't
-          read as an obvious tile stamp. */}
+      {/* Real path-tile.png (round 39) turned out wrong for this — 32
+          overlapping rectangular stone-bordered tiles in a row along the
+          path read as a continuous rail/fence line, not a path (round 40
+          fix, "use the cobblestone paths"). path-stone.png instead —
+          individual rounded cobblestones from the same source sheet,
+          scattered (not tiled edge-to-edge) with the same per-stone
+          hashPos jitter/rotation as before, which is what actually reads
+          as a cobblestone path rather than a repeating strip. */}
       <path d={PATH_D} fill="none" stroke="#B08659" strokeWidth={6} strokeLinecap="round" opacity={0.22} />
       {PATH_PAVERS.map(p => {
-        const tw = p.size * 2.4, th = p.size * 1.2
+        const tw = p.size * 1.7, th = tw * (41 / 56)
         return (
-          <image key={p.id} href="/village-assets/path-tile.png" x={-tw / 2} y={-th / 2} width={tw} height={th}
-            opacity={0.92} style={{ imageRendering: 'pixelated' }}
+          <image key={p.id} href="/village-assets/path-stone.png" x={-tw / 2} y={-th / 2} width={tw} height={th}
+            opacity={0.85} style={{ imageRendering: 'pixelated' }}
             transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
         )
       })}
@@ -1386,7 +1407,7 @@ export default function VillageScene({
         <image href={`/village-assets/cottage-${(homeOccupied ?? dark) ? 'lit' : 'dark'}.png`}
           x={-53.5} y={-89.6} width={107} height={89.6}
           style={{ imageRendering: 'pixelated' }} />
-        {(homeOccupied ?? dark) && <circle cx={-3} cy={-62} r={9} fill="var(--amber)" opacity={0.35} filter="url(#vglow)" />}
+        {(homeOccupied ?? dark) && <circle cx={-3} cy={-62} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 28 -80 L 28 -94 L 35 -94 L 35 -80" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}

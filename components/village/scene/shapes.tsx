@@ -828,19 +828,21 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cx={6} cy={-14} r={5} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
         </g>
       )
-    case 'people': // People — an empty bench, not a second Sylvia/Harry (round 14 fix,
+    case 'people': // People — a picnic mat, not a second Sylvia/Harry (round 14 fix,
       // 2026-08-27 — round 13 briefly used the pack's real couple-on-a-bench sprite here, but
       // there should only ever be ONE Sylvia and ONE Harry in the village, and the real ones
       // already stand by Home; a second rendering of them sitting on a district badge was
       // exactly the kind of duplicate-character confusion the "two houses" fix spent a whole
-      // round eliminating for buildings. Now BenchShape's own redrawn bench (round 36) instead
-      // of the raw bench2.png sprite directly — same fence-reads-as-a-bar reasoning as
-      // BenchShape's own header comment, and keeps this badge and the real People-corner bench
-      // as literally the same shape instead of two different renderings of "a bench."
+      // round eliminating for buildings. Bench (rounds 14-39) replaced with a picnic mat (round
+      // 40, 2026-08-27, "make people symbol a picnic mat or community center") — picnic-mat.png,
+      // cropped from village-decor-lanterns-alpha.png; "a spot to gather" reads more like a
+      // community/social space than a single empty bench did. The real People-corner bench
+      // (VillageScene's peopleCorner prop) is unrelated scenery, unchanged.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
-          <BenchShape x={0} y={2} scale={0.6} />
+          <ellipse cx={0} cy={3} rx={10} ry={1.8} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/picnic-mat.png" x={-10} y={-8.4} width={20} height={16.8}
+            style={{ imageRendering: 'pixelated' }} />
         </g>
       )
   }
@@ -884,7 +886,9 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
           other light source in the scene shares, at a low, constant
           opacity (not gated on `dark`) so it reads as the building's own
           warm presence rather than a night-only light. */}
-      <circle r={16} fill="var(--amber)" opacity={0.1} filter="url(#vglow)" />
+      {/* Bumped 0.1 → 0.15, r 16 → 19 (round 40, 2026-08-28, "add glow and
+          ambience to light sources and ambience"). */}
+      <circle r={19} fill="var(--amber)" opacity={0.15} filter="url(#vglow)" />
       {/* Scaled up ~30% (round two, 2026-08-27) — measured against a real
           screenshot, the art read as a small prop next to its own label at
           the original coordinates below. This is the one knob that fixes
