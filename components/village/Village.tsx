@@ -24,6 +24,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import Icon from '@/components/ui/Icon'
+import { ASSET_LIBRARY, makeCustomItemId } from '@/lib/village/assetLibrary'
 import VillageWidgets from './VillageWidgets'
 import VillageHomeSheet from './VillageHomeSheet'
 import { goToSection } from '@/lib/utils/navigate'
@@ -73,6 +74,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   compact?: boolean
 }) {
   const [arranging, setArranging] = useState(false)
+  // The Inventory (round 31, 2026-08-27, "make a inventory tab in arrange
+  // where we can place anything from asset library") — a small picker
+  // panel, only reachable from inside arrange mode, that drops a new real
+  // sprite into the scene at a fixed default spot; the user then drags it
+  // into place with the exact same mechanism every other prop already
+  // uses. See lib/village/assetLibrary.ts for the full "why this list,
+  // why this id scheme" reasoning.
+  const [inventoryOpen, setInventoryOpen] = useState(false)
+  function addInventoryItem(assetKey: string) {
+    if (!onChangeLayout) return
+    const id = makeCustomItemId(assetKey)
+    onChangeLayout({ ...layout, [id]: { x: 400, y: GROUND_Y + 10 } })
+  }
   // Zoom (2026-08-27, round 4) — "make it like a mini village we can zoom
   // in and out of and enjoy doing so." A discrete +/- control rather than
   // wheel/pinch gestures: those need to distinguish a zoom gesture from
@@ -257,6 +271,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             locked={locked} onLockedNavigate={onLockedNavigate}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
+            onRemoveItem={onChangeLayout ? (id) => {
+              const next = { ...layout }
+              delete next[id]
+              onChangeLayout(next)
+            } : undefined}
             placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
             peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
@@ -304,6 +323,24 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 }}
               >Reset positions</button>
             )}
+            {/* Inventory toggle — only reachable inside arrange mode, same
+                "settings only when you're already customizing" logic as
+                Reset positions above. */}
+            {arranging && (
+              <button
+                onClick={() => setInventoryOpen(o => !o)}
+                title="Add something from the asset library"
+                className="press"
+                style={{
+                  background: inventoryOpen ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
+                  border: `1px solid ${inventoryOpen ? 'var(--gold)' : 'var(--border)'}`,
+                  borderRadius: '8px', padding: '0.3rem 0.6rem',
+                  color: inventoryOpen ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
+                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+                }}
+              ><Icon name="box" size={10} /> Inventory</button>
+            )}
             <button
               onClick={() => setArranging(a => !a)}
               title={arranging ? 'Done arranging' : 'Arrange the village'}
@@ -317,6 +354,41 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}
             >{arranging ? <><Icon name="check" size={10} /> Done</> : <><Icon name="gear" size={10} /> Arrange</>}</button>
+          </div>
+        )}
+
+        {/* The Inventory picker itself — a small grid of real sprite
+            thumbnails, top-right under the button row. Tapping one drops
+            it at a fixed default spot (see addInventoryItem above) and
+            closes the panel; the new item then drags like anything else. */}
+        {arranging && inventoryOpen && onChangeLayout && (
+          <div style={{
+            position: 'absolute', top: '2.8rem', right: '0.7rem', zIndex: 2,
+            width: 'min(15.5rem, calc(100% - 1.4rem))', maxHeight: '13rem', overflowY: 'auto',
+            background: 'color-mix(in srgb, var(--surface) 92%, transparent)', backdropFilter: 'blur(6px)',
+            border: '1px solid var(--border)', borderRadius: '10px', padding: '0.5rem',
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem',
+            boxShadow: '0 4px 14px color-mix(in srgb, var(--text) 12%, transparent)',
+          }}>
+            {ASSET_LIBRARY.map(a => (
+              <button
+                key={a.key}
+                onClick={() => { addInventoryItem(a.key); setInventoryOpen(false) }}
+                title={a.label}
+                className="press"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
+                  background: 'color-mix(in srgb, var(--bg) 60%, transparent)', border: '1px solid var(--border)',
+                  borderRadius: '8px', padding: '0.3rem 0.15rem', cursor: 'pointer',
+                }}
+              >
+                <img src={`/village-assets/${a.href}`} alt="" aria-hidden
+                  style={{ width: '1.8rem', height: '1.8rem', objectFit: 'contain', imageRendering: 'pixelated' }} />
+                <span style={{ fontSize: '0.55rem', color: 'var(--muted)', fontFamily: 'var(--font-body)', textAlign: 'center', lineHeight: 1.15 }}>
+                  {a.label}
+                </span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -385,7 +457,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
       {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
-          Drag any landmark or prop to move it. Your layout is saved automatically.
+          Drag any landmark or prop to move it. Inventory adds something new — tap × on it to
+          remove it. Your layout is saved automatically.
         </p>
       )}
 

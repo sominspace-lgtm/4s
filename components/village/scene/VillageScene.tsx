@@ -24,6 +24,7 @@ import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
 import type { VillageChanges } from '@/lib/village/state'
 import { hashPos } from '@/lib/village/state'
 import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
+import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
 
 // Raised from 372 (2026-08-25) — the ground used to be a thin strip at the
 // very bottom of the canvas (68px of 440, ~15%) with almost the whole frame
@@ -339,7 +340,6 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
 // items where dragging one at a time would be tedium, not customization.
 const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   gate: { x: 58, y: GROUND_Y + 20 },
-  car: { x: 500, y: GROUND_Y + 14 },
   busStop: { x: 568, y: GROUND_Y + 10 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
   bushMound: { x: 78, y: GROUND_Y - 2 },
@@ -379,7 +379,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
-  layout = {}, arranging = false, onMoveLandmark,
+  layout = {}, arranging = false, onMoveLandmark, onRemoveItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null,
@@ -438,6 +438,11 @@ export default function VillageScene({
    *  the same drag mechanism now also moves individual decorative props
    *  (see DECOR_DEFAULTS/decorDrag below), not just the six districts. */
   onMoveLandmark?: (id: string, x: number, y: number) => void
+  /** Removes one custom-placed inventory item (round 31, 2026-08-27, "make
+   *  a inventory tab in arrange where we can place anything from asset
+   *  library") — only ever called with a `custom:` id, see
+   *  lib/village/assetLibrary.ts. */
+  onRemoveItem?: (id: string) => void
 }) {
   // Per-district lock (2026-08-25, Home exception added 2026-08-25) —
   // `locked` used to gate every district uniformly, but Places isn't
@@ -1113,10 +1118,10 @@ export default function VillageScene({
         // we can also see them") — the round 23 sizes read a little small
         // next to the buildings they stand beside.
         { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 33, h: 18.4 },
-        // Sized up once more round 25 ("make sure the trees, building, car
-        // are bigger than the figures") — VillagerShape's cast stands 30
-        // units tall.
-        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 40.2, h: 32 },
+        // The standalone car near Home is gone (round 31, 2026-08-27,
+        // "delete second car") — Places' own district badge became the
+        // car (round 30), and having a second one parked by the house too
+        // read as a duplicate rather than two different things.
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 28.5, h: 18 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
@@ -1150,6 +1155,47 @@ export default function VillageScene({
               <rect x={-p.w / 2 - 2} y={-p.h - 2} width={p.w + 4} height={p.h + 6} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
                 opacity={draggingId === p.id ? 0.9 : 0.4} />
+            )}
+          </g>
+        )
+      })}
+
+      {/* Custom-placed inventory items (round 31, 2026-08-27, "make a
+          inventory tab in arrange where we can place anything from asset
+          library") — any `custom:<assetKey>:<uid>` key in `layout` (see
+          lib/village/assetLibrary.ts) is one of these; Village.tsx's own
+          Inventory picker is what actually creates them. Same drag
+          mechanism as every other item-prop above, plus a small delete
+          button that only appears while arranging — these are the one
+          kind of prop a user can remove entirely, not just move. */}
+      {Object.keys(layout).filter(id => id.startsWith('custom:')).map(id => {
+        const assetKey = parseCustomItemId(id)
+        const asset = assetKey ? findAsset(assetKey) : undefined
+        const p = layout[id]
+        if (!asset || !p) return null
+        const h = asset.h, w = h * asset.aspect
+        return (
+          <g key={id} transform={`translate(${p.x} ${p.y})`}
+            onPointerDown={startDrag(id)} style={{ cursor: arranging ? (draggingId === id ? 'grabbing' : 'grab') : undefined }}>
+            <title>{asset.label}</title>
+            <ellipse cx={0} cy={h * 0.28} rx={w * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
+            <image href={`/village-assets/${asset.href}`} x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} />
+            {arranging && (
+              <>
+                <rect x={-w / 2 - 2} y={-h - 2} width={w + 4} height={h + 6} rx={4}
+                  fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+                  opacity={draggingId === id ? 0.9 : 0.4} />
+                {onRemoveItem && (
+                  <g transform={`translate(${w / 2 + 3} ${-h - 3})`}
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); onRemoveItem(id) }}
+                    style={{ cursor: 'pointer' }}>
+                    <circle r={6} fill="var(--rose)" stroke="var(--surface)" strokeWidth={1.2} />
+                    <text y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={8} fill="#fff" fontWeight={700}>×</text>
+                  </g>
+                )}
+              </>
             )}
           </g>
         )
@@ -1548,7 +1594,7 @@ export default function VillageScene({
           same x — Somi reads as standing in front of it, not through it. */}
       {(() => { const p = decorPos('somi'); return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
-          <CatShape x={0} y={0} scale={0.75} name="Somi" onClick={openSomi} />
+          <CatShape x={0} y={0} scale={0.75} name="Somi" onClick={openSomi} wander={!arranging} />
         </Draggable>
       ) })()}
 

@@ -1,0 +1,74 @@
+// The Inventory — a curated list of real village-assets sprites a user can
+// drop into the scene themselves (round 31, 2026-08-27, "make a inventory
+// tab in arrange where we can place anything from asset library").
+//
+// Deliberately NOT every file in public/village-assets/: excluded are
+// animation frames that only make sense as part of a specific cycle (every
+// somi-*.png pose, round-tree-sway-2/3/4.png, flower-cluster-2.png,
+// flower-0..4.png/flower-dormant-*.png — tied to real plant-growth data,
+// not placeable decor), the district-building sprites (shop/greenhouse/
+// workshop — those ARE a district, not decor to scatter), the two house
+// states (cottage-dark/lit — Home's own sprite, not a prop), Sylvia/Harry's
+// sprites (the cast, not an item), moment-effect/outfit sprites (no
+// standalone-decor meaning), and the functional nav props (mailbox2.png,
+// signpost2.png — real click targets already wired elsewhere; mailbox-alt
+// IS in this list since it's purely decorative, a second one down the lane).
+//
+// Each entry's `aspect` is its real source width/height so a placed item is
+// never stretched — same "derive width from height × aspect" rule every
+// other sprite in this scene already follows.
+export interface AssetLibraryItem {
+  key: string
+  label: string
+  href: string
+  aspect: number
+  /** Display height in scene units when freshly placed — small props read
+   *  small, trees/structures read taller, matching this scene's own
+   *  established relative scale (see shapes.tsx's various round 24-25
+   *  size comments). */
+  h: number
+}
+
+export const ASSET_LIBRARY: AssetLibraryItem[] = [
+  { key: 'gate', label: 'Gate', href: 'gate.png', aspect: 380 / 212, h: 18 },
+  { key: 'car', label: 'Car', href: 'car.png', aspect: 256 / 204, h: 24 },
+  { key: 'busStop', label: 'Bus stop', href: 'bus-stop.png', aspect: 434 / 274, h: 18 },
+  { key: 'well', label: 'Well', href: 'well.png', aspect: 264 / 307, h: 18 },
+  { key: 'clothesline', label: 'Clothesline', href: 'clothesline.png', aspect: 299 / 231, h: 14 },
+  { key: 'mailboxAlt', label: 'Mailbox', href: 'mailbox-alt.png', aspect: 162 / 268, h: 16 },
+  { key: 'birdbath', label: 'Bird bath', href: 'birdbath.png', aspect: 210 / 245, h: 14 },
+  { key: 'benchArbor', label: 'Bench & arbor', href: 'bench-arbor.png', aspect: 308 / 293, h: 18 },
+  { key: 'bikeFlowerpot', label: 'Bike & flowers', href: 'bike-flowerpot.png', aspect: 367 / 193, h: 13 },
+  { key: 'vegCrate', label: 'Veg crate', href: 'veg-crate.png', aspect: 171 / 185, h: 11 },
+  { key: 'bushMound', label: 'Bush', href: 'bush-mound.png', aspect: 218 / 129, h: 12 },
+  { key: 'floweringBush', label: 'Flowering bush', href: 'flowering-bush.png', aspect: 276 / 209, h: 13 },
+  { key: 'tallGrass', label: 'Tall grass', href: 'tall-grass.png', aspect: 222 / 209, h: 13 },
+  { key: 'rockCluster', label: 'Rocks', href: 'rock-cluster.png', aspect: 288 / 196, h: 12.5 },
+  { key: 'pineTree', label: 'Pine tree', href: 'pine-tree.png', aspect: 178 / 341, h: 28 },
+  { key: 'roundTree', label: 'Round tree', href: 'round-tree-sway-1.png', aspect: 331 / 459, h: 26 },
+  { key: 'paperLantern', label: 'Paper lantern', href: 'paper-lantern-lit.png', aspect: 141 / 345, h: 14 },
+  { key: 'flowerCluster', label: 'Flowers', href: 'flower-cluster-1.png', aspect: 249 / 200, h: 9.6 },
+]
+
+export function findAsset(key: string): AssetLibraryItem | undefined {
+  return ASSET_LIBRARY.find(a => a.key === key)
+}
+
+// Custom-placed items live in the same VillageLayout JSON blob every other
+// draggable position already uses (no schema change needed) — their id is
+// just namespaced `custom:<assetKey>:<uid>` so decorPos/startDrag/
+// onMoveLandmark all work completely unchanged, and VillageScene can tell a
+// custom item apart from a landmark/decor id by the prefix alone.
+export const CUSTOM_ITEM_PREFIX = 'custom:'
+export function makeCustomItemId(assetKey: string): string {
+  const uid = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  return `${CUSTOM_ITEM_PREFIX}${assetKey}:${uid}`
+}
+export function parseCustomItemId(id: string): string | null {
+  if (!id.startsWith(CUSTOM_ITEM_PREFIX)) return null
+  const rest = id.slice(CUSTOM_ITEM_PREFIX.length)
+  const sep = rest.indexOf(':')
+  return sep === -1 ? rest : rest.slice(0, sep)
+}

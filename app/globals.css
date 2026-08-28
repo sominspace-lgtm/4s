@@ -463,6 +463,39 @@ select, option {
 .village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
 .village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
 
+/* Somi's own wander + gated walk-pose visibility (round 31, 2026-08-27,
+   "only use somi walking animation if she is walking around. when she is
+   still do not use walking animation") — three animations sharing one
+   60s timeline so the pose set and the movement can never disagree:
+   village-somi-move actually translates her (idle 0–15%, walks out
+   15–35%, idle 35–50%, walks back 50–70%, idle 70–100%);
+   village-somi-idle-vis/-walk-vis toggle opacity on the two pose groups
+   (see CatShape) using the exact same percentages with steps(1) hard cuts,
+   so the walk-pose SpriteCycle is only ever visible while she's actually
+   in motion. */
+@keyframes village-somi-move {
+  0%, 15% { transform: translate(0, 0); }
+  35%, 50% { transform: translate(-20px, -2px); }
+  70%, 100% { transform: translate(0, 0); }
+}
+@keyframes village-somi-idle-vis {
+  0%, 15% { opacity: 1; }
+  20%, 30% { opacity: 0; }
+  35%, 50% { opacity: 1; }
+  55%, 65% { opacity: 0; }
+  70%, 100% { opacity: 1; }
+}
+@keyframes village-somi-walk-vis {
+  0%, 15% { opacity: 0; }
+  20%, 30% { opacity: 1; }
+  35%, 50% { opacity: 0; }
+  55%, 65% { opacity: 1; }
+  70%, 100% { opacity: 0; }
+}
+.village-somi-move { animation: village-somi-move 60s ease-in-out infinite; }
+.village-somi-idle-vis { animation: village-somi-idle-vis 60s steps(1) infinite; }
+.village-somi-walk-vis { animation: village-somi-walk-vis 60s steps(1) infinite; }
+
 /* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
    make anything bob") — VillagerShape/CatShape's cast figures render
    perfectly still now; no more translateY loop. Kept out of the reduced-

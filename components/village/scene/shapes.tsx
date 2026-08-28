@@ -497,13 +497,18 @@ export function VillagerShape({ x, y, name, scale = 1, onClick }: {
 // elsewhere in this file: a specific cat's actual coat isn't themeable.
 // Siamese "points" (ears, tail, face mask) run a cooler blue-grey against
 // a warm white body/chest.
-export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
+export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = true }: {
   x: number; y: number; name?: string
   /** Same reasoning as VillagerShape's own `scale` (round 4 bug-fix,
    *  2026-08-27) — the whiskers/paws/nose added earlier this round were
    *  too small to actually see at 1x. */
   scale?: number
   onClick?: () => void
+  /** Off during arrange mode (round 31, 2026-08-27) — same reasoning as
+   *  Sylvia/Harry's own wander class in VillageScene.tsx: a moving target
+   *  fighting a real drag would be unusable, so the caller drops this to
+   *  false while `arranging`. */
+  wander?: boolean
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
@@ -511,49 +516,65 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
   // replaced again (round 20), updated (round 22), briefly cut to a 2-pose
   // "night ambient" sheet (round 25), corrected back to 8 poses from the
   // folder's real 12-pose sheet (round 26) — see that round's own note on
-  // exec-1a806105….png.
+  // exec-1a806105….png. Round 28 reordered/rebuilt the cycle into all 12
+  // poses in a real narrative order and slowed it way down (24s → 144s).
   //
-  // Round 28 (2026-08-27, "make the animation loops make sense and make it
-  // change more rarely") rebuilds the cycle two ways:
-  // 1. All 12 poses now, in an actual narrative order instead of a
-  //    grab-bag: sit, blink, look back (both angles), a full 4-frame walk
-  //    cycle in its real left-to-right sequence (round 26 had walk frames
-  //    3-then-2 out of order, which is exactly the kind of cut this
-  //    request is about), a pounce crouch into the pounce itself, sitting
-  //    up tall and alert, then curling up to rest — and the loop starts
-  //    back at frame 1 as if she just woke up. One lap reads as a small
-  //    "a little while in Somi's day," not a shuffle of unrelated poses.
-  // 2. periodSec way up (24s → 144s, and now spread over 12 frames instead
-  //    of 8) — each pose holds for a full 12 seconds instead of 3, so she
-  //    reads as a still, real photo most of the time and only occasionally
-  //    changes, rather than visibly flicking through poses.
+  // Round 31 (2026-08-27, "only use somi walking animation if she is
+  // walking around. when she is still do not use walking animation") split
+  // the single 12-frame cycle in two: an IDLE set (sit, blink, look back
+  // both angles, pounce crouch/pounce, sit tall, curled — 8 poses, no
+  // walking) and a WALK set (the 4-frame walk cycle). She now actually
+  // wanders a little (village-somi-move, globals.css — same idea as
+  // Sylvia/Harry's round 30 drift) instead of standing still while walk
+  // poses flashed past her regardless; the idle set only shows while she's
+  // stationary and the walk set only shows while village-somi-move is
+  // actually translating her, via two opacity-gated <g>s
+  // (village-somi-idle-vis/-walk-vis) sharing that same animation's
+  // timeline so the two can never both be visible at once.
   const h = 20
-  const frames = [
+  const idleFrames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
     { src: '/village-assets/somi-sit-2.png', aspect: 159 / 195 },
     { src: '/village-assets/somi-look-back-1.png', aspect: 165 / 195 },
     { src: '/village-assets/somi-look-back-2.png', aspect: 174 / 195 },
-    { src: '/village-assets/somi-walk-1.png', aspect: 235 / 185 },
-    { src: '/village-assets/somi-walk-2.png', aspect: 226 / 193 },
-    { src: '/village-assets/somi-walk-3.png', aspect: 230 / 185 },
-    { src: '/village-assets/somi-walk-4.png', aspect: 226 / 192 },
     { src: '/village-assets/somi-pounce-crouch.png', aspect: 210 / 178 },
     { src: '/village-assets/somi-pounce.png', aspect: 216 / 183 },
     { src: '/village-assets/somi-sit-tall.png', aspect: 180 / 188 },
     { src: '/village-assets/somi-curled.png', aspect: 163 / 187 },
   ]
+  const walkFrames = [
+    { src: '/village-assets/somi-walk-1.png', aspect: 235 / 185 },
+    { src: '/village-assets/somi-walk-2.png', aspect: 226 / 193 },
+    { src: '/village-assets/somi-walk-3.png', aspect: 230 / 185 },
+    { src: '/village-assets/somi-walk-4.png', aspect: 226 / 192 },
+  ]
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
-      className={onClick ? 'village-entity' : undefined}
-      style={{ cursor: onClick ? 'pointer' : undefined }}>
-      <title>{name}</title>
-      {/* Same oversized invisible hit circle as VillagerShape — see its own
-          2026-08-25 fix comment ("can't click the figures"). Sized off the
-          idle pose's own width, not whichever frame happens to be showing —
-          a stable hit target regardless of which pose is currently up. */}
-      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <SpriteCycle frames={frames} x={0} y={0} height={h} periodSec={144} />
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <g onClick={handleClick}
+        className={[onClick && 'village-entity', wander && 'village-somi-move'].filter(Boolean).join(' ') || undefined}
+        style={{ cursor: onClick ? 'pointer' : undefined }}>
+        <title>{name}</title>
+        {/* Same oversized invisible hit circle as VillagerShape — see its own
+            2026-08-25 fix comment ("can't click the figures"). Sized off the
+            idle pose's own width, not whichever frame happens to be showing —
+            a stable hit target regardless of which pose is currently up.
+            Inside the moving group (round 31) so the tap target actually
+            follows her the short distance she wanders. */}
+        {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
+        <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
+        {/* Idle/walk visibility only alternates when she's actually wandering
+            — with `wander` off (arrange mode), the idle set just shows
+            plainly and the walk set is skipped outright rather than the two
+            gated animations racing a movement loop that isn't running. */}
+        <g className={wander ? 'village-somi-idle-vis' : undefined}>
+          <SpriteCycle frames={idleFrames} x={0} y={0} height={h} periodSec={96} />
+        </g>
+        {wander && (
+          <g className="village-somi-walk-vis">
+            <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={1.6} />
+          </g>
+        )}
+      </g>
     </g>
   )
 }

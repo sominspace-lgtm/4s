@@ -370,3 +370,27 @@ and interact with each other."
   close some of the distance between them before drifting back apart — the "interact" part, within
   what's achievable without new art or a JS movement engine. The wander class is dropped entirely
   in arrange mode so it never fights a real drag (both are draggable since round 27).
+
+## Round 31 (2026-08-27) — Somi's walk pose is gated to actual movement, an Inventory picker
+
+"only use somi walking animation if she is walking around. when she is still do not use walking
+animation." / "delete second car. make a inventory tab in arrange where we can place anything
+from asset library."
+
+- **Somi now actually wanders** (village-somi-move, globals.css) — small drift, same idea as
+  Sylvia/Harry's round 30 loop — and her sprite cycle is split into an idle set (sit, blink, look
+  back, pounce crouch/pounce, sit tall, curled — 8 poses) and a walk set (the 4-frame walk cycle),
+  with two opacity-gated groups sharing the movement animation's own timeline so the walk poses are
+  ONLY visible while she's actually translating, never while stationary. Off entirely in arrange
+  mode (`wander` prop on `CatShape`), same as Sylvia/Harry.
+- **The second car is gone** — Places' badge became the car in round 30; a standalone car parked
+  by Home too read as a duplicate. Removed from `DECOR_DEFAULTS` and the item-prop list.
+- **The Inventory** — a new picker in arrange mode (`Village.tsx`) listing 18 real sprites (see
+  `lib/village/assetLibrary.ts` for the curated list and its own reasoning on what's excluded and
+  why) as a small thumbnail grid. Tapping one drops a new, real, draggable copy of that sprite into
+  the scene at a fixed default spot; it then drags exactly like every other prop. Custom-placed
+  items are stored in the SAME `VillageLayout` JSON blob every other position already uses (no
+  schema change) — their id is just namespaced `custom:<assetKey>:<uid>`, so `decorPos`/
+  `startDrag`/`onMoveLandmark` all work unchanged; `VillageScene` renders any `custom:` key
+  generically. A small × button (visible only while arranging) removes one — the one kind of prop
+  in this scene a user can delete entirely, not just move.
