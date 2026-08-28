@@ -136,8 +136,30 @@ CatShape's animation now cycles 8 of the 18 poses: `somi-sit-1.png`, `somi-sit-2
 (a blink pair), `somi-look-back.png`, `somi-walk-1.png`, `somi-walk-2.png`, `somi-pounce.png`,
 `somi-sleep.png`, `somi-peek.png` (peeking out from under a blanket).
 
-The other 10 poses are cropped and sitting in this folder, imported but not in the cycle:
+The other 9 poses are cropped and sitting in this folder, imported but not in the cycle:
 `somi-look-back-2.png`, `somi-walk-3.png`, `somi-walk-4.png` (a second walk-cycle facing the
 other way), `somi-pounce-2.png`, `somi-closeup-1.png`, `somi-closeup-2.png` (two close-up
-sitting poses), `somi-sleep-2.png`, `somi-sleep-rolled.png`, `somi-peek-2.png`, `somi-peek-3.png`
-— real content, available for a future round rather than an even longer cycle right now.
+sitting poses), `somi-sleep-2.png`, `somi-peek-2.png`, `somi-peek-3.png` — real content,
+available for a future round rather than an even longer cycle right now.
+
+`somi-sleep-rolled.png` (a 10th pose, on her back with one eye showing as a sparkle mark) was
+never wired into the cycle and was deleted outright in round 21, 2026-08-27 ("remove the one
+somi figure where she is on her back and she only has one eye").
+
+## Round 22 (2026-08-27) — Somi's cat animation updated again, round 20's frames deleted
+
+"the cat animation got updated: these are now the only ones. delete all old ones." The user
+swapped in two new sheets: the same 12 base poses as round 20 (identical crops, kept as-is —
+`somi-sit-1/2.png`, `somi-look-back.png`/`-2.png`, `somi-walk-1/2/3/4.png`,
+`somi-pounce.png`/`-2.png`, `somi-closeup-1/2.png`), plus 8 new weather-reactive poses:
+`somi-stretch.png`, `somi-sit-tall.png`, `somi-sleep-glow.png` (sleeping by a lit window),
+`somi-curled.png`, `somi-playing.png`, `somi-hiding-tail.png`, `somi-walk-snow.png`,
+`somi-wind-leaves.png`. Round 20's now-superseded `somi-sleep.png` and `somi-peek*.png` (3
+files) were deleted outright, not kept alongside.
+
+CatShape's default cycle updated to: sit-1/2 (blink pair), look-back, walk-1/2, pounce, curled,
+stretch — 6 of the 12 base poses plus 2 of the 8 weather ones. The other 12 (a second walk
+direction, two close-ups, and the remaining 6 weather poses — sit-tall, sleep-glow, playing,
+hiding-tail, walk-snow, wind-leaves) are imported but not in the always-on cycle; the weather
+ones in particular are real candidates for weather-conditional wiring later (item 4 of the
+user's earlier "Living-System" brief) rather than showing regardless of actual conditions.

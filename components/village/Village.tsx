@@ -241,19 +241,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             up slightly and biasing the transform origin toward the ground
             crops a bit more sky than grass off each edge — the parent's
             own overflow:hidden clips it, so nothing else has to change.
-            Full (non-compact) view gets the same treatment now, milder
-            (round 19, 2026-08-27, "everything looks too small and there
-            is too much open space") — scaled non-uniformly (more on Y
-            than X) since the emptiness is mostly vertical (bare sky above,
-            bare foreground below the props band), not horizontal (the six
-            districts already span close to the full width; scaling that
-            axis much more risked pushing Archive's own position, the
-            rightmost, past the frame edge). A CSS transform on an ancestor
-            doesn't break click/drag accuracy — getScreenCTM() (used for
-            both hit-testing and arrange-mode dragging) walks the full
-            transform chain, CSS included, not just the SVG's own
-            attributes. */}
-        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : { transform: 'scale(1.08, 1.22)', transformOrigin: '50% 56%' }}>
+            Only compact mode uses this CSS-transform crop. Round 19 tried
+            the same trick for the full view too, non-uniformly (more on Y
+            than X) — but scaling X and Y by different amounts stretches
+            every sprite's own aspect ratio along with the composition
+            ("everything looks squished," round 21 fix). The full view's
+            own version of "smaller world, less bare sky" now lives in
+            VillageScene's viewBox math instead (BASE_VB_H) — an actual
+            recrop of the coordinate system, which can shrink the visible
+            window without distorting anything inside it. */}
+        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}

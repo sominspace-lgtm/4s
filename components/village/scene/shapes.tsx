@@ -446,20 +446,30 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
 }) {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  // Real sprite art (round 9), made alive (round 13), replaced once
-  // (round 15), and replaced again with a much richer 18-pose sheet the
-  // user supplied directly (round 20, 2026-08-27, "update somi animation,
-  // remove all old ones" — every round-15 frame deleted, none reused).
-  // 8 of the 18 poses picked for a fuller "day in the life" cycle: sit
-  // (blink pair), look back over her shoulder, walk (two mid-stride
-  // angles), a pounce, curled asleep, and peeking out from under a
-  // blanket — the other 10 (a second walk-cycle direction, two more
-  // close-up poses, two more sleep variants, two more blanket-peek
-  // frames) are cropped and available in public/village-assets/ but not
-  // in this cycle, kept for a future round rather than an even longer
-  // loop. Every frame cropped to its own exact opaque bounding box (same
-  // "keep them aligned" reasoning as round 15 — SpriteCycle's bottom-
-  // anchor needs a consistent "ground" position per frame).
+  // Real sprite art (round 9), made alive (round 13), replaced (round 15),
+  // replaced again (round 20), and updated once more (round 22, 2026-08-27,
+  // "the cat animation got updated: these are now the only ones. delete
+  // all old ones") — round 20's blanket-peek/plain-sleep poses came from a
+  // sheet the user then swapped for two others: the same 12 base poses
+  // (identical crops, kept as-is) plus 8 new weather-reactive poses
+  // (stretch, sit-tall, sleep-by-a-lit-window, curled, playing, hiding in
+  // her own tail, walking through snow, sitting in a leaf-blown wind).
+  // round 20's now-superseded somi-sleep.png/somi-peek*.png were deleted
+  // outright, not kept alongside.
+  //
+  // 8 of these 20 poses picked for the default cycle: sit (blink pair),
+  // look back, walk (two angles), a pounce, curled asleep, and the
+  // stretch — the other 12 (a second walk direction, two close-ups, and
+  // the remaining weather-reactive poses: sit-tall, sleep-by-window,
+  // playing, hiding-in-tail, walk-in-snow, wind-blown) are cropped and
+  // available in public/village-assets/ but not in this always-on cycle —
+  // the weather ones in particular are real candidates for a future
+  // weather-conditional wiring (item 4 of the user's earlier "Living-
+  // System" brief: drive Somi from real weather/season/time) rather than
+  // showing regardless of actual conditions. Every active frame cropped to
+  // its own exact opaque bounding box (same "keep them aligned" reasoning
+  // as round 15 — SpriteCycle's bottom-anchor needs a consistent "ground"
+  // position per frame).
   const h = 20
   const frames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
@@ -468,8 +478,8 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
     { src: '/village-assets/somi-walk-1.png', aspect: 226 / 192 },
     { src: '/village-assets/somi-walk-2.png', aspect: 230 / 185 },
     { src: '/village-assets/somi-pounce.png', aspect: 215 / 183 },
-    { src: '/village-assets/somi-sleep.png', aspect: 166 / 123 },
-    { src: '/village-assets/somi-peek.png', aspect: 214 / 113 },
+    { src: '/village-assets/somi-curled.png', aspect: 253 / 191 },
+    { src: '/village-assets/somi-stretch.png', aspect: 313 / 317 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}

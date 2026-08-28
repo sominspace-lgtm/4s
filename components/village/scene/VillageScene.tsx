@@ -671,29 +671,44 @@ export default function VillageScene({
   const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
   // Zoom is a viewBox computation, not a transform on the content — every
-  // coordinate in this file stays exactly as authored. Same 800:440 aspect
-  // at every zoom level (no stretching). Centered on the scene's true
-  // geometric middle (400, 220) — round 4's first pass centered lower
-  // (260) to favor the ground over the empty sky, which sounded right but
-  // wasn't: the canvas is exactly 440 tall, so at zoom 1 that shifted
-  // viewBox (40..480) cropped 40 units off the TOP of the sky and revealed
-  // 40 units of nothing below y=440 (the canvas has no content past its
-  // own edge) — the "cream bar" reported live. True center + zoom clamped
-  // to [1, 2] in Village.tsx (never below 1) means the box can never
-  // exceed the canvas's own bounds in either direction, at any zoom level,
-  // by construction — no clamping logic needed, the math just can't go
-  // out of range.
-  const vbW = 800 / zoom
-  const vbH = 440 / zoom
-  // Pan, clamped so the viewBox can never leave the canvas's own 800×440
-  // bounds — at zoom 1, vbW/vbH already equal the full canvas, so this
-  // clamp collapses to (0, 0) automatically and dragging does nothing,
-  // matching the zoom floor's own "nothing past the edge to reveal" rule.
-  const maxPanX = Math.max(0, (800 - vbW) / 2)
-  const maxPanY = Math.max(0, (440 - vbH) / 2)
+  // coordinate in this file stays exactly as authored, at a fixed 800:440
+  // pixel aspect no matter what's on screen (no stretching). Centered on
+  // the scene's true geometric middle (400, 220) — round 4's first pass
+  // centered lower (260) to favor the ground over the empty sky, which
+  // sounded right but wasn't: the canvas is exactly 440 tall, so at zoom 1
+  // that shifted viewBox (40..480) cropped 40 units off the TOP of the sky
+  // and revealed 40 units of nothing below y=440 (the canvas has no
+  // content past its own edge) — the "cream bar" reported live.
+  //
+  // A DIFFERENT, safe way to bias toward the ground without that bug
+  // (round 21, 2026-08-27, "limit the view window so the world is a bit
+  // smaller") — shrink the DEFAULT window itself (BASE_VB_H, below 440)
+  // rather than re-centering a same-size window past the canvas edge.
+  // Because the window is smaller than the canvas on every axis, it can
+  // sit anywhere inside [0,440] without ever exposing empty space past the
+  // real content — no "cream bar" possible by construction. (Round 19's
+  // attempt at this used a non-uniform CSS transform on the wrapper
+  // instead — scale(1.08, 1.22) — which stretched every sprite's aspect
+  // ratio ("everything looks squished"); this replaces that with an actual
+  // recrop of the coordinate system, so nothing gets distorted.) zoom
+  // still multiplies on top of this base, clamped to [1, 2] in
+  // Village.tsx, so "Reset" still means "the curated default view," not
+  // literally the full 800×440 canvas.
+  const BASE_VB_W = 800
+  const BASE_VB_H = 380
+  const BASE_VB_CX = 400
+  const BASE_VB_CY = 232
+  const vbW = BASE_VB_W / zoom
+  const vbH = BASE_VB_H / zoom
+  // Pan, clamped so the viewBox can never leave the DEFAULT window's own
+  // bounds — at zoom 1, vbW/vbH already equal that window, so this clamp
+  // collapses to (0, 0) automatically and dragging does nothing, matching
+  // the zoom floor's own "nothing past the edge to reveal" rule.
+  const maxPanX = Math.max(0, (BASE_VB_W - vbW) / 2)
+  const maxPanY = Math.max(0, (BASE_VB_H - vbH) / 2)
   const panX = Math.min(maxPanX, Math.max(-maxPanX, pan.x))
   const panY = Math.min(maxPanY, Math.max(-maxPanY, pan.y))
-  const viewBox = `${400 - vbW / 2 - panX} ${220 - vbH / 2 - panY} ${vbW} ${vbH}`
+  const viewBox = `${BASE_VB_CX - vbW / 2 - panX} ${BASE_VB_CY - vbH / 2 - panY} ${vbW} ${vbH}`
   return (
     <svg
       ref={svgRef}
@@ -1104,7 +1119,12 @@ export default function VillageScene({
             sources (round 8's free-tier farm-pack house next to hand-drawn
             figures). Self-made by the user; no licensing question. 432×354
             source, kept at that ~1.22 aspect ratio here. */}
-        <image href="/village-assets/cottage.png" x={-55} y={-98} width={110} height={90}
+        {/* y moved from -98 to -90 (round 21 fix, 2026-08-27, "move the
+            main house down so it is on the ground") — the sprite's own
+            bottom edge sat 8 units above this group's local origin (where
+            the grounding shadow above is centered), a real floating gap,
+            not a perception issue. Bottom now lands exactly at y=0. */}
+        <image href="/village-assets/cottage.png" x={-55} y={-90} width={110} height={90}
           style={{ imageRendering: 'pixelated' }} />
         {/* Window glow — the sprite has no baked-in light state, so this is
             a soft blurred amber ellipse roughly over the small square
@@ -1120,9 +1140,10 @@ export default function VillageScene({
             null — no household space set up yet, or Smart Home not used),
             so a install with zero Smart Home data keeps the old day/night
             behavior instead of going permanently dark. */}
-        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-70} rx={10} ry={9} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
+        {/* Both shifted +8 to match the house sprite's own move above. */}
+        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-62} rx={10} ry={9} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
-          <path d="M 28 -88 L 28 -102 L 35 -102 L 35 -88" fill="none" stroke="var(--border)" strokeWidth={2} />
+          <path d="M 28 -80 L 28 -94 L 35 -94 L 35 -80" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
       </g>
 
