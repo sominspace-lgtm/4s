@@ -65,7 +65,7 @@ const STONES = Array.from({ length: 32 }, (_, i) => {
 // empty gap between horizon and ground that made the scene read as flat.
 // A little more here than one flat band: two overlapping rows at slightly
 // different heights, same trick BloomScan's own treeline uses.
-const DISTANT_TREES = Array.from({ length: 17 }, (_, i) => {
+const DISTANT_TREES = Array.from({ length: 30 }, (_, i) => {
   const seed = `dtree-${i}`
   const x = 10 + hashPos(seed) * 780
   const h = 8 + hashPos(seed + 'h') * 7
@@ -190,22 +190,39 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // instead of scattering across 64 units of the whole yard, and a tighter
 // height range so they read as one grove at one distance rather than a
 // jumble. Still hashPos-deterministic per seed.
-const GROVE_TREE_COUNT = 4
+const GROVE_TREE_COUNT = 6
 const GROVE_TREES = Array.from({ length: GROVE_TREE_COUNT }, (_, i) => {
   const seed = `grove-${i}`
   const bucketW = 320 / GROVE_TREE_COUNT
   const x = 62 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.55
   const depth = hashPos(seed + 'd')
-  const y = GROUND_Y + 10 + depth * 22
+  const y = GROUND_Y + 8 + depth * 16
   return {
     x, y, kind: (hashPos(seed + 'k') < 0.5 ? 'pine' : 'round') as 'pine' | 'round',
-    h: 21 + depth * 7, opacity: 0.78 + depth * 0.18,
+    // Smaller round 62 ("remove big tree except for people") — the grove
+    // reads as a background thicket behind Growth Garden now, not a row of
+    // hero trees. Only People keeps a big tree.
+    h: 15 + depth * 6, opacity: 0.6 + depth * 0.22,
   }
 })
-// The two fixed ambient trees near Archive/Home are gone round 58 ("remove
-// the tree from top right", plus the tree-clutter cleanup) — the grove and
-// each district's own scenery cover the tree line now.
+// A loose line of trees across the whole village, set back near the hill
+// line behind the districts (round 62, "add trees and nature in
+// background") — real seasonal tree sprites, small and low-opacity so they
+// read as a far backdrop rather than clutter, and skipping the middle band
+// where Home sits so they never crowd the house. Same hashPos-per-seed
+// determinism as every other scatter in this file.
+const BACKDROP_TREES = Array.from({ length: 11 }, (_, i) => {
+  const seed = `bg-tree-${i}`
+  const x = 24 + i * 74 + hashPos(seed + 'x') * 34
+  const depth = hashPos(seed + 'd')
+  return {
+    x, y: GROUND_Y - 16 + depth * 10,
+    kind: (hashPos(seed + 'k') < 0.45 ? 'pine' : 'round') as 'pine' | 'round',
+    h: 15 + depth * 8, opacity: 0.4 + depth * 0.2,
+  }
+}).filter(t => t.x < 320 || t.x > 480)
 const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; opacity?: number }[] = [
+  ...BACKDROP_TREES,
   ...GROVE_TREES,
 ]
 
@@ -1345,15 +1362,11 @@ export default function VillageScene({
               </g>
             )
           })}
-          {/* One more seasonal tree in the path-side band (round 51's small
-              swaying lollipop tree was dropped round 57 — its source sheet,
-              tree-flower-sway-animation, is no longer in the folder). */}
-          {(() => { const spr = seasonTree('round', v.season); const h = 24, w = h * spr.aspect; return (
-            <g opacity={0.9}>
-              <ellipse cx={625} cy={GROUND_Y + 31} rx={w * 0.4} ry={2} fill="var(--text)" opacity={0.14} />
-              <image href={spr.src} x={625 - w / 2} y={GROUND_Y + 29 - h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
-            </g>
-          ) })()}
+          {/* The lone path-side foreground tree was removed round 62 ("remove
+              big tree except for people") — it stood right in the middle of
+              the path band and read as a big centrepiece tree. The grove
+              behind Growth Garden and the background tree line carry the
+              greenery now. */}
         </g>
       </g>
 
@@ -1392,12 +1405,12 @@ export default function VillageScene({
         </Draggable>
       ) })}
       {(() => { const p = decorPos('clockTower'); return (
-        <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={16}>
+        <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={22}>
           <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={itemScale('clockTower')} />
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('wishingWell'); return (
-        <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={13}>
+        <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={18}>
           <WishingWellShape x={0} y={0} glow={wellGlow} onClick={!arranging ? submitGratitude : undefined} />
         </Draggable>
       ) })()}
@@ -1752,36 +1765,21 @@ export default function VillageScene({
           signpost (round 10) is gone too (round 23) — blank-sign.png has no
           equivalent in the master folder either. */}
 
-      {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
-          canopy is the continuum underneath, so the tree visibly thickens
-          across your first months instead of standing still until month 12. */}
+      {/* Archive Grove — the yearly milestone rings. The big Life Tree that
+          used to stand here (life-tree.png, rounds 45-61) is gone round 62
+          ("remove big tree except for people") — the only big tree left in
+          the village is People's own. What stays is the ring data itself:
+          real years-of-account growth, drawn as soft concentric circles set
+          into the ground beside the Archive greenhouse, not decoration. */}
       <g transform={`translate(725 ${GROUND_Y + 2})`}>
         <title>{
           v.treeRings > 0
-            ? `Archive Grove, Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`
-            : `Archive Grove, Life Tree in its first year, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
+            ? `Archive Grove, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'} of growth`
+            : `Archive Grove, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
         }</title>
-        {/* Real sprite now (round 45, 2026-08-28, "update the village with
-            these elements") — life-tree.png, a real civic tree-with-bench
-            from village-civic-landmarks-alpha.png, replacing the hand-drawn
-            trunk+canopy circles (2026-08-21 — no tree art existed yet at
-            the time). Canopy growth is now a uniform scale on the whole
-            sprite instead of three separately-sized circles — same
-            (0.7 + canopy*0.3) growth curve, just applied to real art. The
-            ring-milestone circles stay, overlaid near the canopy's center,
-            same reasoning as before: real years-of-account data, not
-            decoration, so removing them would lose something the old
-            version actually showed. */}
-        {(() => {
-          const scale = 0.7 + v.canopy * 0.3
-          const h = 46 * scale, w = h * (413 / 442)
-          return (
-            <image href="/village-assets/life-tree.png" x={-w / 2} y={-h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} />
-          )
-        })()}
-        {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
-          <circle key={i} cx={0} cy={-30} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
+        {[...Array(Math.max(1, Math.min(v.treeRings, 5)))].map((_, i) => (
+          <ellipse key={i} cx={0} cy={-4} rx={6 + i * 4} ry={(6 + i * 4) * 0.34}
+            fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.3} />
         ))}
         {/* The book stack and garden lantern (round 10) are gone (round 23,
             2026-08-27, "update only using these elements") — neither

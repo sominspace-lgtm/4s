@@ -424,6 +424,14 @@ select, option {
 @keyframes lantern { 0%,100% { opacity: 0.75; } 50% { opacity: 0.42; } }
 .village-glow { animation: lantern 5.5s ease-in-out infinite; }
 
+/* Growth Garden's swaying flowers (round 62, "make growing garden symbol
+   the swaying flowers") — the district symbol is a cluster of bloomed-
+   flower sprites that lean gently side to side. transform-box: fill-box
+   anchors the rotation at each sprite's own base; each instance carries a
+   negative animation-delay inline so the cluster never sways in lockstep. */
+@keyframes village-flower-sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.village-flower-sway { transform-box: fill-box; transform-origin: bottom center; animation: village-flower-sway 4.5s ease-in-out infinite; }
+
 /* Sprite-frame cycling (round 13, 2026-08-27) — see SpriteCycle in
    shapes.tsx for the full mechanism. One rule per frame count in current
    use: each is visible for exactly 1/N of the shared period, offset per-
@@ -771,7 +779,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-fade,
+  .village-drift, .village-glow, .village-flower-sway, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,

@@ -124,14 +124,22 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Fullscreen API, which iOS Safari only supports for <video>. Escape
   // exits; body scroll is locked while it's on.
   const [expanded, setExpanded] = useState(false)
+  // Fullscreen when idle (round 62, "fullscreen when idle") — on the
+  // wall-mounted iPad "Shared" login, once the scene goes ambient
+  // (useIdleAmbient, ~60s untouched) it also fills the screen so it reads as
+  // a framed picture rather than a card on a page. Derived, not its own
+  // state: any interaction clears `ambient` (the hook's own listeners) and
+  // the scene drops straight back out, while a fullscreen the user opened
+  // themselves via the button stays put.
+  const fullscreen = expanded || ambient
   useEffect(() => {
-    if (!expanded) return
+    if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
-  }, [expanded])
+  }, [fullscreen])
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
   // Finished work, which useWorkItems deliberately excludes. Without this the
@@ -291,7 +299,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
           ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
-          ...(expanded ? {
+          ...(fullscreen ? {
             position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, border: 'none',
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
           } : {}),
@@ -313,7 +321,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             VillageScene's viewBox math instead (BASE_VB_H) — an actual
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
-        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
+        {/* In fullscreen (round 62, "cozy and aesthetic especially for iPad
+            screen") the scene is centred and capped at a comfortable width
+            rather than stretched edge to edge — a framed picture, with the
+            warm surface tone showing as a mat around it. */}
+        <div style={
+          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
+          : fullscreen ? { width: 'min(100%, 1400px)', maxHeight: '100vh', margin: '0 auto' }
+          : undefined
+        }>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}

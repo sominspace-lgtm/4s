@@ -36,8 +36,8 @@ export default function VillageText({ village, arrival = null, horizonCount = 0 
     // A new account should never read "0 rings" for its whole first year. The
     // canopy is already moving by then, so the words say so too.
     village.treeRings > 0
-      ? `Archive Grove: Life Tree has ${village.treeRings} ring${village.treeRings === 1 ? '' : 's'}.`
-      : `Archive Grove: Life Tree in its first year, ${village.accountMonths} month${village.accountMonths === 1 ? '' : 's'} of growth.`,
+      ? `Archive Grove: ${village.treeRings} ring${village.treeRings === 1 ? '' : 's'} of growth kept.`
+      : `Archive Grove: its first year, ${village.accountMonths} month${village.accountMonths === 1 ? '' : 's'} of growth.`,
     `Bloom Garden: ${village.flowers.length || 'no'} flower${village.flowers.length === 1 ? '' : 's'} so far.`,
     `It is ${village.timeOfDay}, in ${village.season}.`,
     // Omitted entirely when solo, rather than saying "0 places". The picture

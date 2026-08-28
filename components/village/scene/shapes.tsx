@@ -50,20 +50,11 @@ export function Draggable({ x, y, id, arranging, draggingId, onPointerDown, r = 
 // mid-play is a very different shape) — height is shared, width is derived
 // per frame so nothing gets squashed, and every frame is bottom-center
 // anchored at (x, y) so the figure's "feet" don't drift as poses change.
-// The 4-frame round-tree sway cycle (round 13, 2026-08-27,
-// village-animations-complete.zip) — module-level so every tree instance
-// shares one array reference rather than re-allocating it per render.
-// Re-cropped round 23 (2026-08-27, "update only using these elements") from
-// the same village-master-visual-assets folder's own tree-sway sheet — same
-// content as before (this file's original source, just re-sourced directly
-// rather than through an earlier round's crop) so aspect ratios shifted only
-// slightly.
-const TREE_SWAY_FRAMES = [
-  { src: '/village-assets/round-tree-sway-1.png', aspect: 331 / 459 },
-  { src: '/village-assets/round-tree-sway-2.png', aspect: 355 / 459 },
-  { src: '/village-assets/round-tree-sway-3.png', aspect: 350 / 458 },
-  { src: '/village-assets/round-tree-sway-4.png', aspect: 333 / 458 },
-]
+// The 4-frame round-tree sway cycle was retired round 62 ("make growing
+// garden symbol the swaying flowers") — the Growth Garden district symbol
+// (DistrictArt's 'leaf' case) was its only user; it's a swaying flower
+// cluster now. round-tree-sway-*.png stay in the folder (the Inventory's
+// 'roundTree' item still places one).
 
 // Seasonal tree sprites (round 51, 2026-08-28, "update the village on 4s os
 // with all of these new animations elements") — from
@@ -444,7 +435,7 @@ const CLOCK_SRC: Record<string, string> = {
 export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
   x: number; y: number; timeOfDay: string; dark?: boolean; scale?: number
 }) {
-  const h = 48, w = h * (236 / 438) // 236x438 source — reads as a landmark, round 56
+  const h = 66, w = h * (236 / 438) // 236x438 source — sized up round 62 ("make ... clock tower bigger"); reads as a real civic landmark
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.6} rx={w / 2.2} ry={2} fill="var(--text)" opacity={0.14} />
@@ -461,10 +452,10 @@ export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
 // the caller saves it (see VillageScene's onGratitude).
 export function WishingWellShape({ x, y, onClick, glow = false }: { x: number; y: number; onClick?: () => void; glow?: boolean }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 20, h = 20 // 330x322 source, ~1:1
+  const w = 30, h = 30 // 330x322 source, ~1:1 — sized up round 62 ("make ... wishing well bigger")
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <circle cx={0} cy={-h / 2} r={20} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>Drop a thank-you in the well</title>
         <ellipse cx={0} cy={1.5} rx={8} ry={2} fill="var(--text)" opacity={0.13} />
@@ -1053,28 +1044,27 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // renders its hit-rect and "Home" label at this position for click/drag; it just
       // has nothing left to draw, since the real house already exists a few pixels away.
       return null
-    case 'leaf': // Growth Forest — real tree sprites (round 11, 2026-08-27, the user's own
-      // village-matching-expansion-pack), replacing the single repeated tree.png icon with
-      // an actual small grove: one pine, one round tree, a third smaller round tree behind.
-      // The two round trees now actually sway (round 13, 2026-08-27,
-      // village-animations-complete.zip's 4-frame tree-sway sheet) — different
-      // periodSec per tree so they drift in and out of phase rather than
-      // swaying in perfect lockstep.
+    case 'leaf': // Growth Garden — a cluster of swaying flowers (round 62, "make
+      // growing garden symbol the swaying flowers"). Real bloomed-flower sprites
+      // (flower-4.png) leaning gently side to side via village-flower-sway
+      // (globals.css), each offset by a negative animation-delay so the cluster
+      // never sways in lockstep. Replaces the tree grove (rounds 11-61) — real
+      // habits still grow as plants in the grove nearby; the symbol itself is
+      // flowers now, and the one big tree that used to sit here is gone (only
+      // People keeps a big tree).
+      // flower-4.png is already a small clump of flowers with foliage and a
+      // soil base — two of them, one behind and smaller, read as a fuller
+      // flower patch without stacking into a shapeless mass. Each sways on
+      // its own negative delay so they don't lean in lockstep.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={18} ry={2.4} fill="var(--text)" opacity={0.16} />
-          <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
-          <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
-          {/* Trees sized up (round 25, 2026-08-27, "make sure the trees,
-              building, car are bigger than the figures") — VillagerShape
-              renders Sylvia/Harry at 30 units tall; these read close to
-              that before, not clearly past it. */}
-          <g opacity={0.85}>
-            <SpriteCycle frames={TREE_SWAY_FRAMES} x={-16 + 6.2} y={1} height={30} periodSec={6.5} />
-          </g>
-          <image href="/village-assets/pine-tree.png" x={-8.9} y={-34} width={17.8} height={34}
-            style={{ imageRendering: 'pixelated' }} />
-          <SpriteCycle frames={TREE_SWAY_FRAMES} x={6 + 7.9} y={0} height={34} periodSec={7.8} />
+          <ellipse cx={0} cy={2} rx={16} ry={2.4} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/flower-4.png" x={-3 - 9} y={-18} width={18} height={18}
+            className="village-flower-sway" opacity={0.8}
+            style={{ imageRendering: 'pixelated', animationDelay: '-2.2s' }} />
+          <image href="/village-assets/flower-4.png" x={2 - 12} y={-24} width={24} height={24}
+            className="village-flower-sway"
+            style={{ imageRendering: 'pixelated', animationDelay: '0s' }} />
         </g>
       )
     case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
@@ -1135,8 +1125,8 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // 40-56) it replaces, and it's drawn large on purpose — the tallest district symbol.
       return (
         <g>
-          <ellipse cx={0} cy={3} rx={13} ry={2.2} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/people-tree.png" x={-18} y={-40} width={36} height={40}
+          <ellipse cx={0} cy={3} rx={16} ry={2.4} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-22} y={-49} width={44} height={49}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
