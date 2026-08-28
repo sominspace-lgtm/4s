@@ -1,6 +1,6 @@
 'use client'
 
-import { STAGE_INDEX, hashPos, type Plant, type Building } from '@/lib/village/state'
+import { STAGE_INDEX, hashPos, type Plant, type Building, type VillageState } from '@/lib/village/state'
 
 // The repeated silhouettes: one per habit, one per project, one per district
 // label. Split out of Village.tsx unchanged — these are the pieces that appear
@@ -64,6 +64,59 @@ const TREE_SWAY_FRAMES = [
   { src: '/village-assets/round-tree-sway-3.png', aspect: 350 / 458 },
   { src: '/village-assets/round-tree-sway-4.png', aspect: 333 / 458 },
 ]
+
+// Seasonal tree sprites (round 51, 2026-08-28, "update the village on 4s os
+// with all of these new animations elements") — from
+// seasonal-trees-ambience-alpha.png: two silhouettes (round/broadleaf and
+// pine) each in spring-blossom / summer-green / autumn-orange / winter-bare.
+// Keyed off VillageState.season so the background tree line actually turns
+// with the year instead of staying summer-green in December. Static (no
+// sway) — same motion-budget reasoning as EXTRA_TREES in VillageScene.
+export type TreeKind = 'round' | 'pine'
+const SEASON_TREE: Record<TreeKind, Record<VillageState['season'], { src: string; aspect: number }>> = {
+  round: {
+    spring: { src: '/village-assets/tree-round-spring.png', aspect: 259 / 372 },
+    summer: { src: '/village-assets/tree-round-summer.png', aspect: 258 / 372 },
+    autumn: { src: '/village-assets/tree-round-autumn.png', aspect: 254 / 372 },
+    winter: { src: '/village-assets/tree-round-winter.png', aspect: 232 / 338 },
+  },
+  pine: {
+    spring: { src: '/village-assets/tree-pine-spring.png', aspect: 239 / 456 },
+    summer: { src: '/village-assets/tree-pine-summer.png', aspect: 239 / 457 },
+    autumn: { src: '/village-assets/tree-pine-autumn.png', aspect: 263 / 456 },
+    winter: { src: '/village-assets/tree-pine-winter.png', aspect: 232 / 415 },
+  },
+}
+export function seasonTree(kind: TreeKind, season: VillageState['season']) {
+  return SEASON_TREE[kind][season]
+}
+
+// A small lollipop tree's own 4-frame sway (round 51, 2026-08-28) — from
+// tree-flower-sway-animation-alpha.png, a lighter companion to the big
+// round-tree sway above for the path-side ambient tree in VillageScene.
+export const SMALL_TREE_SWAY_FRAMES = [
+  { src: '/village-assets/small-tree-sway-1.png', aspect: 148 / 287 },
+  { src: '/village-assets/small-tree-sway-2.png', aspect: 209 / 288 },
+  { src: '/village-assets/small-tree-sway-3.png', aspect: 148 / 289 },
+  { src: '/village-assets/small-tree-sway-4.png', aspect: 188 / 288 },
+]
+
+// Sylvia and Harry in sleepwear (round 51, 2026-08-28) — from
+// sylvia-harry-sleepwear-alpha.png, shown standing near Home only when it's
+// actually night (VillageScene's `night`), the real art behind round 48's
+// "quiet evenings" beat that until now could only fake bedtime with the
+// couple sitting still on a bench.
+export function SleepwearFigure({ src, aspect, x, y }: { src: string; aspect: number; x: number; y: number }) {
+  const h = 33
+  const w = h * aspect
+  return (
+    <g transform={`translate(${x} ${y})`} pointerEvents="none">
+      <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
+      <image href={src} x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+    </g>
+  )
+}
 
 export function SpriteCycle({ frames, x, y, height, periodSec, opacity = 1 }: {
   frames: { src: string; aspect: number }[]; x: number; y: number; height: number; periodSec: number; opacity?: number
@@ -501,9 +554,20 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // cleanly separable (non-touching) pair on that sheet — its own first
 // pair (gardening, watering can reaching toward a flower pot) crops as one
 // joined sprite the same way the outfit sheet's hand-holding pose did.
+// Re-sourced round 51 (2026-08-28, "all of these new animations elements")
+// to the dedicated core-animation sheets (sylvia/harry-core-animations-
+// alpha.png) — the same figures, cleaner front-facing idle pose, and (the
+// point of the swap) a matched smile frame from the same sheet so the
+// standing pose can carry a small periodic "smile" beat instead of holding
+// one dead expression. Walk/wave stay on their own sheets (SYLVIA_WALK_
+// FRAMES / HARRY_WAVE_FRAMES) — those are already tuned and gated.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 196, h: 353 },
-  Harry: { src: '/village-assets/sh-default-harry.png', w: 171, h: 338 },
+  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 150, h: 293 },
+  Harry: { src: '/village-assets/harry-idle.png', w: 162, h: 271 },
+}
+const VILLAGER_SMILE: Record<string, string> = {
+  Sylvia: '/village-assets/sylvia-smile.png',
+  Harry: '/village-assets/harry-smile.png',
 }
 
 // Sylvia's real 4-frame walk cycle and Harry's real 4-frame wave, both from
@@ -630,6 +694,11 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
             <g className={wander ? 'village-sylvia-idle-vis' : undefined}>
               <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+              {wander && (
+                <image href={VILLAGER_SMILE.Sylvia} x={-w / 2} y={-h} width={w} height={h}
+                  style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite' }}
+                  preserveAspectRatio="none" />
+              )}
             </g>
             {wander && (
               <g className="village-sylvia-walk-vis">
@@ -642,6 +711,11 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
             <g className={wander ? 'village-harry-idle-vis' : undefined}>
               <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+              {wander && (
+                <image href={VILLAGER_SMILE.Harry} x={-w / 2} y={-h} width={w} height={h}
+                  style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: '-3.5s' }}
+                  preserveAspectRatio="none" />
+              )}
             </g>
             {wander && (
               <g className="village-harry-wave-vis">
@@ -660,8 +734,13 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
 // elsewhere in this file: a specific cat's actual coat isn't themeable.
 // Siamese "points" (ears, tail, face mask) run a cooler blue-grey against
 // a warm white body/chest.
-export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = true }: {
+export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = true, sleeping = false }: {
   x: number; y: number; name?: string
+  /** Night (round 51, 2026-08-28) — swaps the idle/walk pose sets for one
+   *  curled sleeping loaf (somi-sleep.png, from somi-sleeping-states-alpha
+   *  .png), the real art behind "Somi is asleep nearby" that dusk/night
+   *  quiet mode only implied before. Click target / hover-card unchanged. */
+  sleeping?: boolean
   /** Same reasoning as VillagerShape's own `scale` (round 4 bug-fix,
    *  2026-08-27) — the whiskers/paws/nose added earlier this round were
    *  too small to actually see at 1x. */
@@ -721,6 +800,12 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
             follows her the short distance she wanders. */}
         {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
         <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
+        {sleeping && (() => {
+          const sh = h * 0.6, sw = sh * (379 / 282)
+          return <image href="/village-assets/somi-sleep.png" x={-sw / 2} y={-sh} width={sw} height={sh}
+            style={{ imageRendering: 'pixelated' }} />
+        })()}
+        {!sleeping && <>
         {/* Idle/walk visibility only alternates when she's actually wandering
             — with `wander` off (arrange mode), the idle set just shows
             plainly and the walk set is skipped outright rather than the two
@@ -733,6 +818,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
             <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={1.6} />
           </g>
         )}
+        </>}
       </g>
     </g>
   )

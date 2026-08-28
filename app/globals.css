@@ -543,6 +543,17 @@ select, option {
 .village-sylvia-walk-vis { animation: village-sylvia-walk-vis 48s steps(1) infinite; }
 .village-sylvia-idle-vis { animation: village-sylvia-idle-vis 48s steps(1) infinite; }
 
+/* A brief periodic smile on the standing idle pose (round 51, 2026-08-28,
+   "all of these new animations elements") — the smile frame sits stacked
+   over the neutral idle sprite and is only visible for ~0.7s each 7s loop,
+   so the figures read as alive at rest without a constant grin. Sylvia and
+   Harry run the same keyframe on offset delays so they don't smile in
+   lockstep. */
+@keyframes village-idle-smile {
+  0%, 88%, 100% { opacity: 0; }
+  91%, 97% { opacity: 1; }
+}
+
 /* Facing (round 47, 2026-08-28, "for any figure including somi they should
    face the direction they are walking") — a horizontal mirror timed to
    the exact same movement keyframes above, using the standalone CSS

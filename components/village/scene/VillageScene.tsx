@@ -9,14 +9,18 @@ import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { isNudgeActive, resolveNudgeThisLap, lapIndexAt, NUDGE_TTL_MS, type Nudge, type NudgeKind } from '@/lib/village/nudge'
 import { vignetteVariant } from '@/lib/village/vignette'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, SMALL_TREE_SWAY_FRAMES, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
-// The 2-frame flower-cluster sway (round 13, 2026-08-27,
-// village-animations-complete.zip) — same idiom as shapes.tsx's own
-// TREE_SWAY_FRAMES, module-level so it's one shared array reference.
+// The flower-sprig sway (round 13, 2026-08-27; re-sourced round 51,
+// 2026-08-28, "all of these new animations elements") — now a real 4-frame
+// cycle from tree-flower-sway-animation-alpha.png, replacing the old 2-frame
+// flower-cluster crop. Same idiom as shapes.tsx's own TREE_SWAY_FRAMES,
+// module-level so it's one shared array reference.
 const FLOWER_SWAY_FRAMES = [
-  { src: '/village-assets/flower-cluster-1.png', aspect: 249 / 200 },
-  { src: '/village-assets/flower-cluster-2.png', aspect: 272 / 201 },
+  { src: '/village-assets/flower-sway-1.png', aspect: 352 / 140 },
+  { src: '/village-assets/flower-sway-2.png', aspect: 307 / 148 },
+  { src: '/village-assets/flower-sway-3.png', aspect: 346 / 140 },
+  { src: '/village-assets/flower-sway-4.png', aspect: 355 / 136 },
 ]
 import Sky from './Sky'
 import Clouds from './Clouds'
@@ -551,6 +555,11 @@ export default function VillageScene({
   // figures with the one seated-together sprite instead of just holding
   // them still in place.
   const quiet = dark
+  // Full night (not just dusk) — the couple change into sleepwear near Home
+  // and Somi curls up asleep (round 51, 2026-08-28, "all of these new
+  // animations elements"): the real bedtime art behind round 48's evening
+  // mood. Dusk keeps the bench.
+  const night = v.timeOfDay === 'night'
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -1293,17 +1302,26 @@ export default function VillageScene({
             the ambient-motion budget Ambient.tsx documents). */}
         <g>
           {EXTRA_TREES.map((t, i) => {
-            const href = t.kind === 'pine' ? 'pine-tree.png' : 'round-tree-sway-1.png'
-            const aspect = t.kind === 'pine' ? 178 / 341 : 331 / 459
-            const w = t.h * aspect
+            // Seasonal since round 51 (2026-08-28) — the background tree line
+            // now turns with v.season (blossom / green / orange / bare)
+            // instead of holding summer year-round.
+            const spr = seasonTree(t.kind, v.season)
+            const w = t.h * spr.aspect
             return (
               <g key={i} opacity={t.opacity ?? 0.9}>
                 <ellipse cx={t.x} cy={t.y + 1.5} rx={w * 0.42} ry={2.2} fill="var(--text)" opacity={0.14} />
-                <image href={`/village-assets/${href}`} x={t.x - w / 2} y={t.y - t.h} width={w} height={t.h}
+                <image href={spr.src} x={t.x - w / 2} y={t.y - t.h} width={w} height={t.h}
                   style={{ imageRendering: 'pixelated' }} />
               </g>
             )
           })}
+          {/* One small lollipop tree that actually sways, tucked into the
+              same tree-line band (round 51, 2026-08-28) — a single moving
+              node, well inside Ambient.tsx's motion budget. */}
+          <g opacity={0.9}>
+            <ellipse cx={625} cy={GROUND_Y + 31} rx={7} ry={2} fill="var(--text)" opacity={0.14} />
+            <SpriteCycle frames={SMALL_TREE_SWAY_FRAMES} x={625} y={GROUND_Y + 29} height={26} periodSec={7.2} />
+          </g>
         </g>
       </g>
 
@@ -1462,7 +1480,7 @@ export default function VillageScene({
             onPointerDown={startDrag('flowerCluster')} style={{ cursor: arranging ? (draggingId === 'flowerCluster' ? 'grabbing' : 'grab') : undefined }}>
             <title>Flowers by the path</title>
             <ellipse cx={0} cy={2.4} rx={6} ry={1.4} fill="var(--text)" opacity={0.14} />
-            <SpriteCycle frames={FLOWER_SWAY_FRAMES} x={0} y={2} height={9.6} periodSec={4.5} />
+            <SpriteCycle frames={FLOWER_SWAY_FRAMES} x={0} y={2} height={6.5} periodSec={4.5} />
             {arranging && (
               <rect x={-6} y={-11.6} width={12} height={15.6} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
@@ -1896,6 +1914,12 @@ export default function VillageScene({
           manage here at all. */}
       {!arranging && quiet && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
+        if (night) return (
+          <>
+            <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={247 / 509} x={sp.x} y={sp.y} />
+            <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={242 / 529} x={hp.x} y={hp.y} />
+          </>
+        )
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
         return <CoupleBenchShape x={midX} y={midY} />
       })()}
@@ -1910,7 +1934,7 @@ export default function VillageScene({
           same x — Somi reads as standing in front of it, not through it. */}
       {(() => { const p = decorPos('somi'); return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
-          <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi} wander={!arranging && !quiet} />
+          <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi} wander={!arranging && !quiet} sleeping={night && !arranging} />
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
       ) })()}
