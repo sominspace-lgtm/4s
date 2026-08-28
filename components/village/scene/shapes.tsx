@@ -296,27 +296,32 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
 // instead, matching the rest of the scene's real pixel art.
 
 // A short picket fence run (2026-08-25) — pure scenery, same "small fixed
-// prop near the path" idiom as Bench/FlowerBed above. `length` is how many
-// rail segments, so one component covers both a short garden-edge run and a
-// longer stretch without a second shape.
+// prop near the path" idiom as Bench/FlowerBed above.
 // Real sprite (round 24, 2026-08-27, "add everything from
 // [structures-clean.png] onto the village") — fence-rail.png, cropped from
 // the same master-visual-assets sheet as shop/greenhouse/workshop/gate/car/
 // signpost/mailbox/bus-stop, the one item from that sheet not yet wired
-// anywhere. Repeats the sprite `length` times rather than stretching one
-// crop, so a longer run reads as more rail, not a distorted one.
-export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
-  const segW = 9.9, segH = 4.8 // 367×177 source, ~2.07 aspect, sized up round 24 for visibility
-  const spacing = segW * 0.92 // slight overlap so posts line up between segments
-  const width = (length - 1) * spacing
+// anywhere.
+// Fixed round 29 (2026-08-27, "fences also have white in the middle") —
+// round 24 tiled this sprite `length` times with only ~8% overlap between
+// copies to suggest a longer run. That was the actual bug: the sprite is
+// already a COMPLETE two-post panel with a lot of transparent margin around
+// the wood, so tiling it left visible gaps of bare (pale) ground showing
+// through between panels — not a color defect in the art itself (this file
+// has no baked-in white), a real gap in the composition. Now a single panel,
+// scaled by `length/4` instead of repeated, so a "longer" fence just reads
+// as one continuous, taller/wider run with no seams. Sized up ~35% too
+// (round 29, "fix the sizing of everything... do not make anything too
+// tiny") — the original run read thin next to everything else's round 24-25
+// size bump.
+export function FenceShape({ x, y, length = 4, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
+  const baseW = 13.4, baseH = 6.5 // 367×177 source, ~2.07 aspect
+  const w = baseW * (length / 4), h = baseH * (length / 4)
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.9}>
-      <ellipse cx={0} cy={0.6} rx={width / 2 + segW / 2} ry={1.2} fill="var(--text)" opacity={0.12} />
-      {[...Array(length)].map((_, i) => (
-        <image key={i} href="/village-assets/fence-rail.png"
-          x={-width / 2 - segW / 2 + i * spacing} y={-segH} width={segW} height={segH}
-          style={{ imageRendering: 'pixelated' }} />
-      ))}
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.95}>
+      <ellipse cx={0} cy={0.8} rx={w / 2 + 1} ry={1.4} fill="var(--text)" opacity={0.12} />
+      <image href="/village-assets/fence-rail.png" x={-w / 2} y={-h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
     </g>
   )
 }
@@ -333,11 +338,13 @@ export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: numb
 export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-      {dark && <circle cy={-10} r={8} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
-      <rect x={-0.9} y={-9} width={1.8} height={9} fill={TRIM} opacity={0.85} />
-      <circle cy={-10.5} r={2.6} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.9 : 0.6}
-        stroke={TRIM} strokeWidth={0.6} className={dark ? 'village-glow' : undefined} />
+      <ellipse cx={0} cy={1.8} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
+      {dark && <circle cy={-12.5} r={9} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
+      {/* Sized up round 29 ("do not make anything too tiny") — post + globe
+          grew ~25%. */}
+      <rect x={-1.1} y={-11} width={2.2} height={11} fill={TRIM} opacity={0.85} />
+      <circle cy={-12.8} r={3.3} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.9 : 0.6}
+        stroke={TRIM} strokeWidth={0.7} className={dark ? 'village-glow' : undefined} />
     </g>
   )
 }
@@ -761,14 +768,21 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cx={0} cy={-16.25} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
-    case 'places': // Places — a real market/shop sprite (round 11, 2026-08-27, same custom
-      // pack), replacing the hand-drawn kiosk. Sized up round 25, same reasoning as workshop.
+    case 'places': // Places — the car (round 30, 2026-08-27, "make the car the symbol for
+      // places") — car.png, the same sprite already used for the standalone car prop near
+      // Home, reused here rather than re-cropped. "Somewhere to go" reads more directly as a
+      // car than the market/shop building (round 11-25) it replaces; shop.png is unused now
+      // but kept in the assets folder — real master-folder content, just not this district's
+      // symbol any more.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={20} ry={2.75} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/shop.png" x={-19.7} y={-30} width={39.4} height={30}
+          {/* car.png is 256×204, ~1.2549 aspect — h=24 keeps it close to
+              the workshop/greenhouse badges' own visual weight. */}
+          <ellipse cx={0} cy={2.5} rx={16} ry={2.6} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/car.png" x={-15.05} y={-24} width={30.1} height={24}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-17.5} r={9.4} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+          {dark && <circle cx={-6} cy={-14} r={5} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
+          {dark && <circle cx={6} cy={-14} r={5} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
         </g>
       )
     case 'people': // People — an empty bench, not a second Sylvia/Harry (round 14 fix,

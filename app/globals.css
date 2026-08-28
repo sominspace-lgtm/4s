@@ -438,6 +438,31 @@ select, option {
    hard-cut idiom as the others, one slice per pose (100%/12 ≈ 8.33%). */
 @keyframes village-cycle-12 { 0%, 8.24% { opacity: 1; } 8.33%, 100% { opacity: 0; } }
 
+/* Sylvia/Harry's wander loop (round 30, 2026-08-27, "make the two figures
+   be able to act as npc and walk around and interact with each other") —
+   see VillageScene.tsx's own comment on the inner-<g>-under-Draggable
+   structure this rides on. A slow (48s) transform-only loop — cheap,
+   never triggers layout — with each person's own path drifting toward the
+   other at the shared 50% midpoint before drifting back apart, so once a
+   cycle they visibly close some distance between them rather than each
+   wandering in an unrelated bubble. Amplitudes stay small (≤16px) since
+   there's no walk-cycle art to sell a longer trip — this reads as
+   "puttering around nearby," not a commute. */
+@keyframes village-wander-sylvia {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-14px, -2px); }
+  50% { transform: translate(16px, 1px); }
+  80% { transform: translate(-6px, 3px); }
+}
+@keyframes village-wander-harry {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(12px, -2px); }
+  50% { transform: translate(-16px, 2px); }
+  80% { transform: translate(8px, -3px); }
+}
+.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
+.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
+
 /* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
    make anything bob") — VillagerShape/CatShape's cast figures render
    perfectly still now; no more translateY loop. Kept out of the reduced-

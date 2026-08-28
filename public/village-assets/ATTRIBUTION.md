@@ -330,3 +330,43 @@ gait. Both fixed:
   correct frames), `somi-pounce-crouch.png`.
 - `periodSec` raised from 24s to 144s, spread across 12 frames instead of 8 — each pose now holds
   for 12 real seconds instead of 3. A new `village-cycle-12` keyframe (`globals.css`) drives it.
+
+## Round 29 (2026-08-27) — the fence bug, a sizing pass, more trees
+
+"fences also have white in the middle. fix. also fix the sizing of everything, try to scale but do
+not make anything too tiny. also add more trees and ambient elements."
+
+- **The actual fence bug**: `fence-rail.png` has no baked-in white — round 24's `FenceShape` was
+  tiling the sprite `length` times with only ~8% overlap to suggest a longer run, but the sprite is
+  already a complete two-post panel with a lot of transparent margin around the wood. Tiling it left
+  visible gaps of bare (pale) ground between panels — the "white in the middle." Fixed by rendering
+  one panel, scaled by `length/4` instead of repeated — no more seams.
+- **Sizing pass**: `bushMound`/`floweringBush`/`tallGrass`/`rockCluster`/`vegCrate` (the named,
+  draggable item-props — not the procedural `FOREGROUND`/`MIDGROUND_BUSHES` ground texture, which
+  is deliberately small by depth-scale design) and `LampShape`'s post/globe all grew ~30-50%, and
+  the fence itself grew too as part of its rebuild above.
+- **More trees**: four new `EXTRA_TREES` (two pine, two round) scattered around the wider village —
+  not just inside the Growth Forest badge's own compact 3-tree grove — using the same real
+  `pine-tree.png`/`round-tree-sway-1.png` sprites. Static, not draggable (fixed background
+  scenery, same idiom as `DISTANT_TREES`).
+- **More ambient elements**: a third bird (`Ambient.tsx`) and two more fireflies (four → six) —
+  still inside that file's own documented "never more than six moving nodes at once" budget, since
+  each group only shows at different times of day.
+
+## Round 30 (2026-08-27) — the car is Places' symbol, Sylvia/Harry wander
+
+"make the car the symbol for places. make the two figures be able to act as npc and walk around
+and interact with each other."
+
+- Places' district badge now shows `car.png` (the same sprite already used for the standalone car
+  prop near Home) instead of `shop.png` — "somewhere to go" reads more directly as a car than a
+  market building. `shop.png` is unused now but kept in the assets folder; real master-folder
+  content, just not this district's symbol.
+- Sylvia and Harry now drift slowly around their own spot in a 48-second, pure-CSS transform loop
+  (`village-wander-sylvia`/`-harry` in `globals.css`) — small (≤16px) amplitude glides, since
+  there's no walk-cycle art for either of them (only one standing pose each, see
+  `VILLAGER_SPRITE`), so this is closer to puttering-around-nearby than a walking gait. Both share
+  one period with their midpoint keyframes moving toward each other, so once a cycle they visibly
+  close some of the distance between them before drifting back apart — the "interact" part, within
+  what's achievable without new art or a JS movement engine. The wander class is dropped entirely
+  in arrange mode so it never fights a real drag (both are draggable since round 27).

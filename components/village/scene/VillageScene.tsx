@@ -157,6 +157,20 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   }
 })
 
+// A handful of extra trees scattered around the wider village, not just in
+// the Growth Forest badge's own compact 3-tree grove (round 29, 2026-08-27,
+// "add more trees and ambient elements") — real pine-tree.png/round-tree
+// sprites at fixed spots away from the districts and named props, so the
+// village itself reads more wooded rather than all the greenery living in
+// one small icon. Not draggable (same "fixed background scenery" idiom as
+// DISTANT_TREES/POLLEN) — these are atmosphere, not something to arrange.
+const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number }[] = [
+  { x: 140, y: GROUND_Y + 38, kind: 'round', h: 26 },
+  { x: 25, y: GROUND_Y + 34, kind: 'pine', h: 24 },
+  { x: 680, y: GROUND_Y + 36, kind: 'round', h: 25 },
+  { x: 310, y: GROUND_Y + 42, kind: 'pine', h: 23 },
+]
+
 // A path through the ground, and a few small props along it (2026-08-24) —
 // "less empty, more composed": a dirt path implies the districts are places
 // you actually walk between, rather than icons floating over bare ground. It
@@ -1032,6 +1046,24 @@ export default function VillageScene({
             )
           })}
         </g>
+
+        {/* EXTRA_TREES — see its own comment above. Static (the badge's own
+            trees already sway; four more doing the same would drift past
+            the ambient-motion budget Ambient.tsx documents). */}
+        <g opacity={0.9}>
+          {EXTRA_TREES.map((t, i) => {
+            const href = t.kind === 'pine' ? 'pine-tree.png' : 'round-tree-sway-1.png'
+            const aspect = t.kind === 'pine' ? 178 / 341 : 331 / 459
+            const w = t.h * aspect
+            return (
+              <g key={i}>
+                <ellipse cx={t.x} cy={t.y + 1.5} rx={w * 0.42} ry={2.2} fill="var(--text)" opacity={0.14} />
+                <image href={`/village-assets/${href}`} x={t.x - w / 2} y={t.y - t.h} width={w} height={t.h}
+                  style={{ imageRendering: 'pixelated' }} />
+              </g>
+            )
+          })}
+        </g>
       </g>
 
       {/* Small props along the path — see PROPS above. */}
@@ -1086,10 +1118,13 @@ export default function VillageScene({
         // units tall.
         { id: 'car', title: 'Parked by the house', href: 'car.png', w: 40.2, h: 32 },
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 28.5, h: 18 },
-        { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 13.6, h: 8 },
-        { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },
-        { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 10.1, h: 9.5 },
-        { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 13.2, h: 9 },
+        // Sized up round 29 ("fix the sizing of everything, try to scale
+        // but do not make anything too tiny") — these four read noticeably
+        // smaller than everything else in the scene.
+        { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 20.4, h: 12 },
+        { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 17.2, h: 13 },
+        { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 13.8, h: 13 },
+        { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 18.3, h: 12.5 },
         // Round 27 (2026-08-27, "upload all item elements onto the
         // village") — village-expansion-community-props-alpha.png,
         // imported round 26 but not wired until now. A real veg-crate.png
@@ -1101,7 +1136,7 @@ export default function VillageScene({
         { id: 'birdbath', title: 'A bird bath', href: 'birdbath.png', w: 11.1, h: 13 },
         { id: 'benchArbor', title: 'A bench under the arbor', href: 'bench-arbor.png', w: 18.9, h: 18 },
         { id: 'bikeFlowerpot', title: 'A bike, and flowers by the porch', href: 'bike-flowerpot.png', w: 22.8, h: 12 },
-        { id: 'vegCrate', title: "Whatever's ready to pick", href: 'veg-crate.png', w: 7.4, h: 8 },
+        { id: 'vegCrate', title: "Whatever's ready to pick", href: 'veg-crate.png', w: 10.2, h: 11 },
       ].map(p => {
         const p0 = decorPos(p.id)
         return (
@@ -1475,14 +1510,31 @@ export default function VillageScene({
           round 27 ("make everything moveable") — the click handlers below
           only fire outside arrange mode (openFigureOrToggle/openSomi both
           bail on `arranging`), so wrapping in Draggable is safe. */}
+      {/* Sylvia/Harry wander round Home and drift toward each other (round
+          30, 2026-08-27, "make the two figures be able to act as npc and
+          walk around and interact with each other") — a pure-CSS transform
+          loop (village-wander-sylvia/-harry in globals.css) on an inner
+          wrapping <g>, layered on top of Draggable's own position (so
+          arrange-mode dragging still works — the wander class is dropped
+          entirely while `arranging`, rather than fighting it). Both share
+          one 48s period with their midpoint keyframes moving toward each
+          other, so once a cycle they visibly close some of the gap between
+          them — the "interact" part — before drifting back apart. No new
+          walk-cycle art exists for them (only a single standing pose per
+          person, see VILLAGER_SPRITE), so this is a glide, not a
+          leg-animated walk. */}
       {(() => { const p = decorPos('sylvia'); return (
         <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-          <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+          <g className={!arranging ? 'village-wander-sylvia' : undefined}>
+            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+          </g>
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('harry'); return (
         <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-          <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} />
+          <g className={!arranging ? 'village-wander-harry' : undefined}>
+            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} />
+          </g>
         </Draggable>
       ) })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi

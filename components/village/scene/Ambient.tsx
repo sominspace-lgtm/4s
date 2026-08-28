@@ -46,18 +46,24 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
         </g>
       )}
 
-      {/* Two birds, high and far, morning only. */}
+      {/* Three birds, high and far, morning only — a third added round 29
+          (2026-08-27, "add more ambient elements"), still well inside the
+          six-moving-node budget above (this group only shows alongside
+          smoke/fireflies at different times of day, never all at once). */}
       {(v.timeOfDay === 'dawn' || v.timeOfDay === 'day') && (
         <g className="village-birds" opacity={0.28}>
           <path d="M 0 0 q 4 -3 8 0 q 4 -3 8 0" fill="none" stroke="var(--text)" strokeWidth={1.1} transform="translate(120 96)" />
           <path d="M 0 0 q 3 -2.2 6 0 q 3 -2.2 6 0" fill="none" stroke="var(--text)" strokeWidth={1} transform="translate(158 112)" />
+          <path d="M 0 0 q 3.5 -2.6 7 0 q 3.5 -2.6 7 0" fill="none" stroke="var(--text)" strokeWidth={1} transform="translate(560 88)" />
         </g>
       )}
 
-      {/* Fireflies over the forest, and only if there is one. */}
+      {/* Fireflies over the forest, and only if there is one — six now
+          instead of four (round 29, "add more ambient elements"), still the
+          header comment's own ceiling for one group. */}
       {dark && v.plants.length > 0 && (
         <g opacity={0.9}>
-          {[[92, 336], [148, 320], [214, 344], [268, 328]].map(([cx, cy], i) => (
+          {[[92, 336], [148, 320], [214, 344], [268, 328], [122, 352], [190, 330]].map(([cx, cy], i) => (
             <circle key={i} cx={cx} cy={cy} r={1.7} fill="var(--amber)"
               className={`village-firefly village-firefly-${i % 3}`} />
           ))}
