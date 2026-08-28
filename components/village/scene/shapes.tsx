@@ -471,39 +471,20 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick }: {
   // stopPropagation, same reason as VillagerShape above.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   // Real sprite art (round 9), made alive (round 13), replaced (round 15),
-  // replaced again (round 20), and updated once more (round 22, 2026-08-27,
-  // "the cat animation got updated: these are now the only ones. delete
-  // all old ones") — round 20's blanket-peek/plain-sleep poses came from a
-  // sheet the user then swapped for two others: the same 12 base poses
-  // (identical crops, kept as-is) plus 8 new weather-reactive poses
-  // (stretch, sit-tall, sleep-by-a-lit-window, curled, playing, hiding in
-  // her own tail, walking through snow, sitting in a leaf-blown wind).
-  // round 20's now-superseded somi-sleep.png/somi-peek*.png were deleted
-  // outright, not kept alongside.
-  //
-  // 8 of these 20 poses picked for the default cycle: sit (blink pair),
-  // look back, walk (two angles), a pounce, curled asleep, and the
-  // stretch — the other 12 (a second walk direction, two close-ups, and
-  // the remaining weather-reactive poses: sit-tall, sleep-by-window,
-  // playing, hiding-in-tail, walk-in-snow, wind-blown) are cropped and
-  // available in public/village-assets/ but not in this always-on cycle —
-  // the weather ones in particular are real candidates for a future
-  // weather-conditional wiring (item 4 of the user's earlier "Living-
-  // System" brief: drive Somi from real weather/season/time) rather than
-  // showing regardless of actual conditions. Every active frame cropped to
-  // its own exact opaque bounding box (same "keep them aligned" reasoning
-  // as round 15 — SpriteCycle's bottom-anchor needs a consistent "ground"
-  // position per frame).
+  // replaced again (round 20), updated once more (round 22), and cut down
+  // to just these two (round 25, 2026-08-27, "make sure only the animation
+  // in the folder shows for somi") — every earlier round's Somi art came
+  // from sheets the user pasted directly, never actually part of the
+  // village-master-visual-assets folder itself; this folder's OWN Somi
+  // content is a small two-pose pair on its
+  // village-expansion-cat-night-ambient-states.png sheet (a play-bow
+  // stretch and a curled sleeping face-closeup, alongside a moon/lantern/
+  // flower set that isn't Somi at all). Down from 8 frames to these 2 — a
+  // real reduction in richness, but it's what's actually in the folder.
   const h = 20
   const frames = [
-    { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
-    { src: '/village-assets/somi-sit-2.png', aspect: 158 / 195 },
-    { src: '/village-assets/somi-look-back.png', aspect: 165 / 195 },
-    { src: '/village-assets/somi-walk-1.png', aspect: 226 / 192 },
-    { src: '/village-assets/somi-walk-2.png', aspect: 230 / 185 },
-    { src: '/village-assets/somi-pounce.png', aspect: 215 / 183 },
-    { src: '/village-assets/somi-curled.png', aspect: 253 / 191 },
-    { src: '/village-assets/somi-stretch.png', aspect: 313 / 317 },
+    { src: '/village-assets/somi-playbow.png', aspect: 223 / 174 },
+    { src: '/village-assets/somi-sleepy.png', aspect: 156 / 126 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
@@ -692,47 +673,53 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // swaying in perfect lockstep.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.16} />
+          <ellipse cx={0} cy={2} rx={18} ry={2.4} fill="var(--text)" opacity={0.16} />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--surface2)" strokeWidth={2.5} strokeLinecap="round" opacity={0.4} fill="none" />
           <path d="M -11 2 Q -2 4 4 1 T 11 2" stroke="var(--border)" strokeWidth={2.5} strokeDasharray="1 5" strokeLinecap="round" opacity={0.5} fill="none" />
+          {/* Trees sized up (round 25, 2026-08-27, "make sure the trees,
+              building, car are bigger than the figures") — VillagerShape
+              renders Sylvia/Harry at 30 units tall; these read close to
+              that before, not clearly past it. */}
           <g opacity={0.85}>
-            <SpriteCycle frames={TREE_SWAY_FRAMES} x={-16 + 6.2} y={1} height={15} periodSec={6.5} />
+            <SpriteCycle frames={TREE_SWAY_FRAMES} x={-16 + 6.2} y={1} height={30} periodSec={6.5} />
           </g>
-          <image href="/village-assets/pine-tree.png" x={-6.8} y={-26} width={13.6} height={26}
+          <image href="/village-assets/pine-tree.png" x={-8.9} y={-34} width={17.8} height={34}
             style={{ imageRendering: 'pixelated' }} />
-          <SpriteCycle frames={TREE_SWAY_FRAMES} x={6 + 7.9} y={0} height={19} periodSec={7.8} />
+          <SpriteCycle frames={TREE_SWAY_FRAMES} x={6 + 7.9} y={0} height={34} periodSec={7.8} />
         </g>
       )
     case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
-      // pack), replacing the hand-drawn construction site.
+      // pack), replacing the hand-drawn construction site. Sized up round 25 (same "bigger
+      // than the figures" reasoning as the trees above).
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={16} ry={2.3} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/workshop.png" x={-16} y={-24} width={32} height={24}
+          <ellipse cx={0} cy={2} rx={20} ry={2.9} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/workshop.png" x={-20} y={-30} width={40} height={30}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={4} cy={-15} r={7} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+          {dark && <circle cx={5} cy={-19} r={8.75} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'book': // Archive — a real greenhouse sprite (round 11, 2026-08-27, same custom pack) —
       // the exact "library/greenhouse" identity this district has been reaching for by hand
       // since the 2026-08-24 reskin, now with the actual building. The Life Tree stays where
       // it is, drawn separately in VillageScene (real years-of-account data, not decoration).
+      // Sized up round 25, same reasoning as workshop above.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/greenhouse.png" x={-14.5} y={-24} width={29} height={24}
+          <ellipse cx={0} cy={2} rx={18.75} ry={2.75} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/greenhouse.png" x={-18.1} y={-30} width={36.3} height={30}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-13} r={8} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-16.25} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
     case 'places': // Places — a real market/shop sprite (round 11, 2026-08-27, same custom
-      // pack), replacing the hand-drawn kiosk.
+      // pack), replacing the hand-drawn kiosk. Sized up round 25, same reasoning as workshop.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={16} ry={2.2} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/shop.png" x={-15.75} y={-24} width={31.5} height={24}
+          <ellipse cx={0} cy={2} rx={20} ry={2.75} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/shop.png" x={-19.7} y={-30} width={39.4} height={30}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-14} r={7.5} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-17.5} r={9.4} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'people': // People — an empty bench, not a second Sylvia/Harry (round 14 fix,

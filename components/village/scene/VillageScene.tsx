@@ -906,9 +906,19 @@ export default function VillageScene({
           shapes.tsx already established for buildings: a dirt path's color
           isn't themeable, and var(--surface2)/var(--border) (translucent
           cream/brown under Bloom) read too close to the ridge line's own
-          var(--border) to tell apart at a glance. */}
-      <path d={PATH_D} fill="none" stroke="#C9A876" strokeWidth={7} strokeLinecap="round" opacity={0.55} />
-      <path d={PATH_D} fill="none" stroke="#8A6B47" strokeWidth={7} strokeDasharray="1 7" strokeLinecap="round" opacity={0.7} />
+          var(--border) to tell apart at a glance.
+          Rebuilt as a real worn-trail band (round 25, 2026-08-27, "make the
+          path look more like a path") — the old version was two thin,
+          same-width strokes (a wash + a dash) that read as a scribbled line
+          rather than ground you'd actually walk on. Now four layered
+          strokes, widest to narrowest: a soft grassy-edge shoulder where the
+          trail blends into the lawn, the dirt body itself, a worn darker
+          tread down the well-walked center, and a thin warm highlight on
+          top suggesting sun on packed earth. */}
+      <path d={PATH_D} fill="none" stroke="#A9C096" strokeWidth={15} strokeLinecap="round" opacity={0.35} />
+      <path d={PATH_D} fill="none" stroke="#D8B98A" strokeWidth={11} strokeLinecap="round" opacity={0.85} />
+      <path d={PATH_D} fill="none" stroke="#9C7B4F" strokeWidth={5.5} strokeDasharray="1 4.5" strokeLinecap="round" opacity={0.55} />
+      <path d={PATH_D} fill="none" stroke="#E8CFA0" strokeWidth={1.6} strokeDasharray="10 14" strokeLinecap="round" opacity={0.4} />
 
       {/* Grass and stones — same dark-mode dimming as the ground-plane
           group above, kept as a second filtered group rather than merged
@@ -977,7 +987,10 @@ export default function VillageScene({
         // we can also see them") — the round 23 sizes read a little small
         // next to the buildings they stand beside.
         { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 33, h: 18.4 },
-        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 22.6, h: 18 },
+        // Sized up once more round 25 ("make sure the trees, building, car
+        // are bigger than the figures") — VillagerShape's cast stands 30
+        // units tall.
+        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 40.2, h: 32 },
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 28.5, h: 18 },
         { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 13.6, h: 8 },
         { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },

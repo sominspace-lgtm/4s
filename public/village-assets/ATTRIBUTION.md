@@ -238,3 +238,28 @@ also see them."
 - Gate/car/bus-stop/mailbox/signpost/fence sized up (their round 23 sizes read a little small next
   to the buildings they stand beside) and set to full opacity — see each shape's own updated size
   comment for the exact numbers.
+
+## Round 25 (2026-08-27) — Somi down to the folder's own two poses, bigger scenery, a real path
+
+"make sure the trees, building, car are bigger than the figures. make the path look more like a
+path. delete old fences and use the new ones. make sure only the animation in the folder shows
+for somi. please update and make better."
+
+- **Somi, re-sourced again.** Every earlier round's Somi art (rounds 9-22) came from sheets the
+  user pasted directly — never actually part of the `village-master-visual-assets` folder. That
+  folder's own Somi content turned out to be much smaller: two poses on
+  `village-expansion-cat-night-ambient-states.png` (a play-bow stretch and a curled sleeping
+  face-closeup — the sheet's other rows are moon/stars/lanterns/flowers, not Somi). Cropped as
+  `somi-playbow.png`/`somi-sleepy.png`, replacing the round 22-24 8-pose cycle outright; the 8
+  files behind that cycle (`somi-sit-1/2.png`, `somi-look-back.png`, `somi-walk-1/2.png`,
+  `somi-pounce.png`, `somi-curled.png`, `somi-stretch.png`) are deleted, not kept in reserve. Real
+  reduction in richness — 2 frames instead of 8 — but it's what's actually in the folder.
+- **Trees, buildings, and the car sized up** so they clearly read bigger than the 30-unit-tall
+  cast (VillagerShape) — Growth Forest's pine and two round trees, and the workshop/greenhouse/
+  shop badges, all grew roughly 25%; the car prop grew further still (see each shape's own round
+  25 size comment).
+- **The path rebuilt** as a real four-layer worn-trail band (a soft grassy shoulder, the dirt body,
+  a darker worn tread down the center, a thin sunlit highlight on top) instead of the old two
+  same-width strokes, which read as a scribbled line rather than ground.
+- **Fences** — already resolved in round 24 (`fence-rail.png` is the only fence file; `FenceShape`
+  already draws it exclusively). No further change needed here.
