@@ -115,11 +115,37 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
           season). Five short streaks, same fixed-position + staggered-delay
           trick as the snow/leaf/petal particles above. */}
       {(weatherCondition === 'rain' || weatherCondition === 'storm') && (
-        <g opacity={0.35} stroke="var(--text)" strokeWidth={1.1} strokeLinecap="round">
-          {[[70, 20], [210, 4], [350, 30], [500, 10], [640, 26], [720, 0]].map(([cx, cy], i) => (
-            <line key={i} x1={cx} y1={cy} x2={cx - 3} y2={cy + 14}
-              className={`village-rain village-rain-${i % 3}`} />
-          ))}
+        <>
+          <g opacity={0.35} stroke="var(--text)" strokeWidth={1.1} strokeLinecap="round">
+            {[[70, 20], [210, 4], [350, 30], [500, 10], [640, 26], [720, 0]].map(([cx, cy], i) => (
+              <line key={i} x1={cx} y1={cy} x2={cx - 3} y2={cy + 14}
+                className={`village-rain village-rain-${i % 3}`} />
+            ))}
+          </g>
+          {/* Puddles collecting on the ground while it rains (round 54,
+              "import all" — weather-puddles-wind-leaves-alpha.png). Static
+              decals, low on the path. */}
+          <g opacity={0.5}>
+            {[[210, groundY + 40, 34], [470, groundY + 34, 26], [610, groundY + 44, 30]].map(([cx, cy, w], i) => (
+              <image key={i} href="/village-assets/puddle.png" x={cx - w / 2} y={cy - (w / 2.8) / 2}
+                width={w} height={w / 2.8} style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+            ))}
+          </g>
+        </>
+      )}
+
+      {/* Wind-blown leaves drifting along the ground in autumn (round 54) —
+          two scattered patches, gentle horizontal drift. */}
+      {v.season === 'autumn' && v.timeOfDay !== 'night' && (
+        <g opacity={0.55}>
+          {[[180, groundY + 36], [560, groundY + 30]].map(([cx, cy], i) => {
+            const w = 30, h = w * (95 / 384)
+            return (
+              <image key={i} href="/village-assets/leaves-scatter.png" x={cx - w / 2} y={cy - h}
+                width={w} height={h} style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none"
+                className={`village-mote village-mote-${i * 2 + 1}`} />
+            )
+          })}
         </g>
       )}
 
