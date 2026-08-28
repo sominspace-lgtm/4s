@@ -531,6 +531,50 @@ const HARRY_WAVE_FRAMES = [
   { src: '/village-assets/harry-wave-4.png', aspect: 245 / 401 },
 ]
 
+// Real two-character interaction art (round 49, 2026-08-28, "there are
+// interactions for harry and sylvia... update all elements and
+// animations"), from sylvia-harry-interactions-special-moments-alpha.png
+// and village-animation-people-interaction.png — nine combined poses (a
+// high-five, a flower handed over, planting a seedling together, a heart
+// card, a couple of plain together-stances, a walk side by side, watering a
+// pot together, sharing an umbrella) cycled slowly and shown only during
+// the brief "together" window each wander lap already brings Sylvia and
+// Harry home for (village-couple-interact-vis/village-wander-sylvia's own
+// added opacity term in globals.css) — the real version of round 47's
+// "every now and then the couple should interact," which until now had
+// only a position-drift standing in for it. One 9-pose meta-cycle exactly
+// covers 9 wander laps (48s × 9 = 432s), so a different pose shows each
+// time they come together rather than the same one on repeat.
+const COUPLE_INTERACT_FRAMES = [
+  { src: '/village-assets/sh-int-standing.png', aspect: 328 / 334 },
+  { src: '/village-assets/sh-int-highfive.png', aspect: 375 / 330 },
+  { src: '/village-assets/sh-int-flower-card.png', aspect: 358 / 315 },
+  { src: '/village-assets/sh-int-planting.png', aspect: 328 / 296 },
+  { src: '/village-assets/sh-int-heart-card.png', aspect: 361 / 355 },
+  { src: '/village-assets/sh-int-stand2.png', aspect: 443 / 402 },
+  { src: '/village-assets/sh-int-walk-together.png', aspect: 432 / 395 },
+  { src: '/village-assets/sh-int-watering.png', aspect: 492 / 393 },
+  { src: '/village-assets/sh-int-umbrella.png', aspect: 435 / 429 },
+]
+
+export function CoupleInteraction({ x, y }: { x: number; y: number }) {
+  return <SpriteCycle frames={COUPLE_INTERACT_FRAMES} x={x} y={y} height={34} periodSec={9 * 48} />
+}
+
+// The tenth pose from the same interactions sheet — sitting together on a
+// bench — held in reserve for quiet evenings (see VillageScene's own
+// `quiet` block): round 48 could only fake "two figures sit on a bench"
+// with plain stillness since no seated art existed yet; this is that real
+// pose, finally.
+export function CoupleBenchShape({ x, y }: { x: number; y: number }) {
+  const h = 34
+  const w = h * (346 / 323)
+  return (
+    <image href="/village-assets/sh-int-bench.png" x={x - w / 2} y={y - h} width={w} height={h}
+      style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+  )
+}
+
 export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }: {
   x: number; y: number; name: string
   /** Unused now that this renders a fixed-art sprite — see this file's own

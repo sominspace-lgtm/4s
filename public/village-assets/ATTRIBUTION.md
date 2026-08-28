@@ -762,3 +762,39 @@ feels very nice... additionaluy make all elements resizable in arrange"
   this round). Covers the generic decor/item-prop list, every Inventory-placed custom item, and
   the cast (Sylvia/Harry/Somi). Districts, real habit-plants, and buildings are NOT resizable this
   round - a real scope boundary, not an oversight, given how much this round already covers.
+
+## Round 49 (2026-08-28) - real couple interactions, a real bench
+
+"there are interactions for harry and sylvia... update all elements and animations.. everything
+in folder should be used"
+
+Two sheets named directly: `character/sylvia-harry-interactions-special-moments-alpha.png` (six
+combined poses: standing together, a high-five, Sylvia handing Harry a flower card, sitting
+together on a bench, planting a seedling together, a heart-shaped card) and
+`character/village-animation-people-interaction.png` (four more: a plainer together-stance,
+walking side by side, watering a pot together, sharing an umbrella). All ten cropped clean, no
+magenta artifacts (`sh-int-standing.png`, `sh-int-highfive.png`, `sh-int-flower-card.png`,
+`sh-int-bench.png`, `sh-int-planting.png`, `sh-int-heart-card.png`, `sh-int-stand2.png`,
+`sh-int-walk-together.png`, `sh-int-watering.png`, `sh-int-umbrella.png`).
+
+- **Real recurring interaction**: round 47's "the couple should interact with each other" had only
+  a position-drift standing in for it (no interaction art existed yet). Nine of the ten poses above
+  (everything but the bench, reserved below) now cycle slowly and appear as one combined sprite,
+  in place of the two separate figures, during the brief moment each 48s wander lap already brings
+  Sylvia and Harry back home together (`CoupleInteraction`, shapes.tsx; `village-couple-interact-
+  vis`/the new opacity term folded into `village-wander-sylvia`/`-harry`, globals.css). The 9-pose
+  cycle runs over 9 laps (432s) so a different pose shows each time rather than the same one on
+  repeat.
+- **A real bench, finally**: round 48's "quiet compositions" could only fake "two figures sit on a
+  bench" with plain stillness, since no seated-pose art existed. It exists now - `CoupleBenchShape`
+  replaces the two individual figures outright during dusk/night (`quiet`) with the real
+  sitting-together pose from the interactions sheet, at the midpoint between their two positions.
+- **Scope note on "everything in folder should be used"**: the full `village-master-visual-assets`
+  folder is ~40 sheets deep - multi-outfit libraries, major-occasion outfits, tennis outfits,
+  seasonal decor, civic landmarks, weather puddles/wind-leaves, a memory postcard rack, garden
+  beds, and more - and every round this session has been steadily pulling from it already (see
+  every round above). This round wires the two sheets named explicitly. The remainder stays
+  genuinely available for future rounds rather than a blind mass-import right now: each of those
+  is its own visual decision (an outfit swap needs a trigger, a postcard rack needs a real
+  "memories" surface to hang it on) that this session's own pattern - iterate with a screenshot,
+  don't guess blind - argues for doing one at a time, not all at once sight-unseen.

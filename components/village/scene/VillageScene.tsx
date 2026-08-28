@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The 2-frame flower-cluster sway (round 13, 2026-08-27,
 // village-animations-complete.zip) — same idiom as shapes.tsx's own
@@ -520,9 +520,13 @@ export default function VillageScene({
   // motion right when the mood calls for the opposite. This leans on what
   // the scene already does at night rather than new art: birds are
   // already dawn/day-only (Ambient.tsx), Home's window already glows, the
-  // ground already dims. A literal "two figures on a bench" tableau would
-  // need seated-pose art that doesn't exist yet for either of them — this
-  // is the honest version of that mood with what's actually available.
+  // ground already dims. Round 48 could only fake "two figures on a bench"
+  // with plain stillness since no seated-pose art existed; round 49
+  // (2026-08-28) has the real thing now (CoupleBenchShape, shapes.tsx, from
+  // sylvia-harry-interactions-special-moments-alpha.png) and swaps it in —
+  // see the cast render below, where quiet replaces the two separate
+  // figures with the one seated-together sprite instead of just holding
+  // them still in place.
   const quiet = dark
 
   // A worn path near wherever you actually go (2026-08-24) — the one
@@ -1696,7 +1700,7 @@ export default function VillageScene({
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* Home reads 1.25x the rest (2026-08-27) — "this is where you live,"
           everything else branches outward from it. */}
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1.25}
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
       <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
@@ -1760,19 +1764,38 @@ export default function VillageScene({
           walk-cycle art exists for them (only a single standing pose per
           person, see VILLAGER_SPRITE), so this is a glide, not a
           leg-animated walk. */}
+      {/* The real two-character interaction/bench art (round 49, 2026-08-28)
+          — rendered once, at the midpoint between Sylvia's and Harry's own
+          positions, UNDER their individual Draggable wrappers below so a
+          tap still lands on whichever one is actually visible right now
+          (each side hides itself, via CSS, exactly when this shows — see
+          village-couple-solo-vis/-interact-vis in globals.css). Neither is
+          itself draggable/clickable — it's a costume the two normal figures
+          wear part of the time, not a third entity. */}
+      {!arranging && (() => {
+        const sp = decorPos('sylvia'), hp = decorPos('harry')
+        const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
+        return quiet
+          ? <CoupleBenchShape x={midX} y={midY} />
+          : <g className="village-couple-interact-vis"><CoupleInteraction x={midX} y={midY} /></g>
+      })()}
       {(() => { const p = decorPos('sylvia'); return (
         <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-          <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined}>
-            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
-          </g>
+          {!(quiet && !arranging) && (
+            <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined}>
+              <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
+            </g>
+          )}
           <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('harry'); return (
         <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-          <g className={!arranging && !quiet ? 'village-wander-harry' : undefined}>
-            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
-          </g>
+          {!(quiet && !arranging) && (
+            <g className={!arranging && !quiet ? 'village-wander-harry' : undefined}>
+              <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
+            </g>
+          )}
           <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
         </Draggable>
       ) })()}

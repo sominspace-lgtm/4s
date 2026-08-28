@@ -472,8 +472,30 @@ select, option {
   50% { transform: translate(-16px, 2px); }
   80% { transform: translate(8px, -3px); }
 }
-.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
-.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
+/* village-couple-solo-vis (round 49) hides each figure's own idle/walk art
+   during the brief "together" window at the top of the lap (0-4%, 96-100%,
+   right where the translate keyframes above already put them home) so the
+   real two-character interaction art (CoupleInteraction, shapes.tsx) can
+   stand in for them instead of the two overlapping. Its inverse,
+   village-couple-interact-vis, gates that overlay the other direction.
+   Bundled into the SAME `animation` declaration as each figure's own
+   transform-animation (comma-separated) rather than a second class — two
+   classes each setting `animation` on one element don't merge, the later
+   one in the cascade just wins outright, same trap this file's transform
+   notes already document for `transform` itself. */
+@keyframes village-couple-solo-vis {
+  0%, 4% { opacity: 0; }
+  8%, 92% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes village-couple-interact-vis {
+  0%, 4% { opacity: 1; }
+  8%, 92% { opacity: 0; }
+  96%, 100% { opacity: 1; }
+}
+.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite, village-couple-solo-vis 48s steps(1) infinite; }
+.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite, village-couple-solo-vis 48s steps(1) infinite; }
+.village-couple-interact-vis { animation: village-couple-interact-vis 48s steps(1) infinite; }
 
 /* Harry's wave — the recurring "near Sylvia" window from round 46, PLUS a
    0-6% window (round 47) so he greets with a real wave the moment the
