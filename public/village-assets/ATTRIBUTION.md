@@ -646,3 +646,10 @@ and ambience"
   more), and opacity 0.85 -> 1 - round 40's version was real cobblestone art but read too
   faint/sparse to register as a path at a glance, per this round's repeated pointer to the same
   source file.
+
+## Round 43 (2026-08-28) - eased back out
+
+"zoom a little out now" - BASE_VB_W 720 -> 760, BASE_VB_H 300 -> 330 (VillageScene's own viewBox
+computation). Round 40/41's tightening read as a bit too close in practice; this keeps round 42's
+sun/moon visibility fix (BASE_VB_CY=180) intact with plenty of margin at the new, slightly larger
+window.

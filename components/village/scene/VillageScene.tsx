@@ -843,8 +843,10 @@ export default function VillageScene({
   // not a rare edge case. Recentering higher trades a little more
   // foreground crop (already partial by design, see FOREGROUND's own
   // comment) for the sky actually being able to show what's in it.
-  const BASE_VB_W = 720
-  const BASE_VB_H = 300
+  // Eased back out a little (round 43, 2026-08-28, "zoom a little out
+  // now") — round 40/41's tightening read as a bit too close in practice.
+  const BASE_VB_W = 760
+  const BASE_VB_H = 330
   const BASE_VB_CX = 400
   const BASE_VB_CY = 180
   const vbW = BASE_VB_W / zoom
