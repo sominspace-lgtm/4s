@@ -52,14 +52,14 @@ export function useCoupleLife(opts: {
   const shx = sylviaHome.x, shy = sylviaHome.y, hhx = harryHome.x, hhy = harryHome.y
 
   const [sylvia, setSylvia] = useState<FigureLife>({ x: shx, y: shy, pose: 'idle', face: 1, dur: 0 })
-  const [harry, setHarry] = useState<FigureLife>({ x: hhx, y: hhy, pose: 'idle', face: -1, dur: 0 })
+  const [harry, setHarry] = useState<FigureLife>({ x: hhx, y: hhy, pose: 'idle', face: 1, dur: 0 })
   const [together, setTogether] = useState(false)
   const [interactPose, setInteractPose] = useState(0)
   const [interactAt, setInteractAt] = useState<Pt>({ x: (shx + hhx) / 2, y: (shy + hhy) / 2 })
 
   // Live positions + facing, so a move can size its own duration and pick a
   // facing off where the figure actually is without threading React state.
-  const liveRef = useRef({ sx: shx, sy: shy, sf: 1 as 1 | -1, hx: hhx, hy: hhy, hf: -1 as 1 | -1 })
+  const liveRef = useRef({ sx: shx, sy: shy, sf: 1 as 1 | -1, hx: hhx, hy: hhy, hf: 1 as 1 | -1 })
   const timers = useRef<number[]>([])
   const meetRef = useRef<(pt: Pt | null) => void>(() => {})
 
@@ -72,9 +72,9 @@ export function useCoupleLife(opts: {
 
     if (!enabled) {
       clearTimers()
-      liveRef.current = { sx: shx, sy: shy, sf: 1, hx: hhx, hy: hhy, hf: -1 }
+      liveRef.current = { sx: shx, sy: shy, sf: 1, hx: hhx, hy: hhy, hf: 1 }
       setSylvia({ x: shx, y: shy, pose: 'idle', face: 1, dur: 0 })
-      setHarry({ x: hhx, y: hhy, pose: 'idle', face: -1, dur: 0 })
+      setHarry({ x: hhx, y: hhy, pose: 'idle', face: 1, dur: 0 })
       setTogether(false)
       return
     }
@@ -93,11 +93,12 @@ export function useCoupleLife(opts: {
       const dist = Math.hypot(tx - cx, ty - cy)
       // Slower now (round 55) — the walk cycle sells a stroll, not a dash.
       const dur = dist < 3 ? 0 : Math.max(600, Math.min(6500, (dist / SPEED) * 1000))
-      // Face the way we're about to move — a hair either side of dead-ahead
-      // is enough to commit (round 55, "always walk looking towards
-      // direction they walk").
+      // Face the way we're about to move (round 55, fixed round 56 — the
+      // walk art faces RIGHT natively, so moving right is scale 1 and
+      // moving left is the mirror). A hair either side of dead-ahead is
+      // enough to commit.
       const curFace = who === 'sylvia' ? L.sf : L.hf
-      const face: 1 | -1 = tx < cx - 0.5 ? 1 : tx > cx + 0.5 ? -1 : curFace
+      const face: 1 | -1 = tx > cx + 0.5 ? 1 : tx < cx - 0.5 ? -1 : curFace
       if (who === 'sylvia') { L.sx = tx; L.sy = ty; L.sf = face } else { L.hx = tx; L.hy = ty; L.hf = face }
       const set = who === 'sylvia' ? setSylvia : setHarry
       set(pr => ({ x: tx, y: ty, pose: dist < 3 ? pr.pose : 'walk', face, dur }))

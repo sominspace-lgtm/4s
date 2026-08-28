@@ -411,7 +411,20 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // The village clock tower (round 54 batch 2, "import all" —
   // village-civic-landmarks-alpha.png) — stands back-left, its face shows
   // the current time of day.
-  clockTower: { x: 120, y: GROUND_Y + 4 },
+  clockTower: { x: 92, y: GROUND_Y + 2 },
+  // Round 56 ("remake the village design to look the best with everything")
+  // — a curated layer of the imported decor placed as real scenery instead
+  // of leaving it all in the Inventory, spread to balance the composition
+  // rather than pile onto the already-busy Growth Forest side. Draggable
+  // like everything else.
+  gazebo: { x: 648, y: GROUND_Y + 26 },
+  footBridgeScene: { x: 505, y: GROUND_Y + 35 },
+  scarecrowScene: { x: 60, y: GROUND_Y + 50 },
+  birdhouseScene: { x: 596, y: GROUND_Y + 6 },
+  barrelScene: { x: 333, y: GROUND_Y + 8 },
+  firewoodScene: { x: 458, y: GROUND_Y + 6 },
+  cherryBlossomScene: { x: 585, y: GROUND_Y + 34 },
+  wildflowerScene: { x: 625, y: GROUND_Y + 44 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 345, y: GROUND_Y + 20 },
@@ -1379,6 +1392,15 @@ export default function VillageScene({
         // Sized up again round 35 (2026-08-27, "things like bus stop still
         // too small") — 18 units tall still read small at full-scene zoom.
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
+        // Round 56 curated scenery — see DECOR_DEFAULTS.
+        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 31 * (249 / 259), h: 31 },
+        { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 13 * (269 / 179), h: 13 },
+        { id: 'scarecrowScene', title: 'A scarecrow', href: 'scarecrow.png', w: 17 * (234 / 284), h: 17 },
+        { id: 'birdhouseScene', title: 'A birdhouse', href: 'birdhouse.png', w: 16 * (163 / 270), h: 16 },
+        { id: 'barrelScene', title: 'A barrel', href: 'barrel.png', w: 11 * (166 / 200), h: 11 },
+        { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
+        { id: 'cherryBlossomScene', title: 'Cherry blossom', href: 'cherry-blossom.png', w: 22 * (241 / 321), h: 22 },
+        { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
         // smaller than everything else in the scene.

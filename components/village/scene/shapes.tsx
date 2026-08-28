@@ -451,7 +451,7 @@ const CLOCK_SRC: Record<string, string> = {
 export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
   x: number; y: number; timeOfDay: string; dark?: boolean; scale?: number
 }) {
-  const h = 40, w = h * (236 / 438) // 236x438 source
+  const h = 48, w = h * (236 / 438) // 236x438 source — reads as a landmark, round 56
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.6} rx={w / 2.2} ry={2} fill="var(--text)" opacity={0.14} />
