@@ -23,6 +23,11 @@ import { STAGE_INDEX, hashPos, type Plant, type Building } from '@/lib/village/s
 // The 4-frame round-tree sway cycle (round 13, 2026-08-27,
 // village-animations-complete.zip) — module-level so every tree instance
 // shares one array reference rather than re-allocating it per render.
+// Re-cropped round 23 (2026-08-27, "update only using these elements") from
+// the same village-master-visual-assets folder's own tree-sway sheet — same
+// content as before (this file's original source, just re-sourced directly
+// rather than through an earlier round's crop) so aspect ratios shifted only
+// slightly.
 const TREE_SWAY_FRAMES = [
   { src: '/village-assets/round-tree-sway-1.png', aspect: 331 / 459 },
   { src: '/village-assets/round-tree-sway-2.png', aspect: 355 / 459 },
@@ -79,19 +84,16 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   // 5 real stages, in the same spirit as the old h/w arrays but tuned to
   // the sprites' actual source proportions instead of the hand-drawn circle
   // sizes.
-  // Third species added (round 16, 2026-08-27, the user's own
-  // village-master-visual-assets.zip growth-neglect-recovery sheet) — a
-  // real 5-stage flower growth sequence, the first genuine "grows AND
-  // visibly neglects" art this scene has: two wilted-branch frames replace
-  // the flat grayscale filter tomato/potato still use for a dormant plant.
-  const species = (() => {
-    const r = hashPos(plant.id + 'species')
-    return r < 0.34 ? 'tomato' : r < 0.67 ? 'potato' : 'flower'
-  })()
+  // Down to one species (round 23, 2026-08-27, "update only using these
+  // elements. delete all old ones") — tomato/potato came from the original
+  // free-tier Cozy Farm pack, which the master-visual-assets folder has no
+  // equivalent for; only flower's real 5-stage growth-neglect-recovery
+  // sequence (round 16, same master folder) does. Every plant is a flower
+  // now; hashPos still picks which of the two dormant/wilt variants a given
+  // plant gets, same determinism rule as everywhere else in this file.
+  const species = 'flower'
   const size = [14, 20, 27, 33, 38][i]
-  const dormantSprite = species === 'flower'
-    ? `flower-dormant-${hashPos(plant.id + 'wilt') < 0.5 ? 1 : 2}`
-    : null
+  const dormantSprite = `flower-dormant-${hashPos(plant.id + 'wilt') < 0.5 ? 1 : 2}`
 
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
 
@@ -283,17 +285,20 @@ export function FenceShape({ x, y, length = 5, scale = 1 }: { x: number; y: numb
 // A lamppost (2026-08-25) — glows after dark, same window-glow reasoning as
 // BuildingShape's own (`dark` gates the lit look rather than leaving it
 // unconditionally on). Pure scenery, no click target.
-// Real sprite (round 10, 2026-08-27) — same custom pack. The stone lantern's
-// window is baked in as already-lit, so it reads warm even by day; the
-// amber blur glow is added only at night, on top, for real atmosphere.
+// Redrawn as a plain post + globe (round 23, 2026-08-27, "update only using
+// these elements. delete all old ones") — the round 10 stone-lantern.png
+// sprite has no equivalent in the master-visual-assets folder, and losing
+// the three path lamps outright would undo round 25's own night-path-
+// visibility fix; a small flat post/globe in this file's existing
+// TRIM/vglow language keeps the actual light without the old sprite.
 export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
-  const w = 12.5, h = 13.1 // 253×266 source, same aspect ratio
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-      {dark && <circle cy={-8} r={8} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
-      <image href="/village-assets/stone-lantern.png" x={-w / 2} y={-h} width={w} height={h}
-        style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
+      {dark && <circle cy={-10} r={8} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
+      <rect x={-0.9} y={-9} width={1.8} height={9} fill={TRIM} opacity={0.85} />
+      <circle cy={-10.5} r={2.6} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.9 : 0.6}
+        stroke={TRIM} strokeWidth={0.6} className={dark ? 'village-glow' : undefined} />
     </g>
   )
 }
@@ -306,7 +311,7 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
 // their own header comments.
 export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 12.6, h = 15.6 // 262×325 source, same aspect ratio
+  const w = 12.3, h = 12.5 // re-sourced round 23 from the master-assets folder, 256×260
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
@@ -328,7 +333,7 @@ export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?
 // toward Trips" than the hand-drawn flag it replaces.
 export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 13.7, h = 18 // 207×272 source, same aspect ratio
+  const w = 13.7, h = 18 // re-sourced round 23 from the master-assets folder, 205×270
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <circle cx={4} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
@@ -346,15 +351,20 @@ export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; 
 // district, only on the actual day (see VillageScene's use of
 // soonestBirthdayDays === 0). No new data: the same daysUntilBirthday
 // already driving the district's count badge.
-// Real sprite (round 10, 2026-08-27) — the pack's own pennant banner reads
-// as festive on its own (a flower on cream fabric), replacing the hand-drawn
-// flag string.
+// A small flag string, hand-drawn again (round 23, 2026-08-27, "update only
+// using these elements. delete all old ones") — round 10's pennant.png has
+// no equivalent in the master-visual-assets folder; this is a plain
+// triangle-flag bunting in the same gold-family/fixed-hex language as
+// FeatureIcon's other flat shapes, strung between two short posts.
 export function BuntingShape({ x, y }: { x: number; y: number }) {
-  const w = 14.2, h = 12.5 // 281×247 source, same aspect ratio
+  const flags = [-10, -5, 0, 5, 10]
   return (
-    <g transform={`translate(${x} ${y})`} opacity={0.95} pointerEvents="none">
-      <image href="/village-assets/pennant.png" x={-w / 2} y={-40} width={w} height={h}
-        style={{ imageRendering: 'pixelated' }} />
+    <g transform={`translate(${x} ${y - 34})`} opacity={0.95} pointerEvents="none">
+      <path d="M -12 0 Q 0 5 12 0" fill="none" stroke={TRIM} strokeWidth={0.8} opacity={0.7} />
+      {flags.map((dx, i) => (
+        <path key={i} d={`M ${dx} 0.5 L ${dx - 2.4} 6 L ${dx + 2.4} 6 Z`}
+          fill={i % 2 === 0 ? 'var(--blush)' : 'var(--gold)'} opacity={0.85} />
+      ))}
     </g>
   )
 }
@@ -396,9 +406,14 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // coloring) but kept in the prop signature rather than removed — deleting
 // them would touch both call sites in VillageScene.tsx for zero behavioral
 // gain, and a future non-sprite fallback might want them again.
+// Swapped to the master-assets folder's own default poses (round 23,
+// 2026-08-27, "update only using these elements") — sh-default-sylvia/
+// -harry.png, cropped in round 16 from sylvia-harry-outfit-states.png and
+// sitting unused ever since; the earlier sylvia.png/harry.png (a different,
+// older custom pack) are deleted, not kept alongside.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sylvia.png', w: 156, h: 319 },
-  Harry: { src: '/village-assets/harry.png', w: 175, h: 312 },
+  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 97, h: 175 },
+  Harry: { src: '/village-assets/sh-default-harry.png', w: 96, h: 168 },
 }
 
 export function VillagerShape({ x, y, name, scale = 1, onClick }: {
@@ -674,7 +689,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <g opacity={0.85}>
             <SpriteCycle frames={TREE_SWAY_FRAMES} x={-16 + 6.2} y={1} height={15} periodSec={6.5} />
           </g>
-          <image href="/village-assets/pine-tree.png" x={-7} y={-26} width={13.3} height={26}
+          <image href="/village-assets/pine-tree.png" x={-6.8} y={-26} width={13.6} height={26}
             style={{ imageRendering: 'pixelated' }} />
           <SpriteCycle frames={TREE_SWAY_FRAMES} x={6 + 7.9} y={0} height={19} periodSec={7.8} />
         </g>
@@ -684,7 +699,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       return (
         <g>
           <ellipse cx={0} cy={2} rx={16} ry={2.3} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/workshop.png" x={-16.8} y={-24} width={33.5} height={24}
+          <image href="/village-assets/workshop.png" x={-16} y={-24} width={32} height={24}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={4} cy={-15} r={7} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
@@ -696,7 +711,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       return (
         <g>
           <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/greenhouse.png" x={-15} y={-24} width={30} height={24}
+          <image href="/village-assets/greenhouse.png" x={-14.5} y={-24} width={29} height={24}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={0} cy={-13} r={8} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
@@ -706,7 +721,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       return (
         <g>
           <ellipse cx={0} cy={2} rx={16} ry={2.2} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/shop.png" x={-16.1} y={-24} width={32.3} height={24}
+          <image href="/village-assets/shop.png" x={-15.75} y={-24} width={31.5} height={24}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={0} cy={-14} r={7.5} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>

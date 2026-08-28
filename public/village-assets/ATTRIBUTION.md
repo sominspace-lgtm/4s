@@ -163,3 +163,56 @@ direction, two close-ups, and the remaining 6 weather poses — sit-tall, sleep-
 hiding-tail, walk-snow, wind-leaves) are imported but not in the always-on cycle; the weather
 ones in particular are real candidates for weather-conditional wiring later (item 4 of the
 user's earlier "Living-System" brief) rather than showing regardless of actual conditions.
+
+## Round 23 (2026-08-27) — "update only using these elements. delete all old ones"
+
+A full re-source of every wired sprite (except Somi, already on the master folder as of round 22)
+to the `village-master-visual-assets/` folder specifically, not just "some real pack" — the same
+consolidated folder rounds 16/16b/18/20/22 already drew from, re-inspected sheet by sheet this
+round. Where that folder had a clean equivalent, the old file was replaced and deleted outright
+(not kept in reserve); where it didn't, the prop was removed from the scene rather than left
+mismatched.
+
+**Replaced (old custom-pack/free-tier file deleted, master-folder crop wired in):**
+- `shop.png`, `greenhouse.png`, `workshop.png`, `gate.png`, `car.png`, `signpost2.png`,
+  `mailbox2.png`, `bus-stop.png` — all re-cropped from
+  `village-matching-expansion-structures-clean.png`.
+- `pine-tree.png`, `bush-mound.png`, `flowering-bush.png`, `tall-grass.png`, `rock-cluster.png` —
+  re-cropped from `village-matching-expansion-nature-sky-transparent.png` (sun.png/cloud-big.png/
+  cloud-small.png were already sourced from this same sheet, round 18 — untouched).
+- `round-tree-sway-1.png`…`-4.png` — re-cropped from `village-animation-tree-sway.png`; pixel-
+  identical to the crops they replace (same source sheet all along, just re-sourced directly).
+- `cottage-dark.png`, `cottage-lit.png` — two real lit/unlit crops from one of this round's export
+  files (an "exec-…" generically-named house-lighting-states sheet), replacing the single
+  `cottage.png` + a synthetic amber-ellipse overlay. This is the actual
+  `house-smart-home-states.png` content flagged "genuinely missing" back in round 16b — Home's
+  window glow now swaps to a real second sprite on the same Smart Home occupancy signal, not a
+  glow layered over one fixed image.
+- Sylvia/Harry: `sylvia.png`/`harry.png` (an older custom pack) replaced by `sh-default-
+  sylvia.png`/`sh-default-harry.png` — already cropped from this same master folder's
+  `sylvia-harry-outfit-states.png` back in round 16, sitting unused until now.
+- Plants: `tomato-0…4.png`/`potato-0…4.png` (free-tier Cozy Farm pack, no master-folder
+  equivalent) removed — every plant is now the `flower` species (`flower-0…4.png`/
+  `flower-dormant-1/2.png`, already master-sourced since round 16).
+
+**Redrawn as plain SVG, sprite dropped (function kept, no old file left in):**
+- `LampShape` (the three path lamps) — `stone-lantern.png` had no equivalent; now a small flat
+  post + globe in this file's existing TRIM/vglow language, so the path still lights up at night.
+- `BuntingShape` (the birthday flag string) — `pennant.png` had no equivalent; now a hand-drawn
+  triangle-flag string in the same fixed-hex language as `FeatureIcon`.
+
+**Removed outright (no equivalent, not replaced):** `bicycle.png`, `flower-pot.png`,
+`laundry-basket.png`, `bread-basket.png` (Home's yard), `tea-set.png`, `swing.png` (People's
+corner — the bench alone now carries that identity), `blank-sign.png` (Places), `veg-crate.png`
+(Growth Forest), `book-stack.png`, `garden-lantern.png` (Archive Grove). Also deleted as
+genuinely unused housekeeping: `archive-house.png`, `chicken.png`, `home-house.png`, `onion.png`,
+`rock.png`, `tree.png`, `wildflower.png` (free-tier Cozy Farm pack, never wired), `fence2.png`,
+`mailbox3.png` (round 9-11 reserve crops, never wired), `round-tree.png` (superseded by the sway
+cycle, which already covers every round-tree appearance in the scene).
+
+**Kept as-is, no master-folder equivalent found:** `bench2.png` (People's district symbol, the
+three path benches, and the People corner all depend on it — too central to remove without a
+real replacement).
+
+The playable view window was also narrowed again this round ("make the playable window of the
+village smaller") — see VillageScene.tsx's own `BASE_VB_W`/`BASE_VB_H` comment.

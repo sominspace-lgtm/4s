@@ -277,19 +277,17 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
 // time there would be tedium, not customization). Coordinates below are
 // each prop's own original fixed spot, unchanged — this only adds an
 // override path, nothing moves until a user actually drags something.
+// Round 23 (2026-08-27, "update only using these elements. delete all old
+// ones") removed bike/flowerPot/laundryBasket/breadBasket/teaSet/swing/
+// blankSign — the round 9-10 custom-pack sprites behind them have no
+// equivalent in the master-visual-assets folder, and rather than leave
+// mismatched old art in, these props (and their scene blocks below) are
+// gone rather than replaced.
 const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   gate: { x: 58, y: GROUND_Y + 20 },
   car: { x: 500, y: GROUND_Y + 14 },
   busStop: { x: 568, y: GROUND_Y + 10 },
-  vegCrate: { x: 122, y: GROUND_Y + 8 },
-  bike: { x: 358, y: GROUND_Y + 2 },
-  flowerPot: { x: 340, y: GROUND_Y + 8 },
-  laundryBasket: { x: 448, y: GROUND_Y + 6 },
-  breadBasket: { x: 478, y: GROUND_Y + 8 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
-  teaSet: { x: 220, y: GROUND_Y - 5 },
-  swing: { x: 180, y: GROUND_Y + 6 },
-  blankSign: { x: 540, y: GROUND_Y - 2 },
   bushMound: { x: 78, y: GROUND_Y - 2 },
   floweringBush: { x: 611, y: GROUND_Y + 27 },
   tallGrass: { x: 305, y: GROUND_Y + 31 },
@@ -694,8 +692,14 @@ export default function VillageScene({
   // still multiplies on top of this base, clamped to [1, 2] in
   // Village.tsx, so "Reset" still means "the curated default view," not
   // literally the full 800×440 canvas.
-  const BASE_VB_W = 800
-  const BASE_VB_H = 380
+  // Shrunk again (round 23, 2026-08-27, "make the playable window of the
+  // village smaller") — same safe recrop technique as round 21's own fix
+  // (a smaller coordinate window, not a CSS transform), just a further ~10%
+  // tighter on both axes. Still comfortably wider than the two farthest
+  // props (the gate at x=58, the Trips signpost at x=770), so nothing real
+  // falls off-canvas.
+  const BASE_VB_W = 720
+  const BASE_VB_H = 340
   const BASE_VB_CX = 400
   const BASE_VB_CY = 232
   const vbW = BASE_VB_W / zoom
@@ -965,9 +969,13 @@ export default function VillageScene({
           FOREGROUND layer's own three shapes. All draggable in arrange
           mode now (round 12) — see decorPos/DECOR_DEFAULTS. */}
       {[
-        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 26.7, h: 16 },
-        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 25.8, h: 12 },
-        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 21, h: 15.5 },
+        // gate/car/busStop re-sourced round 23, 2026-08-27 ("update only
+        // using these elements") from the master-visual-assets folder's own
+        // structures-clean.png — dims recomputed from their real crop aspect
+        // ratios, not carried over from the old custom-pack sprites.
+        { id: 'gate', title: 'The way into the village', href: 'gate.png', w: 28.7, h: 16 },
+        { id: 'car', title: 'Parked by the house', href: 'car.png', w: 20, h: 16 },
+        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 24.5, h: 15.5 },
         { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 13.6, h: 8 },
         { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },
         { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 10.1, h: 9.5 },
@@ -1084,15 +1092,9 @@ export default function VillageScene({
           <circle r={3} fill="none" stroke="var(--emerald)" strokeWidth={1} strokeDasharray="2 2" />
         </g>
       )}
-      {/* Real sprite, round 10 (2026-08-27) — a vegetable crate at the edge
-          of the growing band, "use all of the custom sprites." */}
-      <g transform={`translate(${decorPos('vegCrate').x} ${decorPos('vegCrate').y})`} opacity={0.9}
-        onPointerDown={startDrag('vegCrate')} style={{ cursor: arranging ? (draggingId === 'vegCrate' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Whatever's ready to pick</title>
-        <ellipse cx={0} cy={2} rx={7} ry={1.4} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/veg-crate.png" x={-7} y={-8} width={14.1} height={8}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
+      {/* The vegetable crate (round 10) is gone (round 23, 2026-08-27,
+          "update only using these elements") — veg-crate.png has no
+          equivalent in the master-visual-assets folder. */}
       {/* A leaf, literally next to a real plant (2026-08-24, was a fixed
           spot in the forest band) — anchored to the first plant slot's
           actual (x, y) so the icon marks something real growing there, not
@@ -1111,37 +1113,20 @@ export default function VillageScene({
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={44} ry={3.6} fill="var(--text)" opacity={0.12} />
-        {/* Upgraded to the user's own custom sprite pack (round 9, 2026-08-27,
-            simple-cozy-village-sprite-pack.zip — see public/village-assets/
-            cottage.png, cropped from village-core-sprites.png) — the same
-            pack that supplies Sylvia/Harry/Somi below, so Home and the cast
-            now share one consistent art style instead of two different
-            sources (round 8's free-tier farm-pack house next to hand-drawn
-            figures). Self-made by the user; no licensing question. 432×354
-            source, kept at that ~1.22 aspect ratio here. */}
-        {/* y moved from -98 to -90 (round 21 fix, 2026-08-27, "move the
-            main house down so it is on the ground") — the sprite's own
-            bottom edge sat 8 units above this group's local origin (where
-            the grounding shadow above is centered), a real floating gap,
-            not a perception issue. Bottom now lands exactly at y=0. */}
-        <image href="/village-assets/cottage.png" x={-55} y={-90} width={110} height={90}
+        {/* Swapped to the master-visual-assets folder's own house-lighting-
+            states sheet (round 23, 2026-08-27, "update only using these
+            elements. delete all old ones") — this is the real
+            house-smart-home-states.png content flagged as "genuinely
+            missing" back in round 16b, finally found: four real lit/unlit
+            crops of the same house, not a synthetic glow ellipse layered
+            over a single fixed sprite. cottage-lit.png (windows + door
+            warmly lit) swaps in for cottage-dark.png on the same real Smart
+            Home occupancy signal that used to just toggle an ellipse.
+            313×262 source, ~1.19 aspect. */}
+        <image href={`/village-assets/cottage-${(homeOccupied ?? dark) ? 'lit' : 'dark'}.png`}
+          x={-53.5} y={-89.6} width={107} height={89.6}
           style={{ imageRendering: 'pixelated' }} />
-        {/* Window glow — the sprite has no baked-in light state, so this is
-            a soft blurred amber ellipse roughly over the small square
-            window, same vglow filter as the sun/moon/lamps. Repositioned
-            for the new cottage sprite's own window location (round 9,
-            2026-08-27).
-            Driven by real Smart Home occupancy, not time-of-day (round 16,
-            2026-08-27) — "Home → house lights ON, Away → house lights OFF"
-            is a genuine signal (someone's actually home right now), and
-            conflating it with `dark` would mean the house looks occupied
-            every single night regardless of whether anyone's really there.
-            Falls back to `dark` when occupancy is unknown (homeOccupied
-            null — no household space set up yet, or Smart Home not used),
-            so a install with zero Smart Home data keeps the old day/night
-            behavior instead of going permanently dark. */}
-        {/* Both shifted +8 to match the house sprite's own move above. */}
-        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-62} rx={10} ry={9} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
+        {(homeOccupied ?? dark) && <circle cx={-3} cy={-62} r={9} fill="var(--amber)" opacity={0.35} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 28 -80 L 28 -94 L 35 -94 L 35 -80" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
@@ -1155,47 +1140,12 @@ export default function VillageScene({
         setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
       })} />
 
-      {/* Home's own personal objects (2026-08-25) — "make Home feel like MY
-          home," not another building. Purely decorative, no onClick, same
-          as the benches/flower beds scattered elsewhere.
-          The hand-drawn bird feeder is gone (round 14, 2026-08-27, "remove
-          all old out of style elements") — no matching sprite exists for
-          it, and it was the one remaining raw SVG shape standing right next
-          to the bike's real sprite. */}
-      {/* Real sprite, round 9 (2026-08-27) — same pack as the cottage/cast. */}
-      <g transform={`translate(${decorPos('bike').x} ${decorPos('bike').y})`} opacity={0.9}
-        onPointerDown={startDrag('bike')} style={{ cursor: arranging ? (draggingId === 'bike' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A bike, leaning by the door</title>
-        <ellipse cx={0} cy={7.5} rx={11} ry={1.6} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/bicycle.png" x={-13} y={-1} width={26} height={16.5}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-
-      {/* Three more real sprites from the same custom pack, filling out
-          Home's yard (round 10, 2026-08-27, "use all of the custom
-          sprites"). Same purely-decorative idiom as the bike/bird-feeder
-          above — a title for hover-free accessibility, no onClick. */}
-      <g transform={`translate(${decorPos('flowerPot').x} ${decorPos('flowerPot').y})`} opacity={0.92}
-        onPointerDown={startDrag('flowerPot')} style={{ cursor: arranging ? (draggingId === 'flowerPot' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A flower pot by the porch</title>
-        <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/flower-pot.png" x={-4.4} y={-10} width={8.7} height={10}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(${decorPos('laundryBasket').x} ${decorPos('laundryBasket').y})`} opacity={0.92}
-        onPointerDown={startDrag('laundryBasket')} style={{ cursor: arranging ? (draggingId === 'laundryBasket' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Laundry, out to dry</title>
-        <ellipse cx={0} cy={2} rx={5} ry={1.2} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/laundry-basket.png" x={-4.8} y={-8} width={9.6} height={8}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(${decorPos('breadBasket').x} ${decorPos('breadBasket').y})`} opacity={0.92}
-        onPointerDown={startDrag('breadBasket')} style={{ cursor: arranging ? (draggingId === 'breadBasket' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Fresh bread, cooling</title>
-        <ellipse cx={0} cy={2} rx={4.8} ry={1.1} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/bread-basket.png" x={-4.7} y={-8} width={9.5} height={8}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
+      {/* Home's own personal objects — the bike, flower pot, laundry basket,
+          and bread basket (rounds 9-10) are gone (round 23, 2026-08-27,
+          "update only using these elements. delete all old ones") — none of
+          those custom-pack sprites have an equivalent in the master-visual-
+          assets folder, and leaving mismatched old art in Home's yard
+          didn't fit the same standard applied everywhere else this round. */}
 
       {/* Project District */}
       {buildingSlots.map(({ building, x, y, scale, back }) => (
@@ -1239,41 +1189,18 @@ export default function VillageScene({
         <BenchShape x={0} y={0} />
       </g>
 
-      {/* One real sprite, round 10 (2026-08-27) — a tea set on the bench,
-          so People reads as an actual gathering spot, plus a swing a
-          little further off. The picnic blanket (also round 10) is gone
-          (round 19, 2026-08-27, "delete old visuals that do not match
-          like picnic blanket") — from the same original "simple" sprite
-          pack as tea-set/swing, but flatter and less detailed than the
-          later packs' art next to it. */}
-      <g transform={`translate(${decorPos('teaSet').x} ${decorPos('teaSet').y})`} opacity={0.92}
-        onPointerDown={startDrag('teaSet')} style={{ cursor: arranging ? (draggingId === 'teaSet' ? 'grabbing' : 'grab') : undefined }}>
-        <title>Tea, poured for whoever stops by</title>
-        <image href="/village-assets/tea-set.png" x={-6.4} y={-9} width={12.8} height={9}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(${decorPos('swing').x} ${decorPos('swing').y})`} opacity={0.88}
-        onPointerDown={startDrag('swing')} style={{ cursor: arranging ? (draggingId === 'swing' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A porch swing</title>
-        <ellipse cx={0} cy={2} rx={13} ry={2} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/swing.png" x={-14.9} y={-20} width={29.7} height={20}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
+      {/* The tea set and porch swing (round 10) are gone (round 23,
+          2026-08-27, "update only using these elements") — tea-set.png and
+          swing.png have no equivalent in the master-visual-assets folder;
+          People's own bench (BenchShape above) still carries the gathering-
+          spot identity on its own. */}
 
       {/* The hand-drawn luggage stack (2026-08-25) is gone (round 14,
           2026-08-27) — Places now has a real shop.png building (round 11)
           and a real bus-stop.png (round 12); a hand-drawn suitcase next to
-          both read as a leftover from before either existed. */}
-
-      {/* Real sprite, round 10 (2026-08-27) — a blank signpost near the
-          Places kiosk, "use all of the custom sprites." */}
-      <g transform={`translate(${decorPos('blankSign').x} ${decorPos('blankSign').y})`} opacity={0.9}
-        onPointerDown={startDrag('blankSign')} style={{ cursor: arranging ? (draggingId === 'blankSign' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A signpost, waiting to be marked</title>
-        <ellipse cx={0} cy={3} rx={8} ry={1.4} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/blank-sign.png" x={-8.2} y={-11} width={16.4} height={11}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
+          both read as a leftover from before either existed. The blank
+          signpost (round 10) is gone too (round 23) — blank-sign.png has no
+          equivalent in the master folder either. */}
 
       {/* Archive Grove — the Life Tree. Rings are the yearly milestone; the
           canopy is the continuum underneath, so the tree visibly thickens
@@ -1301,19 +1228,11 @@ export default function VillageScene({
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
           <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
-        {/* Real sprites, round 10 (2026-08-27, same custom pack) — replaces
-            the hand-drawn stack with the pack's own book-stack.png, and adds
-            a garden lantern on the other side for the "library/greenhouse"
-            mood this district has been reaching for since the 2026-08-24
-            reskin. */}
-        <g transform="translate(-20 2)">
-          <image href="/village-assets/book-stack.png" x={-5.5} y={-7} width={11} height={7}
-            style={{ imageRendering: 'pixelated' }} />
-        </g>
-        <g transform="translate(24 3)">
-          <image href="/village-assets/garden-lantern.png" x={-6.9} y={-12} width={13.9} height={12}
-            style={{ imageRendering: 'pixelated' }} />
-        </g>
+        {/* The book stack and garden lantern (round 10) are gone (round 23,
+            2026-08-27, "update only using these elements") — neither
+            book-stack.png nor garden-lantern.png has an equivalent in the
+            master-visual-assets folder; the greenhouse.png badge nearby
+            (DistrictArt's 'book' case) still carries Archive's identity. */}
       </g>
 
       {/* Bloom Garden — waiting on BloomScan */}
