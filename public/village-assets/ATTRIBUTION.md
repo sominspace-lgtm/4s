@@ -491,3 +491,20 @@ instead.
 bus-stop.png sized up again (18 -> 26 tall), and MailboxShape/SignpostShape grew too (15->20 and
 20->26 tall respectively) - the same "still reads small at real full-scene zoom, even after
 round 24's bump" issue the screenshot flagged for the bus stop specifically.
+
+## Round 36 (2026-08-27) - found it: bench2.png reads as a fence
+
+"the fences i dont want are still there. fix anything you think needs fixing."
+
+The actual fence and the lattice gate were both already gone (rounds 34-35); what was still
+showing up as "a fence" in the screenshot was bench2.png - its real silhouette is two parallel
+horizontal rails between two posts, which IS a short fence section's own visual language (and
+has the same "gap between the two rails" look the very first "white in the middle" report was
+probably about too). All four instances in the scene (three PROPS.benches plus the People
+corner) were affected.
+
+BenchShape is redrawn as plain SVG - one seat plank on four short legs, no second rail above it,
+same TRIM-family fixed-hex construction as LampShape/BuntingShape's own earlier redraws. The
+People district badge (DistrictArt's 'people' case) now calls BenchShape directly instead of
+drawing bench2.png a second time by hand, so the badge and the real corner bench are literally
+the same shape. bench2.png itself is deleted - fully unused now.

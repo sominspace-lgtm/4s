@@ -258,13 +258,24 @@ export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: n
 }
 
 // Real sprite (round 10, 2026-08-27) — same custom pack as the cottage/cast.
+// Redrawn as plain SVG (round 36, 2026-08-27, "the fences i dont want are
+// still there") — bench2.png's actual silhouette is two parallel
+// horizontal rails between two posts, which is exactly a short fence
+// section's own visual language; every one of the four bench2.png
+// instances in the scene (three PROPS.benches plus the People corner) had
+// been getting reported back as "a fence." A real bench profile instead —
+// one seat plank on four short legs, no second rail above it — reads as
+// sit-down furniture rather than a barrier. Same TRIM-family fixed-hex
+// language as LampShape/BuntingShape's own round 23/29 redraws.
 export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
-  const w = 15.7, h = 9.9 // 327×207 source, same aspect ratio
+  const w = 15.7
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={2} rx={9} ry={1.6} fill="var(--text)" opacity={0.1} />
-      <image href="/village-assets/bench2.png" x={-w / 2} y={-h + 2} width={w} height={h}
-        style={{ imageRendering: 'pixelated' }} />
+      <rect x={-w / 2 - 1.4} y={-2} width={1.6} height={3.6} fill={TRIM} opacity={0.85} />
+      <rect x={w / 2 - 0.2} y={-2} width={1.6} height={3.6} fill={TRIM} opacity={0.85} />
+      <rect x={-w / 2 - 1.6} y={-3.4} width={w + 3.2} height={1.8} rx={0.5} fill={TRIM} />
+      <rect x={-w / 2 - 1.6} y={-3.4} width={w + 3.2} height={1.8} rx={0.5} fill="url(#vsheen)" />
     </g>
   )
 }
@@ -816,13 +827,14 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // there should only ever be ONE Sylvia and ONE Harry in the village, and the real ones
       // already stand by Home; a second rendering of them sitting on a district badge was
       // exactly the kind of duplicate-character confusion the "two houses" fix spent a whole
-      // round eliminating for buildings. The real bench2.png sprite already used at the actual
-      // People corner (VillageScene's peopleCorner prop) stands in for the district itself too.
+      // round eliminating for buildings. Now BenchShape's own redrawn bench (round 36) instead
+      // of the raw bench2.png sprite directly — same fence-reads-as-a-bar reasoning as
+      // BenchShape's own header comment, and keeps this badge and the real People-corner bench
+      // as literally the same shape instead of two different renderings of "a bench."
       return (
         <g>
           <ellipse cx={0} cy={2} rx={12} ry={2} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/bench2.png" x={-5.9} y={-7.5} width={11.85} height={7.5}
-            style={{ imageRendering: 'pixelated' }} />
+          <BenchShape x={0} y={2} scale={0.6} />
         </g>
       )
   }
