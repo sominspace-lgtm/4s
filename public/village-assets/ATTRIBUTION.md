@@ -721,3 +721,44 @@ already fixed for her.
   loop - the "interaction when near" part.
 - Both are off entirely in arrange mode (new `wander` prop on `VillagerShape`, same pattern
   `CatShape` already used) - a genuinely stationary figure never shows a walk or wave pose.
+
+## Round 47 (2026-08-28) - a greeting wave on load, facing, recurring interaction
+
+"when users first goon they should both wave then walk around. for any figure including somi
+they should face the direction they are walking. every now and then the couple should interact
+with each other"
+
+- **Opening greeting**: village-wander-sylvia/-harry both grew a 6%-of-loop (~2.9s) hold at the
+  very start. Harry's real wave (round 46) now plays during that same opening window in addition
+  to its existing near-Sylvia one, so he genuinely waves the moment the village loads. Sylvia has
+  no wave art of her own, so she gets a matching idle-vis/walk-vis gate (new, she previously just
+  walked for the whole time she was wandering) and holds her idle pose through the same window
+  rather than starting to walk mid-stride.
+- **Facing**: every wandering figure (Sylvia, Harry, Somi) now flips to face the direction they're
+  currently moving, via new village-face-sylvia/-harry/-somi keyframes timed to each figure's own
+  existing movement keyframes. Uses the standalone CSS `scale` property rather than
+  `transform: scaleX()` specifically so it composes with the movement animation's own
+  `transform: translate()` on the same element instead of the two fighting over one property.
+  Sylvia/Harry's art is a back-view walk with no true left/right profile, so this is an
+  approximation (the same one most 2D games make), not a perfect side-turn.
+- **Recurring interaction**: unchanged from round 46 - Harry's near-Sylvia wave at the shared
+  loop's 50% mark already recurs every ~48s lap; this round's opening greeting is additional to
+  that, not a replacement.
+
+## Round 48 (2026-08-28) - quiet evenings, resizable elements
+
+"...make 'Quiet compositions' - certain moments where almost nothing happens. but looks and
+feels very nice... additionaluy make all elements resizable in arrange"
+
+- **Quiet compositions**: Sylvia/Harry's wander loop and Somi's move loop now pause entirely
+  during dusk/night (VillageScene's own `quiet` flag, = `dark`) instead of continuing to putter
+  around. This leans on what the scene already does at night rather than new art - birds are
+  already dawn/day-only, Home's window already glows, the ground already dims - so evening
+  genuinely settles into stillness instead of active motion, the honest version of the "two
+  figures on a bench, that's it" mood without seated-pose art that doesn't exist yet.
+- **Resizable in arrange**: a tap (not a drag) on any draggable item while arranging now selects
+  it and shows small −/+ buttons that adjust its stored scale (0.4-2.5x), persisted in the same
+  VillageLayout blob (`scale` is a new optional field, defaults to 1 for every entry saved before
+  this round). Covers the generic decor/item-prop list, every Inventory-placed custom item, and
+  the cast (Sylvia/Harry/Somi). Districts, real habit-plants, and buildings are NOT resizable this
+  round - a real scope boundary, not an oversight, given how much this round already covers.

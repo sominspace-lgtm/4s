@@ -28,8 +28,12 @@ export type LandmarkId = typeof LANDMARK_IDS[number]
  *  has actually dragged. Broadened from Partial<Record<LandmarkId, ...>>
  *  to a plain string key (2026-08-27) — this is a JSON blob in user_prefs
  *  already, so widening what it can hold needed no DB change, just a
- *  looser type. Anything missing still falls back to its own default. */
-export type VillageLayout = Partial<Record<string, { x: number; y: number }>>
+ *  looser type. Anything missing still falls back to its own default.
+ *  `scale` added round 48 (2026-08-28, "make all elements resizable in
+ *  arrange") — optional, defaults to 1 wherever it's read (see
+ *  VillageScene's own itemScale()), so every entry saved before this
+ *  round keeps working unchanged. */
+export type VillageLayout = Partial<Record<string, { x: number; y: number; scale?: number }>>
 
 export interface Slot {
   id: string

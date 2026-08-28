@@ -500,14 +500,24 @@ const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
 // walking when still. interaction when near"). Round 30 gave both figures
 // a CSS position-drift (village-wander-sylvia/-harry, globals.css) but no
 // pose to go with it — a fixed standing sprite sliding across the ground
-// is exactly the "walking while still" mismatch this round fixes. Sylvia
-// drifts continuously the whole time she's wandering (her own keyframes
-// never truly stop), so her walk-cycle just shows for the entire time
-// `wander` is true — no separate gating needed, unlike Somi's stop-start
-// loop. Harry's own keyframes bring him closest to Sylvia once per lap
-// (his wander animation's own 50% mark); his wave is gated to just that
-// window via village-harry-wave-vis/-idle-vis (globals.css), so he greets
-// her specifically when they're actually near each other, not at random.
+// is exactly the "walking while still" mismatch this round fixes. Harry's
+// own keyframes bring him closest to Sylvia once per lap (his wander
+// animation's own 50% mark); his wave is gated to just that window via
+// village-harry-wave-vis/-idle-vis (globals.css), so he greets her
+// specifically when they're actually near each other, not at random.
+//
+// Round 47 (2026-08-28, "when users first goon they should both wave then
+// walk around... face the direction they are walking... every now and
+// then the couple should interact") adds two more things, both driven
+// entirely from globals.css so no new render-time state is needed here:
+// an opening 0-6%-of-loop window where Harry's wave plays a SECOND time
+// (a real greeting the moment the village loads, ahead of the recurring
+// near-Sylvia one) and Sylvia holds her idle pose instead of already
+// walking mid-stride — hence Sylvia now needs the same idle/walk gate
+// Harry's wave/idle already had, not "always walking while wander" any
+// more; and a facing flip (village-face-sylvia/-harry) on a dedicated
+// inner <g>, timed to the exact same movement keyframes, so each of them
+// visibly turns toward whichever way they're currently headed.
 const SYLVIA_WALK_FRAMES = [
   { src: '/village-assets/sylvia-walk-1.png', aspect: 196 / 433 },
   { src: '/village-assets/sylvia-walk-2.png', aspect: 193 / 427 },
@@ -550,20 +560,39 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
           other clickable prop in this scene (see this file's other shapes'
           own 2026-08-25 comments on why). */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
-      {isSylvia && wander ? (
-        <SpriteCycle frames={SYLVIA_WALK_FRAMES} x={0} y={0} height={h} periodSec={1.6} />
-      ) : (
-        <g className={wander ? 'village-harry-idle-vis' : undefined}>
-          <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-            style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
-        </g>
-      )}
-      {!isSylvia && wander && (
-        <g className="village-harry-wave-vis">
-          <SpriteCycle frames={HARRY_WAVE_FRAMES} x={0} y={0} height={h} periodSec={2} />
-        </g>
-      )}
+      {/* Facing flip — a separate inner <g> from the outer translate/scale
+          above (a CSS transform on the SAME element would replace that
+          attribute-based one, not add to it — see this file's own round 47
+          note). Only while actually wandering; arrange mode/locked figures
+          keep their native facing. */}
+      <g className={wander ? (isSylvia ? 'village-face-sylvia' : 'village-face-harry') : undefined}>
+        <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
+        {isSylvia ? (
+          <>
+            <g className={wander ? 'village-sylvia-idle-vis' : undefined}>
+              <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+                style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+            </g>
+            {wander && (
+              <g className="village-sylvia-walk-vis">
+                <SpriteCycle frames={SYLVIA_WALK_FRAMES} x={0} y={0} height={h} periodSec={1.6} />
+              </g>
+            )}
+          </>
+        ) : (
+          <>
+            <g className={wander ? 'village-harry-idle-vis' : undefined}>
+              <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+                style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+            </g>
+            {wander && (
+              <g className="village-harry-wave-vis">
+                <SpriteCycle frames={HARRY_WAVE_FRAMES} x={0} y={0} height={h} periodSec={2} />
+              </g>
+            )}
+          </>
+        )}
+      </g>
     </g>
   )
 }
@@ -620,7 +649,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <g onClick={handleClick}
-        className={[onClick && 'village-entity', wander && 'village-somi-move'].filter(Boolean).join(' ') || undefined}
+        className={[onClick && 'village-entity', wander && 'village-somi-move', wander && 'village-face-somi'].filter(Boolean).join(' ') || undefined}
         style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>{name}</title>
         {/* Same oversized invisible hit circle as VillagerShape — see its own

@@ -418,7 +418,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate,
-  layout = {}, arranging = false, onMoveLandmark, onRemoveItem,
+  layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null,
@@ -482,6 +482,12 @@ export default function VillageScene({
    *  library") — only ever called with a `custom:` id, see
    *  lib/village/assetLibrary.ts. */
   onRemoveItem?: (id: string) => void
+  /** Sets one item's stored scale (round 48, 2026-08-28, "make all
+   *  elements resizable in arrange") — called with the item's own
+   *  currently-resolved (x, y) so the caller never needs to know that
+   *  item's own default position, only ever ADD a scale to what's already
+   *  stored. */
+  onResizeItem?: (id: string, x: number, y: number, scale: number) => void
 }) {
   // Per-district lock (2026-08-25, Home exception added 2026-08-25) —
   // `locked` used to gate every district uniformly, but Places isn't
@@ -506,6 +512,18 @@ export default function VillageScene({
 
   // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
+  // Quiet compositions (round 48, 2026-08-28, "certain moments where
+  // almost nothing happens. but looks and feels very nice... Evening. The
+  // sun is low. Birds are gone. ... Somi is asleep nearby.") — the cast's
+  // wander/move loops pause during dusk/night rather than puttering
+  // around, so the scene settles into real stillness instead of active
+  // motion right when the mood calls for the opposite. This leans on what
+  // the scene already does at night rather than new art: birds are
+  // already dawn/day-only (Ambient.tsx), Home's window already glows, the
+  // ground already dims. A literal "two figures on a bench" tableau would
+  // need seated-pose art that doesn't exist yet for either of them — this
+  // is the honest version of that mood with what's actually available.
+  const quiet = dark
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -654,6 +672,15 @@ export default function VillageScene({
 
   const svgRef = useRef<SVGSVGElement>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  // Resize-in-arrange (round 48, 2026-08-28, "make all elements resizable
+  // in arrange") — a tap (pointer down then up with no real movement) on a
+  // draggable item, while arranging, SELECTS it for resize instead of
+  // moving it; a real drag still just moves it, as before. itemDragRef
+  // tracks whether the pointer actually travelled since the last
+  // startDrag(), the same "was this a tap or a drag" distinction
+  // onScenePointerMove already makes for the scene's own pan gesture.
+  const [resizingId, setResizingId] = useState<string | null>(null)
+  const itemDragRef = useRef<{ id: string; startClientX: number; startClientY: number; moved: boolean } | null>(null)
   const pos = (id: LandmarkId) => layout[id] ?? DEFAULT_LANDMARK_POS[id]
   // Decorative props' own position lookup (round 12, 2026-08-27) — same
   // "custom position if dragged, else a fixed default" rule as pos() above,
@@ -697,14 +724,63 @@ export default function VillageScene({
       e.stopPropagation()
       ;(e.target as Element).setPointerCapture(e.pointerId)
       setDraggingId(id)
+      itemDragRef.current = { id, startClientX: e.clientX, startClientY: e.clientY, moved: false }
     }
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!draggingId || !onMoveLandmark) return
+    if (itemDragRef.current && Math.hypot(e.clientX - itemDragRef.current.startClientX, e.clientY - itemDragRef.current.startClientY) > 3) {
+      itemDragRef.current.moved = true
+    }
     const p = toSvgPoint(e.clientX, e.clientY)
     if (p) onMoveLandmark(draggingId, Math.round(p.x), Math.round(p.y))
   }
-  function endDrag() { setDraggingId(null) }
+  function endDrag() {
+    // A tap (no real movement) selects the item for resize instead of
+    // having moved it; a real drag just ends normally, same item stays
+    // deselected so the resize controls don't pop up under your thumb
+    // mid-drag.
+    if (draggingId && itemDragRef.current && !itemDragRef.current.moved) {
+      setResizingId(prev => (prev === draggingId ? null : draggingId))
+    }
+    itemDragRef.current = null
+    setDraggingId(null)
+  }
+  useEffect(() => { if (!arranging) setResizingId(null) }, [arranging])
+  const itemScale = (id: string) => layout[id]?.scale ?? 1
+  function resizeItem(id: string, x: number, y: number, delta: number) {
+    if (!onResizeItem) return
+    const next = Math.max(0.4, Math.min(2.5, +(itemScale(id) + delta).toFixed(2)))
+    onResizeItem(id, x, y, next)
+  }
+  // Small −/+ buttons, shown only for the one item currently selected via
+  // a tap (see endDrag's own comment). onPointerDown must stop
+  // propagation too, not just onClick — a pointerdown on a child bubbles
+  // to the item's own startDrag() before the click ever fires, which
+  // would start dragging the item out from under the button.
+  // `renderX/renderY` place the buttons relative to wherever this is
+  // mounted (usually already inside a translated group); `storeX/storeY`
+  // are the item's real absolute scene position, passed straight through
+  // to onResizeItem — using the relative render offset there instead would
+  // silently teleport the item to (0,0) the first time it's resized.
+  function ResizeControls({ id, storeX, storeY, renderX, renderY }: {
+    id: string; storeX: number; storeY: number; renderX: number; renderY: number
+  }) {
+    if (!arranging || resizingId !== id || !onResizeItem) return null
+    const stop = (e: React.PointerEvent) => e.stopPropagation()
+    return (
+      <g transform={`translate(${renderX} ${renderY})`}>
+        <g onPointerDown={stop} onClick={e => { e.stopPropagation(); resizeItem(id, storeX, storeY, -0.15) }} style={{ cursor: 'pointer' }}>
+          <circle cx={-9} r={7.5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={1} />
+          <text x={-9} y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={10} fill="var(--gold)" fontWeight={700}>−</text>
+        </g>
+        <g onPointerDown={stop} onClick={e => { e.stopPropagation(); resizeItem(id, storeX, storeY, 0.15) }} style={{ cursor: 'pointer' }}>
+          <circle cx={9} r={7.5} fill="var(--surface)" stroke="var(--gold)" strokeWidth={1} />
+          <text x={9} y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={10} fill="var(--gold)" fontWeight={700}>+</text>
+        </g>
+      </g>
+    )
+  }
 
   // Drag-to-pan (2026-08-27, round 5) — "should we make the village like
   // Stardew/Animal Crossing, users can wander if they want." A full
@@ -1234,18 +1310,23 @@ export default function VillageScene({
         // folder).
       ].map(p => {
         const p0 = decorPos(p.id)
+        // Resizable in arrange (round 48, 2026-08-28) — itemScale(id)
+        // multiplies both dimensions uniformly so nothing stretches.
+        const s = itemScale(p.id)
+        const pw = p.w * s, ph = p.h * s
         return (
           <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={1}
             onPointerDown={startDrag(p.id)} style={{ cursor: arranging ? (draggingId === p.id ? 'grabbing' : 'grab') : undefined }}>
             <title>{p.title}</title>
-            <ellipse cx={0} cy={p.h * 0.28} rx={p.w * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
-            <image href={`/village-assets/${p.href}`} x={-p.w / 2} y={-p.h} width={p.w} height={p.h}
+            <ellipse cx={0} cy={ph * 0.28} rx={pw * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
+            <image href={`/village-assets/${p.href}`} x={-pw / 2} y={-ph} width={pw} height={ph}
               style={{ imageRendering: 'pixelated' }} />
             {arranging && (
-              <rect x={-p.w / 2 - 2} y={-p.h - 2} width={p.w + 4} height={p.h + 6} rx={4}
+              <rect x={-pw / 2 - 2} y={-ph - 2} width={pw + 4} height={ph + 6} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
                 opacity={draggingId === p.id ? 0.9 : 0.4} />
             )}
+            <ResizeControls id={p.id} storeX={p0.x} storeY={p0.y} renderX={0} renderY={-ph - 4} />
           </g>
         )
       })}
@@ -1263,7 +1344,8 @@ export default function VillageScene({
         const asset = assetKey ? findAsset(assetKey) : undefined
         const p = layout[id]
         if (!asset || !p) return null
-        const h = asset.h, w = h * asset.aspect
+        const s = itemScale(id)
+        const h = asset.h * s, w = h * asset.aspect
         return (
           <g key={id} transform={`translate(${p.x} ${p.y})`}
             onPointerDown={startDrag(id)} style={{ cursor: arranging ? (draggingId === id ? 'grabbing' : 'grab') : undefined }}>
@@ -1287,6 +1369,8 @@ export default function VillageScene({
                 )}
               </>
             )}
+            {/* Above the remove button, not overlapping it. */}
+            <ResizeControls id={id} storeX={p.x} storeY={p.y} renderX={0} renderY={-h - 14} />
           </g>
         )
       })}
@@ -1678,16 +1762,18 @@ export default function VillageScene({
           leg-animated walk. */}
       {(() => { const p = decorPos('sylvia'); return (
         <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-          <g className={!arranging ? 'village-wander-sylvia' : undefined}>
-            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging} />
+          <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined}>
+            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
           </g>
+          <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('harry'); return (
         <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-          <g className={!arranging ? 'village-wander-harry' : undefined}>
-            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging} />
+          <g className={!arranging && !quiet ? 'village-wander-harry' : undefined}>
+            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
           </g>
+          <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
         </Draggable>
       ) })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
@@ -1701,7 +1787,8 @@ export default function VillageScene({
           same x — Somi reads as standing in front of it, not through it. */}
       {(() => { const p = decorPos('somi'); return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
-          <CatShape x={0} y={0} scale={0.75} name="Somi" onClick={openSomi} wander={!arranging} />
+          <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi} wander={!arranging && !quiet} />
+          <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
       ) })()}
 

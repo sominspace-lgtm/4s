@@ -450,14 +450,24 @@ select, option {
    wandering in an unrelated bubble. Amplitudes stay small (≤16px) since
    there's no walk-cycle art to sell a longer trip — this reads as
    "puttering around nearby," not a commute. */
+/* Round 47 (2026-08-28, "when users first goon they should both wave then
+   walk around... every now and then the couple should interact") adds a
+   6%-of-loop (≈2.9s) hold at the very start, on top of the round 30
+   pattern below — both figures stay put at (0,0) through 6% instead of
+   immediately setting off, matching Harry's real wave (see
+   village-harry-wave-vis below) and Sylvia's idle pose (see
+   village-sylvia-walk-vis) both playing during that same opening window.
+   The existing 50%-mark close-approach ("interact when near," round 46)
+   still recurs every lap after that, so this doesn't replace the
+   recurring interaction, it just adds a first-look greeting in front of it. */
 @keyframes village-wander-sylvia {
-  0%, 100% { transform: translate(0, 0); }
+  0%, 6%, 100% { transform: translate(0, 0); }
   20% { transform: translate(-14px, -2px); }
   50% { transform: translate(16px, 1px); }
   80% { transform: translate(-6px, 3px); }
 }
 @keyframes village-wander-harry {
-  0%, 100% { transform: translate(0, 0); }
+  0%, 6%, 100% { transform: translate(0, 0); }
   20% { transform: translate(12px, -2px); }
   50% { transform: translate(-16px, 2px); }
   80% { transform: translate(8px, -3px); }
@@ -465,27 +475,70 @@ select, option {
 .village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
 .village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
 
-/* Harry's wave, gated to the one point in his own wander loop where he's
-   actually closest to Sylvia (round 46, 2026-08-28, "interaction when
-   near") — village-wander-harry's own 50% keyframe is his closest
-   approach; the wave shows only in a window around that same point on the
-   identical 48s timeline, steps(1) hard cuts like every other pose-gate in
-   this file. Sylvia's own walk cycle needs no matching gate — she drifts
-   continuously the whole time she's wandering (see VillagerShape's own
-   comment), so her walk-cycle SpriteCycle just runs whenever `wander` is
-   true, no separate visibility toggle. */
+/* Harry's wave — the recurring "near Sylvia" window from round 46, PLUS a
+   0-6% window (round 47) so he greets with a real wave the moment the
+   village loads, before the loop's own back-and-forth starts. Sylvia's
+   own walk cycle plays for the whole rest of the loop once she sets off
+   (no gate needed there, see VillagerShape's own comment) but round 47
+   gives her a matching idle hold for this same opening window — she pauses
+   in place rather than starting to walk mid-frame, since she has no wave
+   art of her own to greet with. */
 @keyframes village-harry-wave-vis {
-  0%, 42% { opacity: 0; }
+  0%, 6% { opacity: 1; }
+  10%, 42% { opacity: 0; }
   46%, 54% { opacity: 1; }
   58%, 100% { opacity: 0; }
 }
 @keyframes village-harry-idle-vis {
-  0%, 42% { opacity: 1; }
+  0%, 6% { opacity: 0; }
+  10%, 42% { opacity: 1; }
   46%, 54% { opacity: 0; }
   58%, 100% { opacity: 1; }
 }
 .village-harry-wave-vis { animation: village-harry-wave-vis 48s steps(1) infinite; }
 .village-harry-idle-vis { animation: village-harry-idle-vis 48s steps(1) infinite; }
+@keyframes village-sylvia-walk-vis {
+  0%, 6% { opacity: 0; }
+  10%, 100% { opacity: 1; }
+}
+@keyframes village-sylvia-idle-vis {
+  0%, 6% { opacity: 1; }
+  10%, 100% { opacity: 0; }
+}
+.village-sylvia-walk-vis { animation: village-sylvia-walk-vis 48s steps(1) infinite; }
+.village-sylvia-idle-vis { animation: village-sylvia-idle-vis 48s steps(1) infinite; }
+
+/* Facing (round 47, 2026-08-28, "for any figure including somi they should
+   face the direction they are walking") — a horizontal mirror timed to
+   the exact same movement keyframes above, using the standalone CSS
+   `scale` property rather than `transform: scaleX()` specifically so it
+   can live on the SAME element as village-wander-sylvia/-harry's own
+   `transform: translate(...)` animation without the two fighting over one
+   property (translate/scale/rotate compose independently per spec;
+   `transform` itself does not compose across two separate `animation`
+   declarations — same reasoning Draggable/wander already had to work
+   around for the position drift vs. a plain SVG transform attribute).
+   steps(1) so the flip is a hard cut at each direction change, never an
+   interpolated squish through scale 0. Sylvia/Harry's art is a back-view
+   walk (no true left/right profile), so this is an approximation, same as
+   most 2D games flipping a sprite regardless of its exact facing — still
+   reads as "turned toward where they're headed" rather than always facing
+   the same way. */
+@keyframes village-face-sylvia {
+  0% { scale: 1 1; }
+  6% { scale: -1 1; }
+  20% { scale: 1 1; }
+  50% { scale: -1 1; }
+  80% { scale: 1 1; }
+}
+@keyframes village-face-harry {
+  0% { scale: 1 1; }
+  20% { scale: -1 1; }
+  50% { scale: 1 1; }
+  80% { scale: -1 1; }
+}
+.village-face-sylvia { animation: village-face-sylvia 48s steps(1) infinite; }
+.village-face-harry { animation: village-face-harry 48s steps(1) infinite; }
 
 /* Somi's own wander + gated walk-pose visibility (round 31, 2026-08-27,
    "only use somi walking animation if she is walking around. when she is
@@ -519,6 +572,18 @@ select, option {
 .village-somi-move { animation: village-somi-move 60s ease-in-out infinite; }
 .village-somi-idle-vis { animation: village-somi-idle-vis 60s steps(1) infinite; }
 .village-somi-walk-vis { animation: village-somi-walk-vis 60s steps(1) infinite; }
+/* Facing (round 47, "for any figure including somi they should face the
+   direction they are walking") — same idea as village-face-sylvia/-harry
+   above (the standalone `scale` property, composing with village-somi-
+   move's own `transform: translate()` on the same element rather than
+   fighting it), timed to village-somi-move's own 0/15/50/70% direction
+   changes, on the same 60s timeline. */
+@keyframes village-face-somi {
+  0% { scale: 1 1; }
+  15% { scale: -1 1; }
+  50% { scale: 1 1; }
+}
+.village-face-somi { animation: village-face-somi 60s steps(1) infinite; }
 
 /* The cast's idle sway (2026-08-25, removed round 24, 2026-08-27, "do not
    make anything bob") — VillagerShape/CatShape's cast figures render

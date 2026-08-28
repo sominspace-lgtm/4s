@@ -297,7 +297,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}
             layout={layout} arranging={arranging}
-            onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { x, y } }) : undefined}
+            onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
+            onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
             onRemoveItem={onChangeLayout ? (id) => {
               const next = { ...layout }
               delete next[id]
@@ -484,8 +485,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
       {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
-          Drag any landmark or prop to move it. Inventory adds something new — tap × on it to
-          remove it. Your layout is saved automatically.
+          Drag any landmark or prop to move it, or tap it once for size controls. Inventory adds
+          something new — tap × on it to remove it. Your layout is saved automatically.
         </p>
       )}
 
