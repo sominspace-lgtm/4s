@@ -383,15 +383,27 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {!compact && onChangeLayout && !ambient && (
           <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
             {arranging && Object.keys(layout).length > 0 && (
-              <button
-                onClick={() => onChangeLayout({})}
-                className="press"
-                style={{
-                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                  borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                }}
-              >Reset positions</button>
+              <>
+                <button
+                  onClick={() => { try { navigator.clipboard?.writeText(JSON.stringify(layout)) } catch { /* ignore */ } }}
+                  title="Copy this arrangement as JSON"
+                  className="press"
+                  style={{
+                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+                    fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                  }}
+                >Copy layout</button>
+                <button
+                  onClick={() => onChangeLayout({})}
+                  className="press"
+                  style={{
+                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+                    fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                  }}
+                >Reset positions</button>
+              </>
             )}
             {/* Inventory toggle — only reachable inside arrange mode, same
                 "settings only when you're already customizing" logic as

@@ -769,12 +769,18 @@ export default function VillageScene({
   const coupleTogether = life.together
   const interactPose = life.interactPose
 
-  // Wishing well (round 57) — a thank-you the user drops in is saved as a
-  // capture tagged `gratitude`, the same table Quick Add / Daily Reflection
-  // already write to, so it shows up in their world rather than vanishing.
+  // Wishing well (round 57; round 60 "make cuter hover for thankful well")
+  // — tapping it opens a small styled card with a real text field (a
+  // <foreignObject> in the scene, same place the Somi card lives) instead
+  // of a browser prompt. What's dropped in is saved as a `gratitude`-tagged
+  // capture, the same table Quick Add / Daily Reflection write to.
+  const [wellOpen, setWellOpen] = useState(false)
   const [wellGlow, setWellGlow] = useState(false)
-  async function submitGratitude() {
-    const text = window.prompt('Something you’re thankful for — drop it in the well:')?.trim()
+  const [wellText, setWellText] = useState('')
+  function submitGratitude() { setWellText(''); setWellOpen(true) }
+  async function saveGratitude() {
+    const text = wellText.trim()
+    setWellOpen(false)
     if (!text) return
     try {
       const supabase = createClient()
@@ -1671,20 +1677,20 @@ export default function VillageScene({
           assets folder, and leaving mismatched old art in Home's yard
           didn't fit the same standard applied everywhere else this round. */}
 
-      {/* Projects — the log house, and a pile of logs for every project
-          (round 58, "remove the building growth, when projects finish we
-          will add logs near the projects log house"). No more blueprint /
-          foundation / under-construction phases growing into a landmark —
-          just workshop.png as the fixed log house, and one firewood.png
-          pile per project: faint while it's still underway, solid once it's
-          finished (phase complete/landmark). Each pile keeps its click →
-          the project callout, so selection still works. */}
-      {(() => { const hx = 588, hy = GROUND_Y + 2; return (
+      {/* Projects — the log cabin, and a pile of logs for every project
+          (round 58; cabin round 60, "use log cabin as projects"). No
+          blueprint / foundation / under-construction phases growing into a
+          landmark — just log-cabin.png (from village/village-matching-
+          expansion-structures-clean, a real cabin with its own woodpile)
+          and one firewood.png pile per project: faint while it's underway,
+          solid once it's finished. Each pile keeps its click → the project
+          callout, so selection still works. */}
+      {(() => { const hx = 586, hy = GROUND_Y + 2, w = 46, h = w / (390 / 293); return (
         <g>
-          <ellipse cx={hx} cy={hy + 2} rx={22} ry={3} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/workshop.png" x={hx - 22} y={hy - 34} width={44} height={34}
+          <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3} fill="var(--text)" opacity={0.16} />
+          <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={hx + 5} cy={hy - 21} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+          {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       ) })()}
       {buildingSlots.map(({ building }, i) => {
@@ -2107,6 +2113,54 @@ export default function VillageScene({
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open →</text>
               </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Wishing-well card (round 60) — a real input, drawn in the scene via
+          <foreignObject> so it can be a proper text field without lifting
+          state out to Village.tsx. */}
+      {wellOpen && (() => {
+        const p = decorPos('wishingWell')
+        const w = 176, h = 92
+        const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, p.x))
+        const top = Math.max(10, p.y - 34 - h)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setWellOpen(false)} />
+            <g transform={`translate(${cx - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={w} height={h} rx={11} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={w} height={h} style={{ pointerEvents: 'all' }}>
+                <div style={{
+                  width: '100%', height: '100%', boxSizing: 'border-box', padding: '9px 10px',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 11,
+                  fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 5,
+                }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span aria-hidden>✨</span> A thank-you for the well
+                  </div>
+                  <textarea autoFocus value={wellText} onChange={e => setWellText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveGratitude() } }}
+                    placeholder="Something you're grateful for…"
+                    style={{
+                      flex: 1, resize: 'none', width: '100%', boxSizing: 'border-box', padding: '4px 6px',
+                      fontSize: 8.5, fontFamily: 'var(--font-body)', color: 'var(--text)',
+                      background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, outline: 'none',
+                    }} />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 5 }}>
+                    <button onClick={() => setWellOpen(false)} style={{
+                      fontSize: 8, fontFamily: 'var(--font-body)', color: 'var(--muted)', background: 'transparent',
+                      border: 'none', cursor: 'pointer', padding: '2px 6px',
+                    }}>Never mind</button>
+                    <button onClick={saveGratitude} style={{
+                      fontSize: 8, fontFamily: 'var(--font-body)', color: 'var(--gold)', cursor: 'pointer', padding: '2px 8px',
+                      background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
+                      border: '0.8px solid var(--gold)', borderRadius: 8,
+                    }}>Drop it in 🪙</button>
+                  </div>
+                </div>
+              </foreignObject>
             </g>
           </g>
         )
