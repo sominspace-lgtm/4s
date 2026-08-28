@@ -1084,22 +1084,13 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           })}
         </g>
       )
-    case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
-      // pack), replacing the hand-drawn construction site. Sized up round 25 (same "bigger
-      // than the figures" reasoning as the trees above). Re-cropped again round 45 (2026-08-28,
-      // "update the village with these elements") — workshop.png now shows real tools (a
-      // hammer and shovel) hung on the wall, from village-new-structures-alpha.png, a better
-      // match for "Projects" than the older plain-door crop it replaces.
-      // Round 57 (2026-08-28, "projects are tracked by...") — the briefcase from
-      // village/village-infrastructure-connectors-alpha.png. "What you're working on"
-      // reads more directly as a briefcase than the workshop shed (rounds 11-56) did.
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/briefcase.png" x={-17} y={-24.5} width={34} height={34 / (189 / 136)}
-            style={{ imageRendering: 'pixelated' }} />
-        </g>
-      )
+    case 'building': // Projects — nothing here now (round 64, "make log house bigger and
+      // the symbol for projects"). Same pattern as 'home': the real log cabin is drawn
+      // directly in VillageScene, anchored to this district's position, so drawing a
+      // second symbol (the briefcase, rounds 57-63) on top of it was two things competing
+      // for one job. DistrictLabel still renders its glow + hit-rect + "Projects" label
+      // here; the cabin a few pixels away is the symbol.
+      return null
     case 'book': // Archive — a real library building now (round 45, 2026-08-28, "update the
       // village with these elements. relabel if makes more sense") — library.png, from
       // village-social-town-spaces-alpha.png, an actual library (book-motif gable window),

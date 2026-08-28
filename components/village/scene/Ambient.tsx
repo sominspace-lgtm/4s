@@ -154,12 +154,16 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
           "gated on making sense" rule as the smoke/fireflies above. Kept
           out of any dark/rain combo so the moving-node count never really
           stacks past the budget in the header comment. */}
-      {v.timeOfDay === 'day' && v.plants.length > 0 && weatherCondition !== 'rain' && weatherCondition !== 'storm' && (
+      {(v.timeOfDay === 'day' || v.timeOfDay === 'dawn') && v.plants.length > 0 && weatherCondition !== 'rain' && weatherCondition !== 'storm' && (
         <g opacity={0.5}>
-          {[{ x: 165, y: 250 }, { x: 305, y: 268 }].map((p, i) => (
-            <g key={i} transform={`translate(${p.x} ${p.y})`} className={`village-butterfly village-butterfly-${i}`}>
-              <path d="M -3.5 0 Q -6 -4 -3.2 -1 Q -6 2 -3.5 0 Z" fill="var(--blush)" />
-              <path d="M 3.5 0 Q 6 -4 3.2 -1 Q 6 2 3.5 0 Z" fill="var(--blush)" />
+          {/* A third added round 64 ("add more ... subtle animations"), over
+              Growth Garden's flower symbol — still only shows alongside the
+              day/dawn motes+birds, never with the dusk/night firefly set, so
+              the moving-node count stays inside the header budget. */}
+          {[{ x: 165, y: 250 }, { x: 305, y: 268 }, { x: 132, y: 236 }].map((p, i) => (
+            <g key={i} transform={`translate(${p.x} ${p.y})`} className={`village-butterfly village-butterfly-${i % 2}`}>
+              <path d="M -3.5 0 Q -6 -4 -3.2 -1 Q -6 2 -3.5 0 Z" fill={i === 2 ? 'var(--gold)' : 'var(--blush)'} />
+              <path d="M 3.5 0 Q 6 -4 3.2 -1 Q 6 2 3.5 0 Z" fill={i === 2 ? 'var(--gold)' : 'var(--blush)'} />
             </g>
           ))}
         </g>

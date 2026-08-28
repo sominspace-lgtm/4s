@@ -431,6 +431,11 @@ select, option {
    negative animation-delay inline so the cluster never sways in lockstep. */
 @keyframes village-flower-sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 .village-flower-sway { transform-box: fill-box; transform-origin: bottom center; animation: village-flower-sway 4.5s ease-in-out infinite; }
+/* A softer version (round 64) for the scattered foreground grass and
+   flowering bushes — smaller angle, slower, so a whole meadow of them
+   ripples without reading as wind damage. */
+@keyframes village-sway-soft { 0%,100% { transform: rotate(-2.2deg); } 50% { transform: rotate(2.2deg); } }
+.village-sway-soft { transform-box: fill-box; transform-origin: bottom center; animation: village-sway-soft 5s ease-in-out infinite; }
 
 /* Sprite-frame cycling (round 13, 2026-08-27) — see SpriteCycle in
    shapes.tsx for the full mechanism. One rule per frame count in current
@@ -779,7 +784,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-flower-sway, .village-fade,
+  .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,

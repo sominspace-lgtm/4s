@@ -1732,8 +1732,11 @@ export default function VillageScene({
         // wherever the badge is dragged. Clamped so a badge near the very
         // edge doesn't push the cabin off-canvas.
         const bp = pos('projects')
-        const hx = Math.max(96, Math.min(704, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 4, bp.y - 24))
-        const w = 46, h = w / (390 / 293)
+        const hx = Math.max(110, Math.min(690, bp.x)), hy = Math.min(GROUND_Y + 70, Math.max(GROUND_Y - 6, bp.y - 40))
+        // Bigger round 64 ("make log house bigger and the symbol for
+        // projects") — 46 -> 64, so it reads as this district's landmark now
+        // that the briefcase symbol is gone (see DistrictArt's 'building').
+        const w = 64, h = w / (390 / 293)
         return (
           <>
             <g>
@@ -1792,27 +1795,28 @@ export default function VillageScene({
           signpost (round 10) is gone too (round 23) — blank-sign.png has no
           equivalent in the master folder either. */}
 
-      {/* Archive Grove — the yearly milestone rings. The big Life Tree that
-          used to stand here (life-tree.png, rounds 45-61) is gone round 62
-          ("remove big tree except for people") — the only big tree left in
-          the village is People's own. What stays is the ring data itself:
-          real years-of-account growth, drawn as soft concentric circles set
-          into the ground beside the Archive greenhouse, not decoration. */}
+      {/* Archive Grove — a small wild patch beside the Archive greenhouse.
+          Round 62 removed the big Life Tree here; round 64 ("fix cut down
+          tree") removes what was left — flat concentric ground rings that
+          read exactly like a fresh tree stump. In its place: a couple of
+          bushes and a strip of wildflowers, so the corner reads as a quiet
+          overgrown grove rather than a clearing where something was felled.
+          The account-age still lives in the district badge count and in
+          VillageText; the <title> keeps it for screen readers. */}
       <g transform={`translate(725 ${GROUND_Y + 2})`}>
         <title>{
           v.treeRings > 0
             ? `Archive Grove, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'} of growth`
             : `Archive Grove, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
         }</title>
-        {[...Array(Math.max(1, Math.min(v.treeRings, 5)))].map((_, i) => (
-          <ellipse key={i} cx={0} cy={-4} rx={6 + i * 4} ry={(6 + i * 4) * 0.34}
-            fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.3} />
-        ))}
-        {/* The book stack and garden lantern (round 10) are gone (round 23,
-            2026-08-27, "update only using these elements") — neither
-            book-stack.png nor garden-lantern.png has an equivalent in the
-            master-visual-assets folder; the library.png badge nearby
-            (DistrictArt's 'book' case) still carries Archive's identity. */}
+        <g opacity={0.9}>
+          <image href="/village-assets/wildflower-strip.png" x={-24} y={-9} width={44} height={44 * (341 / 512)}
+            style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/bush-mound.png" x={-30} y={-13} width={18} height={18 * (129 / 218)}
+            style={{ imageRendering: 'pixelated' }} />
+          <image href="/village-assets/flowering-bush.png" x={12} y={-15} width={17} height={17 * (209 / 276)}
+            style={{ imageRendering: 'pixelated' }} />
+        </g>
       </g>
 
       {/* Bloom Garden — waiting on BloomScan */}
@@ -2053,9 +2057,20 @@ export default function VillageScene({
             : f.kind === 'flower' ? { href: 'flowering-bush.png', w: 10.6, h: 8 }
             : { href: 'tall-grass.png', w: 8.5, h: 8 }
           const w = spec.w * f.scale, h = spec.h * f.scale
+          // Round 64 ("add ... subtle animations") — the flowering bushes
+          // and grass tufts get the same gentle lean as Growth Garden's
+          // flowers, each on its own hashPos-seeded delay/duration so the
+          // whole meadow ripples very slightly rather than in lockstep.
+          // Bushes stay still — a swaying shrub reads as wind damage, not
+          // calm.
+          const sways = f.kind !== 'bush'
+          const dur = 4 + hashPos(f.id + 'sd') * 2.5
+          const delay = -hashPos(f.id + 'sl') * dur
           return (
             <image key={f.id} href={`/village-assets/${spec.href}`} x={f.x - w / 2} y={f.y - h} width={w} height={h}
-              opacity={0.5 + f.depth * 0.45} style={{ imageRendering: 'pixelated' }} />
+              opacity={0.5 + f.depth * 0.45}
+              className={sways ? 'village-sway-soft' : undefined}
+              style={{ imageRendering: 'pixelated', ...(sways ? { animationDuration: `${dur.toFixed(2)}s`, animationDelay: `${delay.toFixed(2)}s` } : {}) }} />
           )
         })}
       </g>
