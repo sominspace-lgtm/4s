@@ -291,7 +291,7 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-      {dark && <circle cy={-8} r={6} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+      {dark && <circle cy={-8} r={8} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
       <image href="/village-assets/stone-lantern.png" x={-w / 2} y={-h} width={w} height={h}
         style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
     </g>
@@ -673,7 +673,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <ellipse cx={0} cy={2} rx={16} ry={2.3} fill="var(--text)" opacity={0.17} />
           <image href="/village-assets/workshop.png" x={-16.8} y={-24} width={33.5} height={24}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={4} cy={-15} r={5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
+          {dark && <circle cx={4} cy={-15} r={7} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'book': // Archive — a real greenhouse sprite (round 11, 2026-08-27, same custom pack) —
@@ -685,7 +685,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <ellipse cx={0} cy={2} rx={15} ry={2.2} fill="var(--text)" opacity={0.17} />
           <image href="/village-assets/greenhouse.png" x={-15} y={-24} width={30} height={24}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-13} r={6} fill="var(--amber)" opacity={0.16} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-13} r={8} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
     case 'places': // Places — a real market/shop sprite (round 11, 2026-08-27, same custom
@@ -695,7 +695,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <ellipse cx={0} cy={2} rx={16} ry={2.2} fill="var(--text)" opacity={0.16} />
           <image href="/village-assets/shop.png" x={-16.1} y={-24} width={32.3} height={24}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-14} r={5.5} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-14} r={7.5} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'people': // People — an empty bench, not a second Sylvia/Harry (round 14 fix,

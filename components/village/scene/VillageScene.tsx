@@ -249,13 +249,20 @@ function spellCount(n: number): string {
 // and what "Reset positions" (see Village.tsx) restores. Pulled out as a
 // named map (rather than left as literal props on each DistrictLabel call)
 // so arrangeable() below has one place to fall back to.
+// Grounded (round 17 fix, 2026-08-27, "make the buildings on the ground;
+// its floating right now") — archive/people/places sat at y 180-205 while
+// forest/home/projects sat at y 250. GROUND_Y is 210 and the actual path
+// (PATH_D, drawn at GROUND_Y+18..+40) runs well below that, so those three
+// districts' real sprite buildings were rendering up in the hillside band
+// above the path instead of sitting on it — a genuine positioning bug, not
+// a rendering one. All six now share the same ground line; x stays put.
 const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   forest: { x: 175, y: 250 },
   home: { x: 400, y: 250 },
   projects: { x: 620, y: 250 },
-  archive: { x: 725, y: 205 },
-  people: { x: 265, y: 180 },
-  places: { x: 505, y: 180 },
+  archive: { x: 725, y: 250 },
+  people: { x: 265, y: 250 },
+  places: { x: 505, y: 250 },
 }
 
 // Default positions for every purely-decorative prop (round 12, 2026-08-27,
@@ -781,8 +788,13 @@ export default function VillageScene({
             visible banded edge up close; an actual blur is what a soft light
             source looks like. feMerge layers the blurred copy behind the
             crisp original so the source shape stays sharp at its center. */}
-        <filter id="vglow" x="-150%" y="-150%" width="400%" height="400%">
-          <feGaussianBlur stdDeviation="3.2" result="blur" />
+        {/* stdDeviation bumped 3.2 → 5.5 (round 17, 2026-08-27, "make all
+            light sources more ambient") — every glow in the scene (sun,
+            moon, lamps, lanterns, the house/workshop/greenhouse/shop window
+            accents) shares this one filter, so widening the blur here softens
+            all of them at once instead of hand-tuning each source separately. */}
+        <filter id="vglow" x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur stdDeviation="5.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -1005,7 +1017,7 @@ export default function VillageScene({
             <title>A paper lantern</title>
             <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
             <rect x={-0.7} y={-postH} width={1.4} height={postH} fill={TRIM} opacity={0.8} />
-            {dark && <circle cy={-postH - h / 2} r={7} fill="var(--amber)" opacity={0.2} filter="url(#vglow)" />}
+            {dark && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
             <image href={`/village-assets/paper-lantern-${dark ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
               style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
             {arranging && (
@@ -1109,7 +1121,7 @@ export default function VillageScene({
             null — no household space set up yet, or Smart Home not used),
             so a install with zero Smart Home data keeps the old day/night
             behavior instead of going permanently dark. */}
-        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-70} rx={8} ry={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" />}
+        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-70} rx={10} ry={9} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 28 -88 L 28 -102 L 35 -102 L 35 -88" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}

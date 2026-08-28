@@ -36,8 +36,8 @@ export default function Celestial({ c }: { c: CelestialData }) {
             reachable here because this renders into that same <svg>) —
             concentric flat-opacity circles have a visible banded edge up
             close; an actual blur is what soft light looks like. */}
-        <circle cx={c.x} cy={c.y} r={r + 16} fill="#FFD874" opacity={0.1} filter="url(#vglow)" />
-        <circle cx={c.x} cy={c.y} r={r + 9} fill="#FFD874" opacity={0.18} filter="url(#vglow)" />
+        <circle cx={c.x} cy={c.y} r={r + 20} fill="#FFD874" opacity={0.14} filter="url(#vglow)" />
+        <circle cx={c.x} cy={c.y} r={r + 11} fill="#FFD874" opacity={0.24} filter="url(#vglow)" />
         <circle cx={c.x} cy={c.y} r={r + 3} fill="#FFE9AE" opacity={0.35} />
         <circle cx={c.x} cy={c.y} r={r} fill="url(#vsun)" />
         {/* A small bright highlight — the one thing that reads as "lit
@@ -61,8 +61,8 @@ export default function Celestial({ c }: { c: CelestialData }) {
           <stop offset="100%" stopColor="#C7C6DA" />
         </radialGradient>
       </defs>
-      <circle cx={c.x} cy={c.y} r={r + 12} fill="#D8DCF2" opacity={0.16} filter="url(#vglow)" />
-      <circle cx={c.x} cy={c.y} r={r + 6} fill="#E9E9F6" opacity={0.26} filter="url(#vglow)" />
+      <circle cx={c.x} cy={c.y} r={r + 15} fill="#D8DCF2" opacity={0.22} filter="url(#vglow)" />
+      <circle cx={c.x} cy={c.y} r={r + 8} fill="#E9E9F6" opacity={0.32} filter="url(#vglow)" />
       <circle cx={c.x} cy={c.y} r={r} fill="url(#vmoon)" />
       {/* A couple of faint, fixed "craters" — pure texture, not a real
           lunar map — so the disc doesn't read as a flat painted circle. */}
