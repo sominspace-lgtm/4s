@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The 2-frame flower-cluster sway (round 13, 2026-08-27,
 // village-animations-complete.zip) — same idiom as shapes.tsx's own
@@ -241,14 +241,10 @@ const PROPS = {
     { x: 700, y: GROUND_Y - 8, hue: 'var(--gold)' },
     { x: 200, y: GROUND_Y + 32, hue: 'var(--blush)' },
   ],
-  // Fences and lamps (2026-08-25) — the rest of "denser, more lived-in
-  // ground" from PROPS above. A short fence run near Home reads as a real
-  // yard boundary rather than an open field; lamps mark the path itself so
-  // it reads as a real route, lit after dark.
-  fences: [
-    { x: 350, y: GROUND_Y + 6, length: 4 },
-    { x: 450, y: GROUND_Y + 10, length: 4 },
-  ],
+  // Lamps (2026-08-25) — the rest of "denser, more lived-in ground" from
+  // PROPS above; they mark the path itself so it reads as a real route,
+  // lit after dark. The fence run that used to live here too is gone
+  // (round 34, 2026-08-27, "remove the fences with white in the middle").
   // y shifted from GROUND_Y-24..-36 to GROUND_Y+18..+34 (round 4,
   // 2026-08-27) — PATH_D itself moved down the same amount this round (see
   // its own comment), and these are specifically meant to mark the path,
@@ -353,7 +349,6 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   pond: PROPS.pond,
   ...Object.fromEntries(PROPS.benches.map((p, i) => [`bench-${i}`, p])),
   ...Object.fromEntries(PROPS.flowerBeds.map((p, i) => [`flowerBed-${i}`, p])),
-  ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
   signpost: { x: 770, y: GROUND_Y + 30 },
@@ -734,6 +729,11 @@ export default function VillageScene({
   }
 
   const selectPlant = (id: string, x: number, y: number) => () => {
+    // arranging guard added round 33 (2026-08-27, "can move them around once
+    // planted") — plants are draggable now (see the render block below), and
+    // without this a drag-arrange tap would also fire the click-to-care
+    // sparkle/callout, same reasoning nav()'s own guard already documents.
+    if (arranging) return
     if (locked) { onLockedNavigate?.('Growth Forest'); return }
     setSelected(s => (s?.type === 'plant' && s.id === id ? null : { type: 'plant', id }))
     careFor(id, x, y)
@@ -1084,11 +1084,12 @@ export default function VillageScene({
           <FlowerBedShape x={0} y={0} hue={f.hue} />
         </Draggable>
       ) })}
-      {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
-        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
-          <FenceShape x={0} y={0} length={f.length} />
-        </Draggable>
-      ) })}
+      {/* The fence is gone (round 34, 2026-08-27, "remove the fences with
+          white in the middle") — round 29's tiling fix addressed the real
+          gap bug, but the sprite kept reading wrong regardless; rather
+          than keep patching it, it's removed outright. fence-rail.png and
+          FenceShape stay in the codebase (real, folder-sourced content, a
+          working component) in case a cleaner crop fixes it later. */}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
           <LampShape x={0} y={0} dark={dark} />
@@ -1261,15 +1262,27 @@ export default function VillageScene({
       </g>
 
 
-      {/* Growth Forest */}
+      {/* Growth Forest — plants are draggable in arrange mode (round 33,
+          2026-08-27, "we can only grow them using habits and can move them
+          around once planted") — same startDrag/onMoveLandmark mechanism
+          every other prop uses, keyed by the plant's own real id (see
+          Village.tsx's plantSlots useMemo for where the saved override
+          actually gets read back in). A plant can never be ADDED this
+          way — only ever moved once it exists from real habit data. */}
       {plantSlots.map(({ plant, x, y, scale, back }) => (
-        <g key={plant.id} opacity={back ? 0.55 : 1}>
+        <g key={plant.id} opacity={back ? 0.55 : 1}
+          onPointerDown={startDrag(plant.id)}
+          style={{ cursor: arranging ? (draggingId === plant.id ? 'grabbing' : 'grab') : undefined }}>
           <PlantShape plant={plant} x={x} y={y} scale={scale}
             foliage={live ? palette.foliage : undefined}
             changed={grew.has(plant.id) || planted.has(plant.id)}
             selected={selected?.type === 'plant' && selected.id === plant.id}
             cared={caredId === plant.id}
             onClick={selectPlant(plant.id, x, y)} />
+          {arranging && (
+            <circle cx={x} cy={y - 12} r={16} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+              opacity={draggingId === plant.id ? 0.9 : 0.4} />
+          )}
         </g>
       ))}
       {/* A zero-habit account leaves this whole band of ground bare — the

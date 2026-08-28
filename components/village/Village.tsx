@@ -222,13 +222,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
+  // Round 33 (2026-08-27, "we can only grow them using habits and can move
+  // them around once planted") — a plant's computed slot is still the
+  // default, but `layout[plant.id]` (the same VillageLayout blob every
+  // other drag already uses) overrides it once someone's actually dragged
+  // that plant, same "custom position if dragged, else the real default"
+  // rule as decorPos in VillageScene. Deliberately NOT extended to
+  // buildingSlots below — only asked for plants.
   const plantSlots = useMemo(() => {
     const byId = new Map(v.plants.map(p => [p.id, p]))
     return forestSlots(v.plants.map(p => p.id), GROUND_Y)
-      .map(s => ({ ...s, plant: byId.get(s.id)! }))
+      .map(s => ({ ...s, ...(layout[s.id] ?? {}), plant: byId.get(s.id)! }))
       // Back row first, so the front row overlaps it rather than the reverse.
       .sort((a, b) => Number(b.back) - Number(a.back))
-  }, [v.plants])
+  }, [v.plants, layout])
 
   const buildingSlots = useMemo(() => {
     const byId = new Map(v.buildings.map(b => [b.id, b]))

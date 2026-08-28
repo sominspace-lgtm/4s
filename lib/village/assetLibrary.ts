@@ -46,7 +46,12 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'pineTree', label: 'Pine tree', href: 'pine-tree.png', aspect: 178 / 341, h: 28 },
   { key: 'roundTree', label: 'Round tree', href: 'round-tree-sway-1.png', aspect: 331 / 459, h: 26 },
   { key: 'paperLantern', label: 'Paper lantern', href: 'paper-lantern-lit.png', aspect: 141 / 345, h: 14 },
-  { key: 'flowerCluster', label: 'Flowers', href: 'flower-cluster-1.png', aspect: 249 / 200, h: 9.6 },
+  // 'flowerCluster' removed (round 33, 2026-08-27, "make it so we cannot
+  // add plants/flower. we can only grow them using habits") — even though
+  // this was decorative ground cover, not a real habit-driven plant, it
+  // read too close to "adding a flower" for comfort. Real plants only ever
+  // come from PlantShape/plantSlots (real habit data); the Inventory
+  // should never be a second way to add anything flower-shaped.
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

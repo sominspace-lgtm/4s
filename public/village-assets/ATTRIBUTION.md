@@ -433,3 +433,44 @@ outfit sheet).
 Inventory items also no longer all land on the same spot - Village.tsx's addInventoryItem now
 picks the least-crowded of eight spread-out candidate spots (by distance to every existing layout
 position) instead of a single fixed (400, GROUND_Y+10).
+
+## Round 33 (2026-08-27) - plants: habits only, but moveable once planted
+
+"make it so we cannot add plants/flower. we can only grow them using habits and can move them
+around once planted."
+
+- Removed 'flowerCluster' from the Inventory's ASSET_LIBRARY (lib/village/assetLibrary.ts) - it
+  was decorative ground cover, not a real habit-driven plant, but read too close to "adding a
+  flower" for comfort. Real plants only ever come from PlantShape/plantSlots, driven by real
+  habit data - the Inventory should never be a second way to add anything flower-shaped. The
+  single pre-existing flowerCluster prop near the path (round 13) is untouched.
+- Plants are now draggable in arrange mode - same startDrag/onMoveLandmark mechanism every other
+  prop uses, keyed by the plant's own real id. Village.tsx's plantSlots useMemo reads the saved
+  override back in (layout[plant.id]) on top of the computed default position, same "custom
+  position if dragged, else the real default" rule decorPos already follows. Buildings were
+  deliberately left alone - only plants were asked for.
+
+## Round 34 (2026-08-27) - the magenta outline bug, and the fence is gone
+
+"remove magenta into invisible everything we add a visual as there is a magenta outluine on some.
+remove the fences with white in the middle. make figure based off of only what is in the folder
+right now."
+
+- **The real magenta bug, found**: cottage-dark.png, cottage-lit.png, flower-0...4.png,
+  flower-dormant-1/2.png, and sh-default-sylvia.png/-harry.png (all re-cropped in round 32 from
+  the newer "-remade-alpha"/"-alpha" sheets) had a thin, fully OPAQUE magenta outline baked into
+  each sprite - a real export artifact from that generation batch, not a rendering/alpha-fringe
+  issue like earlier rounds suspected. Fixed by detecting magenta-ish opaque pixels (r/b high,
+  g low relative to both) and clearing their alpha to 0 - confirmed zero magenta pixels remain in
+  all eight files afterward.
+- **The fence is removed** - round 29's tiling fix addressed a real gap bug, but the sprite kept
+  reading wrong regardless of that fix, so rather than keep patching it it's removed from the
+  scene outright (both PROPS.fences instances, the FenceShape import, and the now-dead `fences`
+  entry in PROPS/DECOR_DEFAULTS). fence-rail.png and the FenceShape component itself stay in the
+  codebase - real, folder-sourced content and a working component, just not rendered right now.
+- **Sylvia/Harry re-confirmed folder-only** - sh-default-sylvia.png/-harry.png were already
+  re-sourced from the current folder in round 32; this round's magenta fix is the last piece of
+  that. Separately: the folder's own sylvia-harry-walk-wave-animation-alpha.png (noted in round 32)
+  is a real 4-frame Sylvia walk cycle that could replace the CSS-only glide from round 30 with an
+  actual walking animation, closing the loop the way round 31 did for Somi - not done this round,
+  a real candidate for the next one.
