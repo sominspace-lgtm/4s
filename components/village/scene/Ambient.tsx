@@ -38,7 +38,11 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
           chimney moved once more when the free-tier farm-pack house was
           replaced with the user's own custom cottage sprite; its chimney
           sits further right and higher than the previous sprite's. */}
-      {lived && (cold || dark) && (
+      {/* Dawn added to the gate (round 50, 2026-08-28, "living painting...
+          smoke rises" as a morning beat) — a chimney just lit for breakfast,
+          regardless of season/temperature; cold/dark keep covering the rest
+          of the day as before. */}
+      {lived && (cold || dark || v.timeOfDay === 'dawn') && (
         <g className="village-smoke" opacity={0.22}>
           <circle cx={436} cy={groundY - 92} r={3.5} fill="var(--text)" />
           <circle cx={439} cy={groundY - 103} r={4.5} fill="var(--text)" opacity={0.7} />

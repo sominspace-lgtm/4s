@@ -460,17 +460,33 @@ select, option {
    The existing 50%-mark close-approach ("interact when near," round 46)
    still recurs every lap after that, so this doesn't replace the
    recurring interaction, it just adds a first-look greeting in front of it. */
+/* --home-x/-y and --nudge-x/-y (round 50, 2026-08-28) are optional CSS custom
+   properties VillageScene sets inline, only when relevant — every var() below
+   falls back to 0px, so with neither set this animation is unchanged from
+   round 47. --home-x/-y shift where the 0%/6% "before setting off" hold sits,
+   used only during the dawn living-painting beat as a cheap "starting from
+   nearer the house" approximation (no door art exists to animate a literal
+   exit). --nudge-x/-y add one extra held beat at 65% — the "attention" system
+   (garden/pond taps, see lib/village/nudge.ts) drifts whichever figure is
+   nudged toward the tapped spot for that one beat, on top of the same lap
+   they'd already be running; VillageScene only ever sets these on the figure
+   `resolveNudgeThisLap` picked for the current 48s lap, so it doesn't fire
+   every lap and never overrides arrange-mode dragging. */
 @keyframes village-wander-sylvia {
-  0%, 6%, 100% { transform: translate(0, 0); }
+  0%, 6% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
   20% { transform: translate(-14px, -2px); }
   50% { transform: translate(16px, 1px); }
+  65% { transform: translate(var(--nudge-x, 0px), var(--nudge-y, 0px)); }
   80% { transform: translate(-6px, 3px); }
+  100% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
 }
 @keyframes village-wander-harry {
-  0%, 6%, 100% { transform: translate(0, 0); }
+  0%, 6% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
   20% { transform: translate(12px, -2px); }
   50% { transform: translate(-16px, 2px); }
+  65% { transform: translate(var(--nudge-x, 0px), var(--nudge-y, 0px)); }
   80% { transform: translate(8px, -3px); }
+  100% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
 }
 /* village-couple-solo-vis (round 49) hides each figure's own idle/walk art
    during the brief "together" window at the top of the lap (0-4%, 96-100%,

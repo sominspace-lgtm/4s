@@ -251,9 +251,16 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
 // as "a place" rather than "the gaps between the things that matter" — the
 // goal is Animal Crossing × stationery, not more UI. Flat shapes, theme-
 // colored via CSS vars, same idiom as every other scene element.
-export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
+export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; scale?: number; onClick?: () => void }) {
+  // onClick (round 50, 2026-08-28) — the pond is the "picnic" tap target for
+  // the new attention/nudge system (VillageScene's own nudge state); same
+  // stopPropagation/oversized-hit-circle idiom as VillagerShape's own
+  // onClick, gated `!arranging` by the caller, not here.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8}>
+    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8} onClick={handleClick}
+      className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      {onClick && <circle cx={0} cy={0} r={24} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="var(--slate)" opacity={0.28} />
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="none" stroke="var(--slate)" strokeWidth={0.7} opacity={0.35} />
       <ellipse cx={-5} cy={-1.5} rx={6} ry={1.6} fill="var(--surface)" opacity={0.25} />
@@ -284,10 +291,15 @@ export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: 
   )
 }
 
-export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: number; y: number; scale?: number; hue?: string }) {
+export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)', onClick }: { x: number; y: number; scale?: number; hue?: string; onClick?: () => void }) {
+  // onClick (round 50, 2026-08-28) — the "garden" tap target for the
+  // attention/nudge system, same idiom as PondShape's own onClick above.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const petals = [-8, -3, 3, 8]
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+    <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
+      className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      {onClick && <circle cx={0} cy={0} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={2} rx={13} ry={3.4} fill="var(--emerald)" opacity={0.18} />
       {petals.map((dx, i) => (
         <circle key={i} cx={dx} cy={-0.5 - (i % 2)} r={2} fill={hue} opacity={0.8} />

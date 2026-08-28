@@ -219,6 +219,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const timeLabel = clock ? format(clock, 'h:mm a') : null
   const dateLabel = clock ? format(clock, 'EEEE, MMMM d') : null
   const moonLabel = clock && celestial?.body === 'moon' ? moonPhaseLabel(celestial.phase) : null
+  // Same reasoning, round 50 (2026-08-28) — "living painting" day-to-day
+  // flavor (see lib/village/vignette.ts) needs a stable per-day key, computed
+  // here alongside the other clock-derived labels rather than inside the
+  // hookless scene.
+  const dateKey = clock ? format(clock, 'yyyy-MM-dd') : null
 
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
@@ -308,7 +313,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
-            homeOccupied={homeOccupied} />
+            homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the

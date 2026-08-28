@@ -798,3 +798,37 @@ magenta artifacts (`sh-int-standing.png`, `sh-int-highfive.png`, `sh-int-flower-
   is its own visual decision (an outfit swap needs a trigger, a postcard rack needs a real
   "memories" surface to hang it on) that this session's own pattern - iterate with a screenshot,
   don't guess blind - argues for doing one at a time, not all at once sight-unseen.
+
+## Round 50 (2026-08-28) - attention/nudges, living painting
+
+"The user shouldn't directly control Sylvia/Harry. Instead, tapping something can influence their
+attention... 'Living painting' moments"
+
+No new asset crops this round - everything below is new logic/CSS wired onto sprites already in the
+folder from prior rounds.
+
+- **Attention, not control**: tapping a flower bed or the pond no longer does nothing - each raises
+  the odds ONE of Sylvia/Harry drifts that way for a beat of their own already-running wander lap,
+  never a forced move (`lib/village/nudge.ts`'s `resolveNudgeThisLap`, reusing `hashPos` the same way
+  everything else in this scene avoids real randomness). Picnic tap target is the pond, not a new
+  prop or a relabeled bench, per direct confirmation. No new "gardening" or "picnic" pose exists (the
+  default Sylvia/Harry sprites already come from the picnic-basket/coffee-cup pair, round 39) - both
+  nudges resolve as a position drift only, using each figure's normal walk/idle art.
+- **Living painting**: the four requested acts (morning/afternoon/sunset/night) map directly onto
+  the scene's real 4 time buckets (dawn/day/dusk/night) - no new bucket needed. Most of the requested
+  beats already existed (birds, fireflies, window glow, the round-49 bench swap covers "couple sits
+  outside," the `quiet` flag covers "everything becomes slower"). What's new: smoke now also rises
+  briefly at dawn regardless of season ("smoke rises"); Sylvia/Harry's lap starts from a slightly
+  different spot near home specifically at dawn, varying a little day to day
+  (`lib/village/vignette.ts`) - the closest achievable version of "the couple leaves the house," since
+  no door art exists to animate a literal exit; a fixed, longer shadow appears under Home during dusk
+  ("shadows stretch") - a static addition, not an animated one, per direct confirmation, since no
+  shadow geometry exists to actually animate. "Laundry moves" is NOT built this round -
+  `clothesline.png` turned out to have been fully removed from the scene back in round 32 ("delete
+  any elements that are not from my folder"), not just static as assumed while planning; re-adding a
+  whole prop mid-round wasn't something to guess at blind, so it's flagged here rather than silently
+  built or silently dropped.
+- **A dev-only `?vtod=dawn|day|dusk|night` URL override** was added (`VillageScene.tsx`) purely so
+  all four living-painting buckets could actually be screenshotted in one sitting instead of waiting
+  for each to occur naturally - no production UI exposes it.
+- ("make house smaller" was already handled in round 49's commit, alongside its own changes.)

@@ -7,6 +7,8 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
+import { isNudgeActive, resolveNudgeThisLap, lapIndexAt, NUDGE_TTL_MS, type Nudge, type NudgeKind } from '@/lib/village/nudge'
+import { vignetteVariant } from '@/lib/village/vignette'
 import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The 2-frame flower-cluster sway (round 13, 2026-08-27,
@@ -421,7 +423,7 @@ export default function VillageScene({
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
-  homeOccupied = null,
+  homeOccupied = null, dateKey = null,
 }: {
   village: VillageState
   live: boolean
@@ -463,6 +465,11 @@ export default function VillageScene({
    *  Village.tsx's own zoom-control comment for why this is a discrete
    *  +/- control rather than a gesture. */
   zoom?: number
+  /** 'YYYY-MM-DD', pre-formatted in Village.tsx from the same clock as
+   *  timeLabel/dateLabel — round 50's "living painting" day-to-day flavor
+   *  (lib/village/vignette.ts) needs a stable per-day key and this component
+   *  stays date-computation-free, same reasoning as those two props. */
+  dateKey?: string | null
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -510,6 +517,22 @@ export default function VillageScene({
     else go()
   }
 
+  // Dev-only time-of-day override (round 50, 2026-08-28) — a `?vtod=dawn|
+  // day|dusk|night` URL param, so all four "living painting" buckets can
+  // actually be screenshotted in one sitting instead of waiting for each to
+  // occur naturally (real time-of-day only changes ~4x/day, see
+  // useVillageClock's own header comment). No production UI exposes this —
+  // it's a URL param, not a setting, and it only ever touches this one
+  // render's local `v.timeOfDay`, never the real clock or any stored data.
+  const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get('vtod')
+      if (p === 'dawn' || p === 'day' || p === 'dusk' || p === 'night') setVtodOverride(p)
+    } catch { /* ignore */ }
+  }, [])
+  if (vtodOverride) v = { ...v, timeOfDay: vtodOverride }
+
   // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
   // Quiet compositions (round 48, 2026-08-28, "certain moments where
@@ -556,6 +579,53 @@ export default function VillageScene({
   // Only shown once there's a real pattern (5+ clicks) — a single early tap
   // shouldn't already look like a favorite spot.
   const wornPath = totalVisits >= 5 ? visitEntries.sort((a, b) => b[1] - a[1])[0]?.[0] : null
+
+  // The "attention" system (round 50, 2026-08-28, "The user shouldn't
+  // directly control Sylvia/Harry. Instead, tapping something can influence
+  // their attention.") — same localStorage-backed-interaction-history shape
+  // as visitCounts just above, not a stored village (see its own comment).
+  // Tapping a flower bed or the pond doesn't move anyone; it only raises the
+  // odds ONE of them drifts that way for a beat of their own already-running
+  // wander lap (lib/village/nudge.ts's resolveNudgeThisLap decides which
+  // lap, if any, and who — a real chance, not a command).
+  const [nudge, setNudgeState] = useState<Nudge | null>(null)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('4s-village-nudge')
+      if (raw) {
+        const parsed = JSON.parse(raw) as Nudge
+        if (isNudgeActive(parsed, Date.now())) setNudgeState(parsed)
+      }
+    } catch { /* ignore */ }
+  }, [])
+  function setNudge(kind: NudgeKind, targetId: string) {
+    const next: Nudge = { kind, targetId, expiresAt: Date.now() + NUDGE_TTL_MS }
+    setNudgeState(next)
+    try { localStorage.setItem('4s-village-nudge', JSON.stringify(next)) } catch { /* ignore */ }
+  }
+  const activeNudge = isNudgeActive(nudge, Date.now()) ? nudge : null
+  const nudgeThisLap = activeNudge ? resolveNudgeThisLap(activeNudge, lapIndexAt(Date.now())) : null
+  // Resolved once per render into a per-actor CSS custom-property style,
+  // rather than threaded as several separate props — VillagerShape's own
+  // wander wrapper just spreads whichever of these applies, or nothing.
+  function nudgeStyle(actor: 'sylvia' | 'harry'): React.CSSProperties | undefined {
+    if (!activeNudge || !nudgeThisLap || nudgeThisLap.actor !== actor || !nudgeThisLap.on || arranging || quiet) return undefined
+    const base = actor === 'sylvia' ? decorPos('sylvia') : decorPos('harry')
+    const targetPos = activeNudge.kind === 'picnic' ? decorPos('pond') : decorPos(activeNudge.targetId)
+    return { '--nudge-x': `${Math.round(targetPos.x - base.x)}px`, '--nudge-y': `${Math.round(targetPos.y - base.y)}px` } as React.CSSProperties
+  }
+
+  // "Living painting" dawn beat (round 50) — Sylvia/Harry's lap starts a
+  // little nearer where their day begins instead of always the same exact
+  // pixel, a cheap stand-in for "the couple leaves the house" (no door art
+  // exists to animate a literal exit). Small and deterministic per real day
+  // via vignetteVariant, not random per render — see lib/village/vignette.ts.
+  const homeStyle: React.CSSProperties | undefined = (dateKey && v.timeOfDay === 'dawn' && !arranging && !quiet)
+    ? {
+        '--home-x': `${Math.round((vignetteVariant(dateKey, 'dawn', 'home-x') - 0.5) * 10)}px`,
+        '--home-y': `${Math.round((vignetteVariant(dateKey, 'dawn', 'home-y') - 0.5) * 4)}px`,
+      } as React.CSSProperties
+    : undefined
 
   const navLandmark = (id: LandmarkId, label: string, go: () => void) => () => {
     if (arranging) return
@@ -1244,7 +1314,7 @@ export default function VillageScene({
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
-          <PondShape x={0} y={0} />
+          <PondShape x={0} y={0} onClick={!arranging ? () => setNudge('picnic', 'pond') : undefined} />
         </Draggable>
       ) })()}
       {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
@@ -1254,7 +1324,7 @@ export default function VillageScene({
       ) })}
       {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
-          <FlowerBedShape x={0} y={0} hue={f.hue} />
+          <FlowerBedShape x={0} y={0} hue={f.hue} onClick={!arranging ? () => setNudge('garden', id) : undefined} />
         </Draggable>
       ) })}
       {/* The fence is back (round 39, 2026-08-27, "sync all new elements
@@ -1698,6 +1768,14 @@ export default function VillageScene({
       <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
+      {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
+          stretch") — a real animated stretch would need shadow geometry this
+          scene doesn't have; this is the confirmed cheap version instead, a
+          fixed longer shadow shown only during dusk, drawn under Home before
+          its own badge so it reads as ground, not a UI element. */}
+      {v.timeOfDay === 'dusk' && (
+        <ellipse cx={pos('home').x + 10} cy={pos('home').y + 4} rx={38} ry={5} fill="var(--text)" opacity={0.1} />
+      )}
       {/* Home reads 1.25x the rest (2026-08-27) — "this is where you live,"
           everything else branches outward from it. */}
       <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1}
@@ -1782,7 +1860,7 @@ export default function VillageScene({
       {(() => { const p = decorPos('sylvia'); return (
         <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
           {!(quiet && !arranging) && (
-            <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined}>
+            <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined} style={{ ...homeStyle, ...nudgeStyle('sylvia') }}>
               <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
             </g>
           )}
@@ -1792,7 +1870,7 @@ export default function VillageScene({
       {(() => { const p = decorPos('harry'); return (
         <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
           {!(quiet && !arranging) && (
-            <g className={!arranging && !quiet ? 'village-wander-harry' : undefined}>
+            <g className={!arranging && !quiet ? 'village-wander-harry' : undefined} style={{ ...homeStyle, ...nudgeStyle('harry') }}>
               <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
             </g>
           )}
