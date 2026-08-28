@@ -23,6 +23,7 @@ import { hashPos } from '@/lib/village/state'
 import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
 import { useCoupleLife } from './useCoupleLife'
+import { useWanderer } from './useWanderer'
 
 // Raised from 372 (2026-08-25) — the ground used to be a thin strip at the
 // very bottom of the canvas (68px of 440, ~15%) with almost the whole frame
@@ -285,6 +286,44 @@ const PATH_PAVERS = Array.from({ length: PATH_PAVER_COUNT }, (_, i) => {
   }
 })
 
+// Short spur paths connecting the main trail to each district's door
+// (round 65, "connect paths") — a run of the same cobblestones from the
+// nearest point on the main path up to just below the landmark. Wired to
+// each district's DEFAULT position, not its live one: like the main path
+// this is ground scenery, and a spur that snapped around every time a
+// badge was dragged would tear (see PATH_D's own "scenery, not wiring"
+// note). DISTRICT_SPUR_TARGETS is filled in after DEFAULT_LANDMARK_POS is
+// declared (below).
+function nearestPathX(x: number) {
+  // The main path is near-horizontal, so the closest point is essentially
+  // straight down at the same x — clamp to the path's own x-range.
+  const cx = Math.max(PATH_WAYPOINTS[0].x, Math.min(PATH_WAYPOINTS[PATH_WAYPOINTS.length - 1].x, x))
+  // y from the piecewise-linear waypoints at that x.
+  let seg = 0
+  for (let i = 0; i < PATH_WAYPOINTS.length - 1; i++) {
+    if (cx >= PATH_WAYPOINTS[i].x && cx <= PATH_WAYPOINTS[i + 1].x) { seg = i; break }
+  }
+  const a = PATH_WAYPOINTS[seg], b = PATH_WAYPOINTS[seg + 1]
+  const f = (cx - a.x) / (b.x - a.x)
+  return { x: cx, y: a.y + (b.y - a.y) * f }
+}
+function spurPavers(targetX: number, targetY: number, key: string) {
+  const from = nearestPathX(targetX)
+  const to = { x: targetX, y: targetY + 6 }
+  const n = Math.max(3, Math.round(Math.hypot(to.x - from.x, to.y - from.y) / 9))
+  return Array.from({ length: n }, (_, i) => {
+    const f = i / (n - 1)
+    const seed = `spur-${key}-${i}`
+    return {
+      id: seed,
+      x: from.x + (to.x - from.x) * f + (hashPos(seed + 'x') - 0.5) * 3,
+      y: from.y + (to.y - from.y) * f + (hashPos(seed + 'y') - 0.5) * 3,
+      rot: (hashPos(seed + 'r') - 0.5) * 12,
+      size: 6 + hashPos(seed + 's') * 2,
+    }
+  })
+}
+
 // A pond, two benches, three flower beds — small fixed props scattered near
 // the path, same "pure atmosphere, deterministic position" rule as
 // STONES/POLLEN above.
@@ -378,16 +417,27 @@ function spellCount(n: number): string {
 // districts' real sprite buildings were rendering up in the hillside band
 // above the path instead of sitting on it — a genuine positioning bug, not
 // a rendering one. All six now share the same ground line; x stays put.
-// Round 61 ("make the village default what it is right now") — baked in
-// from Sylvia's own arrangement (Arrange → Copy layout).
+// Round 61 baked in Sylvia's own arrangement, but that pushed projects/
+// archive/people down to y ~300-318 — far into the near foreground, where
+// their art rendered oversized and in front of the path while the other
+// three sat on the ground line. Round 65 ("fix depth") brings all six back
+// onto one ground band (y ~198-214) with only a gentle stagger, so the row
+// reads as one village at one distance. x spread out a little too so the
+// bigger cabin / people-tree / greenhouse don't crowd each other.
 const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
-  forest: { x: 133, y: 200 },
-  home: { x: 400, y: 188 },
-  projects: { x: 69, y: 311 },
-  archive: { x: 730, y: 302 },
-  people: { x: 340, y: 318 },
-  places: { x: 502, y: 211 },
+  forest: { x: 120, y: 205 },
+  home: { x: 400, y: 186 },
+  projects: { x: 78, y: 214 },
+  archive: { x: 724, y: 200 },
+  people: { x: 300, y: 210 },
+  places: { x: 520, y: 205 },
 }
+
+// Spur cobblestones from the main path to each district (round 65) — see
+// spurPavers() above. Static, keyed to the default positions.
+const SPUR_PAVERS = (Object.entries(DEFAULT_LANDMARK_POS) as [LandmarkId, { x: number; y: number }][])
+  .filter(([id]) => id !== 'home') // Home sits on the path already
+  .flatMap(([id, p]) => spurPavers(p.x, p.y, id))
 
 // Default positions for every purely-decorative prop (round 12, 2026-08-27,
 // "make it so we are able to customize the placement of these") — the six
@@ -447,6 +497,13 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   gardenBed: { x: 96, y: GROUND_Y + 40 },
   flowerPlanter: { x: 250, y: GROUND_Y + 44 },
   gardenLantern: { x: 300, y: GROUND_Y + 30 },
+  hobbyEasel: { x: 150, y: GROUND_Y + 58 },
+  hobbyTennis: { x: 356, y: GROUND_Y + 60 },
+  hobbyBookCoffee: { x: 505, y: GROUND_Y + 40 },
+  hobbyMusicStand: { x: 560, y: GROUND_Y + 62 },
+  hobbyInstrumentCase: { x: 610, y: GROUND_Y + 52 },
+  hobbyBicycle: { x: 452, y: GROUND_Y + 66 },
+  hobbyGardenBasket: { x: 118, y: GROUND_Y + 30 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 330, y: 237 },
@@ -793,6 +850,17 @@ export default function VillageScene({
   })
   const coupleTogether = life.together
   const interactPose = life.interactPose
+
+  // Somi roams too now (round 65, "allow somi to wander") — her own small
+  // wander state machine (useWanderer), same glide-to-target model as the
+  // couple. Off during arrange and quiet/night (she's asleep then).
+  const somiHome = decorPos('somi')
+  const somiLife = useWanderer({
+    enabled: !arranging && !quiet,
+    home: somiHome,
+    bounds: { x0: 60, x1: 740, y0: GROUND_Y - 6, y1: GROUND_Y + 78 },
+    restfulness: 0.62,
+  })
 
   // Wishing well (round 57; round 60 "make cuter hover for thankful well")
   // — tapping it opens a small styled card with a real text field (a
@@ -1299,6 +1367,15 @@ export default function VillageScene({
           repeated — round 40's version still read too faint/sparse to
           register as a path at a glance) — see PATH_PAVERS' own comment. */}
       <path d={PATH_D} fill="none" stroke="#B08659" strokeWidth={6} strokeLinecap="round" opacity={0.22} />
+      {/* Spur paths first, so the main-path stones sit on top where they meet. */}
+      {SPUR_PAVERS.map(p => {
+        const tw = p.size * 1.7, th = tw * (41 / 56)
+        return (
+          <image key={p.id} href="/village-assets/path-stone.png" x={-tw / 2} y={-th / 2} width={tw} height={th}
+            opacity={0.9} style={{ imageRendering: 'pixelated' }}
+            transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
+        )
+      })}
       {PATH_PAVERS.map(p => {
         const tw = p.size * 1.7, th = tw * (41 / 56)
         return (
@@ -1476,7 +1553,7 @@ export default function VillageScene({
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
         // Curated scenery (round 56, trimmed round 57 to sprites whose
         // master-folder source still exists).
-        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 31 * (249 / 259), h: 31 },
+        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 36 * (346 / 338), h: 36 },
         { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 15 * (256 / 155), h: 15 },
         { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
         { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
@@ -1486,6 +1563,16 @@ export default function VillageScene({
         // plants only ever come from habit data, see PlantShape).
         { id: 'gardenBed', title: 'A raised garden bed', href: 'garden-bed.png', w: 16 * (289 / 171), h: 16 },
         { id: 'flowerPlanter', title: 'A flower planter', href: 'flower-planter.png', w: 14 * (286 / 172), h: 14 },
+        // Round 65 — village-community-hobby-elements-alpha.png. Little
+        // traces of what Sylvia & Harry get up to, scattered around the
+        // gathering end of the village.
+        { id: 'hobbyEasel', title: 'A painting easel', href: 'hobby-easel.png', w: 12 * (146 / 271), h: 12 },
+        { id: 'hobbyTennis', title: 'A tennis racket', href: 'hobby-tennis.png', w: 9 * (235 / 247), h: 9 },
+        { id: 'hobbyBookCoffee', title: 'A book and coffee', href: 'hobby-book-coffee.png', w: 11 * (348 / 166), h: 11 },
+        { id: 'hobbyMusicStand', title: 'A music stand', href: 'hobby-music-stand.png', w: 11 * (152 / 253), h: 11 },
+        { id: 'hobbyInstrumentCase', title: 'An instrument case', href: 'hobby-instrument-case.png', w: 12 * (334 / 182), h: 12 },
+        { id: 'hobbyBicycle', title: 'A bicycle', href: 'hobby-bicycle.png', w: 13 * (292 / 253), h: 13 },
+        { id: 'hobbyGardenBasket', title: 'A gardening basket', href: 'hobby-garden-basket.png', w: 10 * (293 / 216), h: 10 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
         // smaller than everything else in the scene.
@@ -2009,9 +2096,12 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
-      {(() => { const p = decorPos('somi'); return (
+      {(() => { const p = decorPos('somi'); const active = !arranging && !quiet; return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
-          <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi} wander={!arranging && !quiet} sleeping={night && !arranging} />
+          <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
+            <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi}
+              wander={active} pose={somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
+          </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
       ) })()}

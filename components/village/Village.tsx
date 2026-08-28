@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { format, parseISO } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
@@ -132,6 +133,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // the scene drops straight back out, while a fullscreen the user opened
   // themselves via the button stays put.
   const fullscreen = expanded || ambient
+  // Portal the fullscreen view to <body> (round 65, "fullscreen is
+  // broken") — the dashboard renders Village inside containers that carry
+  // `transform`/`overflow`, which trap a `position: fixed` child inside
+  // that box instead of the viewport, so the old in-place fixed overlay
+  // only ever covered the tab content. `fullscreen` only turns on from a
+  // user action (post-hydration), so a plain `typeof document` guard can't
+  // cause a mismatch.
+  const canPortal = typeof document !== 'undefined'
   useEffect(() => {
     if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
@@ -270,13 +279,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       .sort((a, b) => Number(b.back) - Number(a.back))
   }, [v.buildings])
 
-  return (
-    <div>
-      {/* The village is the centerpiece, so it gets to be a picture rather
-          than a widget: a framed, elevated panel with real depth, an inner
-          highlight along the top edge, and the sky bleeding all the way to
-          the corners. Nothing else on the page is allowed to look like
-          this — that's what makes it read as the anchor. */}
+  // Fullscreen overlay — fixed to the viewport, warm mat behind the card.
+  // THEMES.bloom on it too so var(--bg) resolves outside the card's own
+  // scope (the portal lands at <body>, past every theme provider).
+  const FS_OVERLAY = {
+    ...THEMES.bloom,
+    position: 'fixed', inset: 0, zIndex: 99999,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--bg)',
+  } as React.CSSProperties
+
+  const card = (
       <div
         className="lift organic"
         style={{
@@ -299,12 +312,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
           ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
-          ...(fullscreen ? {
-            position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, border: 'none',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-            // dvh so an iPad's dynamic browser chrome doesn't leave a strip
-            // (round 63, "make sure optimized for ipad").
-            height: '100dvh', background: 'var(--bg)',
+          // In fullscreen the card just sizes itself (contain-fit: never
+          // wider than the viewport, never so wide its 800:350 height spills
+          // past the viewport height) — the portal overlay below does the
+          // fixed-position + centring. 165vh-style math replaced with an
+          // explicit aspect calc so it's correct on every iPad orientation.
+          ...(fullscreen && !compact ? {
+            width: 'min(100vw, calc(100dvh * 800 / 350), 1800px)',
+            borderRadius: 0, border: 'none',
           } : {}),
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
@@ -324,15 +339,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             VillageScene's viewBox math instead (BASE_VB_H) — an actual
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
-        {/* In fullscreen (round 62, "cozy and aesthetic especially for iPad
-            screen") the scene is centred and capped at a comfortable width
-            rather than stretched edge to edge — a framed picture, with the
-            warm surface tone showing as a mat around it. */}
-        <div style={
-          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
-          : fullscreen ? { width: 'min(100vw, 165vh, 1800px)', margin: '0 auto' }
-          : undefined
-        }>
+        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
@@ -555,6 +562,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           <VillageHomeSheet userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer} />
         )}
       </div>
+  )
+
+  return (
+    <div>
+      {/* The village is the centerpiece, so it gets to be a picture rather
+          than a widget. In fullscreen it's portalled to <body> so no
+          transformed ancestor can trap the fixed overlay. */}
+      {fullscreen && canPortal
+        ? createPortal(<div style={FS_OVERLAY}>{card}</div>, document.body)
+        : card}
 
       {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>

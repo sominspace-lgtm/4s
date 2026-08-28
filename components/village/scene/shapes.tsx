@@ -798,8 +798,14 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
 // elsewhere in this file: a specific cat's actual coat isn't themeable.
 // Siamese "points" (ears, tail, face mask) run a cooler blue-grey against
 // a warm white body/chest.
-export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = true, sleeping = false }: {
+export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = true, sleeping = false, pose = 'idle', face = 1 }: {
   x: number; y: number; name?: string
+  /** JS-driven wander (round 65, "allow somi to wander") — useWanderer
+   *  supplies an absolute target the caller glides to with a CSS transition;
+   *  `pose` picks the sprite set and `face` mirrors her, exactly like
+   *  VillagerShape. Replaces the old fixed village-somi-move CSS loop. */
+  pose?: 'idle' | 'walk'
+  face?: 1 | -1
   /** Night (round 51, 2026-08-28) — swaps the idle/walk pose sets for one
    *  curled sleeping loaf (somi-sleep.png, from somi-sleeping-states-alpha
    *  .png), the real art behind "Somi is asleep nearby" that dusk/night
@@ -850,39 +856,29 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
     { src: '/village-assets/somi-walk-3.png', aspect: 320 / 258 },
     { src: '/village-assets/somi-walk-4.png', aspect: 303 / 260 },
   ]
+  const showWalk = wander && pose === 'walk' && !sleeping
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <g onClick={handleClick}
-        className={[onClick && 'village-entity', wander && 'village-somi-move', wander && 'village-face-somi'].filter(Boolean).join(' ') || undefined}
+        className={onClick ? 'village-entity' : undefined}
         style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>{name}</title>
-        {/* Same oversized invisible hit circle as VillagerShape — see its own
-            2026-08-25 fix comment ("can't click the figures"). Sized off the
-            idle pose's own width, not whichever frame happens to be showing —
-            a stable hit target regardless of which pose is currently up.
-            Inside the moving group (round 31) so the tap target actually
-            follows her the short distance she wanders. */}
+        {/* Oversized invisible hit circle — see VillagerShape's own note. */}
         {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
-        <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
-        {sleeping && (() => {
-          const sh = h * 0.6, sw = sh * (379 / 282)
-          return <image href="/village-assets/somi-sleep.png" x={-sw / 2} y={-sh} width={sw} height={sh}
-            style={{ imageRendering: 'pixelated' }} />
-        })()}
-        {!sleeping && <>
-        {/* Idle/walk visibility only alternates when she's actually wandering
-            — with `wander` off (arrange mode), the idle set just shows
-            plainly and the walk set is skipped outright rather than the two
-            gated animations racing a movement loop that isn't running. */}
-        <g className={wander ? 'village-somi-idle-vis' : undefined}>
-          <SpriteCycle frames={idleFrames} x={0} y={0} height={h} periodSec={60} />
+        {/* Facing composes with the caller's translate() via the standalone
+            `scale` property, same trick VillagerShape uses. */}
+        <g style={wander ? { scale: `${face} 1` } : undefined}>
+          <ellipse cx={0} cy={1} rx={h / 2.2} ry={1.6} fill="var(--text)" opacity={0.15} />
+          {sleeping ? (() => {
+            const sh = h * 0.6, sw = sh * (379 / 282)
+            return <image href="/village-assets/somi-sleep.png" x={-sw / 2} y={-sh} width={sw} height={sh}
+              style={{ imageRendering: 'pixelated' }} />
+          })() : showWalk ? (
+            <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={0.8} />
+          ) : (
+            <SpriteCycle frames={idleFrames} x={0} y={0} height={h} periodSec={60} />
+          )}
         </g>
-        {wander && (
-          <g className="village-somi-walk-vis">
-            <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={1.6} />
-          </g>
-        )}
-        </>}
       </g>
     </g>
   )
@@ -1064,15 +1060,19 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // symbol's footprint at mixed heights, each swaying on its own delay
       // AND its own slightly different duration, so the little patch ripples
       // rather than leaning as one block.
+      // Smaller again round 65 ("growth garden flowers are still too big,
+      // make smaller") — heights cut ~45% and the spread pulled in; note
+      // DistrictLabel scales this whole group by 1.3 × the district's own
+      // 1.12, so a listed h of 7 renders ~10 units tall.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={17} ry={2.4} fill="var(--text)" opacity={0.16} />
+          <ellipse cx={0} cy={1.5} rx={11} ry={1.8} fill="var(--text)" opacity={0.16} />
           {[
-            { src: 'bloom-white-a', x: -13, h: 12, ar: 140 / 232, d: '-0.4s', dur: '4.3s' },
-            { src: 'bloom-red', x: -6, h: 16, ar: 128 / 224, d: '-2.1s', dur: '4.9s' },
-            { src: 'bloom-white-b', x: 3, h: 13, ar: 128 / 220, d: '-1.2s', dur: '3.9s' },
-            { src: 'bloom-red', x: 11, h: 10, ar: 128 / 224, d: '-3.0s', dur: '4.6s' },
-            { src: 'bloom-white-a', x: 17, h: 9, ar: 140 / 232, d: '-0.8s', dur: '4.1s' },
+            { src: 'bloom-white-a', x: -8, h: 7, ar: 140 / 232, d: '-0.4s', dur: '4.3s' },
+            { src: 'bloom-red', x: -3.5, h: 9, ar: 128 / 224, d: '-2.1s', dur: '4.9s' },
+            { src: 'bloom-white-b', x: 2, h: 7.5, ar: 128 / 220, d: '-1.2s', dur: '3.9s' },
+            { src: 'bloom-red', x: 6.5, h: 6, ar: 128 / 224, d: '-3.0s', dur: '4.6s' },
+            { src: 'bloom-white-a', x: 10, h: 5.5, ar: 140 / 232, d: '-0.8s', dur: '4.1s' },
           ].map((b, i) => {
             const w = b.h * b.ar
             return (
@@ -1133,8 +1133,12 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // 40-56) it replaces, and it's drawn large on purpose — the tallest district symbol.
       return (
         <g>
-          <ellipse cx={0} cy={3} rx={16} ry={2.4} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/people-tree.png" x={-22} y={-49} width={44} height={49}
+          {/* Re-cropped round 65 — the old crop sliced the left of the
+              canopy and the top off ("people tree is still broken and
+              sliced and small"). Full sprite now (374×450, ar 0.831),
+              rendered bigger. */}
+          <ellipse cx={-1} cy={2.5} rx={18} ry={2.6} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-25} y={-60} width={50} height={60}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )

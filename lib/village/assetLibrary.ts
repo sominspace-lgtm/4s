@@ -80,7 +80,7 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'woodSignpost', label: 'Wooden signpost', href: 'wood-signpost.png', aspect: 145 / 348, h: 15 },
   { key: 'waterPump', label: 'Water pump', href: 'water-pump.png', aspect: 207 / 253, h: 15 },
   { key: 'picketFence', label: 'Picket fence', href: 'picket-fence.png', aspect: 183 / 155, h: 11 },
-  { key: 'gazebo', label: 'Gazebo', href: 'gazebo.png', aspect: 249 / 259, h: 26 },
+  { key: 'gazebo', label: 'Gazebo', href: 'gazebo.png', aspect: 346 / 338, h: 30 },
   { key: 'wildflowerStrip', label: 'Wildflowers', href: 'wildflower-strip.png', aspect: 512 / 341, h: 9 },
   // Round 54 batch 2 — arbor (village-structures-decor-paths), firewood
   // (village-left-behind-objects). The village clock tower from
@@ -98,6 +98,16 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'gardenBed', label: 'Raised bed', href: 'garden-bed.png', aspect: 289 / 171, h: 12 },
   { key: 'flowerPlanter', label: 'Flower planter', href: 'flower-planter.png', aspect: 286 / 172, h: 11 },
   { key: 'gardenLantern', label: 'Garden lantern', href: 'garden-lantern.png', aspect: 115 / 176, h: 14 },
+
+  // Round 65 — village-community-hobby-elements-alpha.png.
+  { key: 'hobbyEasel', label: 'Easel', href: 'hobby-easel.png', aspect: 146 / 271, h: 13 },
+  { key: 'hobbyTennis', label: 'Tennis racket', href: 'hobby-tennis.png', aspect: 235 / 247, h: 9 },
+  { key: 'hobbyBookCoffee', label: 'Book & coffee', href: 'hobby-book-coffee.png', aspect: 348 / 166, h: 6 },
+  { key: 'hobbyMusicStand', label: 'Music stand', href: 'hobby-music-stand.png', aspect: 152 / 253, h: 12 },
+  { key: 'hobbyInstrumentCase', label: 'Instrument case', href: 'hobby-instrument-case.png', aspect: 334 / 182, h: 7 },
+  { key: 'hobbyBicycle', label: 'Bicycle', href: 'hobby-bicycle.png', aspect: 292 / 253, h: 12 },
+  { key: 'hobbyGardenBasket', label: 'Gardening basket', href: 'hobby-garden-basket.png', aspect: 293 / 216, h: 9 },
+  { key: 'hobbyBasket', label: 'Picnic basket', href: 'hobby-basket.png', aspect: 189 / 181, h: 8 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {
