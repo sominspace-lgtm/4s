@@ -832,3 +832,26 @@ folder from prior rounds.
   all four living-painting buckets could actually be screenshotted in one sitting instead of waiting
   for each to occur naturally - no production UI exposes it.
 - ("make house smaller" was already handled in round 49's commit, alongside its own changes.)
+
+## Round 50 follow-up (2026-08-28) - the real 4-figures bug, and a scale pass
+
+"make sure when interaction of pair is showing their individuals do not show (so there is not 4
+figures)" / "make all items a bit bigger and house smaller (make scaling make sense but nothing too
+big or small)"
+
+- **The actual bug**: round 49's couple-interact/bench swap hid Sylvia/Harry's own art and showed
+  the two-character interaction art via two SEPARATE opacity animations - one on the individuals
+  (`village-couple-solo-vis`), an inverted one on the overlay (`village-couple-interact-vis`) - meant
+  to be exact complements, timed identically, but genuinely two independent animation instances with
+  no structural guarantee they'd stay in phase. Fixed properly rather than patched around: both now
+  read ONE shared custom property, `--together`, animated by a single `@keyframes` on one common
+  ancestor (`village-couple-cycle`, wrapping both the overlay and both individual figures) - the
+  overlay uses `opacity: var(--together, 0)`, the individuals use `opacity: calc(1 - var(--together,
+  0))`. One number can't disagree with itself, so "interaction showing while individuals also show"
+  is no longer structurally possible, not just less likely.
+- **Scale pass**: Home was already brought from 1.25x to 1x in round 49; this round takes it further
+  in both directions - Home down to 0.85x, the other five districts up to 1.12x, so Home reads
+  clearly smaller than its neighbors instead of merely equal to them. Pond/benches/flower beds
+  bumped to 1.15x, fences/lamps to 1.1x, and Sylvia/Harry/Somi's own base render height each bumped
+  about 10% (30->33, 20->22 scene units). Mailbox/signpost were left as they are - hand-tuned pixel
+  sizes rather than a scale prop, and already reasonably sized.

@@ -1314,17 +1314,17 @@ export default function VillageScene({
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
-          <PondShape x={0} y={0} onClick={!arranging ? () => setNudge('picnic', 'pond') : undefined} />
+          <PondShape x={0} y={0} scale={1.15} onClick={!arranging ? () => setNudge('picnic', 'pond') : undefined} />
         </Draggable>
       ) })()}
       {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <BenchShape x={0} y={0} />
+          <BenchShape x={0} y={0} scale={1.15} />
         </Draggable>
       ) })}
       {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
-          <FlowerBedShape x={0} y={0} hue={f.hue} onClick={!arranging ? () => setNudge('garden', id) : undefined} />
+          <FlowerBedShape x={0} y={0} scale={1.15} hue={f.hue} onClick={!arranging ? () => setNudge('garden', id) : undefined} />
         </Draggable>
       ) })}
       {/* The fence is back (round 39, 2026-08-27, "sync all new elements
@@ -1333,12 +1333,12 @@ export default function VillageScene({
           removed round 34/35). */}
       {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
-          <FenceShape x={0} y={0} length={f.length} />
+          <FenceShape x={0} y={0} length={f.length} scale={1.1} />
         </Draggable>
       ) })}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <LampShape x={0} y={0} dark={dark} />
+          <LampShape x={0} y={0} dark={dark} scale={1.1} />
         </Draggable>
       ) })}
 
@@ -1765,7 +1765,7 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark} scale={1.12}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
@@ -1776,14 +1776,21 @@ export default function VillageScene({
       {v.timeOfDay === 'dusk' && (
         <ellipse cx={pos('home').x + 10} cy={pos('home').y + 4} rx={38} ry={5} fill="var(--text)" opacity={0.1} />
       )}
-      {/* Home reads 1.25x the rest (2026-08-27) — "this is where you live,"
-          everything else branches outward from it. */}
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={1}
+      {/* Home was 1.25x the rest (2026-08-27, "this is where you live");
+          round 49 brought it to the standard 1x ("make house smaller"), and
+          this round (50, "make all items a bit bigger and house smaller...
+          make scaling make sense but nothing too big or small") goes a step
+          further in both directions at once — Home down to 0.85x, the other
+          five districts up to 1.12x — so Home reads clearly smaller than its
+          neighbors rather than merely equal to them, without either extreme
+          shrinking to illegible or ballooning back into dominating the
+          scene. */}
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={0.85}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark} scale={1.12}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
-      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark}
+      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark} scale={1.12}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
@@ -1791,10 +1798,10 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} dark={dark}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} dark={dark}
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} dark={dark} scale={1.12}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
@@ -1842,41 +1849,56 @@ export default function VillageScene({
           walk-cycle art exists for them (only a single standing pose per
           person, see VILLAGER_SPRITE), so this is a glide, not a
           leg-animated walk. */}
-      {/* The real two-character interaction/bench art (round 49, 2026-08-28)
-          — rendered once, at the midpoint between Sylvia's and Harry's own
-          positions, UNDER their individual Draggable wrappers below so a
-          tap still lands on whichever one is actually visible right now
-          (each side hides itself, via CSS, exactly when this shows — see
-          village-couple-solo-vis/-interact-vis in globals.css). Neither is
-          itself draggable/clickable — it's a costume the two normal figures
-          wear part of the time, not a third entity. */}
-      {!arranging && (() => {
+      {/* The real two-character interaction art (round 49, 2026-08-28) and
+          Sylvia/Harry's own individual figures are wrapped in ONE shared
+          `village-couple-cycle` ancestor (round 50 fix, "make sure ... their
+          individuals do not show, so there is not 4 figures") — a single
+          48s `@keyframes` on this one element animates ONE CSS custom
+          property, `--together` (globals.css), which both the interaction
+          overlay and each individual's opacity read via `var()`/`calc()` as
+          exact complements of each other (1 and 0, or 0 and 1, always
+          summing to 1). Two SEPARATE animation instances, even with
+          identical timing, are two independent clocks — a real, observed
+          risk of drifting out of phase and showing both at once. One shared
+          animated value inherited by every descendant can't drift from
+          itself. quiet/bench mode is unaffected — it already replaces this
+          whole subtree outright rather than opacity-swapping within it. */}
+      <g className={!arranging && !quiet ? 'village-couple-cycle' : undefined}>
+        {!arranging && !quiet && (() => {
+          const sp = decorPos('sylvia'), hp = decorPos('harry')
+          const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
+          return <g className="village-couple-interact-vis"><CoupleInteraction x={midX} y={midY} /></g>
+        })()}
+        {(() => { const p = decorPos('sylvia'); return (
+          <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
+            {!(quiet && !arranging) && (
+              <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined} style={{ ...homeStyle, ...nudgeStyle('sylvia') }}>
+                <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
+              </g>
+            )}
+            <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
+          </Draggable>
+        ) })()}
+        {(() => { const p = decorPos('harry'); return (
+          <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
+            {!(quiet && !arranging) && (
+              <g className={!arranging && !quiet ? 'village-wander-harry' : undefined} style={{ ...homeStyle, ...nudgeStyle('harry') }}>
+                <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
+              </g>
+            )}
+            <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
+          </Draggable>
+        ) })()}
+      </g>
+      {/* quiet/bench mode: the couple-cycle subtree above is empty (both its
+          conditions are false), and this renders instead — an outright
+          swap, not an opacity gate, so there's no shared-timeline risk to
+          manage here at all. */}
+      {!arranging && quiet && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
-        return quiet
-          ? <CoupleBenchShape x={midX} y={midY} />
-          : <g className="village-couple-interact-vis"><CoupleInteraction x={midX} y={midY} /></g>
+        return <CoupleBenchShape x={midX} y={midY} />
       })()}
-      {(() => { const p = decorPos('sylvia'); return (
-        <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-          {!(quiet && !arranging) && (
-            <g className={!arranging && !quiet ? 'village-wander-sylvia' : undefined} style={{ ...homeStyle, ...nudgeStyle('sylvia') }}>
-              <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging && !quiet} scale={itemScale('sylvia')} />
-            </g>
-          )}
-          <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
-        </Draggable>
-      ) })()}
-      {(() => { const p = decorPos('harry'); return (
-        <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-          {!(quiet && !arranging) && (
-            <g className={!arranging && !quiet ? 'village-wander-harry' : undefined} style={{ ...homeStyle, ...nudgeStyle('harry') }}>
-              <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging && !quiet} scale={itemScale('harry')} />
-            </g>
-          )}
-          <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
-        </Draggable>
-      ) })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
           scale 1), clear of the Mailbox/Harry per the 2026-08-25 fix noted

@@ -603,8 +603,10 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }:
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const sprite = VILLAGER_SPRITE[name] ?? VILLAGER_SPRITE.Harry
   // Fixed render height in scene units, width derived from the sprite's own
-  // aspect ratio so it's never stretched.
-  const h = 30
+  // aspect ratio so it's never stretched. 30 -> 33 (round 50, 2026-08-28,
+  // "make all items a bit bigger... make scaling make sense but nothing too
+  // big or small") — a modest bump, not a re-tune.
+  const h = 33
   const w = h * (sprite.w / sprite.h)
   const isSylvia = name === 'Sylvia'
   return (
@@ -688,7 +690,10 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
   // the walk frames are in order" approach never had). The old pounce/
   // sit-tall/curled poses have no equivalent in either new sheet and are
   // dropped rather than kept without a source.
-  const h = 20
+  // 20 -> 22 (round 50, "make all items a bit bigger... nothing too big or
+  // small") — same modest bump as VillagerShape's own h, keeping Somi's
+  // proportion to Sylvia/Harry roughly where it already was.
+  const h = 22
   const idleFrames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 254 / 335 },
     { src: '/village-assets/somi-sit-2.png', aspect: 273 / 335 },
