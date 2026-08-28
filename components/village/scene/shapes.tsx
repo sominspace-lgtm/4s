@@ -792,24 +792,29 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       )
     case 'building': // Projects — a real workshop sprite (round 11, 2026-08-27, same custom
       // pack), replacing the hand-drawn construction site. Sized up round 25 (same "bigger
-      // than the figures" reasoning as the trees above).
+      // than the figures" reasoning as the trees above). Re-cropped again round 45 (2026-08-28,
+      // "update the village with these elements") — workshop.png now shows real tools (a
+      // hammer and shovel) hung on the wall, from village-new-structures-alpha.png, a better
+      // match for "Projects" than the older plain-door crop it replaces.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={20} ry={2.9} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/workshop.png" x={-20} y={-30} width={40} height={30}
+          <image href="/village-assets/workshop.png" x={-19.4} y={-30} width={38.9} height={30}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={5} cy={-19} r={8.75} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
-    case 'book': // Archive — a real greenhouse sprite (round 11, 2026-08-27, same custom pack) —
-      // the exact "library/greenhouse" identity this district has been reaching for by hand
-      // since the 2026-08-24 reskin, now with the actual building. The Life Tree stays where
-      // it is, drawn separately in VillageScene (real years-of-account data, not decoration).
-      // Sized up round 25, same reasoning as workshop above.
+    case 'book': // Archive — a real library building now (round 45, 2026-08-28, "update the
+      // village with these elements. relabel if makes more sense") — library.png, from
+      // village-social-town-spaces-alpha.png, an actual library (book-motif gable window),
+      // replacing the greenhouse crop (rounds 11-44) that had been standing in for "library/
+      // greenhouse" since there was no real library art yet. The Life Tree stays where it is,
+      // drawn separately in VillageScene (real years-of-account data, not decoration) — also
+      // upgraded this round to real tree art, see its own comment.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={18.75} ry={2.75} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/greenhouse.png" x={-18.1} y={-30} width={36.3} height={30}
+          <ellipse cx={0} cy={2} rx={17.2} ry={2.75} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/library.png" x={-17.2} y={-30} width={34.4} height={30}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={0} cy={-16.25} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>

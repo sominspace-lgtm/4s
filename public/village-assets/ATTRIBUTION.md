@@ -665,3 +665,37 @@ window.
 - FenceShape and BenchShape sized up (fence 6.7 -> 9 tall, bench 6.4 -> 7.5) - both read
   noticeably thinner/smaller than everything else in the scene (the 30-unit cast, ~39-unit
   building badges) at the new, wider view.
+
+## Round 45 (2026-08-28) - Archive is a real library now, Projects has real tools
+
+"update the village with these elements. make everything look good. relabel if makes more
+sense."
+
+The user's folder grew several new organized subfolders (character/, nature/, post/, seasonal/,
+somi/) plus new top-level sheets: village-civic-landmarks-alpha.png, village-social-town-spaces-
+alpha.png, village-new-structures-alpha.png, village-new-decor-elements-alpha.png,
+village-nature-resting-spaces-alpha.png, village-seasonal-decor-alpha.png,
+village-essential-connectors-alpha.png. Given the volume, this round prioritized the two clearest
+"relabel if it makes more sense" opportunities plus a couple of quick decor wins.
+
+- **Archive is a real library** now: `library.png` (from village-social-town-spaces-alpha.png, an
+  actual library building with a book-motif gable window) replaces `greenhouse.png` — the
+  greenhouse crop had been standing in for "library/greenhouse" purely for lack of real library
+  art since round 11.
+- **The Life Tree is real tree art**: `life-tree.png` (a civic tree-with-bench, from
+  village-civic-landmarks-alpha.png) replaces the hand-drawn trunk+three-circle canopy from
+  2026-08-21 — no tree art existed for this at the time. Canopy growth is now a uniform scale on
+  the sprite (same `0.7 + canopy*0.3` curve as before); the ring-milestone circles stay overlaid,
+  since that's real years-of-account data, not decoration.
+- **Projects' workshop has real tools now**: `workshop.png` re-cropped from
+  village-new-structures-alpha.png — a hammer and shovel hung on the wall, a clearer "Projects"
+  match than the older plain-door crop.
+- Two more Inventory items: `well.png` (village-civic-landmarks-alpha.png) and
+  `notice-board.png` (same sheet). `flower-patch.png` (a flower bed set into cobblestone, from
+  village-social-town-spaces-alpha.png) was cropped but kept off the Inventory list, same
+  "nothing flower-shaped" reasoning as `flowerVase`/`flowerCluster`.
+
+Still available, not wired this round: the civic clock towers, a coffee cart/shop, bakery, garden
+nursery, farmers-market stall, lookout tower, book cart, café sign, mailbox counter, and the
+character/nature/post/seasonal subfolders' own content (walk-cycle art for Sylvia, seasonal tree
+variants, special-occasion outfits, postcards). Real content for future rounds.

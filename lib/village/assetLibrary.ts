@@ -61,6 +61,13 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'blankSign', label: 'Blank sign', href: 'blank-sign.png', aspect: 162 / 188, h: 13 },
   { key: 'garland', label: 'Garland', href: 'garland.png', aspect: 356 / 117, h: 6 },
   { key: 'breadCrate', label: 'Bread crate', href: 'bread-crate.png', aspect: 193 / 141, h: 9 },
+  // Round 45 (2026-08-28, "update the village with these elements") — two
+  // more from village-civic-landmarks-alpha.png. 'flowerPatch' (a real
+  // crop, soc-3 from village-social-town-spaces-alpha.png — a flower bed
+  // set into round cobblestone) stayed off this list for the same
+  // "nothing flower-shaped" reasoning as flowerVase/flowerCluster above.
+  { key: 'well', label: 'Well', href: 'well.png', aspect: 330 / 322, h: 16 },
+  { key: 'noticeBoard', label: 'Notice board', href: 'notice-board.png', aspect: 330 / 308, h: 14 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

@@ -1522,27 +1522,32 @@ export default function VillageScene({
             ? `Archive Grove, Life Tree, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'}`
             : `Archive Grove, Life Tree in its first year, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
         }</title>
-        {/* The hand-drawn "greenhouse frame" that used to stand in for
-            Archive's library/greenhouse identity is gone (round 11,
-            2026-08-27) — DistrictArt's 'book' case now renders the user's
-            own real greenhouse.png sprite at the district badge a few units
-            away, so a second, translucent greenhouse-shaped outline back
-            here would just be redundant (and risked reading as another
-            structure, the exact "two houses" mistake earlier rounds spent
-            a long time fixing). The Life Tree itself stays — real
-            years-of-account data, not decoration. */}
-        <rect x={-4} y={-40} width={8} height={40 * (0.75 + v.canopy * 0.25)} rx={2} fill="var(--slate)" opacity={0.7}
-          transform={`translate(0 ${40 - 40 * (0.75 + v.canopy * 0.25)})`} />
-        <circle cx={0} cy={-52} r={18 + v.canopy * 8} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.35} />
-        <circle cx={-14} cy={-44} r={11 + v.canopy * 5} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.28} />
-        <circle cx={14} cy={-45} r={10 + v.canopy * 5} fill={live ? palette.foliage : 'var(--emerald)'} opacity={0.3} />
+        {/* Real sprite now (round 45, 2026-08-28, "update the village with
+            these elements") — life-tree.png, a real civic tree-with-bench
+            from village-civic-landmarks-alpha.png, replacing the hand-drawn
+            trunk+canopy circles (2026-08-21 — no tree art existed yet at
+            the time). Canopy growth is now a uniform scale on the whole
+            sprite instead of three separately-sized circles — same
+            (0.7 + canopy*0.3) growth curve, just applied to real art. The
+            ring-milestone circles stay, overlaid near the canopy's center,
+            same reasoning as before: real years-of-account data, not
+            decoration, so removing them would lose something the old
+            version actually showed. */}
+        {(() => {
+          const scale = 0.7 + v.canopy * 0.3
+          const h = 46 * scale, w = h * (413 / 442)
+          return (
+            <image href="/village-assets/life-tree.png" x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} />
+          )
+        })()}
         {[...Array(Math.min(v.treeRings, 5))].map((_, i) => (
-          <circle key={i} cx={0} cy={-52} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
+          <circle key={i} cx={0} cy={-30} r={7 + i * 4.5} fill="none" stroke="var(--gold)" strokeWidth={0.7} opacity={0.35} />
         ))}
         {/* The book stack and garden lantern (round 10) are gone (round 23,
             2026-08-27, "update only using these elements") — neither
             book-stack.png nor garden-lantern.png has an equivalent in the
-            master-visual-assets folder; the greenhouse.png badge nearby
+            master-visual-assets folder; the library.png badge nearby
             (DistrictArt's 'book' case) still carries Archive's identity. */}
       </g>
 
