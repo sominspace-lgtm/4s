@@ -141,7 +141,11 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
           it shipped). Keeping it as a sibling means the visual group's own
           fill-box — and therefore its scale origin — only ever reflects the
           shape that's actually drawn. */}
-      {onClick && <circle cx={0} cy={-size / 2} r={Math.max(16, size / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {/* Hit circle sized up round 38 (2026-08-27, "make hit box for
+          habits/growth grove bigger") — was max(16, size/2+6), the
+          smallest hit target of any clickable entity in the scene next to
+          how densely the grove now scatters plants and trees together. */}
+      {onClick && <circle cx={0} cy={-size / 2} r={Math.max(22, size / 2 + 10)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick}
         className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
         {/* Native <title> stays as the a11y fallback (screen readers, and

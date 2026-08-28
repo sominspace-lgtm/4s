@@ -526,3 +526,19 @@ sure all magenta is removed."
   sh-default-sylvia/harry). Cleared all of it. A full-folder scan afterward found only single-
   digit-to-tens false-positive counts in unrelated files (clouds, trees, rocks) from natural
   low-saturation shading, not real contamination - left alone.
+
+## Round 38 (2026-08-27) - grove un-lined, bigger habit hitboxes
+
+"fix arrangement of bushes, tree as it is in a straigt line right now. make hit box for
+habits/growth grove bigger."
+
+- Round 37's 7 grove trees were laid out by hand at even x-spacing and a narrow ~20-unit y range
+  hugging the path - exactly what reads as a row. Rebuilt procedurally (GROVE_TREES) with the same
+  hashPos-per-seed determinism GRASS_TUFTS/STONES/FOREGROUND already use: x still spans the forest
+  band but with real jitter, y now spans GROUND_Y+8..+72 (was a ~20-unit band), and height/opacity
+  follow that same depth so nearer trees are bigger and fuller instead of every tree reading the
+  same size on the same line.
+- PlantShape's click hit-circle grew from max(16, size/2+6) to max(22, size/2+10) - the smallest
+  hit target of any clickable entity in the scene, especially now that the grove scatters plants
+  and trees close together. The matching arrange-mode drag-indicator circle grew from r=16 to r=22
+  to match.

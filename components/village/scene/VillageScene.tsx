@@ -175,14 +175,31 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // Forest reads as a wooded place with habits growing in it rather than a
 // small icon next to a scatter of flower dots. Two more stay outside that
 // range as unrelated ambient trees near Archive/Home.
-const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number }[] = [
-  { x: 25, y: GROUND_Y + 34, kind: 'pine', h: 24 },
-  { x: 75, y: GROUND_Y + 46, kind: 'round', h: 22 },
-  { x: 140, y: GROUND_Y + 38, kind: 'round', h: 26 },
-  { x: 190, y: GROUND_Y + 50, kind: 'pine', h: 20 },
-  { x: 245, y: GROUND_Y + 40, kind: 'round', h: 24 },
-  { x: 310, y: GROUND_Y + 42, kind: 'pine', h: 23 },
-  { x: 355, y: GROUND_Y + 30, kind: 'round', h: 21 },
+// Un-lined (round 38, 2026-08-27, "fix arrangement of bushes, tree as it
+// is in a straigt line right now") — round 37's 7 grove trees were laid
+// out by hand at even x-spacing and a narrow ~20-unit y range (all hugging
+// the path), which is exactly what reads as a row instead of a grove.
+// Procedural now, same hashPos-per-seed determinism GRASS_TUFTS/STONES/
+// FOREGROUND already use: x spans the same forest band with real jitter, y
+// spans a much wider band (GROUND_Y+8..+72) so trees actually sit at
+// different depths, and height/opacity follow that same depth (nearer =
+// bigger and fuller) the way FOREGROUND's own scatter already does.
+const GROVE_TREE_COUNT = 7
+const GROVE_TREES = Array.from({ length: GROVE_TREE_COUNT }, (_, i) => {
+  const seed = `grove-${i}`
+  const bucketW = 340 / GROVE_TREE_COUNT
+  const x = 20 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.9
+  const depth = hashPos(seed + 'd')
+  const y = GROUND_Y + 8 + depth * 64
+  return {
+    x, y, kind: (hashPos(seed + 'k') < 0.5 ? 'pine' : 'round') as 'pine' | 'round',
+    h: 17 + depth * 12, opacity: 0.65 + depth * 0.3,
+  }
+})
+// Two fixed ambient trees outside the forest band, near Archive/Home —
+// unrelated to the grove, unchanged from round 37.
+const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; opacity?: number }[] = [
+  ...GROVE_TREES,
   { x: 680, y: GROUND_Y + 36, kind: 'round', h: 25 },
   { x: 470, y: GROUND_Y + 32, kind: 'pine', h: 22 },
 ]
@@ -1063,13 +1080,13 @@ export default function VillageScene({
         {/* EXTRA_TREES — see its own comment above. Static (the badge's own
             trees already sway; four more doing the same would drift past
             the ambient-motion budget Ambient.tsx documents). */}
-        <g opacity={0.9}>
+        <g>
           {EXTRA_TREES.map((t, i) => {
             const href = t.kind === 'pine' ? 'pine-tree.png' : 'round-tree-sway-1.png'
             const aspect = t.kind === 'pine' ? 178 / 341 : 331 / 459
             const w = t.h * aspect
             return (
-              <g key={i}>
+              <g key={i} opacity={t.opacity ?? 0.9}>
                 <ellipse cx={t.x} cy={t.y + 1.5} rx={w * 0.42} ry={2.2} fill="var(--text)" opacity={0.14} />
                 <image href={`/village-assets/${href}`} x={t.x - w / 2} y={t.y - t.h} width={w} height={t.h}
                   style={{ imageRendering: 'pixelated' }} />
@@ -1302,7 +1319,7 @@ export default function VillageScene({
             cared={caredId === plant.id}
             onClick={selectPlant(plant.id, x, y)} />
           {arranging && (
-            <circle cx={x} cy={y - 12} r={16} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+            <circle cx={x} cy={y - 12} r={22} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
               opacity={draggingId === plant.id ? 0.9 : 0.4} />
           )}
         </g>
