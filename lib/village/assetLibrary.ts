@@ -69,28 +69,17 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'well', label: 'Well', href: 'well.png', aspect: 330 / 322, h: 16 },
   { key: 'noticeBoard', label: 'Notice board', href: 'notice-board.png', aspect: 330 / 308, h: 14 },
 
-  // Round 54 (2026-08-28, "yes import all") — the placeable single props
-  // from the master folder's decor sheets (village-essential-connectors /
-  // -new-decor-elements / -seasonal-decor / -nature-resting-spaces). Outfit,
-  // postcard, path-tile and merged-multi-item crops are left out, same rule
-  // as the header note. Heights tuned to this scene's own relative scale.
-  { key: 'barrel', label: 'Barrel', href: 'barrel.png', aspect: 166 / 200, h: 12 },
-  { key: 'footBridge', label: 'Foot bridge', href: 'foot-bridge.png', aspect: 269 / 179, h: 11 },
-  { key: 'scarecrow', label: 'Scarecrow', href: 'scarecrow.png', aspect: 234 / 284, h: 18 },
-  { key: 'planterBox', label: 'Planter box', href: 'planter-box.png', aspect: 237 / 211, h: 10 },
-  { key: 'seedSack', label: 'Seed sack', href: 'seed-sack.png', aspect: 172 / 203, h: 10 },
-  { key: 'woodSignpost', label: 'Wooden signpost', href: 'wood-signpost.png', aspect: 177 / 210, h: 13 },
-  { key: 'birdhouse', label: 'Birdhouse', href: 'birdhouse.png', aspect: 163 / 270, h: 18 },
-  { key: 'waterPump', label: 'Water pump', href: 'water-pump.png', aspect: 180 / 332, h: 17 },
-  { key: 'picketFence', label: 'Picket fence', href: 'picket-fence.png', aspect: 253 / 300, h: 12 },
-  { key: 'bicycle', label: 'Bicycle', href: 'bicycle.png', aspect: 299 / 285, h: 13 },
-  { key: 'produceBasket', label: 'Produce basket', href: 'produce-basket.png', aspect: 300 / 318, h: 11 },
-  { key: 'windowBox', label: 'Window box', href: 'window-box.png', aspect: 227 / 256, h: 9 },
-  { key: 'cornStalk', label: 'Corn stalk', href: 'corn-stalk.png', aspect: 99 / 150, h: 13 },
-  { key: 'cherryBlossom', label: 'Cherry blossom', href: 'cherry-blossom.png', aspect: 241 / 321, h: 20 },
-  { key: 'beachUmbrella', label: 'Beach umbrella', href: 'beach-umbrella.png', aspect: 342 / 351, h: 18 },
-  { key: 'leafPile', label: 'Leaf pile', href: 'leaf-pile.png', aspect: 238 / 120, h: 6 },
-  { key: 'sled', label: 'Sled', href: 'sled.png', aspect: 300 / 354, h: 10 },
+  // Round 54 imports, trimmed round 57 ("only use from [the master folder]")
+  // — the essential-connectors / new-decor / seasonal-decor sheets those
+  // were cropped from are no longer in the folder, so those items are gone.
+  // What survives has a source still present: infrastructure-connectors
+  // (bridge / pump / signpost / fence), nature-resting-spaces (gazebo,
+  // wildflowers), structures-decor-paths (arbor), left-behind-objects
+  // (firewood).
+  { key: 'footBridge', label: 'Foot bridge', href: 'foot-bridge.png', aspect: 256 / 155, h: 10 },
+  { key: 'woodSignpost', label: 'Wooden signpost', href: 'wood-signpost.png', aspect: 145 / 348, h: 15 },
+  { key: 'waterPump', label: 'Water pump', href: 'water-pump.png', aspect: 207 / 253, h: 15 },
+  { key: 'picketFence', label: 'Picket fence', href: 'picket-fence.png', aspect: 183 / 155, h: 11 },
   { key: 'gazebo', label: 'Gazebo', href: 'gazebo.png', aspect: 249 / 259, h: 26 },
   { key: 'wildflowerStrip', label: 'Wildflowers', href: 'wildflower-strip.png', aspect: 512 / 341, h: 9 },
   // Round 54 batch 2 — arbor (village-structures-decor-paths), firewood

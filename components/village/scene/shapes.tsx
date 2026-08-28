@@ -91,15 +91,8 @@ export function seasonTree(kind: TreeKind, season: VillageState['season']) {
   return SEASON_TREE[kind][season]
 }
 
-// A small lollipop tree's own 4-frame sway (round 51, 2026-08-28) — from
-// tree-flower-sway-animation-alpha.png, a lighter companion to the big
-// round-tree sway above for the path-side ambient tree in VillageScene.
-export const SMALL_TREE_SWAY_FRAMES = [
-  { src: '/village-assets/small-tree-sway-1.png', aspect: 148 / 287 },
-  { src: '/village-assets/small-tree-sway-2.png', aspect: 209 / 288 },
-  { src: '/village-assets/small-tree-sway-3.png', aspect: 148 / 289 },
-  { src: '/village-assets/small-tree-sway-4.png', aspect: 188 / 288 },
-]
+// SMALL_TREE_SWAY_FRAMES removed round 57 — its source sheet,
+// tree-flower-sway-animation-alpha.png, is no longer in the master folder.
 
 // Sylvia and Harry in sleepwear (round 51, 2026-08-28) — from
 // sylvia-harry-sleepwear-alpha.png, shown standing near Home only when it's
@@ -458,6 +451,27 @@ export function ClockTowerShape({ x, y, timeOfDay, dark = false, scale = 1 }: {
       {dark && <circle cy={-h * 0.62} r={7} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
       <image href={CLOCK_SRC[timeOfDay] ?? CLOCK_SRC.day} x={-w / 2} y={-h} width={w} height={h}
         style={{ imageRendering: 'pixelated' }} />
+    </g>
+  )
+}
+
+// The wishing well (round 57, 2026-08-28, "wishing well is [a] thank you
+// well where we can submit thanks") — well.png from village/village-civic-
+// landmarks-alpha.png. Tapping it opens a prompt to drop a thank-you in;
+// the caller saves it (see VillageScene's onGratitude).
+export function WishingWellShape({ x, y, onClick, glow = false }: { x: number; y: number; onClick?: () => void; glow?: boolean }) {
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  const w = 20, h = 20 // 330x322 source, ~1:1
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      <g onClick={handleClick} className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
+        <title>Drop a thank-you in the well</title>
+        <ellipse cx={0} cy={1.5} rx={8} ry={2} fill="var(--text)" opacity={0.13} />
+        {glow && <circle cx={0} cy={-h * 0.55} r={11} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-sparkle" />}
+        <image href="/village-assets/well.png" x={-w / 2} y={-h} width={w} height={h}
+          style={{ imageRendering: 'pixelated' }} />
+      </g>
     </g>
   )
 }
@@ -1060,12 +1074,14 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // "update the village with these elements") — workshop.png now shows real tools (a
       // hammer and shovel) hung on the wall, from village-new-structures-alpha.png, a better
       // match for "Projects" than the older plain-door crop it replaces.
+      // Round 57 (2026-08-28, "projects are tracked by...") — the briefcase from
+      // village/village-infrastructure-connectors-alpha.png. "What you're working on"
+      // reads more directly as a briefcase than the workshop shed (rounds 11-56) did.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={20} ry={2.9} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/workshop.png" x={-19.4} y={-30} width={38.9} height={30}
+          <ellipse cx={0} cy={2} rx={14} ry={2.4} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/briefcase.png" x={-14} y={-20} width={28} height={28 / (189 / 136)}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={5} cy={-19} r={8.75} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'book': // Archive — a real library building now (round 45, 2026-08-28, "update the
@@ -1078,7 +1094,9 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       return (
         <g>
           <ellipse cx={0} cy={2} rx={17.2} ry={2.75} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/library.png" x={-17.2} y={-30} width={34.4} height={30}
+          {/* Back to greenhouse.png round 57 — library.png's source sheet
+              (village-social-town-spaces) is no longer in the master folder. */}
+          <image href="/village-assets/greenhouse.png" x={-17.2} y={-30} width={34.4} height={30}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cx={0} cy={-16.25} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
@@ -1100,20 +1118,15 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cx={6} cy={-14} r={5} fill="var(--amber)" opacity={0.5} filter="url(#vglow)" />}
         </g>
       )
-    case 'people': // People — a picnic mat, not a second Sylvia/Harry (round 14 fix,
-      // 2026-08-27 — round 13 briefly used the pack's real couple-on-a-bench sprite here, but
-      // there should only ever be ONE Sylvia and ONE Harry in the village, and the real ones
-      // already stand by Home; a second rendering of them sitting on a district badge was
-      // exactly the kind of duplicate-character confusion the "two houses" fix spent a whole
-      // round eliminating for buildings. Bench (rounds 14-39) replaced with a picnic mat (round
-      // 40, 2026-08-27, "make people symbol a picnic mat or community center") — picnic-mat.png,
-      // cropped from village-decor-lanterns-alpha.png; "a spot to gather" reads more like a
-      // community/social space than a single empty bench did. The real People-corner bench
-      // (VillageScene's peopleCorner prop) is unrelated scenery, unchanged.
+    case 'people': // People — the big community tree (round 57, 2026-08-28, "make people
+      // symbol the big tree (make bigger)") — people-tree.png, the gnarled tree-with-a-
+      // bench-round-its-base from village/village-civic-landmarks-alpha.png. A gathering
+      // tree reads as "the people in your life" far better than the picnic mat (rounds
+      // 40-56) it replaces, and it's drawn large on purpose — the tallest district symbol.
       return (
         <g>
-          <ellipse cx={0} cy={3} rx={10} ry={1.8} fill="var(--text)" opacity={0.16} />
-          <image href="/village-assets/picnic-mat.png" x={-10} y={-8.4} width={20} height={16.8}
+          <ellipse cx={0} cy={3} rx={13} ry={2.2} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-18} y={-40} width={36} height={40}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )

@@ -7,19 +7,12 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, SpriteCycle, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, SMALL_TREE_SWAY_FRAMES, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { createClient } from '@/lib/supabase/client'
 
-// The flower-sprig sway (round 13, 2026-08-27; re-sourced round 51,
-// 2026-08-28, "all of these new animations elements") — now a real 4-frame
-// cycle from tree-flower-sway-animation-alpha.png, replacing the old 2-frame
-// flower-cluster crop. Same idiom as shapes.tsx's own TREE_SWAY_FRAMES,
-// module-level so it's one shared array reference.
-const FLOWER_SWAY_FRAMES = [
-  { src: '/village-assets/flower-sway-1.png', aspect: 352 / 140 },
-  { src: '/village-assets/flower-sway-2.png', aspect: 307 / 148 },
-  { src: '/village-assets/flower-sway-3.png', aspect: 346 / 140 },
-  { src: '/village-assets/flower-sway-4.png', aspect: 355 / 136 },
-]
+// The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
+// removed round 57 — the tree-flower-sway-animation sheet they came from is
+// no longer in the master folder.
 import Sky from './Sky'
 import Clouds from './Clouds'
 import Ambient from './Ambient'
@@ -412,19 +405,18 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // village-civic-landmarks-alpha.png) — stands back-left, its face shows
   // the current time of day.
   clockTower: { x: 92, y: GROUND_Y + 2 },
+  // The wishing well (round 57) — tap it to drop a thank-you in.
+  wishingWell: { x: 300, y: GROUND_Y + 34 },
   // Round 56 ("remake the village design to look the best with everything")
   // — a curated layer of the imported decor placed as real scenery instead
   // of leaving it all in the Inventory, spread to balance the composition
   // rather than pile onto the already-busy Growth Forest side. Draggable
   // like everything else.
   gazebo: { x: 648, y: GROUND_Y + 26 },
-  footBridgeScene: { x: 505, y: GROUND_Y + 35 },
-  scarecrowScene: { x: 60, y: GROUND_Y + 50 },
-  birdhouseScene: { x: 596, y: GROUND_Y + 6 },
-  barrelScene: { x: 333, y: GROUND_Y + 8 },
+  footBridgeScene: { x: 470, y: GROUND_Y + 34 },
   firewoodScene: { x: 458, y: GROUND_Y + 6 },
-  cherryBlossomScene: { x: 585, y: GROUND_Y + 34 },
-  wildflowerScene: { x: 625, y: GROUND_Y + 44 },
+  wildflowerScene: { x: 250, y: GROUND_Y + 42 },
+  waterPumpScene: { x: 560, y: GROUND_Y + 12 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 345, y: GROUND_Y + 20 },
@@ -761,6 +753,23 @@ export default function VillageScene({
   })
   const coupleTogether = life.together
   const interactPose = life.interactPose
+
+  // Wishing well (round 57) — a thank-you the user drops in is saved as a
+  // capture tagged `gratitude`, the same table Quick Add / Daily Reflection
+  // already write to, so it shows up in their world rather than vanishing.
+  const [wellGlow, setWellGlow] = useState(false)
+  async function submitGratitude() {
+    const text = window.prompt('Something you’re thankful for — drop it in the well:')?.trim()
+    if (!text) return
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) await supabase.from('captures').insert({ text, user_id: user.id, domain: 'gratitude' })
+      window.dispatchEvent(new CustomEvent('4s:captures-changed'))
+    } catch { /* ignore — the well is a gesture, not a form */ }
+    setWellGlow(true)
+    setTimeout(() => setWellGlow(false), 1600)
+  }
 
   // Screen coordinates → the SVG's own 800×440 user space, so a drag tracks
   // correctly regardless of how large the scene is actually rendered on the
@@ -1314,13 +1323,15 @@ export default function VillageScene({
               </g>
             )
           })}
-          {/* One small lollipop tree that actually sways, tucked into the
-              same tree-line band (round 51, 2026-08-28) — a single moving
-              node, well inside Ambient.tsx's motion budget. */}
-          <g opacity={0.9}>
-            <ellipse cx={625} cy={GROUND_Y + 31} rx={7} ry={2} fill="var(--text)" opacity={0.14} />
-            <SpriteCycle frames={SMALL_TREE_SWAY_FRAMES} x={625} y={GROUND_Y + 29} height={26} periodSec={7.2} />
-          </g>
+          {/* One more seasonal tree in the path-side band (round 51's small
+              swaying lollipop tree was dropped round 57 — its source sheet,
+              tree-flower-sway-animation, is no longer in the folder). */}
+          {(() => { const spr = seasonTree('round', v.season); const h = 24, w = h * spr.aspect; return (
+            <g opacity={0.9}>
+              <ellipse cx={625} cy={GROUND_Y + 31} rx={w * 0.4} ry={2} fill="var(--text)" opacity={0.14} />
+              <image href={spr.src} x={625 - w / 2} y={GROUND_Y + 29 - h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
+            </g>
+          ) })()}
         </g>
       </g>
 
@@ -1363,6 +1374,11 @@ export default function VillageScene({
           <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={itemScale('clockTower')} />
         </Draggable>
       ) })()}
+      {(() => { const p = decorPos('wishingWell'); return (
+        <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={13}>
+          <WishingWellShape x={0} y={0} glow={wellGlow} onClick={!arranging ? submitGratitude : undefined} />
+        </Draggable>
+      ) })()}
 
       {/* Ten more real sprites, rounds 11–12 (2026-08-27, the user's own
           village-matching-expansion-pack, v2 with real alpha) — a gate
@@ -1392,15 +1408,13 @@ export default function VillageScene({
         // Sized up again round 35 (2026-08-27, "things like bus stop still
         // too small") — 18 units tall still read small at full-scene zoom.
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
-        // Round 56 curated scenery — see DECOR_DEFAULTS.
+        // Curated scenery (round 56, trimmed round 57 to sprites whose
+        // master-folder source still exists).
         { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 31 * (249 / 259), h: 31 },
-        { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 13 * (269 / 179), h: 13 },
-        { id: 'scarecrowScene', title: 'A scarecrow', href: 'scarecrow.png', w: 17 * (234 / 284), h: 17 },
-        { id: 'birdhouseScene', title: 'A birdhouse', href: 'birdhouse.png', w: 16 * (163 / 270), h: 16 },
-        { id: 'barrelScene', title: 'A barrel', href: 'barrel.png', w: 11 * (166 / 200), h: 11 },
+        { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 15 * (256 / 155), h: 15 },
         { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
-        { id: 'cherryBlossomScene', title: 'Cherry blossom', href: 'cherry-blossom.png', w: 22 * (241 / 321), h: 22 },
         { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
+        { id: 'waterPumpScene', title: 'A water pump', href: 'water-pump.png', w: 15 * (207 / 253), h: 15 },
         // Sized up round 29 ("fix the sizing of everything, try to scale
         // but do not make anything too tiny") — these four read noticeably
         // smaller than everything else in the scene.
@@ -1480,28 +1494,11 @@ export default function VillageScene({
         )
       })}
 
-      {/* Two more real sprites, round 13 (2026-08-27,
-          village-animations-complete.zip) — a swaying flower cluster and a
-          hanging paper lantern that actually lights up after dark. Both
-          draggable via the same decorPos/DECOR_DEFAULTS mechanism as the
-          block above, just rendered separately since neither fits the
-          generic static-<image> loop (one animates, one swaps by `dark`). */}
-      {(() => {
-        const p0 = decorPos('flowerCluster')
-        return (
-          <g transform={`translate(${p0.x} ${p0.y})`} opacity={0.9}
-            onPointerDown={startDrag('flowerCluster')} style={{ cursor: arranging ? (draggingId === 'flowerCluster' ? 'grabbing' : 'grab') : undefined }}>
-            <title>Flowers by the path</title>
-            <ellipse cx={0} cy={2.4} rx={6} ry={1.4} fill="var(--text)" opacity={0.14} />
-            <SpriteCycle frames={FLOWER_SWAY_FRAMES} x={0} y={2} height={6.5} periodSec={4.5} />
-            {arranging && (
-              <rect x={-6} y={-11.6} width={12} height={15.6} rx={4}
-                fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
-                opacity={draggingId === 'flowerCluster' ? 0.9 : 0.4} />
-            )}
-          </g>
-        )
-      })()}
+      {/* The hanging paper lantern that lights up after dark — draggable via
+          the same decorPos/DECOR_DEFAULTS mechanism, rendered separately
+          since it swaps by `dark`. (The swaying flower cluster that used to
+          live here was dropped round 57 — its source sheet,
+          tree-flower-sway-animation, is no longer in the master folder.) */}
       {(() => {
         const p0 = decorPos('paperLantern')
         const w = 5.7, h = 14 // 141×345 source, same aspect ratio
