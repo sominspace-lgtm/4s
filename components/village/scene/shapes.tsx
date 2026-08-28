@@ -267,19 +267,19 @@ export function PondShape({ x, y, scale = 1 }: { x: number; y: number; scale?: n
 // horizontal rails between two posts, which is exactly a short fence
 // section's own visual language; every one of the four bench2.png
 // instances in the scene (three PROPS.benches plus the People corner) had
-// been getting reported back as "a fence." A real bench profile instead —
-// one seat plank on four short legs, no second rail above it — reads as
-// sit-down furniture rather than a barrier. Same TRIM-family fixed-hex
-// language as LampShape/BuntingShape's own round 23/29 redraws.
+// been getting reported back as "a fence."
+// Real sprite again round 39 (2026-08-27, "sync all new elements and
+// animations") — bench.png, cropped from village-structures-decor-paths-
+// alpha.png: an actual garden-bench profile (seat, backrest, legs, no
+// second parallel rail), so this can go back to real art without
+// reintroducing the fence-lookalike problem the plain-SVG redraw fixed.
 export function BenchShape({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
-  const w = 15.7
+  const w = 15.7, h = 6.4 // 307×126 source, ~2.44 aspect
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={2} rx={9} ry={1.6} fill="var(--text)" opacity={0.1} />
-      <rect x={-w / 2 - 1.4} y={-2} width={1.6} height={3.6} fill={TRIM} opacity={0.85} />
-      <rect x={w / 2 - 0.2} y={-2} width={1.6} height={3.6} fill={TRIM} opacity={0.85} />
-      <rect x={-w / 2 - 1.6} y={-3.4} width={w + 3.2} height={1.8} rx={0.5} fill={TRIM} />
-      <rect x={-w / 2 - 1.6} y={-3.4} width={w + 3.2} height={1.8} rx={0.5} fill="url(#vsheen)" />
+      <image href="/village-assets/bench.png" x={-w / 2} y={-h + 2} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
     </g>
   )
 }
@@ -329,8 +329,14 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)' }: { x: n
 // (round 29, "fix the sizing of everything... do not make anything too
 // tiny") — the original run read thin next to everything else's round 24-25
 // size bump.
+// Re-cropped round 39 (2026-08-27, "sync all new elements and animations")
+// from village-structures-decor-paths-alpha.png — a genuinely solid wooden
+// fence panel (two posts, two full rails, no lattice/diamond gaps), unlike
+// the round 24 crop this replaces (which turned out to be an open gate,
+// removed round 35 for reading like a see-through barrier). Back in the
+// scene now that there's real art for it.
 export function FenceShape({ x, y, length = 4, scale = 1 }: { x: number; y: number; length?: number; scale?: number }) {
-  const baseW = 13.4, baseH = 6.5 // 367×177 source, ~2.07 aspect
+  const baseW = 13.4, baseH = 6.7 // 251×125 source, ~2.01 aspect
   const w = baseW * (length / 4), h = baseH * (length / 4)
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.95}>
@@ -344,22 +350,21 @@ export function FenceShape({ x, y, length = 4, scale = 1 }: { x: number; y: numb
 // A lamppost (2026-08-25) — glows after dark, same window-glow reasoning as
 // BuildingShape's own (`dark` gates the lit look rather than leaving it
 // unconditionally on). Pure scenery, no click target.
-// Redrawn as a plain post + globe (round 23, 2026-08-27, "update only using
-// these elements. delete all old ones") — the round 10 stone-lantern.png
-// sprite has no equivalent in the master-visual-assets folder, and losing
-// the three path lamps outright would undo round 25's own night-path-
-// visibility fix; a small flat post/globe in this file's existing
-// TRIM/vglow language keeps the actual light without the old sprite.
+// Redrawn as a plain post + globe (round 23, 2026-08-27) — the round 10
+// stone-lantern.png sprite had no folder equivalent at the time. Real
+// sprite again round 39 (2026-08-27, "sync all new elements and
+// animations") — lamppost.png, cropped from village-structures-decor-
+// paths-alpha.png, an actual lamppost. The sprite's own glass reads warm
+// regardless of time of day (no separate lit/unlit crop exists for it),
+// so the amber blur glow stays the only `dark`-gated part, same as before.
 export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
+  const w = 7.8, h = 15 // 134×258 source, ~0.52 aspect
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.8} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
-      {dark && <circle cy={-12.5} r={9} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
-      {/* Sized up round 29 ("do not make anything too tiny") — post + globe
-          grew ~25%. */}
-      <rect x={-1.1} y={-11} width={2.2} height={11} fill={TRIM} opacity={0.85} />
-      <circle cy={-12.8} r={3.3} fill={dark ? 'var(--amber)' : 'var(--surface2)'} opacity={dark ? 0.9 : 0.6}
-        stroke={TRIM} strokeWidth={0.7} className={dark ? 'village-glow' : undefined} />
+      {dark && <circle cy={-11} r={9} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
+      <image href="/village-assets/lamppost.png" x={-w / 2} y={-h + 1.5} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
     </g>
   )
 }
@@ -477,9 +482,17 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // the user with sylvia-harry-outfit-states-remade-alpha.png; this pulls the
 // overalls pose (row 3 of that sheet — a separable, non-hand-holding pair)
 // instead of row 1's hand-holding pose, which crops as one joined sprite.
+// Re-cropped once more round 39 (2026-08-27, "sync all new elements and
+// animations") — that sheet was itself replaced by
+// sylvia-harry-multi-outfit-library-alpha.png (in the user's "New folder"
+// subfolder, moved there alongside the walk/interaction sheets); pulls
+// Sylvia's picnic-basket pose and Harry's coffee-cup pose, the first
+// cleanly separable (non-touching) pair on that sheet — its own first
+// pair (gardening, watering can reaching toward a flower pot) crops as one
+// joined sprite the same way the outfit sheet's hand-holding pose did.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 245, h: 387 },
-  Harry: { src: '/village-assets/sh-default-harry.png', w: 191, h: 360 },
+  Sylvia: { src: '/village-assets/sh-default-sylvia.png', w: 196, h: 353 },
+  Harry: { src: '/village-assets/sh-default-harry.png', w: 171, h: 338 },
 }
 
 export function VillagerShape({ x, y, name, scale = 1, onClick }: {
@@ -534,39 +547,32 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   // Real sprite art (round 9), made alive (round 13), replaced (round 15),
   // replaced again (round 20), updated (round 22), briefly cut to a 2-pose
-  // "night ambient" sheet (round 25), corrected back to 8 poses from the
-  // folder's real 12-pose sheet (round 26) — see that round's own note on
-  // exec-1a806105….png. Round 28 reordered/rebuilt the cycle into all 12
-  // poses in a real narrative order and slowed it way down (24s → 144s).
-  //
-  // Round 31 (2026-08-27, "only use somi walking animation if she is
-  // walking around. when she is still do not use walking animation") split
-  // the single 12-frame cycle in two: an IDLE set (sit, blink, look back
-  // both angles, pounce crouch/pounce, sit tall, curled — 8 poses, no
-  // walking) and a WALK set (the 4-frame walk cycle). She now actually
-  // wanders a little (village-somi-move, globals.css — same idea as
-  // Sylvia/Harry's round 30 drift) instead of standing still while walk
-  // poses flashed past her regardless; the idle set only shows while she's
-  // stationary and the walk set only shows while village-somi-move is
-  // actually translating her, via two opacity-gated <g>s
-  // (village-somi-idle-vis/-walk-vis) sharing that same animation's
-  // timeline so the two can never both be visible at once.
+  // "night ambient" sheet (round 25), corrected to 8 poses from
+  // exec-1a806105….png (round 26), reordered into all 12 in a real
+  // narrative order (round 28), and split into gated idle/walk sets (round
+  // 31). Round 39 (2026-08-27, "sync all new elements and animations")
+  // re-sources the whole cycle again — exec-1a806105….png is gone from the
+  // folder, replaced by two purpose-built sheets:
+  // somi-idle-tail-head-animation-alpha.png (4 sit/head-tilt idle frames)
+  // and somi-walk-stretch-animation-alpha.png (a real, correctly-ordered
+  // 4-frame walk cycle plus a 4-frame stretch sequence — this is the
+  // actual dedicated walk-cycle sheet the earlier "mixed pose sheet, hope
+  // the walk frames are in order" approach never had). The old pounce/
+  // sit-tall/curled poses have no equivalent in either new sheet and are
+  // dropped rather than kept without a source.
   const h = 20
   const idleFrames = [
-    { src: '/village-assets/somi-sit-1.png', aspect: 141 / 195 },
-    { src: '/village-assets/somi-sit-2.png', aspect: 159 / 195 },
-    { src: '/village-assets/somi-look-back-1.png', aspect: 165 / 195 },
-    { src: '/village-assets/somi-look-back-2.png', aspect: 174 / 195 },
-    { src: '/village-assets/somi-pounce-crouch.png', aspect: 210 / 178 },
-    { src: '/village-assets/somi-pounce.png', aspect: 216 / 183 },
-    { src: '/village-assets/somi-sit-tall.png', aspect: 180 / 188 },
-    { src: '/village-assets/somi-curled.png', aspect: 163 / 187 },
+    { src: '/village-assets/somi-sit-1.png', aspect: 254 / 335 },
+    { src: '/village-assets/somi-sit-2.png', aspect: 273 / 335 },
+    { src: '/village-assets/somi-head-tilt-1.png', aspect: 261 / 337 },
+    { src: '/village-assets/somi-head-tilt-2.png', aspect: 262 / 334 },
+    { src: '/village-assets/somi-stretch.png', aspect: 316 / 265 },
   ]
   const walkFrames = [
-    { src: '/village-assets/somi-walk-1.png', aspect: 235 / 185 },
-    { src: '/village-assets/somi-walk-2.png', aspect: 226 / 193 },
-    { src: '/village-assets/somi-walk-3.png', aspect: 230 / 185 },
-    { src: '/village-assets/somi-walk-4.png', aspect: 226 / 192 },
+    { src: '/village-assets/somi-walk-1.png', aspect: 317 / 260 },
+    { src: '/village-assets/somi-walk-2.png', aspect: 305 / 260 },
+    { src: '/village-assets/somi-walk-3.png', aspect: 320 / 258 },
+    { src: '/village-assets/somi-walk-4.png', aspect: 303 / 260 },
   ]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
@@ -587,7 +593,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
             plainly and the walk set is skipped outright rather than the two
             gated animations racing a movement loop that isn't running. */}
         <g className={wander ? 'village-somi-idle-vis' : undefined}>
-          <SpriteCycle frames={idleFrames} x={0} y={0} height={h} periodSec={96} />
+          <SpriteCycle frames={idleFrames} x={0} y={0} height={h} periodSec={60} />
         </g>
         {wander && (
           <g className="village-somi-walk-vis">

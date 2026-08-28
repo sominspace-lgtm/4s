@@ -542,3 +542,40 @@ habits/growth grove bigger."
   hit target of any clickable entity in the scene, especially now that the grove scatters plants
   and trees close together. The matching arrange-mode drag-indicator circle grew from r=16 to r=22
   to match.
+
+## Round 39 (2026-08-27) - full resync: Somi, Sylvia/Harry, fence, bench, lamp, path
+
+"sync all new elements and animations."
+
+The user's folder changed again, substantially - Sylvia/Harry's content moved into a "New
+folder" subdirectory (sylvia-harry-multi-outfit-library-alpha.png, sylvia-harry-walk-wave-
+animation-alpha.png, sylvia-harry-interactions-special-moments-alpha.png), exec-1a806105-....png
+(Somi's 12-pose sheet) is gone entirely, and several new decor/structure sheets appeared
+(village-structures-decor-paths-alpha.png, village-decor-lanterns-alpha.png, seasonal-trees-
+ambience-alpha.png, weather-puddles-wind-leaves-alpha.png, progress-garden-beds-alpha.png,
+small-plant-growth-neglect-recovery-alpha.png, memory-postcard-rack-alpha.png). Given the volume,
+this round prioritized the cast (Somi, Sylvia, Harry) and the recurring fence/bench/lamp/path
+pain points; the remaining new sheets are real content for a future round.
+
+- **Somi, re-sourced again**: exec-1a806105 is gone, replaced by two purpose-built sheets -
+  somi-idle-tail-head-animation-alpha.png (4 idle sit/head-tilt frames) and somi-walk-stretch-
+  animation-alpha.png (a real, correctly-ordered 4-frame walk cycle plus a 4-frame stretch
+  sequence - an actual dedicated walk-cycle sheet, not a mixed-pose sheet hoping the walk frames
+  landed in order). CatShape's idle set is now 5 frames (the 4 idle poses + one stretch frame);
+  walk set is the real 4-frame cycle. Pounce/sit-tall/curled have no equivalent in either new
+  sheet and are dropped. New `village-cycle-5` keyframe added to globals.css.
+- **Sylvia/Harry re-sourced again**: sh-default-sylvia.png/-harry.png now come from sylvia-harry-
+  multi-outfit-library-alpha.png's picnic-basket/coffee-cup pair (the first cleanly separable,
+  non-touching pair on that sheet - its own gardening pair crops as one joined sprite, same issue
+  round 32's hand-holding pose had).
+- **The fence is back** with real solid-panel art (fence-rail.png, from village-structures-decor-
+  paths-alpha.png) - not the lattice gate removed round 35, an actual two-post two-rail panel.
+- **BenchShape and LampShape are real sprites again** (bench.png, lamppost.png, same source
+  sheet) instead of their round 36/23 plain-SVG redraws - real garden-bench and lamppost art now
+  exists, so there's no need for the fence-lookalike/no-equivalent workarounds any more.
+- **The path got real tile art** (path-tile.png, same sheet) replacing round 26's hand-drawn
+  rounded-rect pavers - an actual stone-bordered dirt path segment repeated with the same
+  per-tile jitter as before.
+
+All new crops passed through the same HSL-hue magenta-clearing pass round 37 established -
+confirmed zero magenta pixels in all fifteen new/changed files.

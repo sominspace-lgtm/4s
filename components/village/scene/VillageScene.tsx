@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The 2-frame flower-cluster sway (round 13, 2026-08-27,
 // village-animations-complete.zip) — same idiom as shapes.tsx's own
@@ -273,10 +273,15 @@ const PROPS = {
     { x: 700, y: GROUND_Y - 8, hue: 'var(--gold)' },
     { x: 200, y: GROUND_Y + 32, hue: 'var(--blush)' },
   ],
-  // Lamps (2026-08-25) — the rest of "denser, more lived-in ground" from
-  // PROPS above; they mark the path itself so it reads as a real route,
-  // lit after dark. The fence run that used to live here too is gone
-  // (round 34, 2026-08-27, "remove the fences with white in the middle").
+  // Fences (2026-08-25, removed round 34, back round 39 with real solid-
+  // panel art — see FenceShape's own comment) and lamps — the rest of
+  // "denser, more lived-in ground" from PROPS above. A short fence run
+  // near Home reads as a real yard boundary; lamps mark the path itself so
+  // it reads as a real route, lit after dark.
+  fences: [
+    { x: 350, y: GROUND_Y + 6, length: 4 },
+    { x: 450, y: GROUND_Y + 10, length: 4 },
+  ],
   // y shifted from GROUND_Y-24..-36 to GROUND_Y+18..+34 (round 4,
   // 2026-08-27) — PATH_D itself moved down the same amount this round (see
   // its own comment), and these are specifically meant to mark the path,
@@ -381,6 +386,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   pond: PROPS.pond,
   ...Object.fromEntries(PROPS.benches.map((p, i) => [`bench-${i}`, p])),
   ...Object.fromEntries(PROPS.flowerBeds.map((p, i) => [`flowerBed-${i}`, p])),
+  ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
   signpost: { x: 770, y: GROUND_Y + 30 },
@@ -1027,12 +1033,22 @@ export default function VillageScene({
           the buildings use, each with its own tiny hashPos-seeded jitter/
           rotation/tone so they read as hand-laid stones, not a repeating
           tile. */}
+      {/* Real path-tile.png sprite now (round 39, 2026-08-27, "sync all new
+          elements and animations") — cropped from village-structures-
+          decor-paths-alpha.png, an actual stone-bordered dirt path
+          segment, replacing the hand-drawn rounded-rect pavers round 26
+          used (no path sprite existed in the folder at the time). Same
+          per-tile hashPos jitter/rotation as before so the repeat doesn't
+          read as an obvious tile stamp. */}
       <path d={PATH_D} fill="none" stroke="#B08659" strokeWidth={6} strokeLinecap="round" opacity={0.22} />
-      {PATH_PAVERS.map(p => (
-        <rect key={p.id} x={-p.size / 2} y={-p.size / 2} width={p.size} height={p.size} rx={1.3}
-          fill={p.tone ? '#C9A876' : '#A9835A'} stroke={TRIM} strokeWidth={0.5} strokeOpacity={0.5} opacity={0.92}
-          transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
-      ))}
+      {PATH_PAVERS.map(p => {
+        const tw = p.size * 2.4, th = p.size * 1.2
+        return (
+          <image key={p.id} href="/village-assets/path-tile.png" x={-tw / 2} y={-th / 2} width={tw} height={th}
+            opacity={0.92} style={{ imageRendering: 'pixelated' }}
+            transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
+        )
+      })}
 
       {/* Grass and stones — same dark-mode dimming as the ground-plane
           group above, kept as a second filtered group rather than merged
@@ -1116,12 +1132,15 @@ export default function VillageScene({
           <FlowerBedShape x={0} y={0} hue={f.hue} />
         </Draggable>
       ) })}
-      {/* The fence is gone (round 34, 2026-08-27, "remove the fences with
-          white in the middle") — round 29's tiling fix addressed the real
-          gap bug, but the sprite kept reading wrong regardless; rather
-          than keep patching it, it's removed outright. fence-rail.png and
-          FenceShape stay in the codebase (real, folder-sourced content, a
-          working component) in case a cleaner crop fixes it later. */}
+      {/* The fence is back (round 39, 2026-08-27, "sync all new elements
+          and animations") — real solid-panel art now (see FenceShape's own
+          comment on why this crop is different from the lattice-gate one
+          removed round 34/35). */}
+      {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
+        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
+          <FenceShape x={0} y={0} length={f.length} />
+        </Draggable>
+      ) })}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
           <LampShape x={0} y={0} dark={dark} />
