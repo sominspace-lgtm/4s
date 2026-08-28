@@ -579,3 +579,22 @@ pain points; the remaining new sheets are real content for a future round.
 
 All new crops passed through the same HSL-hue magenta-clearing pass round 37 established -
 confirmed zero magenta pixels in all fifteen new/changed files.
+
+## Round 40 (2026-08-28) - five more real sprites from the lanterns/decor sheet
+
+"put other elements in" - a direct follow-up to round 39's note that several new sheets were
+available but not yet wired.
+
+From village-decor-lanterns-alpha.png: bunting.png (BuntingShape is real sprite art again,
+replacing its round 23 hand-drawn redraw - pennant.png finally has a folder equivalent),
+clothesline.png, blank-sign.png, garland.png, and bread-crate.png added to the Inventory's
+ASSET_LIBRARY (5 new placeable items, all magenta-checked clean). flower-vase.png was also
+cropped but deliberately left off the Inventory list - same "nothing flower-shaped is a second
+way to add a plant" reasoning round 33 established for flowerCluster.
+
+Still available, not wired this round: seasonal-trees-ambience-alpha.png (spring/summer/autumn/
+winter variants of the round/pine trees - a real seasonal-swap feature, bigger scope than a prop
+addition), weather-puddles-wind-leaves-alpha.png, progress-garden-beds-alpha.png, small-plant-
+growth-neglect-recovery-alpha.png, memory-postcard-rack-alpha.png, and (in the "New folder"
+subfolder) sylvia-harry-interactions-special-moments-alpha.png (paired vignettes - per the
+standing "only ever two people" rule, not something to wire as a separate scene element).

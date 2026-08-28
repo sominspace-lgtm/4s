@@ -51,7 +51,16 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   // this was decorative ground cover, not a real habit-driven plant, it
   // read too close to "adding a flower" for comfort. Real plants only ever
   // come from PlantShape/plantSlots (real habit data); the Inventory
-  // should never be a second way to add anything flower-shaped.
+  // should never be a second way to add anything flower-shaped. Same
+  // reasoning kept 'flowerVase' (a real crop, round 40) off this list too
+  // — cropped and sitting in public/village-assets/ but not listed here.
+  // Round 40 (2026-08-27, "put other elements in") — five more real
+  // sprites from village-decor-lanterns-alpha.png.
+  { key: 'bunting', label: 'Bunting', href: 'bunting.png', aspect: 287 / 109, h: 8 },
+  { key: 'clothesline', label: 'Clothesline', href: 'clothesline.png', aspect: 347 / 185, h: 13 },
+  { key: 'blankSign', label: 'Blank sign', href: 'blank-sign.png', aspect: 162 / 188, h: 13 },
+  { key: 'garland', label: 'Garland', href: 'garland.png', aspect: 356 / 117, h: 6 },
+  { key: 'breadCrate', label: 'Bread crate', href: 'bread-crate.png', aspect: 193 / 141, h: 9 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

@@ -417,20 +417,16 @@ export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; 
 // district, only on the actual day (see VillageScene's use of
 // soonestBirthdayDays === 0). No new data: the same daysUntilBirthday
 // already driving the district's count badge.
-// A small flag string, hand-drawn again (round 23, 2026-08-27, "update only
-// using these elements. delete all old ones") — round 10's pennant.png has
-// no equivalent in the master-visual-assets folder; this is a plain
-// triangle-flag bunting in the same gold-family/fixed-hex language as
-// FeatureIcon's other flat shapes, strung between two short posts.
+// Real sprite again round 40 (2026-08-27, "put other elements in") —
+// bunting.png, cropped from village-decor-lanterns-alpha.png. Hand-drawn
+// (round 23, 2026-08-27) in the meantime since round 10's pennant.png had
+// no folder equivalent at the time.
 export function BuntingShape({ x, y }: { x: number; y: number }) {
-  const flags = [-10, -5, 0, 5, 10]
+  const w = 15.7, h = 6 // 287×109 source, ~2.63 aspect
   return (
     <g transform={`translate(${x} ${y - 34})`} opacity={0.95} pointerEvents="none">
-      <path d="M -12 0 Q 0 5 12 0" fill="none" stroke={TRIM} strokeWidth={0.8} opacity={0.7} />
-      {flags.map((dx, i) => (
-        <path key={i} d={`M ${dx} 0.5 L ${dx - 2.4} 6 L ${dx + 2.4} 6 Z`}
-          fill={i % 2 === 0 ? 'var(--blush)' : 'var(--gold)'} opacity={0.85} />
-      ))}
+      <image href="/village-assets/bunting.png" x={-w / 2} y={0} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} />
     </g>
   )
 }
