@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, BuildingShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, SpriteCycle, Draggable, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 
 // The 2-frame flower-cluster sway (round 13, 2026-08-27,
 // village-animations-complete.zip) — same idiom as shapes.tsx's own
@@ -305,19 +305,24 @@ const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
 // district labels above have been draggable in arrange mode since round
 // 2026-08-21; this extends the exact same mechanism (decorPos/startDrag/
 // onMoveLandmark, all now string-keyed) to individual scenery instead of
-// just the six landmarks. Deliberately NOT extended to the two functional
-// nav props (MailboxShape, the Trips SignpostShape — different call
-// pattern, own onClick) or to FOREGROUND/MIDGROUND_BUSHES (62 procedurally
-// scattered, individually-meaningless texture items — dragging one at a
-// time there would be tedium, not customization). Coordinates below are
-// each prop's own original fixed spot, unchanged — this only adds an
-// override path, nothing moves until a user actually drags something.
+// just the six landmarks. Coordinates below are each prop's own original
+// fixed spot, unchanged — this only adds an override path, nothing moves
+// until a user actually drags something.
 // Round 23 (2026-08-27, "update only using these elements. delete all old
 // ones") removed bike/flowerPot/laundryBasket/breadBasket/teaSet/swing/
 // blankSign — the round 9-10 custom-pack sprites behind them have no
 // equivalent in the master-visual-assets folder, and rather than leave
 // mismatched old art in, these props (and their scene blocks below) are
 // gone rather than replaced.
+// Extended to EVERY named prop in the scene (round 27, 2026-08-27, "make
+// everything moveable") — the pond, benches, flower beds, fences, lamps,
+// the Mailbox, the Trips signpost, and the cast (Sylvia/Harry/Somi) were
+// the only things left with no override path; each now gets an id here
+// (PROPS' own arrays are spread in below so their positions stay the one
+// source of truth) and a <Draggable> wrapper at its render call, same as
+// every other decor prop. Still NOT extended to FOREGROUND/MIDGROUND_
+// BUSHES — 62 procedurally-scattered, individually-meaningless texture
+// items where dragging one at a time would be tedium, not customization.
 const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   gate: { x: 58, y: GROUND_Y + 20 },
   car: { x: 500, y: GROUND_Y + 14 },
@@ -330,6 +335,31 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // Round 13 (2026-08-27) additions.
   flowerCluster: { x: 240, y: GROUND_Y + 33 },
   paperLantern: { x: 565, y: GROUND_Y + 10 },
+  // Round 27 additions — previously-fixed scenery, now draggable too.
+  pond: PROPS.pond,
+  ...Object.fromEntries(PROPS.benches.map((p, i) => [`bench-${i}`, p])),
+  ...Object.fromEntries(PROPS.flowerBeds.map((p, i) => [`flowerBed-${i}`, p])),
+  ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
+  ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
+  mailbox: { x: 462, y: GROUND_Y - 4 },
+  signpost: { x: 770, y: GROUND_Y + 30 },
+  sylvia: { x: 372, y: GROUND_Y + 8 },
+  harry: { x: 428, y: GROUND_Y + 8 },
+  somi: { x: 345, y: GROUND_Y + 20 },
+  // Round 27 (2026-08-27, "upload all item elements onto the village") —
+  // village-expansion-community-props-alpha.png, imported round 26 but not
+  // yet wired: a well, a clothesline, an alternate mailbox (purely
+  // decorative — the functional capture entry stays MailboxShape above,
+  // see its own render comment), a bird bath, a bench-and-arbor, a bike
+  // leaned against a flower pot, and a real veg-crate.png replacement for
+  // the one round 23 had to remove outright for lack of a source.
+  well: { x: 540, y: GROUND_Y - 4 },
+  clothesline: { x: 440, y: GROUND_Y + 4 },
+  mailboxAlt: { x: 100, y: GROUND_Y + 16 },
+  birdbath: { x: 210, y: GROUND_Y - 8 },
+  benchArbor: { x: 300, y: GROUND_Y + 24 },
+  bikeFlowerpot: { x: 358, y: GROUND_Y + 2 },
+  vegCrate: { x: 122, y: GROUND_Y + 8 },
 }
 
 export default function VillageScene({
@@ -1005,11 +1035,35 @@ export default function VillageScene({
       </g>
 
       {/* Small props along the path — see PROPS above. */}
-      <PondShape x={PROPS.pond.x} y={PROPS.pond.y} />
-      {PROPS.benches.map((b, i) => <BenchShape key={i} x={b.x} y={b.y} />)}
-      {PROPS.flowerBeds.map((f, i) => <FlowerBedShape key={i} x={f.x} y={f.y} hue={f.hue} />)}
-      {PROPS.fences.map((f, i) => <FenceShape key={i} x={f.x} y={f.y} length={f.length} />)}
-      {PROPS.lamps.map((l, i) => <LampShape key={i} x={l.x} y={l.y} dark={dark} />)}
+      {/* Every prop below is now draggable (round 27, "make everything
+          moveable") — Draggable wraps each shape at its decorPos() position
+          instead of PROPS' own fixed one, same pattern as the generic
+          item-prop loop further down. */}
+      {(() => { const p = decorPos('pond'); return (
+        <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
+          <PondShape x={0} y={0} />
+        </Draggable>
+      ) })()}
+      {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
+        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
+          <BenchShape x={0} y={0} />
+        </Draggable>
+      ) })}
+      {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
+        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
+          <FlowerBedShape x={0} y={0} hue={f.hue} />
+        </Draggable>
+      ) })}
+      {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
+        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
+          <FenceShape x={0} y={0} length={f.length} />
+        </Draggable>
+      ) })}
+      {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
+        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
+          <LampShape x={0} y={0} dark={dark} />
+        </Draggable>
+      ) })}
 
       {/* Ten more real sprites, rounds 11–12 (2026-08-27, the user's own
           village-matching-expansion-pack, v2 with real alpha) — a gate
@@ -1036,6 +1090,18 @@ export default function VillageScene({
         { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 11.9, h: 9 },
         { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 10.1, h: 9.5 },
         { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 13.2, h: 9 },
+        // Round 27 (2026-08-27, "upload all item elements onto the
+        // village") — village-expansion-community-props-alpha.png,
+        // imported round 26 but not wired until now. A real veg-crate.png
+        // replacement for the one round 23 had to remove outright, plus
+        // six genuinely new props.
+        { id: 'well', title: 'The old well', href: 'well.png', w: 13.8, h: 16 },
+        { id: 'clothesline', title: 'Laundry, out to dry', href: 'clothesline.png', w: 16.8, h: 13 },
+        { id: 'mailboxAlt', title: 'Another mailbox, down the lane', href: 'mailbox-alt.png', w: 9.1, h: 15 },
+        { id: 'birdbath', title: 'A bird bath', href: 'birdbath.png', w: 11.1, h: 13 },
+        { id: 'benchArbor', title: 'A bench under the arbor', href: 'bench-arbor.png', w: 18.9, h: 18 },
+        { id: 'bikeFlowerpot', title: 'A bike, and flowers by the porch', href: 'bike-flowerpot.png', w: 22.8, h: 12 },
+        { id: 'vegCrate', title: "Whatever's ready to pick", href: 'veg-crate.png', w: 7.4, h: 8 },
       ].map(p => {
         const p0 = decorPos(p.id)
         return (
@@ -1190,11 +1256,17 @@ export default function VillageScene({
 
       {/* Mailbox, beside Home (2026-08-24) — see MailboxShape's own comment:
           Rest Lake used to be where "jot something down" lived; this is its
-          new, smaller home. */}
-      <MailboxShape x={462} y={GROUND_Y - 4} onClick={nav('Capture', () => {
-        goToSection('brief')
-        setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
-      })} />
+          new, smaller home. Draggable too now (round 27) — nav()'s own
+          `arranging` guard already no-ops the click while dragging is live,
+          so layering Draggable's onPointerDown underneath is safe. */}
+      {(() => { const p = decorPos('mailbox'); return (
+        <Draggable x={p.x} y={p.y} id="mailbox" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('mailbox')} r={14}>
+          <MailboxShape x={0} y={0} onClick={nav('Capture', () => {
+            goToSection('brief')
+            setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
+          })} />
+        </Draggable>
+      ) })()}
 
       {/* Home's own personal objects — the bike, flower pot, laundry basket,
           and bread basket (rounds 9-10) are gone (round 23, 2026-08-27,
@@ -1399,11 +1471,20 @@ export default function VillageScene({
           sensible height (30 units) on its own, so the old multiplier would
           now make the cast nearly as tall as the house. The idle bob
           (village-bob) is gone (round 24, 2026-08-27, "do not make
-          anything bob") — the cast stands still now. */}
-      <VillagerShape x={372} y={GROUND_Y + 8} name="Sylvia"
-        onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
-      <VillagerShape x={428} y={GROUND_Y + 8} name="Harry"
-        onClick={locked ? openFigureOrToggle('harry') : undefined} />
+          anything bob") — the cast stands still now. Draggable too, as of
+          round 27 ("make everything moveable") — the click handlers below
+          only fire outside arrange mode (openFigureOrToggle/openSomi both
+          bail on `arranging`), so wrapping in Draggable is safe. */}
+      {(() => { const p = decorPos('sylvia'); return (
+        <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
+          <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+        </Draggable>
+      ) })()}
+      {(() => { const p = decorPos('harry'); return (
+        <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
+          <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} />
+        </Draggable>
+      ) })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
           scale 1), clear of the Mailbox/Harry per the 2026-08-25 fix noted
@@ -1413,15 +1494,22 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
-      <CatShape x={345} y={GROUND_Y + 20} scale={0.75} name="Somi" onClick={openSomi} />
+      {(() => { const p = decorPos('somi'); return (
+        <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
+          <CatShape x={0} y={0} scale={0.75} name="Somi" onClick={openSomi} />
+        </Draggable>
+      ) })()}
 
       {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
           no district of its own; this points off-canvas at the village
-          edge instead of inventing an eighth district. */}
-      {tripCount > 0 && (
-        <SignpostShape x={770} y={GROUND_Y + 30} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
-          onClick={nav('Trips', () => goToSection('places'), false)} />
-      )}
+          edge instead of inventing an eighth district. Draggable too now
+          (round 27), same reasoning as the Mailbox above. */}
+      {tripCount > 0 && (() => { const p = decorPos('signpost'); return (
+        <Draggable x={p.x} y={p.y} id="signpost" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('signpost')} r={16}>
+          <SignpostShape x={0} y={0} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
+            onClick={nav('Trips', () => goToSection('places'), false)} />
+        </Draggable>
+      ) })()}
 
       {/* The near foreground (2026-08-27, round 6) — see FOREGROUND's own
           comment: everything above lives in one thin band (y 170..250ish),
@@ -1495,8 +1583,9 @@ export default function VillageScene({
           positioned over Sylvia/Harry's own fixed spot rather than pos(id)
           since figures aren't landmarks. */}
       {openFigure && (() => {
-        const figX = openFigure === 'sylvia' ? 372 : 428
-        const figY = GROUND_Y + 8
+        const figPos = decorPos(openFigure)
+        const figX = figPos.x
+        const figY = figPos.y
         const info = figureContent[openFigure]
         const width = 150
         const height = 34 + info.lines.length * 13 + 22
@@ -1526,8 +1615,9 @@ export default function VillageScene({
           spot, no PIN gate (her card just navigates, never calls
           onLockedNavigate). */}
       {openSomiCard && (() => {
-        const somiX = 345
-        const somiY = GROUND_Y + 20
+        const somiPos = decorPos('somi')
+        const somiX = somiPos.x
+        const somiY = somiPos.y
         const width = 150
         const height = 34 + somiInfo.lines.length * 13 + 22
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiX))

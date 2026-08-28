@@ -294,3 +294,22 @@ The new `village-expansion-community-props-alpha.png` sheet (clothesline, an alt
 bird bath, well, bicycle + flower pot, veg crate, bench-and-arbor) is not wired into anything yet —
 real content for a future round, and notably includes fresh equivalents for a few props round 23
 had to remove outright for lack of one (bicycle, flower pot, veg crate).
+
+## Round 27 (2026-08-27) — the community-props sheet wired in, everything draggable
+
+"upload all item elements onto the village. make everything moveable."
+
+- `village-expansion-community-props-alpha.png` (imported round 26, unwired) is now in the scene:
+  `well.png`, `clothesline.png` (the version with laundry actually hanging — the empty-line variant
+  on the same sheet was skipped as a near-duplicate), `mailbox-alt.png` (purely decorative — the
+  functional "jot something down" mailbox stays `MailboxShape`/`mailbox2.png`, unchanged),
+  `birdbath.png`, `bench-arbor.png`, `bike-flowerpot.png` (the sheet's bike and flower pot sit
+  close enough together to read as one small vignette, kept as a single crop), and `veg-crate.png`
+  — a real replacement for the one round 23 had to remove outright for lack of a source.
+- **Everything in the scene is now draggable in arrange mode.** The pond, the three benches, five
+  flower beds, two fences, three lamps, the Mailbox, the Trips signpost, and Sylvia/Harry/Somi were
+  the only pieces left with no override path (`DECOR_DEFAULTS`/`decorPos`/`startDrag`, the same
+  mechanism district labels and item-props have used since round 12) — each now has an id there and
+  a `<Draggable>` wrapper (a new small helper in `shapes.tsx`) at its render call. Still
+  deliberately NOT draggable: `FOREGROUND`/`MIDGROUND_BUSHES`, the 62 procedurally-scattered texture
+  items — dragging one at a time there would be tedium, not customization, same reasoning as always.

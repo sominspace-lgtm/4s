@@ -7,6 +7,36 @@ import { STAGE_INDEX, hashPos, type Plant, type Building } from '@/lib/village/s
 // N times, while the one-off scenery stays in VillageScene where you can read
 // the composition order top to bottom.
 
+// A generic drag wrapper (round 27, 2026-08-27, "make everything moveable")
+// — the DECOR_DEFAULTS/decorPos/startDrag mechanism (VillageScene.tsx) has
+// covered the freestanding item-props since round 12, but the pond,
+// benches, flower beds, fences, lamps, the Mailbox/Trips-signpost, and the
+// three cast figures were all still hard-coded fixed points. Rather than
+// hand-roll the same translate/onPointerDown/dashed-outline boilerplate at
+// every one of those call sites, this wraps any existing shape (which
+// already renders itself at a LOCAL (0,0) when given x=0/y=0) in one
+// draggable group — same visual "dashed ring while arranging" language
+// DistrictLabel/the generic decor-prop loop already use.
+export function Draggable({ x, y, id, arranging, draggingId, onPointerDown, r = 12, children }: {
+  x: number; y: number; id: string; arranging: boolean; draggingId: string | null
+  onPointerDown: (e: React.PointerEvent) => void
+  /** Dashed-ring radius while arranging — tune per prop so the ring roughly
+   *  hugs what's actually drawn instead of one generic size for everything. */
+  r?: number
+  children: React.ReactNode
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`} onPointerDown={onPointerDown}
+      style={{ cursor: arranging ? (draggingId === id ? 'grabbing' : 'grab') : undefined }}>
+      {children}
+      {arranging && (
+        <circle r={r} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+          opacity={draggingId === id ? 0.9 : 0.4} />
+      )}
+    </g>
+  )
+}
+
 // Cycles through several real sprite frames in place (round 13, 2026-08-27,
 // the user's own village-animations-complete.zip) — pure CSS, no JS timer
 // and no re-render: N stacked <image>s share one @keyframes rule (defined
