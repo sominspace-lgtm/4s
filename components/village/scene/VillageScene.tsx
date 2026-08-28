@@ -165,11 +165,26 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // village itself reads more wooded rather than all the greenery living in
 // one small icon. Not draggable (same "fixed background scenery" idiom as
 // DISTANT_TREES/POLLEN) — these are atmosphere, not something to arrange.
+// Grown into a real grove (round 37, 2026-08-27, "make growth forest a
+// whole area like a grove that has both trees and flowers for habits") —
+// FOREST (lib/village/layout.ts) lays real habit-plants out across x
+// 40..360; this used to only put 3 trees in that same band (one pine, two
+// round, all crammed into the small DistrictArt badge) plus a couple more
+// scattered elsewhere in the village. Now 7 trees genuinely fill that same
+// x-range as a loose backdrop the flowers actually stand among, so Growth
+// Forest reads as a wooded place with habits growing in it rather than a
+// small icon next to a scatter of flower dots. Two more stay outside that
+// range as unrelated ambient trees near Archive/Home.
 const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number }[] = [
-  { x: 140, y: GROUND_Y + 38, kind: 'round', h: 26 },
   { x: 25, y: GROUND_Y + 34, kind: 'pine', h: 24 },
-  { x: 680, y: GROUND_Y + 36, kind: 'round', h: 25 },
+  { x: 75, y: GROUND_Y + 46, kind: 'round', h: 22 },
+  { x: 140, y: GROUND_Y + 38, kind: 'round', h: 26 },
+  { x: 190, y: GROUND_Y + 50, kind: 'pine', h: 20 },
+  { x: 245, y: GROUND_Y + 40, kind: 'round', h: 24 },
   { x: 310, y: GROUND_Y + 42, kind: 'pine', h: 23 },
+  { x: 355, y: GROUND_Y + 30, kind: 'round', h: 21 },
+  { x: 680, y: GROUND_Y + 36, kind: 'round', h: 25 },
+  { x: 470, y: GROUND_Y + 32, kind: 'pine', h: 22 },
 ]
 
 // A path through the ground, and a few small props along it (2026-08-24) —

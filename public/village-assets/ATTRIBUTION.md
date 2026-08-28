@@ -508,3 +508,21 @@ same TRIM-family fixed-hex construction as LampShape/BuntingShape's own earlier 
 People district badge (DistrictArt's 'people' case) now calls BenchShape directly instead of
 drawing bench2.png a second time by hand, so the badge and the real corner bench are literally
 the same shape. bench2.png itself is deleted - fully unused now.
+
+## Round 37 (2026-08-27) - Growth Forest is a real grove now, magenta re-audited
+
+"make growth forest a whole area like a grove that has both trees and flowers for habits. make
+sure all magenta is removed."
+
+- EXTRA_TREES grew from 4 trees to 9 - 7 of them now genuinely fill the same x 40..360 band
+  `forestSlots` lays real habit-plants out across, as a loose backdrop the flowers actually stand
+  among. Growth Forest reads as a wooded place with habits growing in it now, not a small badge
+  icon next to a scatter of flower dots. Two trees stay outside that range as unrelated ambient
+  scenery near Archive/Home.
+- Re-audited every sprite for magenta using a proper HSL hue check (265-340 degrees, not just an
+  RGB-channel heuristic) instead of the cruder tests rounds 34 used - found MORE magenta than
+  those had caught (edge-fringe pixels at partial saturation the earlier passes missed) in the
+  same eight round-32 "-remade-alpha" files (cottage-dark/lit, flower-0...4, flower-dormant-1/2,
+  sh-default-sylvia/harry). Cleared all of it. A full-folder scan afterward found only single-
+  digit-to-tens false-positive counts in unrelated files (clouds, trees, rocks) from natural
+  low-saturation shading, not real contamination - left alone.
