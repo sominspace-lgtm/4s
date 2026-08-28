@@ -494,13 +494,45 @@ const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
   Harry: { src: '/village-assets/sh-default-harry.png', w: 171, h: 338 },
 }
 
-export function VillagerShape({ x, y, name, scale = 1, onClick }: {
+// Sylvia's real 4-frame walk cycle and Harry's real 4-frame wave, both from
+// sylvia-harry-walk-wave-animation-alpha.png (round 46, 2026-08-28, "make
+// sure the animations also work and are not randomized but make sense.
+// walking when still. interaction when near"). Round 30 gave both figures
+// a CSS position-drift (village-wander-sylvia/-harry, globals.css) but no
+// pose to go with it — a fixed standing sprite sliding across the ground
+// is exactly the "walking while still" mismatch this round fixes. Sylvia
+// drifts continuously the whole time she's wandering (her own keyframes
+// never truly stop), so her walk-cycle just shows for the entire time
+// `wander` is true — no separate gating needed, unlike Somi's stop-start
+// loop. Harry's own keyframes bring him closest to Sylvia once per lap
+// (his wander animation's own 50% mark); his wave is gated to just that
+// window via village-harry-wave-vis/-idle-vis (globals.css), so he greets
+// her specifically when they're actually near each other, not at random.
+const SYLVIA_WALK_FRAMES = [
+  { src: '/village-assets/sylvia-walk-1.png', aspect: 196 / 433 },
+  { src: '/village-assets/sylvia-walk-2.png', aspect: 193 / 427 },
+  { src: '/village-assets/sylvia-walk-3.png', aspect: 206 / 427 },
+  { src: '/village-assets/sylvia-walk-4.png', aspect: 192 / 432 },
+]
+const HARRY_WAVE_FRAMES = [
+  { src: '/village-assets/harry-wave-1.png', aspect: 208 / 400 },
+  { src: '/village-assets/harry-wave-2.png', aspect: 243 / 401 },
+  { src: '/village-assets/harry-wave-3.png', aspect: 257 / 400 },
+  { src: '/village-assets/harry-wave-4.png', aspect: 245 / 401 },
+]
+
+export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true }: {
   x: number; y: number; name: string
   /** Unused now that this renders a fixed-art sprite — see this file's own
    *  header note on why the props stayed rather than being removed. */
   hairColor?: string; outfitColor?: string
   scale?: number
   onClick?: () => void
+  /** Off during arrange mode (round 46, 2026-08-28) — same reasoning as
+   *  CatShape's own `wander` prop: a moving/animating figure fighting a
+   *  real drag would be unusable, and while genuinely stationary neither
+   *  the walk cycle nor the wave should show at all. */
+  wander?: boolean
 }) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const sprite = VILLAGER_SPRITE[name] ?? VILLAGER_SPRITE.Harry
@@ -508,6 +540,7 @@ export function VillagerShape({ x, y, name, scale = 1, onClick }: {
   // aspect ratio so it's never stretched.
   const h = 30
   const w = h * (sprite.w / sprite.h)
+  const isSylvia = name === 'Sylvia'
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
@@ -518,8 +551,19 @@ export function VillagerShape({ x, y, name, scale = 1, onClick }: {
           own 2026-08-25 comments on why). */}
       {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
-      <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
-        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+      {isSylvia && wander ? (
+        <SpriteCycle frames={SYLVIA_WALK_FRAMES} x={0} y={0} height={h} periodSec={1.6} />
+      ) : (
+        <g className={wander ? 'village-harry-idle-vis' : undefined}>
+          <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+            style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+        </g>
+      )}
+      {!isSylvia && wander && (
+        <g className="village-harry-wave-vis">
+          <SpriteCycle frames={HARRY_WAVE_FRAMES} x={0} y={0} height={h} periodSec={2} />
+        </g>
+      )}
     </g>
   )
 }

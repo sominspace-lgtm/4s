@@ -699,3 +699,25 @@ Still available, not wired this round: the civic clock towers, a coffee cart/sho
 nursery, farmers-market stall, lookout tower, book cart, café sign, mailbox counter, and the
 character/nature/post/seasonal subfolders' own content (walk-cycle art for Sylvia, seasonal tree
 variants, special-occasion outfits, postcards). Real content for future rounds.
+
+## Round 46 (2026-08-28) - real walk/wave animation for Sylvia and Harry
+
+"make sure the animations also work and are not randomized but make sense. walking when still.
+interaction when near...etc"
+
+Round 30 gave Sylvia and Harry a CSS position-drift (village-wander-sylvia/-harry) but no pose to
+go with it - a fixed standing sprite sliding across the ground was exactly the "walking while
+still" mismatch this round targets, the same class of bug Somi's round 31 idle/walk split
+already fixed for her.
+
+- **Sylvia** gets a real 4-frame walk cycle (sylvia-walk-1...4.png, from
+  sylvia-harry-walk-wave-animation-alpha.png). She drifts continuously the whole time she's
+  wandering (her own keyframes never truly stop), so the walk cycle just shows for the entire
+  `wander` window - no separate time-gating needed, unlike Somi's stop-start loop.
+- **Harry** gets a real 4-frame wave (harry-wave-1...4.png, same sheet) - but only during the one
+  window in his own wander loop where he's actually closest to Sylvia (his movement keyframes'
+  own 50% mark), via new `village-harry-wave-vis`/`-idle-vis` keyframes sharing the identical 48s
+  timeline. He waves specifically when they're near each other, not at a random point in the
+  loop - the "interaction when near" part.
+- Both are off entirely in arrange mode (new `wander` prop on `VillagerShape`, same pattern
+  `CatShape` already used) - a genuinely stationary figure never shows a walk or wave pose.

@@ -465,6 +465,28 @@ select, option {
 .village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; }
 .village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; }
 
+/* Harry's wave, gated to the one point in his own wander loop where he's
+   actually closest to Sylvia (round 46, 2026-08-28, "interaction when
+   near") — village-wander-harry's own 50% keyframe is his closest
+   approach; the wave shows only in a window around that same point on the
+   identical 48s timeline, steps(1) hard cuts like every other pose-gate in
+   this file. Sylvia's own walk cycle needs no matching gate — she drifts
+   continuously the whole time she's wandering (see VillagerShape's own
+   comment), so her walk-cycle SpriteCycle just runs whenever `wander` is
+   true, no separate visibility toggle. */
+@keyframes village-harry-wave-vis {
+  0%, 42% { opacity: 0; }
+  46%, 54% { opacity: 1; }
+  58%, 100% { opacity: 0; }
+}
+@keyframes village-harry-idle-vis {
+  0%, 42% { opacity: 1; }
+  46%, 54% { opacity: 0; }
+  58%, 100% { opacity: 1; }
+}
+.village-harry-wave-vis { animation: village-harry-wave-vis 48s steps(1) infinite; }
+.village-harry-idle-vis { animation: village-harry-idle-vis 48s steps(1) infinite; }
+
 /* Somi's own wander + gated walk-pose visibility (round 31, 2026-08-27,
    "only use somi walking animation if she is walking around. when she is
    still do not use walking animation") — three animations sharing one

@@ -1679,14 +1679,14 @@ export default function VillageScene({
       {(() => { const p = decorPos('sylvia'); return (
         <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
           <g className={!arranging ? 'village-wander-sylvia' : undefined}>
-            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} />
+            <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined} wander={!arranging} />
           </g>
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('harry'); return (
         <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
           <g className={!arranging ? 'village-wander-harry' : undefined}>
-            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} />
+            <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined} wander={!arranging} />
           </g>
         </Draggable>
       ) })()}
