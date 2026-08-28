@@ -119,6 +119,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // zoomed in past it. Ceiling of 2 is close enough to read one building's
   // detail. Reset button only shows once actually zoomed.
   const [zoom, setZoom] = useState(1)
+  // Fullscreen (round 59, "allow so we can view village in fullscreen on
+  // ipad/mobile") — a CSS pseudo-fullscreen (fixed inset:0) rather than the
+  // Fullscreen API, which iOS Safari only supports for <video>. Escape
+  // exits; body scroll is locked while it's on.
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
+  }, [expanded])
   const { habits, completions } = useHabits()
   const { items: workItems } = useWorkItems()
   // Finished work, which useWorkItems deliberately excludes. Without this the
@@ -278,6 +291,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
           ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
+          ...(expanded ? {
+            position: 'fixed', inset: 0, zIndex: 9999, borderRadius: 0, border: 'none',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          } : {}),
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
       >
@@ -336,6 +353,26 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               background: 'linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 12%)',
             }}
           />
+        )}
+
+        {/* Fullscreen toggle (round 59) — top-left, clear of Arrange
+            (top-right) and the zoom controls (bottom-right). Shown in the
+            full view always, including shared/locked mode: going fullscreen
+            reveals nothing. */}
+        {!compact && !ambient && (
+          <button
+            onClick={() => setExpanded(e => !e)}
+            title={expanded ? 'Exit fullscreen' : 'View fullscreen'}
+            aria-label={expanded ? 'Exit fullscreen' : 'View fullscreen'}
+            className="press"
+            style={{
+              position: 'absolute', top: '0.7rem', left: '0.7rem', zIndex: 2,
+              background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+              borderRadius: '8px', padding: '0.3rem 0.45rem', color: 'var(--muted)', cursor: 'pointer',
+              fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+              display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+            }}
+          ><span aria-hidden style={{ fontSize: '0.85em' }}>{expanded ? '✕' : '⤢'}</span>{expanded ? ' Close' : ' Fullscreen'}</button>
         )}
 
         {/* Arrange toggle — same "arrange" convention Household's Home

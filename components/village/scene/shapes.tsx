@@ -168,7 +168,7 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   // now; hashPos still picks which of the two dormant/wilt variants a given
   // plant gets, same determinism rule as everywhere else in this file.
   const species = 'flower'
-  const size = [14, 20, 27, 33, 38][i]
+  const size = [11, 16, 21, 26, 30][i] // ~20% smaller round 59 ("make flowers a bit smaller")
   const dormantSprite = `flower-dormant-${hashPos(plant.id + 'wilt') < 0.5 ? 1 : 2}`
 
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
@@ -697,7 +697,16 @@ const COUPLE_INTERACT_FRAMES = [
   { src: '/village-assets/sh-int-walk-together.png', aspect: 432 / 395 },
   { src: '/village-assets/sh-int-watering.png', aspect: 492 / 393 },
   { src: '/village-assets/sh-int-umbrella.png', aspect: 435 / 429 },
+  // Index 9 — the couple reading on a bench (sh-int-bench). Not part of the
+  // random meta-cycle above; VillageScene selects it explicitly when the
+  // couple gather at a bench (round 59, "when we put sylvia harry in a
+  // known element like bench or picnic they do their respective interaction").
+  { src: '/village-assets/sh-int-bench.png', aspect: 346 / 323 },
 ]
+/** Frame index for "reading on a bench". */
+export const COUPLE_BENCH_FRAME = 9
+/** Frame index for "picnic / sitting under the umbrella". */
+export const COUPLE_PICNIC_FRAME = 8
 
 // One interaction pose, chosen by the caller (round 52 follow-up) — was a
 // slow auto-cycling SpriteCycle, but the couple only actually meet for one

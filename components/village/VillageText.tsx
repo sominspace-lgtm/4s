@@ -28,7 +28,7 @@ export default function VillageText({ village, arrival = null, horizonCount = 0 
   const buildingOverflow = Math.max(0, village.buildings.length - DISTRICT_CAP)
 
   const lines = [
-    `Growth Forest: ${village.plants.length} plant${village.plants.length === 1 ? '' : 's'}` +
+    `Growth Garden: ${village.plants.length} plant${village.plants.length === 1 ? '' : 's'}` +
       (village.plants.length ? `. ${growing} growing, ${resting} resting.` : '. Nothing planted yet.') +
       (plantOverflow ? ` Showing ${FOREST_CAP} of ${village.plants.length}.` : ''),
     `Project District: ${standing} standing, ${underway} underway.` +

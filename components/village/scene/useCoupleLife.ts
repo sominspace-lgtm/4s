@@ -42,13 +42,19 @@ const HOME_IF_UNATTENDED_MS = 22_000 // away this long with nothing queued -> wa
 
 interface Pt { x: number; y: number }
 
+export interface RestSpot { x: number; y: number; frame: number }
+
 export function useCoupleLife(opts: {
   enabled: boolean
   sylviaHome: Pt
   harryHome: Pt
   bounds: { x0: number; x1: number; y0: number; y1: number }
+  /** Benches / picnic spot — when the couple gather here they do that
+   *  spot's specific interaction instead of a random one (round 59). */
+  restSpots?: RestSpot[]
 }): CoupleLife {
-  const { enabled, sylviaHome, harryHome, bounds } = opts
+  const { enabled, sylviaHome, harryHome, bounds, restSpots } = opts
+  const restKey = (restSpots ?? []).map(r => `${Math.round(r.x)},${Math.round(r.y)},${r.frame}`).join('|')
   const shx = sylviaHome.x, shy = sylviaHome.y, hhx = harryHome.x, hhy = harryHome.y
 
   const [sylvia, setSylvia] = useState<FigureLife>({ x: shx, y: shy, pose: 'idle', face: 1, dur: 0 })
@@ -129,16 +135,34 @@ export function useCoupleLife(opts: {
       })
     }
 
+    const spots = restSpots ?? []
+    const nearSpot = (x: number, y: number): RestSpot | null =>
+      spots.find(s => Math.hypot(s.x - x, s.y - y) < 26) ?? null
+
     const meet = (pt: Pt | null) => {
-      const gx = clampX(pt ? pt.x : (shx + hhx) / 2 + rand(-140, 140))
-      const gy = clampY(pt ? pt.y : (shy + hhy) / 2 + rand(-6, 46))
+      // A tapped point near a bench/picnic snaps to it; an idle "meet" beat
+      // goes to a rest spot ~45% of the time when there is one.
+      let spot: RestSpot | null = null
+      let gx: number, gy: number
+      if (pt) {
+        spot = nearSpot(pt.x, pt.y)
+        gx = clampX(spot ? spot.x : pt.x)
+        gy = clampY(spot ? spot.y : pt.y)
+      } else if (spots.length && Math.random() < 0.45) {
+        spot = spots[Math.floor(Math.random() * spots.length)]
+        gx = clampX(spot.x); gy = clampY(spot.y)
+      } else {
+        gx = clampX((shx + hhx) / 2 + rand(-140, 140))
+        gy = clampY((shy + hhy) / 2 + rand(-6, 46))
+      }
       setInteractAt({ x: gx, y: gy })
       const sd = walk('sylvia', gx - 9, gy)
       const hd = walk('harry', gx + 9, gy)
       at(Math.max(sd, hd) + 250, () => {
-        setInteractPose(p => (p + 1) % 9)
+        if (spot) setInteractPose(spot.frame)
+        else setInteractPose(p => (p >= 9 ? 0 : (p + 1) % 9))
         setTogether(true)
-        at(rand(6000, 10000), () => { setTogether(false); goHome(); at(4600, loop) })
+        at(rand(spot ? 8000 : 6000, spot ? 13000 : 10000), () => { setTogether(false); goHome(); at(4600, loop) })
       })
     }
     meetRef.current = meet
@@ -168,7 +192,8 @@ export function useCoupleLife(opts: {
     }, 3000)
 
     return () => { alive = false; clearTimers(); clearInterval(guard) }
-  }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1, restKey])
 
   const walkTo = useCallback((x: number, y: number) => {
     if (!enabled) return

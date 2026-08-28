@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -410,6 +410,8 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   clockTower: { x: 92, y: GROUND_Y + 2 },
   // The wishing well (round 57) — tap it to drop a thank-you in.
   wishingWell: { x: 335, y: GROUND_Y + 48 },
+  // The picnic mat (round 59) — a "known element" the couple sit on.
+  picnicMat: { x: 235, y: GROUND_Y + 40 },
   // Round 56 ("remake the village design to look the best with everything")
   // — a curated layer of the imported decor placed as real scenery instead
   // of leaving it all in the Inventory, spread to balance the composition
@@ -665,7 +667,7 @@ export default function VillageScene({
   const underwayCount = v.buildings.length - standingCount
   const panelContent: Record<Exclude<LandmarkId, 'archive'>, { title: string; lines: string[]; actionLabel: string; go: () => void }> = {
     forest: {
-      title: 'Growth Forest',
+      title: 'Growth Garden',
       lines: [
         `${v.plants.length} habit${v.plants.length === 1 ? '' : 's'}`,
         v.plants.length ? `${growingCount} growing · ${restingCount} resting` : 'Nothing planted yet',
@@ -748,11 +750,21 @@ export default function VillageScene({
   // gives each figure an absolute target position + pose + facing, plus
   // `walkTo(x,y)` for tap-to-walk and a `together`/`interactPose` gate for
   // the interaction art. Off entirely during arrange and quiet/night.
+  // Known spots where the couple do a specific interaction (round 59, "when
+  // we put sylvia harry in a known element like bench or picnic they do
+  // their respective interaction") — every bench, plus the picnic mat.
+  const restSpots = useMemo(() => [
+    ...PROPS.benches.map((_, i) => { const p = decorPos(`bench-${i}`); return { x: p.x, y: p.y, frame: COUPLE_BENCH_FRAME } }),
+    (() => { const p = decorPos('peopleCorner'); return { x: p.x, y: p.y, frame: COUPLE_BENCH_FRAME } })(),
+    (() => { const p = decorPos('picnicMat'); return { x: p.x, y: p.y - 2, frame: COUPLE_PICNIC_FRAME } })(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [layout])
   const life = useCoupleLife({
     enabled: !arranging && !quiet,
     sylviaHome: decorPos('sylvia'),
     harryHome: decorPos('harry'),
     bounds: { x0: 70, x1: 730, y0: GROUND_Y + 2, y1: GROUND_Y + 74 },
+    restSpots,
   })
   const coupleTogether = life.together
   const interactPose = life.interactPose
@@ -945,7 +957,7 @@ export default function VillageScene({
     // without this a drag-arrange tap would also fire the click-to-care
     // sparkle/callout, same reasoning nav()'s own guard already documents.
     if (arranging) return
-    if (locked) { onLockedNavigate?.('Growth Forest'); return }
+    if (locked) { onLockedNavigate?.('Growth Garden'); return }
     setSelected(s => (s?.type === 'plant' && s.id === id ? null : { type: 'plant', id }))
     careFor(id, x, y)
   }
@@ -1382,6 +1394,15 @@ export default function VillageScene({
           <WishingWellShape x={0} y={0} glow={wellGlow} onClick={!arranging ? submitGratitude : undefined} />
         </Draggable>
       ) })()}
+      {(() => { const p = decorPos('picnicMat'); const w = 22, h = w * (280 / 460); return (
+        <Draggable x={p.x} y={p.y} id="picnicMat" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('picnicMat')} r={13}>
+          <g>
+            <title>A picnic spot</title>
+            <ellipse cx={0} cy={0} rx={w / 2} ry={2} fill="var(--text)" opacity={0.1} />
+            <image href="/village-assets/picnic-mat.png" x={-w / 2} y={-h + 2} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
+          </g>
+        </Draggable>
+      ) })()}
 
       {/* Ten more real sprites, rounds 11–12 (2026-08-27, the user's own
           village-matching-expansion-pack, v2 with real alpha) — a gate
@@ -1808,7 +1829,7 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Forest" onClick={openOrToggle('forest', 'Growth Forest')} dark={dark} scale={1.12}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} dark={dark} scale={1.12}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
