@@ -488,18 +488,17 @@ select, option {
   80% { transform: translate(8px, -3px); }
   100% { transform: translate(var(--home-x, 0px), var(--home-y, 0px)); }
 }
-/* village-couple-cycle (round 50 fix, 2026-08-28, "make sure when
-   interaction of pair is showing their individuals do not show, so there is
-   not 4 figures") — replaces round 49's original approach of two SEPARATE
-   opacity animations (one on the individuals, an inverted one on the
-   interaction overlay), which were meant to be exact complements but were
-   two independent animation instances with no structural guarantee of
-   staying in phase — a real, observed way for both to end up visible at
-   once. This version animates ONE custom property, --together, on ONE
-   shared ancestor (VillageScene wraps the interaction overlay and both
-   individual figures in a single `.village-couple-cycle` <g>); every
-   consumer below reads that SAME inherited value, so "interaction visible"
-   and "individuals hidden" can never disagree — there is only one number. */
+/* village-couple-together (round 50; reworked round 52 follow-up, "when 2
+   figures interact make the figures invisible and just the interaction
+   show") — this is now purely a metronome: a 48s loop on
+   .village-couple-cycle whose currentTime VillageScene samples to know when
+   the couple is at a lap boundary (~first/last 8% = "together"). It then
+   does a hard React visibility swap — interaction art on, both individuals
+   off, or vice versa. Rounds 49-50 tried to do this swap in CSS by
+   animating --together and having each figure's opacity read it via
+   calc(); an unregistered custom property animates only half-reliably and
+   the result was all four figures on screen at once. The keyframe still
+   names --together so the intent reads, but nothing consumes it now. */
 @keyframes village-couple-together {
   0%, 4% { --together: 1; }
   8%, 92% { --together: 0; }
@@ -509,10 +508,14 @@ select, option {
    phase per load — every lap-synced animation below shares the same
    negative delay so they all stay in step with each other, just starting
    somewhere other than 0%. */
+/* .village-couple-cycle just keeps time now — VillageScene reads this
+   animation's currentTime to decide when the couple is "together" and does
+   a hard React visibility swap between the interaction art and the two
+   individual figures (round 52 follow-up: the old CSS --together the
+   individuals' opacity read via calc() half-applied and showed all four). */
 .village-couple-cycle { animation: village-couple-together 48s steps(1) infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
-.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); opacity: calc(1 - var(--together, 0)); }
-.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); opacity: calc(1 - var(--together, 0)); }
-.village-couple-interact-vis { opacity: var(--together, 0); }
+.village-wander-sylvia { animation: village-wander-sylvia 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
+.village-wander-harry { animation: village-wander-harry 48s ease-in-out infinite; animation-delay: calc(var(--wander-seed, 0) * -48s); }
 
 /* Pose tracks (round 52, 2026-08-28, "add all the animations in a random
    cycle that makes sense", character/animation/) — both figures now carry

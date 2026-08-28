@@ -535,6 +535,8 @@ export default function VillageScene({
   // start at the same point every session; see globals.css --wander-seed.
   const [wanderSeed, setWanderSeed] = useState(0)
   useEffect(() => { setWanderSeed(Math.random()) }, [])
+  const coupleCycleRef = useRef<SVGGElement>(null)
+  const [coupleTogether, setCoupleTogether] = useState(false)
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('vtod')
@@ -566,6 +568,40 @@ export default function VillageScene({
   // animations elements"): the real bedtime art behind round 48's evening
   // mood. Dusk keeps the bench.
   const night = v.timeOfDay === 'night'
+
+  // Is the couple "together" right now? — the ~4s window at each lap
+  // boundary when the two-figure interaction art plays. Read off the real
+  // animation clock (village-couple-together, the metronome on
+  // .village-couple-cycle) and applied as a hard React visibility swap: when
+  // the interaction shows, the two individual figures are hidden outright,
+  // so it's never four figures at once (round 52 follow-up, "when 2 figures
+  // interact make the figures invisible and just the interaction show").
+  // The old approach animated a CSS custom property the individuals'
+  // opacity read via calc(); unregistered, it half-applied.
+  useEffect(() => {
+    if (arranging || quiet) { setCoupleTogether(false); return }
+    let timer = 0
+    let lastT = -1
+    let stuck = 0
+    const tick = () => {
+      const anims = coupleCycleRef.current?.getAnimations?.() ?? []
+      const anim = anims.find(a => (a as CSSAnimation).animationName === 'village-couple-together') ?? anims[0]
+      const t = anim && anim.currentTime != null ? Number(anim.currentTime) : null
+      if (t != null) {
+        if (t === lastT) stuck++
+        else { stuck = 0; lastT = t }
+        // If the animation clock isn't advancing (frozen tab, no compositor)
+        // fall back to "not together" — the individual figures walking is
+        // the important state to keep; a stuck-open interaction pose is not.
+        const prog = ((t / 48000) % 1 + 1) % 1
+        const together = stuck < 3 && (prog < 0.08 || prog >= 0.96)
+        setCoupleTogether(v => (v === together ? v : together))
+      }
+      timer = window.setTimeout(tick, 350)
+    }
+    tick()
+    return () => window.clearTimeout(timer)
+  }, [arranging, quiet, wanderSeed])
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -1873,27 +1909,33 @@ export default function VillageScene({
           walk-cycle art exists for them (only a single standing pose per
           person, see VILLAGER_SPRITE), so this is a glide, not a
           leg-animated walk. */}
-      {/* The real two-character interaction art (round 49, 2026-08-28) and
-          Sylvia/Harry's own individual figures are wrapped in ONE shared
-          `village-couple-cycle` ancestor (round 50 fix, "make sure ... their
-          individuals do not show, so there is not 4 figures") — a single
-          48s `@keyframes` on this one element animates ONE CSS custom
-          property, `--together` (globals.css), which both the interaction
-          overlay and each individual's opacity read via `var()`/`calc()` as
-          exact complements of each other (1 and 0, or 0 and 1, always
-          summing to 1). Two SEPARATE animation instances, even with
-          identical timing, are two independent clocks — a real, observed
-          risk of drifting out of phase and showing both at once. One shared
-          animated value inherited by every descendant can't drift from
-          itself. quiet/bench mode is unaffected — it already replaces this
-          whole subtree outright rather than opacity-swapping within it. */}
+      {/* The two-character interaction art (round 49) and Sylvia/Harry's own
+          individual figures live under one `village-couple-cycle` <g> whose
+          animation is now just a 48s metronome (globals.css). `coupleTogether`
+          above samples its currentTime and this block does a hard visibility
+          swap: at a lap boundary the interaction shows and BOTH individuals
+          are `visibility: hidden` — never four figures. Rounds 49-50 did this
+          swap in CSS via an animated `--together` custom property the
+          figures' opacity read; unregistered custom-property animation
+          half-applied and left everyone visible. quiet/bench mode replaces
+          this whole subtree outright and is unaffected. */}
       <g className={!arranging && !quiet ? 'village-couple-cycle' : undefined}
+        ref={coupleCycleRef}
         style={{ '--wander-seed': wanderSeed } as React.CSSProperties}>
         {!arranging && !quiet && (() => {
           const sp = decorPos('sylvia'), hp = decorPos('harry')
           const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
-          return <g className="village-couple-interact-vis"><CoupleInteraction x={midX} y={midY} /></g>
+          return (
+            <g className="village-couple-interact-vis" style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
+              <CoupleInteraction x={midX} y={midY} />
+            </g>
+          )
         })()}
+        {/* The two individual figures — hidden outright while the interaction
+            plays (see coupleTogether), so it's the pair OR the couple pose,
+            never both. Their wander animations keep running underneath the
+            visibility swap, so they're at the right spot when shown again. */}
+        <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
         {(() => { const p = decorPos('sylvia'); return (
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
             {!(quiet && !arranging) && (
@@ -1914,6 +1956,7 @@ export default function VillageScene({
             <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
           </Draggable>
         ) })()}
+        </g>
       </g>
       {/* quiet/bench mode: the couple-cycle subtree above is empty (both its
           conditions are false), and this renders instead — an outright
