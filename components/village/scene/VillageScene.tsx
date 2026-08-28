@@ -223,7 +223,10 @@ const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; op
 // unrelated lines visually tangled into one confusing squiggle instead of
 // reading as "a ridge behind a path" (live report: "the path looks off").
 // Now clearly BELOW the ridge, in the actual grass the buildings stand in.
-const PATH_D = `M 40 ${GROUND_Y + 24} Q 130 ${GROUND_Y + 40} 220 ${GROUND_Y + 30} T 400 ${GROUND_Y + 22} T 580 ${GROUND_Y + 32} T 760 ${GROUND_Y + 20}`
+// Shifted down +15 (round 42, 2026-08-28, "move path down") — was sitting
+// close enough to the district row that it read as tangled up with it
+// rather than a clearly separate ground feature underneath everything.
+const PATH_D = `M 40 ${GROUND_Y + 39} Q 130 ${GROUND_Y + 55} 220 ${GROUND_Y + 45} T 400 ${GROUND_Y + 37} T 580 ${GROUND_Y + 47} T 760 ${GROUND_Y + 35}`
 
 // Stepping-stone pavers along the path (round 26, 2026-08-27, "make the
 // path look more like a path... fit the style and theme more") — the
@@ -236,8 +239,8 @@ const PATH_D = `M 40 ${GROUND_Y + 24} Q 130 ${GROUND_Y + 40} 220 ${GROUND_Y + 30
 // its Q/T curve — close enough at paver scale) via the same hashPos
 // determinism GRASS_TUFTS/STONES already use for "same spot, every load."
 const PATH_WAYPOINTS = [
-  { x: 40, y: GROUND_Y + 24 }, { x: 220, y: GROUND_Y + 30 }, { x: 400, y: GROUND_Y + 22 },
-  { x: 580, y: GROUND_Y + 32 }, { x: 760, y: GROUND_Y + 20 },
+  { x: 40, y: GROUND_Y + 39 }, { x: 220, y: GROUND_Y + 45 }, { x: 400, y: GROUND_Y + 37 },
+  { x: 580, y: GROUND_Y + 47 }, { x: 760, y: GROUND_Y + 35 },
 ]
 function pointOnPathWaypoints(t: number) {
   const segs = PATH_WAYPOINTS.length - 1
@@ -247,15 +250,19 @@ function pointOnPathWaypoints(t: number) {
   const a = PATH_WAYPOINTS[i], b = PATH_WAYPOINTS[i + 1]
   return { x: a.x + (b.x - a.x) * localT, y: a.y + (b.y - a.y) * localT }
 }
-const PATH_PAVER_COUNT = 32
+// Denser and bigger (round 42, 2026-08-28, "use the cobblestone path") —
+// 32 small, widely-jittered stones read as a faint scatter rather than a
+// path you could actually see at a glance; 48 larger ones with a tighter
+// rotation range overlap enough to read as one continuous cobbled surface.
+const PATH_PAVER_COUNT = 48
 const PATH_PAVERS = Array.from({ length: PATH_PAVER_COUNT }, (_, i) => {
   const t = i / (PATH_PAVER_COUNT - 1)
   const { x, y } = pointOnPathWaypoints(t)
   const seed = `paver-${i}`
   return {
     id: seed, x, y: y + (hashPos(seed + 'y') - 0.5) * 3,
-    rot: (hashPos(seed + 'r') - 0.5) * 16,
-    size: 5.2 + hashPos(seed + 's') * 1.8,
+    rot: (hashPos(seed + 'r') - 0.5) * 10,
+    size: 7 + hashPos(seed + 's') * 2.4,
     tone: hashPos(seed + 't') < 0.5,
   }
 })
@@ -828,10 +835,18 @@ export default function VillageScene({
   // within GROUND_Y-90..+70), so this is where an actual tighter crop is
   // safe. GROVE_TREES/DECOR_DEFAULTS.signpost were still nudged inward a
   // touch for a little extra breathing room on this same axis.
+  // BASE_VB_CY dropped 232 → 180 (round 42, 2026-08-28, "make moon and sun
+  // seen") — round 40's height cut left the top edge at y=82, but
+  // Celestial's own real y range (lib/village/sky.ts) runs 60..120, so the
+  // sun/moon disc was landing entirely above the visible window at its
+  // highest point in the sky — a real regression the screenshot caught,
+  // not a rare edge case. Recentering higher trades a little more
+  // foreground crop (already partial by design, see FOREGROUND's own
+  // comment) for the sky actually being able to show what's in it.
   const BASE_VB_W = 720
   const BASE_VB_H = 300
   const BASE_VB_CX = 400
-  const BASE_VB_CY = 232
+  const BASE_VB_CY = 180
   const vbW = BASE_VB_W / zoom
   const vbH = BASE_VB_H / zoom
   // Pan, clamped so the viewBox can never leave the DEFAULT window's own
@@ -1060,13 +1075,16 @@ export default function VillageScene({
           individual rounded cobblestones from the same source sheet,
           scattered (not tiled edge-to-edge) with the same per-stone
           hashPos jitter/rotation as before, which is what actually reads
-          as a cobblestone path rather than a repeating strip. */}
+          as a cobblestone path rather than a repeating strip. Bigger,
+          denser, and fully opaque round 42 ("use the cobblestone path"
+          repeated — round 40's version still read too faint/sparse to
+          register as a path at a glance) — see PATH_PAVERS' own comment. */}
       <path d={PATH_D} fill="none" stroke="#B08659" strokeWidth={6} strokeLinecap="round" opacity={0.22} />
       {PATH_PAVERS.map(p => {
         const tw = p.size * 1.7, th = tw * (41 / 56)
         return (
           <image key={p.id} href="/village-assets/path-stone.png" x={-tw / 2} y={-th / 2} width={tw} height={th}
-            opacity={0.85} style={{ imageRendering: 'pixelated' }}
+            opacity={1} style={{ imageRendering: 'pixelated' }}
             transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`} />
         )
       })}

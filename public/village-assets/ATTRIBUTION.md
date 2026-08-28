@@ -628,3 +628,21 @@ and ambience"
   a flower (round 33's rule); left unwired rather than guess wrong. weather-puddles-wind-leaves-
   alpha.png and memory-postcard-rack-alpha.png remain unwired too - real content for a future
   round.
+
+## Round 42 (2026-08-28) - the moon was cropped off-screen, a bolder cobblestone path
+
+"make moon and sun seen. move path down and use cobblestone path from here:
+[village-structures-decor-paths-alpha.png]"
+
+- **Real bug**: round 40's viewBox height cut left the sky window's top edge at y=82, but
+  Celestial's own real position (lib/village/sky.ts) ranges y=60..120 - at its highest point in
+  the sky, the sun/moon disc was landing entirely above the visible crop. `BASE_VB_CY` dropped
+  232 -> 180 to fix it, trading a little more (already-partial-by-design) foreground crop for the
+  sky actually showing what's in it.
+- `PATH_D`/`PATH_WAYPOINTS` shifted down +15 ("move path down") - was sitting close enough to the
+  district row to read as tangled up with it.
+- The cobblestone path itself got bolder: `PATH_PAVER_COUNT` 32 -> 48, each stone bigger (was
+  5.2-7 units, now 7-9.4), rotation jitter tightened (±16° -> ±10°, so neighboring stones align
+  more), and opacity 0.85 -> 1 - round 40's version was real cobblestone art but read too
+  faint/sparse to register as a path at a glance, per this round's repeated pointer to the same
+  source file.
