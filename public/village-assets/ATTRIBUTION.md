@@ -97,8 +97,19 @@ Imported, not yet wired (real crops, ready for a future round):
   not asset placement.
 
 Not imported at all yet: `sylvia-harry-tennis-actions.png`, the rest of `sylvia-harry-outfit-
-states.png`'s rows, and `memory-elements-and-postcards.png` / `village-environment-weather.png`
-/ `somi-animation-states.png` / `house-smart-home-states.png` from the ORIGINAL (larger,
-pre-correction) version of this zip — the corrected version the user re-sent only included 4 of
-the original 8 sheets; whether the other 4 still apply as originally sent, or need a corrected
-resend too, wasn't confirmed.
+states.png`'s rows, and `memory-elements-and-postcards.png` / `house-smart-home-states.png`.
+
+## Round 16b (2026-08-27) — consolidated `village-master-visual-assets/` folder
+
+The user resent everything as one folder ("updated all visuals"), resolving two of the four
+open questions above: `somi-animation-states.png` was the same content already sent separately
+as `village-animation-somi-transparent.png` (round 15, already integrated), and
+`village-environment-weather.png` is present under a generic export filename
+(`exec-2347fef5-...png`) — a tree/leaves/flowers/rain/snow/lantern sheet. Most of its content
+duplicates sprites already in this folder (trees, flowers, lanterns); the two genuinely new
+pieces were cropped: `wx-snow-mound.png`, `wx-rain-1.png`, `wx-rain-2.png` — imported, not yet
+wired into the existing Ambient.tsx weather-particle system.
+
+Still genuinely missing: `memory-elements-and-postcards.png` and `house-smart-home-states.png`
+(Home's occupancy signal was implemented instead by extending the EXISTING cottage.png sprite's
+glow — see VillageScene.tsx — so that one may no longer be needed at all).
