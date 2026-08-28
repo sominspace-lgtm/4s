@@ -7,6 +7,7 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useSmartHome } from '@/lib/hooks/useSmartHome'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
@@ -93,6 +94,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const clock = useVillageClock()
   const { spaces } = useSharedSpaces(userId)
   const horizon = useSharedHorizon(spaces.length > 0)
+  // Real occupancy signal (round 16, 2026-08-27) — "Home → house lights ON,
+  // Away → house lights OFF... structure it so additional Smart Home states
+  // can be added later." No explicit "home/away" device exists yet, so this
+  // starts as the simplest real proxy: is ANY device on right now. Null
+  // (not false) while devices are still loading or there's no household
+  // space at all — VillageScene falls back to its own day/night glow in
+  // that case rather than reading "no data yet" as "definitely away."
+  const { devices: smartHomeDevices, loading: smartHomeLoading } = useSmartHome(spaces[0]?.id ?? null)
+  const homeOccupied = smartHomeLoading || smartHomeDevices.length === 0 ? null : smartHomeDevices.some(d => d.on_state)
   const { places } = usePlaces()
   const { people } = usePeople()
   const soonestBirthdayDays = useMemo(() => {
@@ -241,7 +251,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
             peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
-            timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom} />
+            timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
+            homeOccupied={homeOccupied} />
         </div>
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the

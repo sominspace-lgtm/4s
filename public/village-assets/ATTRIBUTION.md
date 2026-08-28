@@ -63,3 +63,42 @@ to REPLACE the one real Sylvia/Harry pair, not add another rendering of them som
 `weather-night.png` (a small twinkle-star + crescent moon accent, no people in it) remains a
 legitimate future option. All three sheets are cropped and staged only during a live session,
 under `.assets-staging/`, never committed.
+
+## Round 16 (2026-08-27) — village-master-visual-assets.zip
+
+A fourth self-authored pack, part of a much larger "Village Living-System Integration" brief
+(contextual reactions, growth/neglect, weather/season/time, Smart Home signal, memories, a
+Journal, etc.). Given the size of that brief, round 16 imports a representative slice of the
+visuals and wires the most concretely-scoped, lowest-risk pieces; the rest is real content,
+imported but not yet wired into behavior — see the git log for the exact phased list.
+
+Imported and wired:
+- `flower-0.png`…`-4.png` (from `growth-neglect-recovery-states.png`'s row-1 seed→bloom
+  sequence) — a third real `species` option in PlantShape, alongside the existing tomato/potato.
+- `flower-dormant-1.png`, `flower-dormant-2.png` (same sheet's wilted-branch frames) — the
+  flower species' actual dormant/neglected look, replacing the grayscale-filter approach
+  tomato/potato still use (no matching "wilted tomato" art exists for those).
+- Home's window glow now reads a real Smart Home occupancy signal instead of only time-of-day
+  (see VillageScene.tsx's own comment on the `homeOccupied` prop and Village.tsx's
+  `useSmartHome` wiring).
+
+Imported, not yet wired (real crops, ready for a future round):
+- `sh-default-sylvia.png` / `-harry.png`, `sh-sweater-cream-sylvia.png` / `-harry.png`,
+  `sh-rain-umbrella-pair.png`, `sh-sweater-red-blue-sylvia.png` / `-harry.png`,
+  `sh-overalls-sylvia.png` / `-harry.png` — one row of `sylvia-harry-outfit-states.png`'s
+  outfit variants (the sheet has ~4 more rows of standing/sitting/seasonal poses not yet
+  cropped). `sh-rain-umbrella-pair.png` is intentionally the pair TOGETHER under one umbrella,
+  not split — the two figures sharing shelter only makes sense combined.
+- `fx-flower-simple.png`, `fx-flower-glow.png`, `fx-flower-burst.png`, `fx-flower-burst-2.png`,
+  `fx-water-droplet.png`, `fx-house-dark.png`, `fx-house-lit.png`, `fx-light-ray.png`,
+  `fx-glow-ring.png`, `fx-lantern-tree.png` (from `village-moment-effects.png`) — everyday/
+  meaningful/major reaction effects. No "significance classifier" exists yet to decide which
+  real 4S events should trigger which tier — that's real design/engineering work of its own,
+  not asset placement.
+
+Not imported at all yet: `sylvia-harry-tennis-actions.png`, the rest of `sylvia-harry-outfit-
+states.png`'s rows, and `memory-elements-and-postcards.png` / `village-environment-weather.png`
+/ `somi-animation-states.png` / `house-smart-home-states.png` from the ORIGINAL (larger,
+pre-correction) version of this zip — the corrected version the user re-sent only included 4 of
+the original 8 sheets; whether the other 4 still apply as originally sent, or need a corrected
+resend too, wasn't confirmed.

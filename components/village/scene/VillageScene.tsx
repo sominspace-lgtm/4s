@@ -299,6 +299,7 @@ export default function VillageScene({
   layout = {}, arranging = false, onMoveLandmark,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
+  homeOccupied = null,
 }: {
   village: VillageState
   live: boolean
@@ -329,6 +330,11 @@ export default function VillageScene({
   moonLabel?: string | null
   /** Trips not done/cancelled — drives the Trips signpost, see useTrips(). */
   tripCount?: number
+  /** Round 16 (2026-08-27) — real Smart Home signal: true if any device in
+   *  the household is currently on, null while unknown/no space yet. Drives
+   *  Home's window glow independent of time-of-day (a lit window means
+   *  someone's actually home right now, not "it happens to be night"). */
+  homeOccupied?: boolean | null
   /** 1 = the full 800×440 scene (default/unchanged). Below 1 shows more of
    *  the world at once; above 1 zooms in. Purely a `viewBox` computation —
    *  every coordinate inside the scene stays exactly as authored, see
@@ -1089,12 +1095,21 @@ export default function VillageScene({
             source, kept at that ~1.22 aspect ratio here. */}
         <image href="/village-assets/cottage.png" x={-55} y={-98} width={110} height={90}
           style={{ imageRendering: 'pixelated' }} />
-        {/* Window glow after dark — the sprite has no baked-in light state,
-            so this is a soft blurred amber ellipse roughly over the small
-            square window, same vglow filter as the sun/moon/lamps.
-            Repositioned for the new cottage sprite's own window location
-            (round 9, 2026-08-27). */}
-        {dark && <ellipse cx={-3} cy={-70} rx={8} ry={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" />}
+        {/* Window glow — the sprite has no baked-in light state, so this is
+            a soft blurred amber ellipse roughly over the small square
+            window, same vglow filter as the sun/moon/lamps. Repositioned
+            for the new cottage sprite's own window location (round 9,
+            2026-08-27).
+            Driven by real Smart Home occupancy, not time-of-day (round 16,
+            2026-08-27) — "Home → house lights ON, Away → house lights OFF"
+            is a genuine signal (someone's actually home right now), and
+            conflating it with `dark` would mean the house looks occupied
+            every single night regardless of whether anyone's really there.
+            Falls back to `dark` when occupancy is unknown (homeOccupied
+            null — no household space set up yet, or Smart Home not used),
+            so a install with zero Smart Home data keeps the old day/night
+            behavior instead of going permanently dark. */}
+        {(homeOccupied ?? dark) && <ellipse cx={-3} cy={-70} rx={8} ry={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" />}
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 28 -88 L 28 -102 L 35 -102 L 35 -88" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}

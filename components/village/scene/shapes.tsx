@@ -73,14 +73,25 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   // aesthetic or artistic," after establishing that pushing the flat-SVG
   // style further had a hard ceiling (user direction: "use free tier
   // [shubibubi's Cozy Farm asset pack] then make own" for what it doesn't
-  // cover). Every plant alternates between the pack's two crops (tomato/
-  // potato), picked once per plant via the same hashPos() determinism every
-  // other scattered element in this scene already uses — same plant, same
-  // species, every load. Size ramps 14→38 units across the 5 real stages,
-  // in the same spirit as the old h/w arrays but tuned to the sprites'
-  // actual 16×16 source proportions instead of the hand-drawn circle sizes.
-  const species = hashPos(plant.id + 'species') < 0.5 ? 'tomato' : 'potato'
+  // cover). Every plant picks one species once, via the same hashPos()
+  // determinism every other scattered element in this scene already uses —
+  // same plant, same species, every load. Size ramps 14→38 units across the
+  // 5 real stages, in the same spirit as the old h/w arrays but tuned to
+  // the sprites' actual source proportions instead of the hand-drawn circle
+  // sizes.
+  // Third species added (round 16, 2026-08-27, the user's own
+  // village-master-visual-assets.zip growth-neglect-recovery sheet) — a
+  // real 5-stage flower growth sequence, the first genuine "grows AND
+  // visibly neglects" art this scene has: two wilted-branch frames replace
+  // the flat grayscale filter tomato/potato still use for a dormant plant.
+  const species = (() => {
+    const r = hashPos(plant.id + 'species')
+    return r < 0.34 ? 'tomato' : r < 0.67 ? 'potato' : 'flower'
+  })()
   const size = [14, 20, 27, 33, 38][i]
+  const dormantSprite = species === 'flower'
+    ? `flower-dormant-${hashPos(plant.id + 'wilt') < 0.5 ? 1 : 2}`
+    : null
 
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
 
@@ -111,9 +122,18 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
             like it was actually standing on the ground, just pasted onto
             it. */}
         <ellipse cx={0} cy={1.5} rx={Math.max(4, size / 2.6)} ry={1.6} fill="var(--text)" opacity={0.12} />
-        <image href={`/village-assets/${species}-${i}.png`} x={-size / 2} y={-size}
-          width={size} height={size}
-          style={{ imageRendering: 'pixelated', filter: plant.dormant ? 'grayscale(1)' : undefined }} />
+        {dormantSprite && plant.dormant ? (
+          // A real wilted-branch sprite, not a filter — same aspect ratio
+          // for both neglect frames (~0.72), so one width formula covers
+          // either pick.
+          <image href={`/village-assets/${dormantSprite}.png`} x={-size * 0.36} y={-size}
+            width={size * 0.72} height={size}
+            style={{ imageRendering: 'pixelated' }} />
+        ) : (
+          <image href={`/village-assets/${species}-${i}.png`} x={-size / 2} y={-size}
+            width={size} height={size}
+            style={{ imageRendering: 'pixelated', filter: plant.dormant ? 'grayscale(1)' : undefined }} />
+        )}
       </g>
     </g>
   )
