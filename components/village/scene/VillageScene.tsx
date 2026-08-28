@@ -288,7 +288,6 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   breadBasket: { x: 478, y: GROUND_Y + 8 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
   teaSet: { x: 220, y: GROUND_Y - 5 },
-  picnicBlanket: { x: 255, y: GROUND_Y + 16 },
   swing: { x: 180, y: GROUND_Y + 6 },
   blankSign: { x: 540, y: GROUND_Y - 2 },
   bushMound: { x: 78, y: GROUND_Y - 2 },
@@ -1219,19 +1218,17 @@ export default function VillageScene({
         <BenchShape x={0} y={0} />
       </g>
 
-      {/* Two more real sprites, round 10 (2026-08-27) — a tea set on the
-          bench and a picnic blanket spread nearby, so People reads as an
-          actual gathering spot, plus a swing a little further off. */}
+      {/* One real sprite, round 10 (2026-08-27) — a tea set on the bench,
+          so People reads as an actual gathering spot, plus a swing a
+          little further off. The picnic blanket (also round 10) is gone
+          (round 19, 2026-08-27, "delete old visuals that do not match
+          like picnic blanket") — from the same original "simple" sprite
+          pack as tea-set/swing, but flatter and less detailed than the
+          later packs' art next to it. */}
       <g transform={`translate(${decorPos('teaSet').x} ${decorPos('teaSet').y})`} opacity={0.92}
         onPointerDown={startDrag('teaSet')} style={{ cursor: arranging ? (draggingId === 'teaSet' ? 'grabbing' : 'grab') : undefined }}>
         <title>Tea, poured for whoever stops by</title>
         <image href="/village-assets/tea-set.png" x={-6.4} y={-9} width={12.8} height={9}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-      <g transform={`translate(${decorPos('picnicBlanket').x} ${decorPos('picnicBlanket').y})`} opacity={0.92}
-        onPointerDown={startDrag('picnicBlanket')} style={{ cursor: arranging ? (draggingId === 'picnicBlanket' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A picnic blanket, spread out</title>
-        <image href="/village-assets/picnic-blanket.png" x={-6.2} y={-8} width={12.5} height={8}
           style={{ imageRendering: 'pixelated' }} />
       </g>
       <g transform={`translate(${decorPos('swing').x} ${decorPos('swing').y})`} opacity={0.88}
@@ -1627,6 +1624,44 @@ export default function VillageScene({
         </g>
       )}
 
+      {/* World cast (round 19, 2026-08-27, "make everything look apart of
+          the same world so if there is a cast there should be a cast over
+          everything (like rain, sunset, gloomy)") — before this, only
+          Sky.tsx's own gradient knew what time or weather it was; a warm
+          dusk sky sat directly above a ground/buildings layer with no
+          matching warmth at all, so the two halves of the picture read as
+          two different lighting conditions glued together. These two
+          rects tint literally everything below them — sky, ground,
+          buildings, cast, props — with the SAME light: one for time of
+          day, one for weather, so either (or both together, a rainy dusk)
+          reads as one real condition the whole village is sitting in, not
+          just a colored sky backdrop. Low opacity, normal blend (not
+          multiply) so it warms/cools without crushing contrast the way a
+          multiply wash would. */}
+      {live && (() => {
+        const timeCast: Record<VillageState['timeOfDay'], [string, number]> = {
+          dawn: ['#F5B88A', 0.07],
+          day: ['#FFFFFF', 0],
+          dusk: ['#E67A4A', 0.1],
+          night: ['#2A3B6B', 0.1],
+        }
+        const weatherCast: Record<WeatherCondition, [string, number]> = {
+          clear: ['#FFFFFF', 0],
+          cloudy: ['#8B93A0', 0.06],
+          fog: ['#C7CCD1', 0.14],
+          rain: ['#5C7290', 0.1],
+          snow: ['#DCE6F0', 0.08],
+          storm: ['#3E4A5C', 0.16],
+        }
+        const [tColor, tOp] = timeCast[v.timeOfDay]
+        const [wColor, wOp] = weatherCast[weather?.condition ?? 'clear']
+        return (
+          <>
+            {tOp > 0 && <rect width="800" height="440" fill={tColor} opacity={tOp} pointerEvents="none" />}
+            {wOp > 0 && <rect width="800" height="440" fill={wColor} opacity={wOp} pointerEvents="none" />}
+          </>
+        )
+      })()}
       {/* Vignette — pulls the eye to the middle of the scene. Drawn in
           SVG rather than as a CSS overlay so it can't intercept the
           clicks on the district labels underneath it. */}

@@ -240,8 +240,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             village (ground level down) hard to make out. Scaling the scene
             up slightly and biasing the transform origin toward the ground
             crops a bit more sky than grass off each edge — the parent's
-            own overflow:hidden clips it, so nothing else has to change. */}
-        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
+            own overflow:hidden clips it, so nothing else has to change.
+            Full (non-compact) view gets the same treatment now, milder
+            (round 19, 2026-08-27, "everything looks too small and there
+            is too much open space") — scaled non-uniformly (more on Y
+            than X) since the emptiness is mostly vertical (bare sky above,
+            bare foreground below the props band), not horizontal (the six
+            districts already span close to the full width; scaling that
+            axis much more risked pushing Archive's own position, the
+            rightmost, past the frame edge). A CSS transform on an ancestor
+            doesn't break click/drag accuracy — getScreenCTM() (used for
+            both hit-testing and arrange-mode dragging) walks the full
+            transform chain, CSS included, not just the SVG's own
+            attributes. */}
+        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : { transform: 'scale(1.08, 1.22)', transformOrigin: '50% 56%' }}>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
