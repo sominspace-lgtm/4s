@@ -619,6 +619,28 @@ const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
   Sylvia: { src: '/village-assets/sylvia-idle.png', w: 150, h: 293 },
   Harry: { src: '/village-assets/harry-idle.png', w: 162, h: 271 },
 }
+
+// Auto wardrobe (round 71, "make wardrobe change — auto is dependent on
+// time or event") — the standing idle pose swaps outfit by season /
+// weather: a winter coat + knit hat when it's cold, a rain coat +
+// umbrella when it's actually raining, a cosy sweater in autumn. Night is
+// handled separately (SleepwearFigure). Cropped from
+// character/wardrobe/sylvia-harry-multi-outfit-library-alpha.png. Walk and
+// wave frames stay in the default outfit — they're on their own sheets and
+// only show for a beat while moving.
+export type Outfit = 'default' | 'winter' | 'rain' | 'cozy'
+const VILLAGER_OUTFIT: Record<string, Partial<Record<Outfit, { src: string; w: number; h: number }>>> = {
+  Sylvia: {
+    winter: { src: '/village-assets/sylvia-winter.png', w: 168, h: 382 },
+    rain: { src: '/village-assets/sylvia-rain.png', w: 207, h: 333 },
+    cozy: { src: '/village-assets/sylvia-cozy.png', w: 154, h: 357 },
+  },
+  Harry: {
+    winter: { src: '/village-assets/harry-winter.png', w: 172, h: 385 },
+    rain: { src: '/village-assets/harry-rain.png', w: 203, h: 334 },
+    cozy: { src: '/village-assets/harry-cozy.png', w: 157, h: 342 },
+  },
+}
 const VILLAGER_SMILE: Record<string, string> = {
   Sylvia: '/village-assets/sylvia-smile.png',
   Harry: '/village-assets/harry-smile.png',
@@ -754,13 +776,16 @@ export function CoupleBenchShape({ x, y }: { x: number; y: number }) {
   )
 }
 
-export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, pose = 'idle', face = 1 }: {
+export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, pose = 'idle', face = 1, outfit = 'default' }: {
   x: number; y: number; name: string
   /** Unused now that this renders a fixed-art sprite — see this file's own
    *  header note on why the props stayed rather than being removed. */
   hairColor?: string; outfitColor?: string
   scale?: number
   onClick?: () => void
+  /** Auto wardrobe (round 71) — the idle pose only; walk/wave/smile stay
+   *  in the default outfit. */
+  outfit?: Outfit
   /** Off during arrange mode (round 46) — a moving/animating figure
    *  fighting a real drag would be unusable, so the caller forces a static
    *  idle pose, native facing. */
@@ -781,6 +806,11 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
   const showWalk = wander && pose === 'walk'
   const showWave = wander && pose === 'wave'
   const showIdle = !showWalk && !showWave
+  // The idle pose can carry a seasonal/weather outfit; everything else
+  // stays in the default kit.
+  const outfitSprite = outfit !== 'default' ? VILLAGER_OUTFIT[name]?.[outfit] : undefined
+  const idleSprite = outfitSprite ?? sprite
+  const iw = h * (idleSprite.w / idleSprite.h)
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined}
@@ -796,9 +826,9 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
         <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
         {showIdle && (
           <g>
-            <image href={sprite.src} x={-w / 2} y={-h} width={w} height={h}
+            <image href={idleSprite.src} x={-iw / 2} y={-h} width={iw} height={h}
               style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
-            {wander && (
+            {wander && !outfitSprite && (
               <image href={VILLAGER_SMILE[name]} x={-w / 2} y={-h} width={w} height={h}
                 style={{ imageRendering: 'pixelated', animation: 'village-idle-smile 7s linear infinite', animationDelay: isSylvia ? '0s' : '-3.5s' }}
                 preserveAspectRatio="none" />
@@ -1175,12 +1205,16 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
   }
 }
 
-export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, dark = false, scale = 1, selected = false }: {
+export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false }: {
   x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
   /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
   draggable?: boolean
   dragging?: boolean
   onPointerDown?: (e: React.PointerEvent) => void
+  /** Desktop hover preview (round 71) — a tap opens the district directly
+   *  now, so the compact summary card only shows on real pointer hover. */
+  onHoverIn?: () => void
+  onHoverOut?: () => void
   /** Warm window/light glow after dark — same idea as BuildingShape's own
    *  `dark` prop, threaded through here now that districts are real little
    *  buildings with windows instead of flat icons. */
@@ -1196,8 +1230,9 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
 }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={onClick} onPointerDown={onPointerDown}
+      onMouseEnter={draggable ? undefined : onHoverIn} onMouseLeave={draggable ? undefined : onHoverOut}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
-      <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Click to open.`}</title>
+      <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Tap to open.`}</title>
       {/* Invisible hit area, generous enough to cover the tallest roofline
           (a peaked roof now reaches further up than the old flat tile did)
           plus the label stack below — unchanged footprint otherwise. */}

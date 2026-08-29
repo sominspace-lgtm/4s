@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -703,6 +703,13 @@ export default function VillageScene({
   // night only. Dusk keeps the cast wandering (just under a warm low sun);
   // the fully-still bench / sleepwear composition is a night thing now.
   const quiet = v.timeOfDay === 'night'
+  // Auto wardrobe (round 71) — rain coat when it's actually raining, a
+  // winter coat + knit hat when it's cold, a cosy sweater in autumn.
+  const outfit: Outfit =
+    weather?.condition === 'rain' || weather?.condition === 'storm' ? 'rain'
+    : v.season === 'winter' ? 'winter'
+    : v.season === 'autumn' ? 'cozy'
+    : 'default'
   // Full night (not just dusk) — the couple change into sleepwear near Home
   // and Somi curls up asleep (round 51, 2026-08-28, "all of these new
   // animations elements"): the real bedtime art behind round 48's evening
@@ -806,12 +813,26 @@ export default function VillageScene({
     setOpenSomiCard(o => !o)
   }
 
+  // One tap opens the district (round 71 — the old "tap a card, then tap a
+  // button" two-step read as broken). The compact summary card is now a
+  // hover-only preview on real pointer devices (see DistrictLabel's
+  // onMouseEnter/Leave); a tap goes straight where you'd expect.
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
+    setOpenPanel(null)
     if (districtLocked(id)) { onLockedNavigate?.(label); return }
-    setOpenPanel(prev => (prev === id ? null : id))
+    panelContent[id].go()
   }
+  const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelHoverClose = () => { if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null } }
+  const hoverPreview = (id: Exclude<LandmarkId, 'archive'>) => ({
+    onHoverIn: () => { if (!arranging) { cancelHoverClose(); setOpenPanel(id) } },
+    // A short grace period so moving the pointer up into the card itself
+    // (there's a gap above the district) doesn't dismiss it.
+    onHoverOut: () => { cancelHoverClose(); hoverCloseTimer.current = setTimeout(() => setOpenPanel(null), 160) },
+  })
+  useEffect(() => () => cancelHoverClose(), [])
 
   const growingCount = v.plants.filter(p => !p.dormant).length
   const restingCount = v.plants.length - growingCount
@@ -1874,7 +1895,18 @@ export default function VillageScene({
           (roofed overhang + two posts + a step) since a door alone read as
           flat. Windows/chimney logic unchanged, just repositioned for the
           bigger frame. */}
-      <g transform={`translate(400 ${GROUND_Y - 4})`}>
+      {(() => {
+      // Anchored to pos('home') and a drag handle (round 71) — the Home
+      // label was draggable but the house itself stayed pinned at 400, so
+      // "moving Home" did nothing visible. Clamped so it can't leave frame.
+      const hmp = pos('home')
+      const hmx = Math.max(70, Math.min(730, hmp.x))
+      const hmy = Math.min(GROUND_Y + 40, Math.max(GROUND_Y - 12, hmp.y))
+      return (
+      <g transform={`translate(${hmx} ${hmy})`}
+        onClick={arranging ? undefined : openOrToggle('home', 'Home')}
+        onPointerDown={arranging ? startDrag('home') : undefined}
+        style={{ cursor: arranging ? (draggingId === 'home' ? 'grabbing' : 'grab') : 'pointer' }}>
         <title>Home — Smart Home</title>
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
@@ -1908,7 +1940,12 @@ export default function VillageScene({
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 24 -67 L 24 -79 L 30 -79 L 30 -67" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
+        {arranging && (
+          <rect x={-48} y={-78} width={96} height={82} rx={6} fill="none" stroke="var(--gold)"
+            strokeWidth={1} strokeDasharray="3 3" opacity={draggingId === 'home' ? 0.9 : 0.45} />
+        )}
       </g>
+      ) })()}
 
       {/* Mailbox, beside Home (2026-08-24) — see MailboxShape's own comment:
           Rest Lake used to be where "jot something down" lived; this is its
@@ -1956,14 +1993,25 @@ export default function VillageScene({
         const openProjects = () => { if (!arranging) openOrToggle('projects', 'Projects')() }
         return (
           <>
-            <g onClick={openProjects} style={{ cursor: arranging ? undefined : 'pointer' }}>
+            {/* The whole cabin is a drag handle for the Projects district
+                (round 71 — "the log house can't be moved, only the hit box
+                moves at the bottom"). Same startDrag('projects') the label
+                uses, so grabbing the cabin OR the label moves the district
+                and the cabin re-anchors to it live. A tap (not arranging)
+                still opens Projects. */}
+            <g onClick={arranging ? undefined : openProjects}
+              onPointerDown={arranging ? startDrag('projects') : undefined}
+              style={{ cursor: arranging ? (draggingId === 'projects' ? 'grabbing' : 'grab') : 'pointer' }}>
               <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3.2} fill="var(--text)" opacity={0.16} />
-              {/* Hit area = the cabin plus a little below, matching the
-                  district label's own hit-rect footprint. */}
               <rect x={hx - w / 2 - 2} y={hy - h - 2} width={w + 4} height={h + 26} fill="transparent" style={{ pointerEvents: 'all' }} />
               <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
               {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
+              {arranging && (
+                <rect x={hx - w / 2 - 3} y={hy - h - 3} width={w + 6} height={h + 8} rx={5}
+                  fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
+                  opacity={draggingId === 'projects' ? 0.9 : 0.45} />
+              )}
             </g>
             {buildingSlots.map(({ building }, i) => {
               const done = building.phase === 'complete' || building.phase === 'landmark'
@@ -2095,7 +2143,7 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} dark={dark} scale={1.12}
+      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} {...hoverPreview('forest')} dark={dark} scale={1.12}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
@@ -2115,9 +2163,9 @@ export default function VillageScene({
           neighbors rather than merely equal to them, without either extreme
           shrinking to illegible or ballooning back into dominating the
           scene. */}
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} count="today" dark={dark} scale={0.85}
+      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} dark={dark} scale={1.12}
+      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
       <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark} scale={1.12}
@@ -2128,10 +2176,10 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} dark={dark} scale={1.12}
+      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} dark={dark} scale={1.12}
+      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
@@ -2187,7 +2235,7 @@ export default function VillageScene({
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
                   onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
-                  wander={active} pose={life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
+                  wander={active} pose={life.sylvia.pose} face={life.sylvia.face} outfit={outfit} scale={itemScale('sylvia')} />
               </g>
             )}
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2199,7 +2247,7 @@ export default function VillageScene({
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
                   onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
-                  wander={active} pose={life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
+                  wander={active} pose={life.harry.pose} face={life.harry.face} outfit={outfit} scale={itemScale('harry')} />
               </g>
             )}
             <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2315,7 +2363,8 @@ export default function VillageScene({
         return (
           <g className="village-fade">
             <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
-            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}
+              onMouseEnter={cancelHoverClose} onMouseLeave={() => setOpenPanel(null)}>
               <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
               <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
               <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{info.title}</text>
