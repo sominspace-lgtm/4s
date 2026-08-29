@@ -26,6 +26,10 @@ export function useSharedVillageLayout(
 ): { layout: VillageLayout; setLayout: (next: VillageLayout) => void; shared: boolean } {
   const supabase = createClient()
   const { spaces, members } = useSharedSpaces(userId)
+  // Snapshot of whatever the person had arranged personally before the
+  // village became shared — used once, to seed the space's first row so a
+  // migration doesn't wipe their layout back to defaults.
+  const seedRef = useRef(fallbackLayout)
 
   // The couple's space — the first one with an accepted member, exactly the
   // rule HouseholdHub uses, so the village and the household share a space.
@@ -45,7 +49,19 @@ export function useSharedVillageLayout(
         .from('village_layout').select('layout').eq('space_id', spaceId).maybeSingle()
       if (!alive) return
       if (error) { setShared(null); return } // migration not run — stay on fallback
-      setShared((data?.layout as VillageLayout | undefined) ?? {})
+      if (data?.layout) {
+        setShared(data.layout as VillageLayout)
+      } else {
+        // No shared row yet — seed it from whatever this person already had
+        // arranged personally, so switching to the shared model never
+        // silently resets the village to defaults. Whoever opens it first
+        // wins the seed; after that it's one shared row.
+        const seed = seedRef.current && Object.keys(seedRef.current).length ? seedRef.current : {}
+        setShared(seed)
+        void supabase.from('village_layout').upsert({
+          space_id: spaceId, layout: seed, updated_by: userId, updated_at: new Date().toISOString(),
+        })
+      }
     })()
     const ch = supabase
       .channel(`village_layout:${spaceId}`)

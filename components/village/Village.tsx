@@ -141,6 +141,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // user action (post-hydration), so a plain `typeof document` guard can't
   // cause a mismatch.
   const canPortal = typeof document !== 'undefined'
+  // Viewport ratio, tracked so the fullscreen scene can re-shape to fill it
+  // (round 67) — updated on resize / orientation change.
+  const [viewportAspect, setViewportAspect] = useState(16 / 10)
+  useEffect(() => {
+    const read = () => setViewportAspect(window.innerWidth / Math.max(1, window.innerHeight))
+    read()
+    window.addEventListener('resize', read)
+    window.addEventListener('orientationchange', read)
+    return () => { window.removeEventListener('resize', read); window.removeEventListener('orientationchange', read) }
+  }, [])
   useEffect(() => {
     if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
@@ -312,14 +322,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
           ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
-          // In fullscreen the card just sizes itself (contain-fit: never
-          // wider than the viewport, never so wide its 800:350 height spills
-          // past the viewport height) — the portal overlay below does the
-          // fixed-position + centring. 165vh-style math replaced with an
-          // explicit aspect calc so it's correct on every iPad orientation.
+          // In fullscreen the card fills the whole viewport; VillageScene
+          // re-shapes its own viewBox to that exact ratio (see
+          // containerAspect below), so the SVG covers it edge to edge with
+          // no cream letterbox bands (round 67, "ipad still shows white").
           ...(fullscreen && !compact ? {
-            width: 'min(100vw, calc(100dvh * 800 / 350), 1800px)',
-            borderRadius: 0, border: 'none',
+            width: '100vw', height: '100dvh', borderRadius: 0, border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            // A calm ground tone behind any portrait letterbox — never stark
+            // white (round 67).
+            background: '#b7c9a6',
           } : {}),
         } as React.CSSProperties}
         {...(compact ? { onClick: () => goToSection('village'), role: 'button', 'aria-label': 'Open the Village' } : {})}
@@ -339,8 +351,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             VillageScene's viewBox math instead (BASE_VB_H) — an actual
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
-        <div style={compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' } : undefined}>
+        <div style={
+          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
+          : fullscreen ? { width: '100%', height: '100%' }
+          : undefined
+        }>
           <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
+            containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}

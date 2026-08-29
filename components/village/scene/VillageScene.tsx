@@ -567,7 +567,7 @@ export default function VillageScene({
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
-  homeOccupied = null, dateKey = null,
+  homeOccupied = null, dateKey = null, containerAspect = null,
 }: {
   village: VillageState
   live: boolean
@@ -614,6 +614,11 @@ export default function VillageScene({
    *  (lib/village/vignette.ts) needs a stable per-day key and this component
    *  stays date-computation-free, same reasoning as those two props. */
   dateKey?: string | null
+  /** The aspect ratio (w/h) of the box this SVG should fill — passed only in
+   *  fullscreen so the scene re-shapes to the viewport instead of
+   *  letterboxing (round 67). null everywhere else = the curated default
+   *  window. */
+  containerAspect?: number | null
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -1182,18 +1187,46 @@ export default function VillageScene({
   // capped at 350, not 380, so BASE_VB_CY (180) - H/2 stays ≥ 5 — going
   // negative here would expose real blank canvas above y=0 (the exact
   // "cream bar" class of bug flagged earlier this project), not more sky.
-  const BASE_VB_W = 800
-  const BASE_VB_H = 350
-  const BASE_VB_CX = 400
-  const BASE_VB_CY = 180
-  const vbW = BASE_VB_W / zoom
-  const vbH = BASE_VB_H / zoom
+  const CANVAS_W = 800, CANVAS_H = 440
+  let baseW = 800
+  let baseH = 350
+  let BASE_VB_CX = 400
+  let BASE_VB_CY = 180
+  // Fill an arbitrary container aspect (round 67, "ipad still shows white in
+  // fullscreen") — when the caller passes the real viewport ratio, the
+  // window is re-shaped to match it exactly (drawing more of the 800×440
+  // canvas — extra sky and foreground — instead of letterboxing), so the
+  // SVG fills its box edge to edge with no cream bands. Clamped to what the
+  // canvas actually holds.
+  if (containerAspect && containerAspect > 0) {
+    if (containerAspect >= 2.0) {
+      // Ultra-wide — the default window already fits, just trim a little
+      // height so it's not letterboxed at the sides.
+      baseH = Math.max(300, Math.min(350, CANVAS_W / containerAspect))
+    } else if (containerAspect >= 1.15) {
+      // Landscape tablet / desktop (the picture-frame case) — grow height
+      // toward the full canvas, then narrow the width to match. The far
+      // edges crop a touch, which is fine; nothing important lives past
+      // x~110 / x~725.
+      baseH = Math.max(300, Math.min(CANVAS_H, CANVAS_W / containerAspect))
+      baseW = Math.max(560, Math.min(CANVAS_W, baseH * containerAspect))
+    } else {
+      // Portrait — the scene is inherently landscape, so show it full-width
+      // and let it sit letterboxed (the card paints a calm ground behind).
+      baseW = CANVAS_W
+      baseH = CANVAS_H
+    }
+    BASE_VB_CX = 400
+    BASE_VB_CY = Math.max(baseH / 2, Math.min(CANVAS_H - baseH / 2, 210))
+  }
+  const vbW = baseW / zoom
+  const vbH = baseH / zoom
   // Pan, clamped so the viewBox can never leave the DEFAULT window's own
   // bounds — at zoom 1, vbW/vbH already equal that window, so this clamp
   // collapses to (0, 0) automatically and dragging does nothing, matching
   // the zoom floor's own "nothing past the edge to reveal" rule.
-  const maxPanX = Math.max(0, (BASE_VB_W - vbW) / 2)
-  const maxPanY = Math.max(0, (BASE_VB_H - vbH) / 2)
+  const maxPanX = Math.max(0, (baseW - vbW) / 2)
+  const maxPanY = Math.max(0, (baseH - vbH) / 2)
   const panX = Math.min(maxPanX, Math.max(-maxPanX, pan.x))
   const panY = Math.min(maxPanY, Math.max(-maxPanY, pan.y))
   const viewBox = `${BASE_VB_CX - vbW / 2 - panX} ${BASE_VB_CY - vbH / 2 - panY} ${vbW} ${vbH}`
@@ -1203,8 +1236,9 @@ export default function VillageScene({
       viewBox={viewBox}
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
+      preserveAspectRatio="xMidYMid meet"
       style={{
-        width: '100%', height: 'auto', display: 'block',
+        width: '100%', height: containerAspect ? '100%' : 'auto', display: 'block',
         touchAction: arranging || zoom > 1 ? 'none' : undefined,
         cursor: !arranging && zoom > 1 ? (panDragRef.current?.moved ? 'grabbing' : 'grab') : undefined,
       }}
