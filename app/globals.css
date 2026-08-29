@@ -586,6 +586,13 @@ select, option {
 .village-birds { animation: village-birds 34s linear infinite; }
 
 @keyframes village-firefly { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.32; } }
+/* Stars twinkling at night (round 66) — four offset tracks so the field
+   shimmers rather than blinking in unison. */
+@keyframes village-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+.village-twinkle { animation: village-twinkle 4s ease-in-out infinite; }
+.village-twinkle-1 { animation-duration: 5.5s; animation-delay: -1s; }
+.village-twinkle-2 { animation-duration: 3.2s; animation-delay: -2s; }
+.village-twinkle-3 { animation-duration: 6.8s; animation-delay: -0.5s; }
 .village-firefly   { animation: village-firefly 7s ease-in-out infinite; }
 .village-firefly-1 { animation-delay: 2.3s; }
 .village-firefly-2 { animation-delay: 4.6s; }
@@ -787,7 +794,7 @@ select, option {
   .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-butterfly-0, .village-butterfly-1,
-  .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud,
+  .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud, .village-twinkle,
   .village-tapped, .village-sparkle,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,

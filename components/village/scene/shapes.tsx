@@ -410,11 +410,14 @@ export function FenceShape({ x, y, length = 4, scale = 1 }: { x: number; y: numb
 // regardless of time of day (no separate lit/unlit crop exists for it),
 // so the amber blur glow stays the only `dark`-gated part, same as before.
 export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: number; dark?: boolean; scale?: number }) {
-  const w = 7.8, h = 15 // 134×258 source, ~0.52 aspect
+  const w = 10.5, h = 20.2 // 134×258 source, ~0.52 aspect — sized up round 66 ("make street lamps bigger")
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <ellipse cx={0} cy={1.8} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
-      {dark && <circle cy={-11} r={9} fill="var(--amber)" opacity={0.3} filter="url(#vglow)" />}
+      <ellipse cx={0} cy={1.8} rx={7} ry={1.8} fill="var(--text)" opacity={0.12} />
+      {/* A soft warm cast even by day (round 66, "add more glow on items") —
+          brighter and larger after dark. */}
+      <circle cy={-h + 4} r={dark ? 12 : 6} fill="var(--amber)" opacity={dark ? 0.38 : 0.16} filter="url(#vglow)"
+        className={dark ? 'village-glow' : undefined} />
       <image href="/village-assets/lamppost.png" x={-w / 2} y={-h + 1.5} width={w} height={h}
         style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
     </g>
@@ -600,9 +603,13 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // Idle + smile re-sourced round 55 (2026-08-28, "update sylvia and harry
 // figures") to the crisper *-everyday-message-states-alpha.png sheets in
 // character/animation/ — same characters, cleaner line and a matched smile.
+// Round 66 — whole core vocabulary (idle / walk×4 / wave×4 / smile) re-cut
+// from sylvia-core-animations-alpha.png / harry-core-animations-alpha.png
+// in one pass, so proportions and anchor match across every pose and the
+// walk is a real 4-frame cycle again (round 55 had trimmed it to 2).
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 196, h: 384 },
-  Harry: { src: '/village-assets/harry-idle.png', w: 200, h: 330 },
+  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 150, h: 293 },
+  Harry: { src: '/village-assets/harry-idle.png', w: 162, h: 271 },
 }
 const VILLAGER_SMILE: Record<string, string> = {
   Sylvia: '/village-assets/sylvia-smile.png',
@@ -649,22 +656,26 @@ const VILLAGER_SMILE: Record<string, string> = {
 // walk" read; a clean 2-frame contact/contact cycle sells the direction.
 const SYLVIA_WALK_FRAMES = [
   { src: '/village-assets/sylvia-walk-1.png', aspect: 144 / 293 },
-  { src: '/village-assets/sylvia-walk-3.png', aspect: 142 / 290 },
+  { src: '/village-assets/sylvia-walk-2.png', aspect: 141 / 290 },
+  { src: '/village-assets/sylvia-walk-3.png', aspect: 142 / 291 },
+  { src: '/village-assets/sylvia-walk-4.png', aspect: 142 / 290 },
 ]
 const SYLVIA_WAVE_FRAMES = [
-  { src: '/village-assets/sylvia-wave-1.png', aspect: 150 / 312 },
-  { src: '/village-assets/sylvia-wave-2.png', aspect: 168 / 312 },
-  { src: '/village-assets/sylvia-wave-3.png', aspect: 185 / 311 },
-  { src: '/village-assets/sylvia-wave-4.png', aspect: 149 / 287 },
+  { src: '/village-assets/sylvia-wave-1.png', aspect: 150 / 313 },
+  { src: '/village-assets/sylvia-wave-2.png', aspect: 168 / 313 },
+  { src: '/village-assets/sylvia-wave-3.png', aspect: 186 / 311 },
+  { src: '/village-assets/sylvia-wave-4.png', aspect: 150 / 288 },
 ]
 const HARRY_WALK_FRAMES = [
-  { src: '/village-assets/harry-walk-1.png', aspect: 154 / 268 },
-  { src: '/village-assets/harry-walk-3.png', aspect: 151 / 268 },
+  { src: '/village-assets/harry-walk-1.png', aspect: 154 / 269 },
+  { src: '/village-assets/harry-walk-2.png', aspect: 151 / 271 },
+  { src: '/village-assets/harry-walk-3.png', aspect: 152 / 268 },
+  { src: '/village-assets/harry-walk-4.png', aspect: 153 / 269 },
 ]
 const HARRY_WAVE_FRAMES = [
-  { src: '/village-assets/harry-wave-1.png', aspect: 161 / 313 },
-  { src: '/village-assets/harry-wave-2.png', aspect: 180 / 317 },
-  { src: '/village-assets/harry-wave-3.png', aspect: 190 / 313 },
+  { src: '/village-assets/harry-wave-1.png', aspect: 162 / 313 },
+  { src: '/village-assets/harry-wave-2.png', aspect: 182 / 317 },
+  { src: '/village-assets/harry-wave-3.png', aspect: 191 / 313 },
   { src: '/village-assets/harry-wave-4.png', aspect: 162 / 312 },
 ]
 const VILLAGER_WALK: Record<string, { src: string; aspect: number }[]> = { Sylvia: SYLVIA_WALK_FRAMES, Harry: HARRY_WALK_FRAMES }
@@ -804,7 +815,7 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
    *  supplies an absolute target the caller glides to with a CSS transition;
    *  `pose` picks the sprite set and `face` mirrors her, exactly like
    *  VillagerShape. Replaces the old fixed village-somi-move CSS loop. */
-  pose?: 'idle' | 'walk'
+  pose?: 'idle' | 'walk' | 'react'
   face?: 1 | -1
   /** Night (round 51, 2026-08-28) — swaps the idle/walk pose sets for one
    *  curled sleeping loaf (somi-sleep.png, from somi-sleeping-states-alpha
@@ -857,10 +868,11 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
     { src: '/village-assets/somi-walk-4.png', aspect: 303 / 260 },
   ]
   const showWalk = wander && pose === 'walk' && !sleeping
+  const reacting = pose === 'react' && !sleeping
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <g onClick={handleClick}
-        className={onClick ? 'village-entity' : undefined}
+        className={[onClick && 'village-entity', reacting && 'village-tapped'].filter(Boolean).join(' ') || undefined}
         style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>{name}</title>
         {/* Oversized invisible hit circle — see VillagerShape's own note. */}
@@ -872,6 +884,13 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
           {sleeping ? (() => {
             const sh = h * 0.6, sw = sh * (379 / 282)
             return <image href="/village-assets/somi-sleep.png" x={-sw / 2} y={-sh} width={sw} height={sh}
+              style={{ imageRendering: 'pixelated' }} />
+          })() : reacting ? (() => {
+            // Tapped — a stretch (round 66, "when we click figures they
+            // should react"). somi-stretch.png is her one non-idle single
+            // pose; the village-tapped bounce on the group sells the beat.
+            const rw = h * (316 / 265)
+            return <image href="/village-assets/somi-stretch.png" x={-rw / 2} y={-h} width={rw} height={h}
               style={{ imageRendering: 'pixelated' }} />
           })() : showWalk ? (
             <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={0.8} />
@@ -1068,11 +1087,11 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
         <g>
           <ellipse cx={0} cy={1.5} rx={11} ry={1.8} fill="var(--text)" opacity={0.16} />
           {[
-            { src: 'bloom-white-a', x: -8, h: 7, ar: 140 / 232, d: '-0.4s', dur: '4.3s' },
-            { src: 'bloom-red', x: -3.5, h: 9, ar: 128 / 224, d: '-2.1s', dur: '4.9s' },
-            { src: 'bloom-white-b', x: 2, h: 7.5, ar: 128 / 220, d: '-1.2s', dur: '3.9s' },
-            { src: 'bloom-red', x: 6.5, h: 6, ar: 128 / 224, d: '-3.0s', dur: '4.6s' },
-            { src: 'bloom-white-a', x: 10, h: 5.5, ar: 140 / 232, d: '-0.8s', dur: '4.1s' },
+            { src: 'bloom-white-a', x: -9, h: 9, ar: 140 / 232, d: '-0.4s', dur: '4.3s' },
+            { src: 'bloom-red', x: -4, h: 11.5, ar: 128 / 224, d: '-2.1s', dur: '4.9s' },
+            { src: 'bloom-white-b', x: 2, h: 9.5, ar: 128 / 220, d: '-1.2s', dur: '3.9s' },
+            { src: 'bloom-red', x: 7.5, h: 7.5, ar: 128 / 224, d: '-3.0s', dur: '4.6s' },
+            { src: 'bloom-white-a', x: 11.5, h: 7, ar: 140 / 232, d: '-0.8s', dur: '4.1s' },
           ].map((b, i) => {
             const w = b.h * b.ar
             return (
@@ -1104,9 +1123,9 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {/* Back to greenhouse.png round 57 — library.png's source sheet
               (village-social-town-spaces) is no longer in the master folder.
               Sized up round 58 ("other buildings a bit bigger"). */}
-          <image href="/village-assets/greenhouse.png" x={-20} y={-35} width={40} height={35}
+          <image href="/village-assets/greenhouse.png" x={-27} y={-48} width={54} height={48}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-19} r={11} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-26} r={14} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'places': // Places — the car (round 30, 2026-08-27, "make the car the symbol for
@@ -1137,8 +1156,11 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
               canopy and the top off ("people tree is still broken and
               sliced and small"). Full sprite now (374×450, ar 0.831),
               rendered bigger. */}
-          <ellipse cx={-1} cy={2.5} rx={18} ry={2.6} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/people-tree.png" x={-25} y={-60} width={50} height={60}
+          {/* Big — round 66 ("people tree ... should be bigger, almost as
+              big as house"). ×1.3×1.12 from DistrictLabel puts the rendered
+              height near Home's ~75. */}
+          <ellipse cx={-1} cy={2.5} rx={22} ry={3} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-31} y={-74} width={62} height={74}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )

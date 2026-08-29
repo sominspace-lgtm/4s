@@ -93,15 +93,32 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
         </g>
       )}
 
-      {/* Fireflies (round 53: spread across the whole village at dusk/night,
-          not just the forest corner, and a few more of them — 11 now). Each
-          also drifts a little on its own slow path. */}
+      {/* Stars (round 66, "add ... stars or ambient things like that that
+          don't need illustration") — a fixed scatter high in the sky, only
+          at night, each twinkling on its own offset. Pure <circle>s, no art.
+          Kept above the village band so they never mix with the fireflies. */}
+      {v.timeOfDay === 'night' && (
+        <g fill="#fdf6e3">
+          {[[60, 40], [110, 22], [155, 55], [210, 30], [260, 48], [320, 20], [370, 44],
+            [430, 28], [485, 52], [540, 24], [590, 46], [650, 30], [700, 50], [745, 26],
+            [88, 66], [300, 64], [510, 68], [620, 62], [180, 74], [420, 72]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={i % 4 === 0 ? 1.4 : 0.9}
+              className={`village-twinkle village-twinkle-${i % 4}`} />
+          ))}
+        </g>
+      )}
+
+      {/* Fireflies (round 53: spread across the whole village at dusk/night;
+          round 66 "add fireflies glow" — a couple more, bigger blur, and a
+          soft pooled halo under the swarm). Each drifts on its own slow path. */}
       {dark && (
         <g opacity={0.95}>
-          {[[92, 336], [148, 320], [214, 344], [268, 328], [122, 352], [190, 330],
-            [360, 316], [470, 340], [560, 322], [640, 348], [710, 330]].map(([cx, cy], i) => (
+          <ellipse cx={230} cy={groundY + 30} rx={120} ry={26} fill="var(--amber)" opacity={0.06} filter="url(#vglow)" />
+          <ellipse cx={560} cy={groundY + 28} rx={130} ry={26} fill="var(--amber)" opacity={0.06} filter="url(#vglow)" />
+          {[[92, 336], [148, 320], [214, 344], [268, 328], [122, 352], [190, 330], [244, 314],
+            [360, 316], [470, 340], [560, 322], [640, 348], [710, 330], [520, 356], [412, 326]].map(([cx, cy], i) => (
             <g key={i} className={`village-mote village-mote-${i % 4}`}>
-              <circle cx={cx} cy={cy} r={i % 3 === 0 ? 2 : 1.6} fill="var(--amber)"
+              <circle cx={cx} cy={cy} r={i % 3 === 0 ? 2.3 : 1.7} fill="var(--amber)"
                 className={`village-firefly village-firefly-${i % 3}`} style={{ filter: 'url(#vglow)' }} />
             </g>
           ))}

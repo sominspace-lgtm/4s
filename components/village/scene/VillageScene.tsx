@@ -245,7 +245,26 @@ const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; op
 // Shifted down +15 (round 42, 2026-08-28, "move path down") — was sitting
 // close enough to the district row that it read as tangled up with it
 // rather than a clearly separate ground feature underneath everything.
-const PATH_D = `M 40 ${GROUND_Y + 39} Q 130 ${GROUND_Y + 55} 220 ${GROUND_Y + 45} T 400 ${GROUND_Y + 37} T 580 ${GROUND_Y + 47} T 760 ${GROUND_Y + 35}`
+// A wanderier line round 66 ("make paths more natural") — more through-
+// points and a wider y-swing, and it's built from the same PATH_WAYPOINTS
+// the pavers follow so the stones and the dirt tint never drift apart. A
+// Catmull-Rom-ish smooth curve through every point.
+const PATH_D = catmullRom([
+  { x: 24, y: GROUND_Y + 44 }, { x: 130, y: GROUND_Y + 30 }, { x: 235, y: GROUND_Y + 52 },
+  { x: 345, y: GROUND_Y + 33 }, { x: 455, y: GROUND_Y + 56 }, { x: 560, y: GROUND_Y + 34 },
+  { x: 668, y: GROUND_Y + 52 }, { x: 780, y: GROUND_Y + 30 },
+])
+function catmullRom(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return ''
+  let d = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2
+    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6
+    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6
+    d += ` C ${c1x} ${c1y} ${c2x} ${c2y} ${p2.x} ${p2.y}`
+  }
+  return d
+}
 
 // Stepping-stone pavers along the path (round 26, 2026-08-27, "make the
 // path look more like a path... fit the style and theme more") — the
@@ -258,8 +277,9 @@ const PATH_D = `M 40 ${GROUND_Y + 39} Q 130 ${GROUND_Y + 55} 220 ${GROUND_Y + 45
 // its Q/T curve — close enough at paver scale) via the same hashPos
 // determinism GRASS_TUFTS/STONES already use for "same spot, every load."
 const PATH_WAYPOINTS = [
-  { x: 40, y: GROUND_Y + 39 }, { x: 220, y: GROUND_Y + 45 }, { x: 400, y: GROUND_Y + 37 },
-  { x: 580, y: GROUND_Y + 47 }, { x: 760, y: GROUND_Y + 35 },
+  { x: 24, y: GROUND_Y + 44 }, { x: 130, y: GROUND_Y + 30 }, { x: 235, y: GROUND_Y + 52 },
+  { x: 345, y: GROUND_Y + 33 }, { x: 455, y: GROUND_Y + 56 }, { x: 560, y: GROUND_Y + 34 },
+  { x: 668, y: GROUND_Y + 52 }, { x: 780, y: GROUND_Y + 30 },
 ]
 function pointOnPathWaypoints(t: number) {
   const segs = PATH_WAYPOINTS.length - 1
@@ -311,12 +331,16 @@ function spurPavers(targetX: number, targetY: number, key: string) {
   const from = nearestPathX(targetX)
   const to = { x: targetX, y: targetY + 6 }
   const n = Math.max(3, Math.round(Math.hypot(to.x - from.x, to.y - from.y) / 9))
+  // A gentle sideways bow so the spur curves off the main path rather than
+  // meeting it at a hard right angle (round 66, "make paths more natural").
+  const bow = (hashPos(key + 'bow') - 0.5) * 18
   return Array.from({ length: n }, (_, i) => {
     const f = i / (n - 1)
     const seed = `spur-${key}-${i}`
+    const arc = Math.sin(f * Math.PI) * bow
     return {
       id: seed,
-      x: from.x + (to.x - from.x) * f + (hashPos(seed + 'x') - 0.5) * 3,
+      x: from.x + (to.x - from.x) * f + arc + (hashPos(seed + 'x') - 0.5) * 3,
       y: from.y + (to.y - from.y) * f + (hashPos(seed + 'y') - 0.5) * 3,
       rot: (hashPos(seed + 'r') - 0.5) * 12,
       size: 6 + hashPos(seed + 's') * 2,
@@ -334,7 +358,7 @@ const PROPS = {
   pond: { x: 663, y: 320 },
   benches: [
     { x: 260, y: GROUND_Y - 6 },
-    { x: 551, y: 280 },
+    { x: 527, y: 280 },
     { x: 130, y: GROUND_Y + 26 },
   ],
   flowerBeds: [
@@ -360,7 +384,7 @@ const PROPS = {
   lamps: [
     { x: 240, y: GROUND_Y + 26 },
     { x: 500, y: GROUND_Y + 34 },
-    { x: 577, y: 285 },
+    { x: 426, y: 261 },
   ],
 }
 
@@ -370,6 +394,22 @@ const DEFAULT_ITEM_SCALE: Record<string, number> = {
   busStop: 1.15,
   wildflowerScene: 0.4,
 }
+
+// Postcards from your trips together (round 66) — the images live in
+// public/village-assets/postcards/, cropped from the `post/` master folder.
+// The rack in the scene opens a panel of these; a Google Photos album link
+// per postcard is the next step (stored per-user, keyed by `id`).
+const POSTCARDS: { id: string; label: string }[] = [
+  { id: 'yosemite', label: 'Yosemite' },
+  { id: 'lakeside-camping', label: 'Lakeside camping' },
+  { id: 'bike-ride', label: 'Bike ride' },
+  { id: 'new-apartment', label: 'New apartment' },
+  { id: 'cooking-at-home', label: 'Cooking at home' },
+  { id: 'board-game-night', label: 'Board game night' },
+  { id: 'tennis', label: 'Tennis' },
+  { id: 'bowling', label: 'Bowling' },
+  { id: 'golf', label: 'Golf' },
+]
 
 export type { Slot } from '@/lib/village/layout'
 
@@ -424,13 +464,17 @@ function spellCount(n: number): string {
 // onto one ground band (y ~198-214) with only a gentle stagger, so the row
 // reads as one village at one distance. x spread out a little too so the
 // bigger cabin / people-tree / greenhouse don't crowd each other.
+// Round 66 — Sylvia's own arrangement (Arrange → Copy layout): forest /
+// archive / home / places / clock tower on the ground line, people /
+// projects / gazebo / the well pulled forward into the near foreground
+// on purpose.
 const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
-  forest: { x: 120, y: 205 },
-  home: { x: 400, y: 186 },
-  projects: { x: 78, y: 214 },
-  archive: { x: 724, y: 200 },
-  people: { x: 300, y: 210 },
-  places: { x: 520, y: 205 },
+  forest: { x: 132, y: 204 },
+  home: { x: 400, y: 208 },
+  projects: { x: 114, y: 306 },
+  archive: { x: 725, y: 204 },
+  people: { x: 627, y: 317 },
+  places: { x: 512, y: 209 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
@@ -467,7 +511,8 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // Round 61 ("make the village default what it is right now") — positions
   // for everything Sylvia moved are baked in from her Copy layout dump;
   // the rest keep their earlier spots.
-  busStop: { x: 662, y: 210 },
+  busStop: { x: 570, y: 215 },
+  postcardRack: { x: 648, y: 236 },
   peopleCorner: { x: 225, y: GROUND_Y + 2 },
   bushMound: { x: 166, y: 310 },
   floweringBush: { x: 586, y: 248 },
@@ -481,27 +526,27 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
-  signpost: { x: 698, y: 215 },
-  clockTower: { x: 533, y: 318 },
-  wishingWell: { x: 455, y: 285 },
+  signpost: { x: 752, y: 322 },
+  clockTower: { x: 212, y: 211 },
+  wishingWell: { x: 297, y: 328 },
   picnicMat: { x: 430, y: 300 },
-  gazebo: { x: 667, y: 287 },
+  gazebo: { x: 715, y: 309 },
   footBridgeScene: { x: 239, y: 285 },
   firewoodScene: { x: 458, y: GROUND_Y + 6 },
   wildflowerScene: { x: 634, y: 328 },
-  waterPumpScene: { x: 616, y: 316 },
+  waterPumpScene: { x: 520, y: 317 },
   // Round 63 ("import all elements ... place some too") — a raised garden
   // bed and a flower planter box near Growth Garden, and a warm garden
   // lantern on the path. All from the village/ master folder's
   // progress-garden-beds / left-behind-objects / decor-lanterns sheets.
   gardenBed: { x: 96, y: GROUND_Y + 40 },
   flowerPlanter: { x: 250, y: GROUND_Y + 44 },
-  gardenLantern: { x: 300, y: GROUND_Y + 30 },
+  gardenLantern: { x: 318, y: 261 },
   hobbyEasel: { x: 150, y: GROUND_Y + 58 },
-  hobbyTennis: { x: 356, y: GROUND_Y + 60 },
+  hobbyTennis: { x: 449, y: 293 },
   hobbyBookCoffee: { x: 505, y: GROUND_Y + 40 },
   hobbyMusicStand: { x: 560, y: GROUND_Y + 62 },
-  hobbyInstrumentCase: { x: 610, y: GROUND_Y + 52 },
+  hobbyInstrumentCase: { x: 489, y: 323 },
   hobbyBicycle: { x: 452, y: GROUND_Y + 66 },
   hobbyGardenBasket: { x: 118, y: GROUND_Y + 30 },
   sylvia: { x: 372, y: GROUND_Y + 8 },
@@ -720,6 +765,20 @@ export default function VillageScene({
     setOpenFigure(prev => (prev === id ? null : id))
   }
 
+  // Tap a figure and they react (round 66, "when we click figures they
+  // should react") — Sylvia/Harry throw a wave, Somi does a little stretch,
+  // for ~2s, then back to whatever they were doing. Independent of the
+  // locked-mode hover-card above; both can fire on the same tap.
+  const [reactingId, setReactingId] = useState<'sylvia' | 'harry' | 'somi' | null>(null)
+  const reactTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reactFigure = (id: 'sylvia' | 'harry' | 'somi') => {
+    if (arranging) return
+    setReactingId(id)
+    if (reactTimer.current) clearTimeout(reactTimer.current)
+    reactTimer.current = setTimeout(() => setReactingId(null), 2100)
+  }
+  useEffect(() => () => { if (reactTimer.current) clearTimeout(reactTimer.current) }, [])
+
   // Somi got a hover-card back (2026-08-26) — the direct one-tap navigate
   // tried on 2026-08-25 read as glitchy in practice (a tap on her tiny
   // figure hard-cutting straight to another tab, with nothing to visually
@@ -731,6 +790,9 @@ export default function VillageScene({
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
   const somiInfo = { title: 'Somi', lines: ['Her chores, routines, and maintenance'] }
+
+  // Postcard rack (round 66) — tap it to flip through your trip postcards.
+  const [postcardsOpen, setPostcardsOpen] = useState(false)
   const openSomi = () => {
     if (arranging) return
     setOpenSomiCard(o => !o)
@@ -1513,6 +1575,19 @@ export default function VillageScene({
           </g>
         </Draggable>
       ) })()}
+      {/* Postcard rack (round 66) — flip through your trip postcards. */}
+      {(() => { const p = decorPos('postcardRack'); const s = itemScale('postcardRack'); const w = 24 * s, h = w * (145 / 203); return (
+        <Draggable x={p.x} y={p.y} id="postcardRack" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('postcardRack')} r={14}>
+          <g onClick={!arranging ? () => setPostcardsOpen(o => !o) : undefined}
+            className={!arranging ? 'village-entity' : undefined} style={{ cursor: !arranging ? 'pointer' : undefined }}>
+            <title>Your postcards</title>
+            {!arranging && <circle cx={0} cy={-h / 2} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
+            <ellipse cx={0} cy={1.5} rx={w / 2.4} ry={1.8} fill="var(--text)" opacity={0.13} />
+            <image href="/village-assets/postcard-rack.png" x={-w / 2} y={-h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} />
+          </g>
+        </Draggable>
+      ) })()}
       {(() => { const p = decorPos('picnicMat'); const w = 22, h = w * (280 / 460); return (
         <Draggable x={p.x} y={p.y} id="picnicMat" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('picnicMat')} r={13}>
           <g>
@@ -1553,7 +1628,7 @@ export default function VillageScene({
         { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
         // Curated scenery (round 56, trimmed round 57 to sprites whose
         // master-folder source still exists).
-        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 36 * (346 / 338), h: 36 },
+        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 46 * (346 / 338), h: 46 },
         { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 15 * (256 / 155), h: 15 },
         { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
         { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
@@ -1778,7 +1853,16 @@ export default function VillageScene({
         <image href={`/village-assets/cottage-${(homeOccupied ?? dark) ? 'lit' : 'dark'}.png`}
           x={-45} y={-75.3} width={90} height={75.3}
           style={{ imageRendering: 'pixelated' }} />
-        {(homeOccupied ?? dark) && <circle cx={-3} cy={-52} r={10} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" />}
+        {/* Home breathes too now (round 66, "make sure the house also
+            animates") — the window glow pulses on village-glow whenever
+            it's lit, and a thin curl of chimney smoke always rises (a house
+            with someone in it), drifting on village-smoke. */}
+        {(homeOccupied ?? dark) && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        <g className="village-smoke" opacity={0.16} pointerEvents="none">
+          <circle cx={26} cy={-84} r={2.4} fill="var(--text)" />
+          <circle cx={28} cy={-92} r={3.2} fill="var(--text)" opacity={0.7} />
+          <circle cx={25} cy={-101} r={3.8} fill="var(--text)" opacity={0.45} />
+        </g>
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 24 -67 L 24 -79 L 30 -79 L 30 -67" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
@@ -1819,18 +1903,23 @@ export default function VillageScene({
         // wherever the badge is dragged. Clamped so a badge near the very
         // edge doesn't push the cabin off-canvas.
         const bp = pos('projects')
-        const hx = Math.max(110, Math.min(690, bp.x)), hy = Math.min(GROUND_Y + 70, Math.max(GROUND_Y - 6, bp.y - 40))
-        // Bigger round 64 ("make log house bigger and the symbol for
-        // projects") — 46 -> 64, so it reads as this district's landmark now
-        // that the briefcase symbol is gone (see DistrictArt's 'building').
-        const w = 64, h = w / (390 / 293)
+        const hx = Math.max(120, Math.min(680, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 6, bp.y - 40))
+        // Bigger again round 66 ("log house ... should be bigger, almost as
+        // big as house") — 64 -> 88, close to Home's own 90.
+        const w = 88, h = w / (390 / 293)
+        // The whole cabin is the Projects tap target now (round 66, "make
+        // the press area for projects the cabin") — the district's invisible
+        // hit-rect still lives at the label, but this is the obvious thing
+        // to tap.
+        const openProjects = () => { if (!arranging) openOrToggle('projects', 'Projects')() }
         return (
           <>
-            <g>
-              <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3} fill="var(--text)" opacity={0.16} />
+            <g onClick={openProjects} style={{ cursor: arranging ? undefined : 'pointer' }}>
+              <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3.4} fill="var(--text)" opacity={0.16} />
+              <circle cx={hx} cy={hy - h / 2} r={Math.max(20, h / 2)} fill="transparent" style={{ pointerEvents: 'all' }} />
               <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
-              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={9} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={11} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
             </g>
             {buildingSlots.map(({ building }, i) => {
               const done = building.phase === 'complete' || building.phase === 'landmark'
@@ -2052,8 +2141,9 @@ export default function VillageScene({
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
             {!(quiet && !arranging) && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
-                <VillagerShape x={0} y={0} name="Sylvia" onClick={locked ? openFigureOrToggle('sylvia') : undefined}
-                  wander={active} pose={life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
+                <VillagerShape x={0} y={0} name="Sylvia"
+                  onClick={() => { reactFigure('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
+                  wander={active} pose={reactingId === 'sylvia' ? 'wave' : life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
               </g>
             )}
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2063,8 +2153,9 @@ export default function VillageScene({
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
             {!(quiet && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
-                <VillagerShape x={0} y={0} name="Harry" onClick={locked ? openFigureOrToggle('harry') : undefined}
-                  wander={active} pose={life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
+                <VillagerShape x={0} y={0} name="Harry"
+                  onClick={() => { reactFigure('harry'); if (locked) openFigureOrToggle('harry')() }}
+                  wander={active} pose={reactingId === 'harry' ? 'wave' : life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
               </g>
             )}
             <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2099,8 +2190,9 @@ export default function VillageScene({
       {(() => { const p = decorPos('somi'); const active = !arranging && !quiet; return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
-            <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi" onClick={openSomi}
-              wander={active} pose={somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
+            <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
+              onClick={() => { reactFigure('somi'); openSomi() }}
+              wander={active} pose={reactingId === 'somi' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
@@ -2254,6 +2346,43 @@ export default function VillageScene({
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open →</text>
               </g>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* Postcard panel (round 66, "postcard rack should be placed and it
+          should import using the postcards in [post/] ... and also later
+          connect to google photos") — a <foreignObject> strip of the trip
+          postcards. The Google Photos link per card is the next step. */}
+      {postcardsOpen && (() => {
+        const p = decorPos('postcardRack')
+        const w = 320, h = 216
+        const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, p.x))
+        const top = Math.max(10, Math.min(360 - h, p.y - 20 - h))
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setPostcardsOpen(false)} />
+            <g transform={`translate(${cx - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={w} height={h} rx={12} fill="var(--text)" opacity={0.12} transform="translate(0 3)" />
+              <rect width={w} height={h} rx={12} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} />
+              <foreignObject x={0} y={0} width={w} height={h}>
+                <div style={{ padding: '10px 12px', fontFamily: 'var(--font-body)', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Postcards</span>
+                    <span style={{ fontSize: 8, color: 'var(--muted)' }}>trips together</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, overflowY: 'auto', paddingRight: 2 }}>
+                    {POSTCARDS.map(pc => (
+                      <div key={pc.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <img src={`/village-assets/postcards/${pc.id}.png`} alt={pc.label}
+                          style={{ width: '100%', aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)', imageRendering: 'pixelated' }} />
+                        <span style={{ fontSize: 7.5, color: 'var(--muted)', lineHeight: 1.1 }}>{pc.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </foreignObject>
             </g>
           </g>
         )
