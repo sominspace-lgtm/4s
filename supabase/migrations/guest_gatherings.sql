@@ -21,7 +21,8 @@ create table if not exists gatherings (
   created_by   uuid not null references auth.users(id) on delete cascade,
   title        text not null,
   token        text not null unique,
-  music_url    text,
+  music_url    text,                          -- host's Spotify/YouTube playlist embed
+  photo_album_url text,                        -- shared album guests add photos to (Google Photos etc.)
   active       boolean not null default true,
   started_at   timestamptz not null default now(),
   closes_at    timestamptz,
@@ -122,3 +123,8 @@ create policy "guest_photos_delete" on storage.objects
 -- inserts still reach the subscription).
 alter publication supabase_realtime add table gatherings;
 alter publication supabase_realtime add table guest_contributions;
+
+-- Phase 3/4 additions (2026-08-29) — safe to run on top of an earlier
+-- version of this file. `photo_album_url` lets the photo-booth action just
+-- open a shared album instead of hosting uploads.
+alter table gatherings add column if not exists photo_album_url text;

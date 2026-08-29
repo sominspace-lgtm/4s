@@ -21,7 +21,8 @@ import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
-import type { Gathering, GuestContribution } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory } from '@/lib/hooks/useGathering'
+import VillageGuestPanel from './VillageGuestPanel'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -48,7 +49,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [] }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -80,13 +81,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
   gathering?: Gathering | null
   onStartGathering?: (title: string) => void
-  onCloseGathering?: () => void
+  onCloseGathering?: () => void | Promise<GatheringMemory | null>
   /** Visible guest contributions so far — shown as a quiet count, never a
    *  "N guests online" readout. */
   guestCount?: number
   /** Guest contributions to scatter through the scene as physical objects
    *  (flowers by the well, pages on the book, records by the jukebox…). */
   contributions?: GuestContribution[]
+  memories?: GatheringMemory[]
+  onSetMusicUrl?: (url: string) => void
+  onSetPhotoAlbumUrl?: (url: string) => void
+  onModerate?: (id: string, status: 'visible' | 'hidden') => void
+  onRemoveContribution?: (id: string) => void
+  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
+  onDeleteMemory?: (id: string) => void
 }) {
   const [arranging, setArranging] = useState(false)
   // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
@@ -94,6 +102,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const guestActive = !!gathering
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [qrBig, setQrBig] = useState(false)
+  const [guestPanelOpen, setGuestPanelOpen] = useState(false)
   const guestUrl = useMemo(() => {
     if (!gathering) return null
     const base = process.env.NEXT_PUBLIC_APP_URL
@@ -395,6 +404,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}
             gathering={guestActive} contributions={contributions} guestQrUri={qrDataUri}
+            guestAlbumUrl={gathering?.photo_album_url ?? null}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -599,17 +609,39 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                   </span>
                 </div>
                 <button
-                  onClick={() => { if (window.confirm('End the gathering? The village goes back to normal and a keepsake is saved.')) onCloseGathering?.() }}
+                  onClick={() => setGuestPanelOpen(true)}
                   className="press"
                   style={{
                     background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
                     borderRadius: '8px', padding: '0.3rem 0.5rem', color: 'var(--muted)', cursor: 'pointer',
                     fontSize: '0.6rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
                   }}
-                >End</button>
+                >Manage</button>
               </div>
             )}
           </div>
+        )}
+
+        {/* Host panel — music playlist, photo album, guest moderation, and
+            "end the gathering" → the keepsake editor. A real panel, opened
+            deliberately from the strip's "Manage" button; the strip itself
+            stays a quiet one-liner. */}
+        {guestPanelOpen && gathering && (
+          <VillageGuestPanel
+            gathering={gathering}
+            contributions={contributions}
+            guestUrl={guestUrl}
+            qrDataUri={qrDataUri}
+            memories={memories}
+            onClose={() => setGuestPanelOpen(false)}
+            onSetMusicUrl={onSetMusicUrl}
+            onSetPhotoAlbumUrl={onSetPhotoAlbumUrl}
+            onModerate={onModerate}
+            onRemoveContribution={onRemoveContribution}
+            onCloseGathering={onCloseGathering}
+            onUpdateMemory={onUpdateMemory}
+            onDeleteMemory={onDeleteMemory}
+          />
         )}
 
         {/* Enlarged QR overlay — fills the scene card so a guest can scan it

@@ -11,20 +11,26 @@ import { useEffect, useState } from 'react'
 type Action = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge'
 
 const ACTIONS: { kind: Action; icon: string; label: string; blurb: string }[] = [
-  { kind: 'thank_you', icon: '💌', label: 'Say thank you', blurb: 'Leave a little note by the well' },
+  { kind: 'thank_you', icon: '💌', label: 'Say thank you', blurb: 'A little note by the well' },
   { kind: 'guestbook', icon: '📖', label: 'Sign the guestbook', blurb: 'Your name in the book' },
   { kind: 'note', icon: '💭', label: 'Leave a note', blurb: 'A thought, a wish, a memory' },
-  { kind: 'song', icon: '🎵', label: 'Add a song', blurb: 'Something for the record player' },
+  { kind: 'song', icon: '🎵', label: 'Add a song', blurb: 'For the record player' },
   { kind: 'from', icon: '🗺️', label: 'Where you’re from', blurb: 'A pin on the map' },
-  { kind: 'fridge', icon: '🧲', label: 'Add to the fridge', blurb: 'A doodle-note for the kitchen' },
+  { kind: 'fridge', icon: '🧲', label: 'Add to the fridge', blurb: 'A note for the kitchen' },
 ]
 
 const THANKS_CHIPS = ['Thank you for having us', 'What a night', 'So cozy in here', 'We’ll be back', 'This was special']
 const FRIDGE_ICONS = ['❤️', '⭐', '🌻', '🍞', '☕', '🎈', '🐈', '🌙']
 
-export default function GuestPortal({ token, title }: { token: string; title: string }) {
+export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl }: {
+  token: string
+  title: string
+  photoAlbumUrl?: string | null
+  musicUrl?: string | null
+}) {
   const [open, setOpen] = useState<Action | null>(null)
   const [done, setDone] = useState<Action | null>(null)
+  const [showQueue, setShowQueue] = useState(false)
   const [name, setName] = useState('')
 
   useEffect(() => {
@@ -46,7 +52,7 @@ export default function GuestPortal({ token, title }: { token: string; title: st
           </p>
         </header>
 
-        {!open && !done && (
+        {!open && !done && !showQueue && (
           <>
             <label style={S.nameField}>
               <span style={S.nameLabel}>Your name</span>
@@ -66,9 +72,25 @@ export default function GuestPortal({ token, title }: { token: string; title: st
                   <span style={S.tileBlurb}>{a.blurb}</span>
                 </button>
               ))}
+              {photoAlbumUrl && (
+                <a href={photoAlbumUrl} target="_blank" rel="noopener noreferrer" style={{ ...S.tile, textDecoration: 'none' }}>
+                  <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>📸</span>
+                  <span style={S.tileLabel}>Add photos</span>
+                  <span style={S.tileBlurb}>Opens the shared album</span>
+                </a>
+              )}
+              <button onClick={() => setShowQueue(true)} style={S.tile}>
+                <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>🎧</span>
+                <span style={S.tileLabel}>What’s playing</span>
+                <span style={S.tileBlurb}>See the queue &amp; vote</span>
+              </button>
             </div>
-            <p style={S.footnote}>📸 Photos: find the little photo booth in the village.</p>
+            {!photoAlbumUrl && <p style={S.footnote}>📸 Ask your host to open up the photo album.</p>}
           </>
+        )}
+
+        {showQueue && !open && !done && (
+          <SongQueue token={token} musicUrl={musicUrl} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
         )}
 
         {open && !done && (
@@ -209,6 +231,101 @@ function ActionForm({ token, action, name, onName, onBack, onDone }: {
   )
 }
 
+function SongQueue({ token, musicUrl, onBack, onAddSong }: {
+  token: string
+  musicUrl?: string | null
+  onBack: () => void
+  onAddSong: () => void
+}) {
+  const [songs, setSongs] = useState<{ id: string; title: string; by: string | null; votes: number }[]>([])
+  const [voted, setVoted] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+
+  const load = async () => {
+    try {
+      const res = await fetch(`/api/g/${token}/vote`)
+      const data = await res.json()
+      if (res.ok) setSongs(data.songs ?? [])
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+  useEffect(() => {
+    try { setVoted(new Set(JSON.parse(localStorage.getItem('4s-guest-votes') || '[]'))) } catch { /* ignore */ }
+    load()
+    const t = setInterval(load, 8000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const vote = async (id: string) => {
+    if (voted.has(id)) return
+    setSongs(s => s.map(x => (x.id === id ? { ...x, votes: x.votes + 1 } : x)).sort((a, b) => b.votes - a.votes))
+    const next = new Set(voted); next.add(id); setVoted(next)
+    try { localStorage.setItem('4s-guest-votes', JSON.stringify([...next])) } catch { /* ignore */ }
+    try { await fetch(`/api/g/${token}/vote`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ contributionId: id }) }) } catch { /* ignore */ }
+  }
+
+  const embed = musicUrl ? toEmbed(musicUrl) : null
+
+  return (
+    <div style={S.card}>
+      <button onClick={onBack} style={S.back}>← back</button>
+      <div style={{ fontSize: '1.9rem' }}>🎧</div>
+      <h2 style={S.h2}>What’s playing</h2>
+
+      {embed && (
+        <iframe
+          src={embed}
+          style={{ width: '100%', height: embed.includes('spotify') ? 152 : 200, border: 'none', borderRadius: '12px', marginBottom: '0.8rem' }}
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+          loading="lazy"
+        />
+      )}
+      {!embed && musicUrl && (
+        <a href={musicUrl} target="_blank" rel="noopener noreferrer" style={{ ...S.primary, display: 'block', textDecoration: 'none', marginBottom: '0.8rem' }}>Open the playlist ↗</a>
+      )}
+
+      <div style={{ textAlign: 'left', margin: '0.4rem 0 0.8rem' }}>
+        {loading && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>Loading the queue…</p>}
+        {!loading && songs.length === 0 && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>No requests yet — be the first.</p>}
+        {songs.map(s => (
+          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', borderBottom: '1px solid #efe3c8' }}>
+            <button
+              onClick={() => vote(s.id)}
+              disabled={voted.has(s.id)}
+              style={{ ...S.voteBtn, ...(voted.has(s.id) ? { background: '#e8896b', color: '#fff', borderColor: '#e8896b' } : {}) }}
+            >▲ {s.votes}</button>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: '0.86rem', color: '#463b30', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
+              {s.by && <div style={{ fontSize: '0.68rem', color: '#a8987f' }}>added by {s.by}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={onAddSong} style={S.primary}>Add a song 🎵</button>
+    </div>
+  )
+}
+
+// A share/watch link → an embeddable player URL. Falls back to a plain
+// "open" link (above) when the shape isn't recognised.
+function toEmbed(url: string): string | null {
+  try {
+    const u = new URL(url)
+    if (u.hostname.includes('open.spotify.com')) {
+      return `https://open.spotify.com/embed${u.pathname}`
+    }
+    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+      const list = u.searchParams.get('list')
+      const v = u.hostname.includes('youtu.be') ? u.pathname.slice(1) : u.searchParams.get('v')
+      if (list) return `https://www.youtube.com/embed/videoseries?list=${list}`
+      if (v) return `https://www.youtube.com/embed/${v}`
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
 const S: Record<string, React.CSSProperties> = {
   shell: {
     minHeight: '100dvh',
@@ -255,6 +372,11 @@ const S: Record<string, React.CSSProperties> = {
     padding: '0.4rem 0.7rem', fontSize: '0.78rem', color: '#6d5f4c', cursor: 'pointer',
   },
   chipOn: { background: '#e8896b', borderColor: '#e8896b', color: '#fff' },
+  voteBtn: {
+    background: '#f4ead4', border: '1px solid #e3d3b3', borderRadius: '9px',
+    padding: '0.35rem 0.5rem', fontSize: '0.74rem', color: '#6d5f4c', cursor: 'pointer',
+    whiteSpace: 'nowrap', minWidth: '3rem',
+  },
   primary: {
     width: '100%', padding: '0.8rem', border: 'none', borderRadius: '12px',
     background: '#e8896b', color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',

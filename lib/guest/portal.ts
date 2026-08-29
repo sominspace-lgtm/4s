@@ -30,6 +30,7 @@ export interface ResolvedGathering {
   spaceId: string
   title: string
   musicUrl: string | null
+  photoAlbumUrl: string | null
   active: boolean
 }
 
@@ -39,7 +40,7 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('gatherings')
-    .select('id, space_id, title, music_url, active, closes_at')
+    .select('id, space_id, title, music_url, photo_album_url, active, closes_at')
     .eq('token', token)
     .maybeSingle()
   if (error || !data) return null
@@ -49,6 +50,7 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
     spaceId: data.space_id,
     title: data.title,
     musicUrl: data.music_url,
+    photoAlbumUrl: data.photo_album_url ?? null,
     active: data.active && !closed,
   }
 }

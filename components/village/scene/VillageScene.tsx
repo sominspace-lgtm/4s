@@ -564,7 +564,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
-  contributions = [], guestQrUri = null,
+  contributions = [], guestQrUri = null, guestAlbumUrl = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
@@ -639,6 +639,8 @@ export default function VillageScene({
   /** Data-URI QR for /g/<token>, shown on the welcome sign while a gathering
    *  is open. */
   guestQrUri?: string | null
+  /** The gathering's shared photo album — the in-scene photo booth opens it. */
+  guestAlbumUrl?: string | null
   /** Dragged positions for the five landmark labels — only the pins move,
    *  not the scenery underneath them (see Village.tsx's own header comment
    *  on why: labels already float above their district as independent map
@@ -2310,6 +2312,9 @@ export default function VillageScene({
         const signX = clampX(home.x - 66), signY = GROUND_Y + 34
         const bookX = clampX(well.x + 30), bookY = well.y + 2
         const juke = { x: clampX(gaz.x - 34), y: gaz.y + 8 }
+        const booth = { x: clampX(gaz.x + 24), y: gaz.y - 4 }
+        const table = { x: clampX(home.x + 4), y: GROUND_Y + 58 }
+        const openAlbum = guestAlbumUrl && !arranging ? () => window.open(guestAlbumUrl, '_blank', 'noopener') : undefined
         const visible = contributions.filter(c => c.status === 'visible')
         const near = (k: string) => visible.filter(c => c.kind === k)
         const scatter = (id: string, cx: number, cy: number, sx: number, sy: number) => ({
@@ -2318,6 +2323,29 @@ export default function VillageScene({
         })
         return (
           <g>
+            {/* Dinner table — the gathering's centre, set with food + a lantern */}
+            <g transform={`translate(${table.x} ${table.y})`}>
+              <title>The table is set</title>
+              <ellipse cx={0} cy={2} rx={16} ry={3.4} fill="var(--text)" opacity={0.16} />
+              <image href="/village-assets/dinner-table.png" x={-13.5} y={-21} width={27} height={23.6}
+                style={{ imageRendering: 'pixelated' }} />
+            </g>
+
+            {/* Photo booth — tapping opens the shared album */}
+            <g transform={`translate(${booth.x} ${booth.y})`}
+              onClick={openAlbum}
+              className={openAlbum ? 'village-entity' : undefined}
+              style={{ cursor: openAlbum ? 'pointer' : undefined }}>
+              <title>{guestAlbumUrl ? 'Photo booth — open the album' : 'Photo booth'}</title>
+              <ellipse cx={0} cy={1} rx={9} ry={2.4} fill="var(--text)" opacity={0.15} />
+              <image href="/village-assets/photo-booth.png" x={-9} y={-27} width={18} height={27.3}
+                style={{ imageRendering: 'pixelated' }} />
+              {near('photo').length > 0 && (
+                <image href="/village-assets/polaroid-stack.png" x={6} y={-6} width={9} height={9}
+                  style={{ imageRendering: 'pixelated' }} />
+              )}
+            </g>
+
             {/* Welcome sign + QR */}
             <g transform={`translate(${signX} ${signY})`}>
               <title>Welcome — scan to leave something</title>

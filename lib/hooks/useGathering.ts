@@ -21,9 +21,28 @@ export interface Gathering {
   title: string
   token: string
   music_url: string | null
+  photo_album_url: string | null
   active: boolean
   started_at: string
   closes_at: string | null
+}
+
+export interface GatheringMemory {
+  id: string
+  space_id: string
+  gathering_id: string | null
+  title: string
+  happened_on: string
+  summary: {
+    guests?: string[]
+    songs?: string[]
+    messages?: { name: string | null; text: string }[]
+    fromPlaces?: string[]
+    photoAlbumUrl?: string | null
+    photoCount?: number
+  }
+  status: 'visible' | 'hidden'
+  created_at: string
 }
 
 export interface GuestContribution {
@@ -52,12 +71,19 @@ export interface UseGathering {
   /** null = Guest Mode is off (or no shared space / migration not run). */
   gathering: Gathering | null
   contributions: GuestContribution[]
+  /** "Tonight at the Village" keepsakes from gatherings that have ended. */
+  memories: GatheringMemory[]
   ready: boolean
   startGathering: (title: string) => Promise<void>
-  closeGathering: () => Promise<void>
+  /** Ends the gathering AND writes a keepsake snapshot. Returns the memory
+   *  so the host can open it straight into an editor. */
+  closeGathering: () => Promise<GatheringMemory | null>
   setMusicUrl: (url: string) => Promise<void>
+  setPhotoAlbumUrl: (url: string) => Promise<void>
   moderate: (id: string, status: 'visible' | 'hidden') => Promise<void>
   removeContribution: (id: string) => Promise<void>
+  updateMemory: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => Promise<void>
+  deleteMemory: (id: string) => Promise<void>
 }
 
 export function useGathering(userId: string): UseGathering {
@@ -67,7 +93,10 @@ export function useGathering(userId: string): UseGathering {
 
   const [gathering, setGathering] = useState<Gathering | null>(null)
   const [contributions, setContributions] = useState<GuestContribution[]>([])
+  const [memories, setMemories] = useState<GatheringMemory[]>([])
   const [ready, setReady] = useState(false)
+  const contribRef = useRef<GuestContribution[]>([])
+  contribRef.current = contributions
   const spaceRef = useRef<string | null>(null)
   const gatheringRef = useRef<Gathering | null>(null)
   gatheringRef.current = gathering
@@ -83,7 +112,7 @@ export function useGathering(userId: string): UseGathering {
 
   useEffect(() => {
     spaceRef.current = spaceId
-    if (!spaceId) { setGathering(null); setContributions([]); setReady(true); return }
+    if (!spaceId) { setGathering(null); setContributions([]); setMemories([]); setReady(true); return }
     let alive = true
 
     ;(async () => {
@@ -100,6 +129,12 @@ export function useGathering(userId: string): UseGathering {
       const g = (data as Gathering | null) ?? null
       setGathering(g)
       if (g) await loadContributions(g.id)
+      const { data: mem } = await supabase
+        .from('gathering_memories')
+        .select('*')
+        .eq('space_id', spaceId)
+        .order('happened_on', { ascending: false })
+      if (alive) setMemories((mem as GatheringMemory[] | null) ?? [])
       setReady(true)
     })()
 
@@ -153,12 +188,36 @@ export function useGathering(userId: string): UseGathering {
     setContributions([])
   }, [supabase, userId])
 
-  const closeGathering = useCallback(async () => {
+  const closeGathering = useCallback(async (): Promise<GatheringMemory | null> => {
     const g = gatheringRef.current
-    if (!g) return
-    const { error } = await supabase.from('gatherings').update({ active: false }).eq('id', g.id)
-    if (error) { console.error('[4s] closeGathering failed:', error.message); return }
+    if (!g) return null
+    const cs = contribRef.current.filter(c => c.status === 'visible')
+    const uniq = (xs: (string | null | undefined)[]) => [...new Set(xs.filter(Boolean) as string[])]
+    const summary: GatheringMemory['summary'] = {
+      guests: uniq(cs.map(c => c.guest_name)),
+      songs: uniq(cs.filter(c => c.kind === 'song').map(c => (c.meta.title as string) || c.body || '')),
+      messages: cs
+        .filter(c => (c.kind === 'thank_you' || c.kind === 'guestbook' || c.kind === 'note') && c.body)
+        .slice(0, 12)
+        .map(c => ({ name: c.guest_name, text: c.body as string })),
+      fromPlaces: uniq(cs.filter(c => c.kind === 'from').map(c => (c.meta.place as string) || c.body || '')),
+      photoAlbumUrl: g.photo_album_url,
+      photoCount: cs.filter(c => c.kind === 'photo').length,
+    }
+    const { error } = await supabase.from('gatherings').update({ active: false, closes_at: new Date().toISOString() }).eq('id', g.id)
+    if (error) { console.error('[4s] closeGathering failed:', error.message); return null }
     setGathering(null)
+
+    const on = new Date().toISOString().slice(0, 10)
+    const { data: mem, error: memErr } = await supabase
+      .from('gathering_memories')
+      .insert({ space_id: g.space_id, gathering_id: g.id, title: `Tonight at the Village — ${g.title}`, happened_on: on, summary })
+      .select('*')
+      .single()
+    if (memErr) { console.error('[4s] memory save failed:', memErr.message); return null }
+    const row = mem as GatheringMemory
+    setMemories(prev => [row, ...prev])
+    return row
   }, [supabase])
 
   const setMusicUrl = useCallback(async (url: string) => {
@@ -167,6 +226,14 @@ export function useGathering(userId: string): UseGathering {
     const clean = url.trim() || null
     const { error } = await supabase.from('gatherings').update({ music_url: clean }).eq('id', g.id)
     if (!error) setGathering(prev => (prev ? { ...prev, music_url: clean } : prev))
+  }, [supabase])
+
+  const setPhotoAlbumUrl = useCallback(async (url: string) => {
+    const g = gatheringRef.current
+    if (!g) return
+    const clean = url.trim() || null
+    const { error } = await supabase.from('gatherings').update({ photo_album_url: clean }).eq('id', g.id)
+    if (!error) setGathering(prev => (prev ? { ...prev, photo_album_url: clean } : prev))
   }, [supabase])
 
   const moderate = useCallback(async (id: string, status: 'visible' | 'hidden') => {
@@ -179,5 +246,19 @@ export function useGathering(userId: string): UseGathering {
     if (!error) setContributions(prev => prev.filter(c => c.id !== id))
   }, [supabase])
 
-  return { gathering, contributions, ready, startGathering, closeGathering, setMusicUrl, moderate, removeContribution }
+  const updateMemory = useCallback(async (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => {
+    const { error } = await supabase.from('gathering_memories').update(patch).eq('id', id)
+    if (!error) setMemories(prev => prev.map(m => (m.id === id ? { ...m, ...patch } : m)))
+  }, [supabase])
+
+  const deleteMemory = useCallback(async (id: string) => {
+    const { error } = await supabase.from('gathering_memories').delete().eq('id', id)
+    if (!error) setMemories(prev => prev.filter(m => m.id !== id))
+  }, [supabase])
+
+  return {
+    gathering, contributions, memories, ready,
+    startGathering, closeGathering, setMusicUrl, setPhotoAlbumUrl,
+    moderate, removeContribution, updateMemory, deleteMemory,
+  }
 }
