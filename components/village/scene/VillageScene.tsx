@@ -1189,9 +1189,14 @@ export default function VillageScene({
   // "cream bar" class of bug flagged earlier this project), not more sky.
   const CANVAS_W = 800, CANVAS_H = 440
   let baseW = 800
-  let baseH = 350
+  let baseH = 330
   let BASE_VB_CX = 400
-  let BASE_VB_CY = 180
+  // Horizon at 1/3 down the frame (round 68, "move the whole village view
+  // up so the sky takes 1:3 and the ground 2:3") — GROUND_Y is where sky
+  // meets ground, so top of window = GROUND_Y - baseH/3, hence a centre of
+  // GROUND_Y + baseH/6. clamped to the canvas.
+  const skyThirdCY = (h: number) => Math.max(h / 2, Math.min(CANVAS_H - h / 2, GROUND_Y + h / 6))
+  let BASE_VB_CY = skyThirdCY(baseH)
   // Fill an arbitrary container aspect (round 67, "ipad still shows white in
   // fullscreen") — when the caller passes the real viewport ratio, the
   // window is re-shaped to match it exactly (drawing more of the 800×440
@@ -1217,7 +1222,7 @@ export default function VillageScene({
       baseH = CANVAS_H
     }
     BASE_VB_CX = 400
-    BASE_VB_CY = Math.max(baseH / 2, Math.min(CANVAS_H - baseH / 2, 210))
+    BASE_VB_CY = skyThirdCY(baseH)
   }
   const vbW = baseW / zoom
   const vbH = baseH / zoom
@@ -1937,23 +1942,25 @@ export default function VillageScene({
         // wherever the badge is dragged. Clamped so a badge near the very
         // edge doesn't push the cabin off-canvas.
         const bp = pos('projects')
-        const hx = Math.max(120, Math.min(680, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 6, bp.y - 40))
-        // Bigger again round 66 ("log house ... should be bigger, almost as
-        // big as house") — 64 -> 88, close to Home's own 90.
-        const w = 88, h = w / (390 / 293)
-        // The whole cabin is the Projects tap target now (round 66, "make
-        // the press area for projects the cabin") — the district's invisible
-        // hit-rect still lives at the label, but this is the obvious thing
-        // to tap.
+        // Base sits right on the district anchor (round 68, "make the
+        // loghouse match to the hit box for projects") so the cabin and the
+        // label's own invisible hit-rect cover the same spot — tapping
+        // anywhere on the cabin or just under it opens Projects.
+        const hx = Math.max(120, Math.min(680, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 6, bp.y))
+        // Eased back round 68 ("make the log house ... a bit smaller") —
+        // 88 -> 76.
+        const w = 76, h = w / (390 / 293)
         const openProjects = () => { if (!arranging) openOrToggle('projects', 'Projects')() }
         return (
           <>
             <g onClick={openProjects} style={{ cursor: arranging ? undefined : 'pointer' }}>
-              <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3.4} fill="var(--text)" opacity={0.16} />
-              <circle cx={hx} cy={hy - h / 2} r={Math.max(20, h / 2)} fill="transparent" style={{ pointerEvents: 'all' }} />
+              <ellipse cx={hx} cy={hy + 2} rx={w / 2} ry={3.2} fill="var(--text)" opacity={0.16} />
+              {/* Hit area = the cabin plus a little below, matching the
+                  district label's own hit-rect footprint. */}
+              <rect x={hx - w / 2 - 2} y={hy - h - 2} width={w + 4} height={h + 26} fill="transparent" style={{ pointerEvents: 'all' }} />
               <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
-              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={11} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
+              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
             </g>
             {buildingSlots.map(({ building }, i) => {
               const done = building.phase === 'complete' || building.phase === 'landmark'
@@ -2176,8 +2183,8 @@ export default function VillageScene({
             {!(quiet && !arranging) && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
-                  onClick={() => { reactFigure('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
-                  wander={active} pose={reactingId === 'sylvia' ? 'wave' : life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
+                  onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
+                  wander={active} pose={life.sylvia.pose} face={life.sylvia.face} scale={itemScale('sylvia')} />
               </g>
             )}
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2188,8 +2195,8 @@ export default function VillageScene({
             {!(quiet && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
-                  onClick={() => { reactFigure('harry'); if (locked) openFigureOrToggle('harry')() }}
-                  wander={active} pose={reactingId === 'harry' ? 'wave' : life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
+                  onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
+                  wander={active} pose={life.harry.pose} face={life.harry.face} scale={itemScale('harry')} />
               </g>
             )}
             <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
@@ -2225,8 +2232,8 @@ export default function VillageScene({
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
             <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
-              onClick={() => { reactFigure('somi'); openSomi() }}
-              wander={active} pose={reactingId === 'somi' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
+              onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
+              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>

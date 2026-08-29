@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // A single free-roaming figure (round 65, "allow somi to wander") — the
 // same idea as useCoupleLife's state machine, pared down for one actor with
@@ -30,7 +30,7 @@ export function useWanderer(opts: {
   bounds: { x0: number; x1: number; y0: number; y1: number }
   /** Fraction of each beat spent simply sitting (0..1). Somi sits a lot. */
   restfulness?: number
-}): WandererLife {
+}): WandererLife & { walkTo: (x: number, y: number) => void } {
   const { enabled, bounds } = opts
   const hx = opts.home.x, hy = opts.home.y
   const rest = opts.restfulness ?? 0.6
@@ -38,6 +38,7 @@ export function useWanderer(opts: {
   const [life, setLife] = useState<WandererLife>({ x: hx, y: hy, pose: 'idle', face: 1, dur: 0 })
   const pos = useRef({ x: hx, y: hy, f: 1 as 1 | -1 })
   const timers = useRef<number[]>([])
+  const walkToRef = useRef<(x: number, y: number) => void>(() => {})
   const clearTimers = () => { timers.current.forEach(t => clearTimeout(t)); timers.current = [] }
 
   useEffect(() => {
@@ -85,9 +86,21 @@ export function useWanderer(opts: {
     }
     at(800, loop)
 
+    // Tapped — pad over to the point, pause, then resume wandering (round
+    // 68). Used to send Somi toward the front when she's clicked.
+    walkToRef.current = (tx: number, ty: number) => {
+      clearTimers()
+      const d = walk(clampX(tx), clampY(ty))
+      at(d + 1600, () => { const b = walk(hx + rand(-16, 16), hy + rand(-6, 6)); at(b + 900, loop) })
+    }
+
     return () => { alive = false; clearTimers() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, hx, hy, bounds.x0, bounds.x1, bounds.y0, bounds.y1, rest])
 
-  return life
+  const walkTo = useCallback((x: number, y: number) => {
+    if (enabled) walkToRef.current(x, y)
+  }, [enabled])
+
+  return { ...life, walkTo }
 }

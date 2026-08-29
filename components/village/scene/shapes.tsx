@@ -1123,9 +1123,9 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {/* Back to greenhouse.png round 57 — library.png's source sheet
               (village-social-town-spaces) is no longer in the master folder.
               Sized up round 58 ("other buildings a bit bigger"). */}
-          <image href="/village-assets/greenhouse.png" x={-27} y={-48} width={54} height={48}
+          <image href="/village-assets/greenhouse.png" x={-23} y={-41} width={46} height={41}
             style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-26} r={14} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
+          {dark && <circle cx={0} cy={-22} r={12} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
         </g>
       )
     case 'places': // Places — the car (round 30, 2026-08-27, "make the car the symbol for
@@ -1156,11 +1156,11 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
               canopy and the top off ("people tree is still broken and
               sliced and small"). Full sprite now (374×450, ar 0.831),
               rendered bigger. */}
-          {/* Big — round 66 ("people tree ... should be bigger, almost as
-              big as house"). ×1.3×1.12 from DistrictLabel puts the rendered
-              height near Home's ~75. */}
-          <ellipse cx={-1} cy={2.5} rx={22} ry={3} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/people-tree.png" x={-31} y={-74} width={62} height={74}
+          {/* Big, eased back a little round 68 ("make people tree a bit
+              smaller"). ×1.3×1.12 from DistrictLabel still puts it near
+              Home's height. */}
+          <ellipse cx={-1} cy={2.5} rx={19} ry={2.8} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-26} y={-63} width={53} height={63}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )

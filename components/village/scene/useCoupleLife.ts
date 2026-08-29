@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export interface FigureLife {
   x: number
   y: number
-  pose: 'idle' | 'walk'
+  pose: 'idle' | 'walk' | 'wave'
   face: 1 | -1
   /** ms for the CSS transform transition to this position. */
   dur: number
@@ -35,6 +35,11 @@ export interface CoupleLife {
   interactAt: { x: number; y: number }
   /** Send both to a tapped spot for an interaction, then resume the loop. */
   walkTo: (x: number, y: number) => void
+  /** Tapped a single figure — they walk a few steps toward the front,
+   *  wave, then head home (round 68). Pose goes 'wave' while they're there. */
+  greet: (who: 'sylvia' | 'harry') => void
+  /** Which figure is mid-greeting, so the caller can force the wave pose. */
+  greeting: 'sylvia' | 'harry' | null
 }
 
 const SPEED = 24 // scene units / second — an unhurried stroll (round 55)
@@ -62,6 +67,8 @@ export function useCoupleLife(opts: {
   const [together, setTogether] = useState(false)
   const [interactPose, setInteractPose] = useState(0)
   const [interactAt, setInteractAt] = useState<Pt>({ x: (shx + hhx) / 2, y: (shy + hhy) / 2 })
+  const [greeting, setGreeting] = useState<'sylvia' | 'harry' | null>(null)
+  const greetRef = useRef<(who: 'sylvia' | 'harry') => void>(() => {})
 
   // Live positions + facing, so a move can size its own duration and pick a
   // facing off where the figure actually is without threading React state.
@@ -167,6 +174,30 @@ export function useCoupleLife(opts: {
     }
     meetRef.current = meet
 
+    // Tapped a single figure (round 68) — they take a few steps toward the
+    // front of the scene, wave there, then walk home. The other figure is
+    // left alone. Interrupts whatever they were doing.
+    const greet = (who: 'sylvia' | 'harry') => {
+      const L = liveRef.current
+      const cx = who === 'sylvia' ? L.sx : L.hx
+      const cy = who === 'sylvia' ? L.sy : L.hy
+      const set = who === 'sylvia' ? setSylvia : setHarry
+      const home = who === 'sylvia' ? { x: shx, y: shy } : { x: hhx, y: hhy }
+      const tx = clampX(cx + (400 - cx) * 0.25 + rand(-10, 10))
+      const ty = clampY(Math.max(cy, bounds.y1 - 12))
+      const d = walk(who, tx, ty)
+      setGreeting(who)
+      at(d + 150, () => {
+        set(pr => ({ ...pr, pose: 'wave', dur: 0 }))
+        at(1900, () => {
+          setGreeting(null)
+          const hd = walk(who, home.x, home.y)
+          at(hd + 800, loop)
+        })
+      })
+    }
+    greetRef.current = greet
+
     const loop = () => {
       goHome()
       at(rand(13000, 30000), () => {
@@ -202,5 +233,12 @@ export function useCoupleLife(opts: {
     meetRef.current({ x, y })
   }, [enabled])
 
-  return { sylvia, harry, together, interactPose, interactAt, walkTo }
+  const greet = useCallback((who: 'sylvia' | 'harry') => {
+    if (!enabled) return
+    clearTimers()
+    setTogether(false)
+    greetRef.current(who)
+  }, [enabled])
+
+  return { sylvia, harry, together, interactPose, interactAt, walkTo, greet, greeting }
 }
