@@ -183,24 +183,31 @@ export function useCoupleLife(opts: {
       const cy = who === 'sylvia' ? L.sy : L.hy
       const set = who === 'sylvia' ? setSylvia : setHarry
       const home = who === 'sylvia' ? { x: shx, y: shy } : { x: hhx, y: hhy }
-      const tx = clampX(cx + (400 - cx) * 0.25 + rand(-10, 10))
-      const ty = clampY(Math.max(cy, bounds.y1 - 12))
+      // Walk right down to the front of the yard and a bit toward centre —
+      // far enough that the walk cycle actually plays for a beat.
+      const tx = clampX(cx + (400 - cx) * 0.4 + rand(-14, 14))
+      const ty = clampY(bounds.y1 - rand(2, 10))
       const d = walk(who, tx, ty)
       setGreeting(who)
       at(d + 150, () => {
         set(pr => ({ ...pr, pose: 'wave', dur: 0 }))
-        at(1900, () => {
+        at(2600, () => {
           setGreeting(null)
           const hd = walk(who, home.x, home.y)
-          at(hd + 800, loop)
+          at(hd + 900, loop)
         })
       })
     }
     greetRef.current = greet
 
+    let first = true
     const loop = () => {
       goHome()
-      at(rand(13000, 30000), () => {
+      // Livelier cadence (round 69, "make sure figures animation works") —
+      // a beat every ~8-18s instead of ~13-30s, and the very first one
+      // comes quickly so the scene shows movement right after it loads.
+      at(first ? 3500 : rand(8000, 18000), () => {
+        first = false
         if (Math.random() < 0.55) wander()
         else meet(null)
       })

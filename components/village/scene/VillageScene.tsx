@@ -1191,11 +1191,11 @@ export default function VillageScene({
   let baseW = 800
   let baseH = 330
   let BASE_VB_CX = 400
-  // Horizon at 1/3 down the frame (round 68, "move the whole village view
-  // up so the sky takes 1:3 and the ground 2:3") — GROUND_Y is where sky
-  // meets ground, so top of window = GROUND_Y - baseH/3, hence a centre of
-  // GROUND_Y + baseH/6. clamped to the canvas.
-  const skyThirdCY = (h: number) => Math.max(h / 2, Math.min(CANVAS_H - h / 2, GROUND_Y + h / 6))
+  // Horizon ~40% down the frame (round 69, "move the view down a little to
+  // show more sky") — a touch more sky than round 68's 1/3, still ground-
+  // weighted. top of window = GROUND_Y - 0.4·h, i.e. a centre of
+  // GROUND_Y + 0.1·h, clamped to the canvas.
+  const skyThirdCY = (h: number) => Math.max(h / 2, Math.min(CANVAS_H - h / 2, GROUND_Y + h * 0.1))
   let BASE_VB_CY = skyThirdCY(baseH)
   // Fill an arbitrary container aspect (round 67, "ipad still shows white in
   // fullscreen") — when the caller passes the real viewport ratio, the

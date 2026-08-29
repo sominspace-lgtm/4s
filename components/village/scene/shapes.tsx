@@ -115,8 +115,16 @@ export function SpriteCycle({ frames, x, y, height, periodSec, opacity = 1 }: {
             className="village-cycle-frame"
             style={{
               imageRendering: 'pixelated',
-              animation: `village-cycle-${n} ${periodSec}s steps(1) infinite`,
-              animationDelay: `${-(periodSec * i / n)}s`,
+              // linear, not steps(1) (round 69) — the keyframe already hard-
+              // cuts between frames (e.g. `24.9% {1}` then `25% {0}`), and
+              // steps(1) on top of a negative delay can freeze the whole
+              // cycle on frame 1 in some engines. linear just lets each
+              // frame's clock tick normally.
+              animation: `village-cycle-${n} ${periodSec}s linear infinite`,
+              // Delay chosen so the on-screen order is frame 0,1,2,…,n-1
+              // (a plain `-i/n` delay plays them 0,n-1,…,1 — a walk cycle
+              // running backwards).
+              animationDelay: `${-(periodSec * ((n - i) % n) / n)}s`,
             }} />
         )
       })}
@@ -1156,11 +1164,11 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
               canopy and the top off ("people tree is still broken and
               sliced and small"). Full sprite now (374×450, ar 0.831),
               rendered bigger. */}
-          {/* Big, eased back a little round 68 ("make people tree a bit
-              smaller"). ×1.3×1.12 from DistrictLabel still puts it near
-              Home's height. */}
-          <ellipse cx={-1} cy={2.5} rx={19} ry={2.8} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/people-tree.png" x={-26} y={-63} width={53} height={63}
+          {/* Eased down again round 69 ("also make the people tree smaller")
+              — 53 -> 44 wide. Still the tallest district symbol, just not
+              house-sized any more. */}
+          <ellipse cx={-1} cy={2} rx={16} ry={2.4} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/people-tree.png" x={-22} y={-53} width={44} height={53}
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
