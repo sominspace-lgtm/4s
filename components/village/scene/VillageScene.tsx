@@ -564,6 +564,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
+  contributions = [], guestQrUri = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
@@ -627,6 +628,17 @@ export default function VillageScene({
    *  `locked`. Warms the scene up regardless of time of day: lanterns and
    *  window glow forced on, party bunting over Home, a warm colour wash. */
   gathering?: boolean
+  /** Guest contributions (Phase 2) — scattered through the scene as physical
+   *  objects. A derived layer, NOT in the layout blob: a guest's name/note
+   *  isn't household personal data, so it's `locked`-safe, and it needs no
+   *  host arrange step. Only `status === 'visible'` ones are drawn. */
+  contributions?: {
+    id: string; kind: string; guest_name: string | null; body: string | null
+    meta: Record<string, unknown>; status: string
+  }[]
+  /** Data-URI QR for /g/<token>, shown on the welcome sign while a gathering
+   *  is open. */
+  guestQrUri?: string | null
   /** Dragged positions for the five landmark labels — only the pins move,
    *  not the scenery underneath them (see Village.tsx's own header comment
    *  on why: labels already float above their district as independent map
@@ -697,6 +709,28 @@ export default function VillageScene({
       if (p && (ok as string[]).includes(p)) setOutfitOverrideState(p as Outfit)
     } catch { /* ignore */ }
   }, [])
+
+  // `?gathering=1` forces Guest Mode on (with a couple of fake contributions)
+  // so the whole guest layer can be seen in /village-preview. Dev-only param.
+  const [gatheringPreview, setGatheringPreview] = useState(false)
+  useEffect(() => {
+    try { if (new URLSearchParams(window.location.search).get('gathering') === '1') setGatheringPreview(true) } catch { /* ignore */ }
+  }, [])
+  if (gatheringPreview) {
+    gathering = true
+    if (contributions.length === 0) contributions = [
+      { id: 'demo-t1', kind: 'thank_you', guest_name: 'Mara', body: 'Thank you for having us', meta: {}, status: 'visible' },
+      { id: 'demo-t2', kind: 'thank_you', guest_name: 'Nate', body: 'What a night', meta: {}, status: 'visible' },
+      { id: 'demo-g1', kind: 'guestbook', guest_name: 'The Kims', body: 'So cosy in here', meta: {}, status: 'visible' },
+      { id: 'demo-g2', kind: 'guestbook', guest_name: 'Priya', body: 'xoxo', meta: {}, status: 'visible' },
+      { id: 'demo-s1', kind: 'song', guest_name: 'Jules', body: 'Landslide', meta: { title: 'Landslide — Fleetwood Mac' }, status: 'visible' },
+      { id: 'demo-s2', kind: 'song', guest_name: 'Theo', body: 'Dreams', meta: { title: 'Dreams' }, status: 'visible' },
+      { id: 'demo-n1', kind: 'note', guest_name: 'Alex', body: 'wishing you both the best year', meta: {}, status: 'visible' },
+      { id: 'demo-f1', kind: 'fridge', guest_name: 'Sam', body: 'good soup', meta: { icon: '🍜' }, status: 'visible' },
+      { id: 'demo-fr1', kind: 'from', guest_name: 'Lin', body: 'Taipei', meta: { place: 'Taipei' }, status: 'visible' },
+      { id: 'demo-fr2', kind: 'from', guest_name: 'Ben', body: 'Lisbon', meta: { place: 'Lisbon' }, status: 'visible' },
+    ]
+  }
 
   // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
@@ -2259,6 +2293,120 @@ export default function VillageScene({
       {/* Guest Mode bunting (2026-08-29) — a string over Home while the
           village is open to guests, so the place reads as "we're hosting". */}
       {gathering && <BuntingShape x={pos('home').x} y={pos('home').y - 4} />}
+
+      {/* ── Guest Layer (Phase 2, 2026-08-29) ────────────────────────────
+          The physical objects that carry the gathering: a welcome sign with
+          the live QR, the guestbook, the record player, the dinner table.
+          Then every visible guest contribution scattered near the object it
+          belongs to — a flower by the well for a thank-you, a record by the
+          player for a song, a folded note drifting near Home. Positions are
+          deterministic per contribution id (hashPos), never stored, so this
+          whole layer is a pure function of `contributions` and needs no host
+          arrange step. Kept dimly present for a beat after a gathering ends
+          would be nice; for now it's strictly gathering-gated. */}
+      {gathering && (() => {
+        const clampX = (x: number) => Math.max(24, Math.min(776, x))
+        const home = pos('home'), well = decorPos('wishingWell'), gaz = decorPos('gazebo')
+        const signX = clampX(home.x - 66), signY = GROUND_Y + 34
+        const bookX = clampX(well.x + 30), bookY = well.y + 2
+        const juke = { x: clampX(gaz.x - 34), y: gaz.y + 8 }
+        const visible = contributions.filter(c => c.status === 'visible')
+        const near = (k: string) => visible.filter(c => c.kind === k)
+        const scatter = (id: string, cx: number, cy: number, sx: number, sy: number) => ({
+          x: clampX(cx + (hashPos(id + 'gx') - 0.5) * sx),
+          y: cy + (hashPos(id + 'gy') - 0.5) * sy,
+        })
+        return (
+          <g>
+            {/* Welcome sign + QR */}
+            <g transform={`translate(${signX} ${signY})`}>
+              <title>Welcome — scan to leave something</title>
+              <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.15} />
+              <image href="/village-assets/welcome-sign.png" x={-13} y={-26} width={26} height={26.6}
+                style={{ imageRendering: 'pixelated' }} />
+              {guestQrUri && <image href={guestQrUri} x={-7.2} y={-20.5} width={14.4} height={14.4} preserveAspectRatio="none" />}
+            </g>
+
+            {/* Guestbook — a page or two thicker for every signature */}
+            <g transform={`translate(${bookX} ${bookY})`}>
+              <title>{`The guestbook — ${spellCount(near('guestbook').length)} ${near('guestbook').length === 1 ? 'signature' : 'signatures'}`}</title>
+              <ellipse cx={0} cy={1} rx={12} ry={2.6} fill="var(--text)" opacity={0.15} />
+              <image href="/village-assets/guestbook-open.png" x={-12} y={-16} width={24} height={16.3}
+                style={{ imageRendering: 'pixelated' }} />
+              {near('guestbook').slice(0, 6).map((c, i) => (
+                <rect key={c.id} x={-9 + i * 0.5} y={-3 - i * 0.7} width={18} height={1.4} rx={0.5}
+                  fill="#f3ead5" stroke="var(--border)" strokeWidth={0.2} opacity={0.9} />
+              ))}
+            </g>
+
+            {/* Record player + a record per song */}
+            <g transform={`translate(${juke.x} ${juke.y})`}>
+              <title>The record player</title>
+              <ellipse cx={0} cy={1} rx={11} ry={2.6} fill="var(--text)" opacity={0.15} />
+              <image href="/village-assets/jukebox.png" x={-10.5} y={-20} width={21} height={19.8}
+                style={{ imageRendering: 'pixelated' }} />
+            </g>
+            {near('song').map((c, i) => {
+              const p = scatter(c.id, juke.x + 14, juke.y - 1, 16, 8)
+              return (
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                  <title>{`${c.guest_name || 'A guest'} added: ${(c.meta.title as string) || c.body || 'a song'}`}</title>
+                  <image href={`/village-assets/record-${(i % 3) + 1}.png`} x={-3} y={-6} width={6} height={6}
+                    style={{ imageRendering: 'pixelated' }} />
+                </g>
+              )
+            })}
+
+            {/* Thank-yous — a little vase of flowers gathering by the well */}
+            {near('thank_you').map(c => {
+              const p = scatter(c.id, well.x, well.y + 6, 34, 10)
+              return (
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                  <title>{`${c.guest_name || 'A guest'}: ${c.body || 'thank you'}`}</title>
+                  <image href="/village-assets/thankyou-vase.png" x={-3.5} y={-13} width={7} height={13}
+                    style={{ imageRendering: 'pixelated' }} />
+                </g>
+              )
+            })}
+
+            {/* Notes — folded papers drifting in Home's yard */}
+            {near('note').map(c => {
+              const p = scatter(c.id, home.x + 40, GROUND_Y + 44, 60, 22)
+              return (
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-glow">
+                  <title>{`${c.guest_name || 'A guest'}: ${c.body || ''}`}</title>
+                  <rect x={-3} y={-4} width={6} height={5} rx={0.6} fill="#fbf3df" stroke="var(--border)" strokeWidth={0.3}
+                    transform={`rotate(${(hashPos(c.id + 'r') - 0.5) * 24})`} />
+                </g>
+              )
+            })}
+
+            {/* Fridge notes — magnets on a board near Home */}
+            {near('fridge').map(c => {
+              const p = scatter(c.id, home.x - 34, GROUND_Y + 12, 22, 16)
+              return (
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`}>
+                  <title>{`${c.guest_name || 'A guest'} put up: ${c.body || ''}`}</title>
+                  <rect x={-3.4} y={-4.2} width={6.8} height={5.6} rx={0.6} fill="#fdf6e6" stroke="var(--border)" strokeWidth={0.3} />
+                  <text x={0} y={0.6} textAnchor="middle" fontSize={3.4}>{(c.meta.icon as string) || '❤️'}</text>
+                </g>
+              )
+            })}
+
+            {/* Where guests are from — pins along the memory-map row */}
+            {near('from').map(c => {
+              const p = scatter(c.id, 400, GROUND_Y - 2, 520, 8)
+              return (
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                  <title>{`${c.guest_name || 'A guest'} — from ${(c.meta.place as string) || c.body || 'somewhere'}`}</title>
+                  <path d="M 0 0 C -2.4 -4 -2.4 -6.4 0 -8 C 2.4 -6.4 2.4 -4 0 0 Z" fill="var(--blush)" stroke="var(--surface)" strokeWidth={0.4} />
+                  <circle cy={-5} r={1} fill="var(--surface)" />
+                </g>
+              )
+            })}
+          </g>
+        )
+      })()}
 
       {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
           dots with the three actual, always-present characters, standing in

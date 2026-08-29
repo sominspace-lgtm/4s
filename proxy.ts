@@ -41,6 +41,14 @@ export async function proxy(request: NextRequest) {
     // Dev-only diagnostic harness for the Places map — same guard.
     || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/places-preview'))
     || pathname.startsWith('/api/alexa')
+    // Guest Layer (Guest Mode): /g/<token> is the phone portal a party guest
+    // opens with no account, and /api/g/<token> is where its writes land.
+    // Both authenticate by the random gathering token (resolved server-side
+    // against the admin client), never a browser session — same shape as the
+    // Alexa webhook above. The static-asset matcher already excludes images,
+    // so the QR/sprites the portal loads aren't affected.
+    || pathname.startsWith('/g/')
+    || pathname.startsWith('/api/g/')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each
     // does its own PIN check (or none, for pin-status's read-only lookup)

@@ -21,7 +21,7 @@ import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
-import type { Gathering } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution } from '@/lib/hooks/useGathering'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -48,7 +48,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0 }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [] }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -84,6 +84,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   /** Visible guest contributions so far — shown as a quiet count, never a
    *  "N guests online" readout. */
   guestCount?: number
+  /** Guest contributions to scatter through the scene as physical objects
+   *  (flowers by the well, pages on the book, records by the jukebox…). */
+  contributions?: GuestContribution[]
 }) {
   const [arranging, setArranging] = useState(false)
   // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
@@ -391,7 +394,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}
-            gathering={guestActive}
+            gathering={guestActive} contributions={contributions} guestQrUri={qrDataUri}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
