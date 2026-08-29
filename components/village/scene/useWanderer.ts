@@ -70,11 +70,12 @@ export function useWanderer(opts: {
     }
 
     const loop = () => {
-      // Sit for a good while first.
-      at(rand(6000, 16000) * (0.5 + rest), () => {
-        if (Math.random() < rest * 0.4) { loop(); return } // sometimes just keep sitting
+      // Sit a while, then move (round 70 "figures are not moving" — shorter
+      // sits so she visibly roams).
+      at(rand(3500, 9000) * (0.6 + rest * 0.6), () => {
+        if (Math.random() < rest * 0.3) { loop(); return } // sometimes just keep sitting
         const d1 = walk(clampX(pos.current.x + rand(-160, 160)), clampY(pos.current.y + rand(-24, 24)))
-        at(d1 + rand(2500, 6000), () => {
+        at(d1 + rand(2000, 5000), () => {
           // A second short hop, or amble back toward home.
           const goHome = Math.random() < 0.5
           const tx = goHome ? hx + rand(-20, 20) : clampX(pos.current.x + rand(-70, 70))

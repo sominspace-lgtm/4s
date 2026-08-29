@@ -18,6 +18,13 @@ import type { VillageLayout } from '@/lib/village/layout'
  *
  * When there's no shared space yet — or the migration hasn't been run — it
  * falls back to the personal layout + saver passed in, so nothing breaks.
+ *
+ * Round 69 fixes: the writes were `void supabase.from(...).upsert(...)` with
+ * no `.then()`/`await` — a PostgREST builder is lazy, so those requests
+ * never actually fired and `village_layout` stayed empty forever. Every
+ * write now executes and is awaited, errors surface and fall back to the
+ * personal save, drags are debounced, and the row is also mirrored into the
+ * personal blob so a lost/empty shared row can always be re-seeded.
  */
 export function useSharedVillageLayout(
   userId: string,
@@ -26,10 +33,6 @@ export function useSharedVillageLayout(
 ): { layout: VillageLayout; setLayout: (next: VillageLayout) => void; shared: boolean } {
   const supabase = createClient()
   const { spaces, members } = useSharedSpaces(userId)
-  // Snapshot of whatever the person had arranged personally before the
-  // village became shared — used once, to seed the space's first row so a
-  // migration doesn't wipe their layout back to defaults.
-  const seedRef = useRef(fallbackLayout)
 
   // The couple's space — the first one with an accepted member, exactly the
   // rule HouseholdHub uses, so the village and the household share a space.
@@ -39,6 +42,30 @@ export function useSharedVillageLayout(
   const spaceRef = useRef<string | null>(null)
   const saveFallbackRef = useRef(saveFallback)
   saveFallbackRef.current = saveFallback
+  // Latest personal layout, so a fresh shared row can always be seeded from
+  // it (not just from a snapshot taken at first render).
+  const fallbackRef = useRef(fallbackLayout)
+  fallbackRef.current = fallbackLayout
+  // Serialised copy of what we last wrote, so the realtime channel doesn't
+  // echo our own write straight back and clobber a newer local edit.
+  const lastWriteRef = useRef<string>('')
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingRef = useRef<VillageLayout | null>(null)
+
+  const writeShared = useCallback(async (sid: string, next: VillageLayout) => {
+    lastWriteRef.current = JSON.stringify(next)
+    const { error } = await supabase.from('village_layout').upsert({
+      space_id: sid, layout: next, updated_by: userId, updated_at: new Date().toISOString(),
+    })
+    if (error) {
+      console.error('[4s] village layout shared save failed, falling back to personal:', error.message)
+      await saveFallbackRef.current(next)
+    } else {
+      // Mirror into the personal blob too — cheap insurance so the shared
+      // row can be re-seeded if it's ever cleared.
+      void saveFallbackRef.current(next)
+    }
+  }, [supabase, userId])
 
   useEffect(() => {
     spaceRef.current = spaceId
@@ -49,18 +76,16 @@ export function useSharedVillageLayout(
         .from('village_layout').select('layout').eq('space_id', spaceId).maybeSingle()
       if (!alive) return
       if (error) { setShared(null); return } // migration not run — stay on fallback
-      if (data?.layout) {
-        setShared(data.layout as VillageLayout)
+      const row = data?.layout as VillageLayout | undefined
+      if (row && Object.keys(row).length) {
+        setShared(row)
       } else {
-        // No shared row yet — seed it from whatever this person already had
-        // arranged personally, so switching to the shared model never
-        // silently resets the village to defaults. Whoever opens it first
-        // wins the seed; after that it's one shared row.
-        const seed = seedRef.current && Object.keys(seedRef.current).length ? seedRef.current : {}
+        // No usable shared row yet — seed it from whatever this person
+        // already had arranged personally, so switching to the shared model
+        // never silently resets the village to defaults.
+        const seed = fallbackRef.current && Object.keys(fallbackRef.current).length ? fallbackRef.current : {}
         setShared(seed)
-        void supabase.from('village_layout').upsert({
-          space_id: spaceId, layout: seed, updated_by: userId, updated_at: new Date().toISOString(),
-        })
+        if (Object.keys(seed).length) await writeShared(spaceId, seed)
       }
     })()
     const ch = supabase
@@ -71,24 +96,30 @@ export function useSharedVillageLayout(
         payload => {
           if (!alive) return
           const next = (payload.new as { layout?: VillageLayout } | null)?.layout
-          if (next) setShared(next)
+          if (!next) return
+          // Skip the echo of our own most recent write.
+          if (JSON.stringify(next) === lastWriteRef.current) return
+          setShared(next)
         },
       )
       .subscribe()
-    return () => { alive = false; supabase.removeChannel(ch) }
-  }, [supabase, spaceId])
+    return () => { alive = false; supabase.removeChannel(ch); if (flushTimer.current) clearTimeout(flushTimer.current) }
+  }, [supabase, spaceId, writeShared])
 
   const setLayout = useCallback((next: VillageLayout) => {
     const sid = spaceRef.current
-    if (sid) {
-      setShared(next)
-      void supabase.from('village_layout').upsert({
-        space_id: sid, layout: next, updated_by: userId, updated_at: new Date().toISOString(),
-      })
-    } else {
-      void saveFallbackRef.current(next)
-    }
-  }, [supabase, userId])
+    if (!sid) { void saveFallbackRef.current(next); return }
+    // Optimistic local update, debounced remote write so a drag (dozens of
+    // calls) collapses into one or two round-trips.
+    setShared(next)
+    pendingRef.current = next
+    if (flushTimer.current) clearTimeout(flushTimer.current)
+    flushTimer.current = setTimeout(() => {
+      const p = pendingRef.current
+      pendingRef.current = null
+      if (p) void writeShared(sid, p)
+    }, 400)
+  }, [writeShared])
 
   return {
     layout: spaceId && shared !== null ? shared : fallbackLayout,

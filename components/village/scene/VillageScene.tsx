@@ -699,7 +699,10 @@ export default function VillageScene({
   // see the cast render below, where quiet replaces the two separate
   // figures with the one seated-together sprite instead of just holding
   // them still in place.
-  const quiet = dark
+  // Round 70 ("figures are not moving") — narrowed from dusk+night to
+  // night only. Dusk keeps the cast wandering (just under a warm low sun);
+  // the fully-still bench / sleepwear composition is a night thing now.
+  const quiet = v.timeOfDay === 'night'
   // Full night (not just dusk) — the couple change into sleepwear near Home
   // and Somi curls up asleep (round 51, 2026-08-28, "all of these new
   // animations elements"): the real bedtime art behind round 48's evening

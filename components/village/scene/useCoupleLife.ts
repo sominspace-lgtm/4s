@@ -203,10 +203,9 @@ export function useCoupleLife(opts: {
     let first = true
     const loop = () => {
       goHome()
-      // Livelier cadence (round 69, "make sure figures animation works") —
-      // a beat every ~8-18s instead of ~13-30s, and the very first one
-      // comes quickly so the scene shows movement right after it loads.
-      at(first ? 3500 : rand(8000, 18000), () => {
+      // Livelier cadence (round 69/70, "figures are not moving") — a beat
+      // every ~5-13s, first one quick so movement shows right after load.
+      at(first ? 2500 : rand(5000, 13000), () => {
         first = false
         if (Math.random() < 0.55) wander()
         else meet(null)
