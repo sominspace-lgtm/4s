@@ -619,9 +619,15 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 // from sylvia-core-animations-alpha.png / harry-core-animations-alpha.png
 // in one pass, so proportions and anchor match across every pose and the
 // walk is a real 4-frame cycle again (round 55 had trimmed it to 2).
+// Re-cut round 73 (2026-08-29, "sylvia's character flower on her hair") from
+// the current sylvia/harry-core-animations-alpha.png — the older crops had
+// picked up a washed-out pale bloom that read as nothing at scene scale;
+// this sheet's flower is a vivid coral on every pose. Whole vocabulary
+// (idle / walk×4 / wave×4 / smile) re-cut in one pass so proportions and
+// bottom-centre anchor match across every frame.
 const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
-  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 150, h: 293 },
-  Harry: { src: '/village-assets/harry-idle.png', w: 162, h: 271 },
+  Sylvia: { src: '/village-assets/sylvia-idle.png', w: 146, h: 288 },
+  Harry: { src: '/village-assets/harry-idle.png', w: 158, h: 266 },
 }
 
 // Auto wardrobe (round 71, "make wardrobe change — auto is dependent on
@@ -632,17 +638,58 @@ const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
 // character/wardrobe/sylvia-harry-multi-outfit-library-alpha.png. Walk and
 // wave frames stay in the default outfit — they're on their own sheets and
 // only show for a beat while moving.
-export type Outfit = 'default' | 'winter' | 'rain' | 'cozy'
+// Re-cut round 73 (2026-08-29) from character/wardrobe/wardrobe-*-walk-
+// couple-alpha.png — each of those sheets carries a whole matched set
+// (standing + a real 4-frame side-walk + a couple pose), so the wardrobe
+// now changes the WALK too, not just the standing idle (VILLAGER_OUTFIT_
+// WALK below). `party` / `tennis` / `travel` / `artsy` are cropped and
+// wired but have no auto-trigger yet — they're one line in VillageScene's
+// `outfit` selector away from an event hook. cozy stays on its older crop.
+export type Outfit = 'default' | 'winter' | 'rain' | 'cozy' | 'party' | 'business' | 'tennis' | 'travel' | 'artsy'
 const VILLAGER_OUTFIT: Record<string, Partial<Record<Outfit, { src: string; w: number; h: number }>>> = {
   Sylvia: {
-    winter: { src: '/village-assets/sylvia-winter.png', w: 168, h: 382 },
-    rain: { src: '/village-assets/sylvia-rain.png', w: 207, h: 333 },
+    winter: { src: '/village-assets/sylvia-winter.png', w: 146, h: 268 },
+    rain: { src: '/village-assets/sylvia-rain.png', w: 212, h: 339 },
     cozy: { src: '/village-assets/sylvia-cozy.png', w: 154, h: 357 },
+    party: { src: '/village-assets/sylvia-party.png', w: 156, h: 249 },
+    business: { src: '/village-assets/sylvia-business.png', w: 133, h: 253 },
+    tennis: { src: '/village-assets/sylvia-tennis.png', w: 169, h: 276 },
+    travel: { src: '/village-assets/sylvia-travel.png', w: 172, h: 276 },
+    artsy: { src: '/village-assets/sylvia-artsy.png', w: 138, h: 271 },
   },
   Harry: {
-    winter: { src: '/village-assets/harry-winter.png', w: 172, h: 385 },
-    rain: { src: '/village-assets/harry-rain.png', w: 203, h: 334 },
+    winter: { src: '/village-assets/harry-winter.png', w: 153, h: 246 },
+    rain: { src: '/village-assets/harry-rain.png', w: 231, h: 341 },
     cozy: { src: '/village-assets/harry-cozy.png', w: 157, h: 342 },
+    party: { src: '/village-assets/harry-party.png', w: 158, h: 233 },
+    business: { src: '/village-assets/harry-business.png', w: 153, h: 231 },
+    tennis: { src: '/village-assets/harry-tennis.png', w: 203, h: 273 },
+    travel: { src: '/village-assets/harry-travel.png', w: 128, h: 266 },
+    artsy: { src: '/village-assets/harry-artsy.png', w: 130, h: 280 },
+  },
+}
+// The matching 4-frame side-walk for each outfit, so a figure crossing the
+// village in the rain actually walks with an umbrella (round 73).
+const outfitWalk = (who: string, k: Exclude<Outfit, 'default' | 'cozy'>, aspects: number[]) =>
+  aspects.map((aspect, i) => ({ src: `/village-assets/${who.toLowerCase()}-${k}-walk-${i + 1}.png`, aspect }))
+const VILLAGER_OUTFIT_WALK: Record<string, Partial<Record<Outfit, { src: string; aspect: number }[]>>> = {
+  Sylvia: {
+    winter: outfitWalk('Sylvia', 'winter', [151 / 256, 149 / 257, 145 / 255, 146 / 255]),
+    rain: outfitWalk('Sylvia', 'rain', [227 / 318, 218 / 316, 230 / 317, 238 / 320]),
+    party: outfitWalk('Sylvia', 'party', [127 / 249, 125 / 249, 120 / 249, 127 / 251]),
+    business: outfitWalk('Sylvia', 'business', [124 / 250, 129 / 253, 121 / 253, 128 / 239]),
+    tennis: outfitWalk('Sylvia', 'tennis', [198 / 293, 189 / 291, 186 / 291, 179 / 291]),
+    travel: outfitWalk('Sylvia', 'travel', [172 / 276, 167 / 271, 170 / 273, 169 / 271]),
+    artsy: outfitWalk('Sylvia', 'artsy', [138 / 271, 166 / 269, 161 / 271, 160 / 271]),
+  },
+  Harry: {
+    winter: outfitWalk('Harry', 'winter', [117 / 203, 121 / 204, 122 / 204, 120 / 205]),
+    rain: outfitWalk('Harry', 'rain', [220 / 308, 228 / 309, 231 / 309, 226 / 304]),
+    party: outfitWalk('Harry', 'party', [121 / 231, 121 / 230, 122 / 230, 123 / 230]),
+    business: outfitWalk('Harry', 'business', [122 / 227, 134 / 227, 126 / 227, 124 / 229]),
+    tennis: outfitWalk('Harry', 'tennis', [191 / 275, 183 / 274, 181 / 274, 178 / 274]),
+    travel: outfitWalk('Harry', 'travel', [128 / 266, 135 / 271, 138 / 270, 135 / 270]),
+    artsy: outfitWalk('Harry', 'artsy', [130 / 280, 133 / 286, 142 / 286, 134 / 286]),
   },
 }
 const VILLAGER_SMILE: Record<string, string> = {
@@ -689,28 +736,28 @@ const VILLAGER_SMILE: Record<string, string> = {
 // two walk poses are near-frontal, which broke the "facing the way they
 // walk" read; a clean 2-frame contact/contact cycle sells the direction.
 const SYLVIA_WALK_FRAMES = [
-  { src: '/village-assets/sylvia-walk-1.png', aspect: 144 / 293 },
-  { src: '/village-assets/sylvia-walk-2.png', aspect: 141 / 290 },
-  { src: '/village-assets/sylvia-walk-3.png', aspect: 142 / 291 },
-  { src: '/village-assets/sylvia-walk-4.png', aspect: 142 / 290 },
+  { src: '/village-assets/sylvia-walk-1.png', aspect: 140 / 288 },
+  { src: '/village-assets/sylvia-walk-2.png', aspect: 137 / 286 },
+  { src: '/village-assets/sylvia-walk-3.png', aspect: 138 / 287 },
+  { src: '/village-assets/sylvia-walk-4.png', aspect: 138 / 286 },
 ]
 const SYLVIA_WAVE_FRAMES = [
-  { src: '/village-assets/sylvia-wave-1.png', aspect: 150 / 313 },
-  { src: '/village-assets/sylvia-wave-2.png', aspect: 168 / 313 },
-  { src: '/village-assets/sylvia-wave-3.png', aspect: 186 / 311 },
-  { src: '/village-assets/sylvia-wave-4.png', aspect: 150 / 288 },
+  { src: '/village-assets/sylvia-wave-1.png', aspect: 146 / 290 },
+  { src: '/village-assets/sylvia-wave-2.png', aspect: 164 / 290 },
+  { src: '/village-assets/sylvia-wave-3.png', aspect: 168 / 289 },
+  { src: '/village-assets/sylvia-wave-4.png', aspect: 146 / 283 },
 ]
 const HARRY_WALK_FRAMES = [
-  { src: '/village-assets/harry-walk-1.png', aspect: 154 / 269 },
-  { src: '/village-assets/harry-walk-2.png', aspect: 151 / 271 },
-  { src: '/village-assets/harry-walk-3.png', aspect: 152 / 268 },
-  { src: '/village-assets/harry-walk-4.png', aspect: 153 / 269 },
+  { src: '/village-assets/harry-walk-1.png', aspect: 150 / 265 },
+  { src: '/village-assets/harry-walk-2.png', aspect: 147 / 267 },
+  { src: '/village-assets/harry-walk-3.png', aspect: 148 / 263 },
+  { src: '/village-assets/harry-walk-4.png', aspect: 149 / 264 },
 ]
 const HARRY_WAVE_FRAMES = [
-  { src: '/village-assets/harry-wave-1.png', aspect: 162 / 313 },
-  { src: '/village-assets/harry-wave-2.png', aspect: 182 / 317 },
-  { src: '/village-assets/harry-wave-3.png', aspect: 191 / 313 },
-  { src: '/village-assets/harry-wave-4.png', aspect: 162 / 312 },
+  { src: '/village-assets/harry-wave-1.png', aspect: 158 / 267 },
+  { src: '/village-assets/harry-wave-2.png', aspect: 176 / 273 },
+  { src: '/village-assets/harry-wave-3.png', aspect: 187 / 267 },
+  { src: '/village-assets/harry-wave-4.png', aspect: 158 / 266 },
 ]
 const VILLAGER_WALK: Record<string, { src: string; aspect: number }[]> = { Sylvia: SYLVIA_WALK_FRAMES, Harry: HARRY_WALK_FRAMES }
 const VILLAGER_WAVE: Record<string, { src: string; aspect: number }[]> = { Sylvia: SYLVIA_WAVE_FRAMES, Harry: HARRY_WAVE_FRAMES }
@@ -755,9 +802,21 @@ export const COUPLE_PICNIC_FRAME = 8
 // stretch per lap, so VillageScene now holds a `poseIndex` it bumps each
 // meeting and this just draws that frame. A different interaction every
 // time they come together, and nothing animating while they're apart.
-export function CoupleInteraction({ x, y, poseIndex = 0 }: { x: number; y: number; poseIndex?: number }) {
+// One combined-pose crop per outfit (round 73) — when the couple meet in
+// the rain or the snow they do the outfit's own together-beat (sharing an
+// umbrella, warming their hands on mugs) instead of a default one.
+const COUPLE_OUTFIT_POSE: Partial<Record<Outfit, { src: string; aspect: number }>> = {
+  rain: { src: '/village-assets/couple-rain.png', aspect: 275 / 350 },
+  winter: { src: '/village-assets/couple-winter.png', aspect: 294 / 353 },
+  tennis: { src: '/village-assets/couple-tennis.png', aspect: 247 / 266 },
+  travel: { src: '/village-assets/couple-travel.png', aspect: 333 / 333 },
+  artsy: { src: '/village-assets/couple-artsy.png', aspect: 299 / 300 },
+}
+
+export function CoupleInteraction({ x, y, poseIndex = 0, outfit = 'default' }: { x: number; y: number; poseIndex?: number; outfit?: Outfit }) {
   const n = COUPLE_INTERACT_FRAMES.length
-  const f = COUPLE_INTERACT_FRAMES[((poseIndex % n) + n) % n]
+  const outfitPose = outfit !== 'default' ? COUPLE_OUTFIT_POSE[outfit] : undefined
+  const f = outfitPose ?? COUPLE_INTERACT_FRAMES[((poseIndex % n) + n) % n]
   const h = 34
   const w = h * f.aspect
   return (
@@ -813,6 +872,7 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
   // The idle pose can carry a seasonal/weather outfit; everything else
   // stays in the default kit.
   const outfitSprite = outfit !== 'default' ? VILLAGER_OUTFIT[name]?.[outfit] : undefined
+  const outfitWalkFrames = outfit !== 'default' ? VILLAGER_OUTFIT_WALK[name]?.[outfit] : undefined
   const idleSprite = outfitSprite ?? sprite
   const iw = h * (idleSprite.w / idleSprite.h)
   return (
@@ -842,7 +902,7 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
             )}
           </g>
         )}
-        {showWalk && <SpriteCycle frames={VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={1} />}
+        {showWalk && <SpriteCycle frames={outfitWalkFrames ?? VILLAGER_WALK[name]} x={0} y={0} height={h} periodSec={1} />}
         {showWave && <SpriteCycle frames={VILLAGER_WAVE[name]} x={0} y={0} height={h} periodSec={isSylvia ? 2.1 : 1.9} />}
       </g>
     </g>

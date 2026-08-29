@@ -686,6 +686,18 @@ export default function VillageScene({
   }, [])
   if (vtodOverride) v = { ...v, timeOfDay: vtodOverride }
 
+  // Same idea for the wardrobe (round 73) — `?outfit=party|tennis|travel|
+  // artsy|business|winter|rain|cozy` so the new sets can be previewed
+  // before they each get a real trigger. Dev-only URL param, no stored state.
+  const [outfitOverrideState, setOutfitOverrideState] = useState<Outfit | null>(null)
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get('outfit')
+      const ok: Outfit[] = ['default', 'winter', 'rain', 'cozy', 'party', 'business', 'tennis', 'travel', 'artsy']
+      if (p && (ok as string[]).includes(p)) setOutfitOverrideState(p as Outfit)
+    } catch { /* ignore */ }
+  }, [])
+
   // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
   // Guest Mode warms the village up whatever the hour: lanterns and window
@@ -716,13 +728,20 @@ export default function VillageScene({
   // no bench/sleepwear swap (2026-08-29). `settled` is the real "let the
   // scene go quiet" gate everywhere the cast renders.
   const settled = quiet && !gathering
-  // Auto wardrobe (round 71) — rain coat when it's actually raining, a
-  // winter coat + knit hat when it's cold, a cosy sweater in autumn.
+  // Auto wardrobe (round 71; round 73 adds the gathering + ?outfit= hooks)
+  // — dressed up for a gathering, a rain coat when it's actually raining, a
+  // winter coat + knit hat when it's cold, a cosy sweater in autumn. Each
+  // outfit now carries its own walk cycle and couple pose (see
+  // VILLAGER_OUTFIT_WALK / COUPLE_OUTFIT_POSE in shapes.tsx). `?outfit=` is
+  // a dev override for the preview so party/tennis/travel/artsy/business
+  // can be seen before they get their own real triggers.
   const outfit: Outfit =
-    weather?.condition === 'rain' || weather?.condition === 'storm' ? 'rain'
-    : v.season === 'winter' ? 'winter'
-    : v.season === 'autumn' ? 'cozy'
-    : 'default'
+    outfitOverrideState ?? (
+      gathering ? 'party'
+      : weather?.condition === 'rain' || weather?.condition === 'storm' ? 'rain'
+      : v.season === 'winter' ? 'winter'
+      : v.season === 'autumn' ? 'cozy'
+      : 'default')
   // Full night (not just dusk) — the couple change into sleepwear near Home
   // and Somi curls up asleep (round 51, 2026-08-28, "all of these new
   // animations elements"): the real bedtime art behind round 48's evening
@@ -2280,7 +2299,7 @@ export default function VillageScene({
       <g>
         {!arranging && !settled && (
           <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
-            <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} />
+            <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} outfit={outfit} />
           </g>
         )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
@@ -2318,8 +2337,8 @@ export default function VillageScene({
         const sp = decorPos('sylvia'), hp = decorPos('harry')
         if (night) return (
           <>
-            <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={247 / 509} x={sp.x} y={sp.y} />
-            <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={242 / 529} x={hp.x} y={hp.y} />
+            <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} />
+            <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={149 / 281} x={hp.x} y={hp.y} />
           </>
         )
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
