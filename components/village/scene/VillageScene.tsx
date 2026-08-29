@@ -5,7 +5,7 @@ import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
-import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
+import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
@@ -107,7 +107,7 @@ const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#586E47'
 // `depth` runs 0..1 from the back of this band to the very front and drives
 // both scale and which GREENS tone gets used, so the layer self-sorts into a
 // gradient of size and darkness instead of being a uniform scatter.
-const FOREGROUND_COUNT = 28
+const FOREGROUND_COUNT = 38
 const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
@@ -115,17 +115,14 @@ const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   // held to a ~110-unit band (was 172, which flung the near ones almost to
   // the canvas edge) and a lower scale ceiling.
   const y = GROUND_Y + 56 + depth * 110
-  const kind = (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.82 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
-  // One bucket of the canvas width per item, jittered within the bucket
-  // (round 7 fix, 2026-08-27) — the previous fully-random x let several
-  // same-depth items land close together, and at this layer's largest
-  // scale (nearest the bottom edge) a handful of overlapping same-tone
-  // bushes/flowers fused into one solid, shapeless mass instead of reading
-  // as a meadow (live report: "this is not cute"). A guaranteed minimum
-  // spacing fixes that without losing the organic scatter — the jitter
-  // still varies each item's exact position within its own bucket.
+  const kind = (hashPos(seed + 'k') < 0.42 ? 'bush' : hashPos(seed + 'k') < 0.78 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
+  // Bucketed for a guaranteed minimum spacing (round 7 — overlapping
+  // same-tone clumps fused into a "shapeless mass"), but every 4th item is
+  // pulled toward its neighbour so the meadow has clumps and clearings
+  // instead of one even carpet (round 74).
   const bucketW = 860 / FOREGROUND_COUNT
-  const x = -30 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85
+  let x = -30 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85
+  if (i % 4 === 1) x -= bucketW * 0.55
   // Scale ceiling lowered from 2.2x to ~1.55x, and flowers capped lower
   // still — a giant flower cluster read as a magenta block, while a giant
   // bush at least still reads as "a bush," just an oversized one.
@@ -141,14 +138,15 @@ const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
 // district row, the other band that was mostly bare. Smaller and lighter
 // than FOREGROUND, so the two layers read as different distances rather
 // than as the same scatter repeated twice.
-const MIDGROUND_COUNT = 16
+const MIDGROUND_COUNT = 22
 const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   const seed = `mg-${i}`
-  // Bucketed x, same reasoning as FOREGROUND above (round 7 fix).
+  // Bucketed x, same reasoning as FOREGROUND above (round 7 fix); every
+  // third one nudged toward its neighbour for clumping (round 74).
   const bucketW = 820 / MIDGROUND_COUNT
   return {
     id: seed,
-    x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.8,
+    x: -10 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.8 - (i % 3 === 0 ? bucketW * 0.5 : 0),
     // Extended from +2..+36 to +2..+56 (round 14, 2026-08-27) — that left a
     // bare 22-unit gap (y 246..268) between where MIDGROUND stopped and
     // FOREGROUND started, undoing some of round 6's own "close the empty
@@ -191,40 +189,65 @@ const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
 // instead of scattering across 64 units of the whole yard, and a tighter
 // height range so they read as one grove at one distance rather than a
 // jumble. Still hashPos-deterministic per seed.
-const GROVE_TREE_COUNT = 6
+// Clustered, not lined up (round 74, 2026-08-29, "fix arrangement of
+// nature") — every earlier pass laid trees at even x-spacing with a little
+// jitter, which is still a row. `clusterX` gathers items around a handful
+// of copse anchors with a long tail of lone stragglers, the way real
+// woodland reads: dense knots with gaps between, not a hedge. A shared
+// helper so the grove, the backdrop line and the meadow all use the same
+// clumping.
+function clusterX(seed: string, anchors: number[], spread: number, strayChance = 0.18, strayRange: [number, number] = [40, 760]) {
+  if (hashPos(seed + 'stray') < strayChance) {
+    return strayRange[0] + hashPos(seed + 'sx') * (strayRange[1] - strayRange[0])
+  }
+  const a = anchors[Math.floor(hashPos(seed + 'a') * anchors.length) % anchors.length]
+  return a + (hashPos(seed + 'jx') - 0.5) * spread
+}
+
+// The grove behind Growth Garden — a real thicket now: ~10 trees in three
+// tight knots across the forest band, canopies overlapping, a couple of
+// saplings out front. Still hashPos-deterministic.
+const GROVE_TREE_COUNT = 10
 const GROVE_TREES = Array.from({ length: GROVE_TREE_COUNT }, (_, i) => {
   const seed = `grove-${i}`
-  const bucketW = 320 / GROVE_TREE_COUNT
-  const x = 62 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.55
+  const x = clusterX(seed, [86, 168, 250, 320], 46, 0.12, [46, 350])
   const depth = hashPos(seed + 'd')
-  const y = GROUND_Y + 8 + depth * 16
+  const y = GROUND_Y + 4 + depth * 22
   return {
-    x, y, kind: (hashPos(seed + 'k') < 0.5 ? 'pine' : 'round') as 'pine' | 'round',
-    // Smaller round 62 ("remove big tree except for people") — the grove
-    // reads as a background thicket behind Growth Garden now, not a row of
-    // hero trees. Only People keeps a big tree.
-    h: 15 + depth * 6, opacity: 0.6 + depth * 0.22,
+    x, y, kind: (hashPos(seed + 'k') < 0.42 ? 'pine' : 'round') as 'pine' | 'round',
+    h: 13 + depth * 9, opacity: 0.62 + depth * 0.26,
+    sway: hashPos(seed + 'sw') < 0.7,
   }
 })
-// A loose line of trees across the whole village, set back near the hill
-// line behind the districts (round 62, "add trees and nature in
-// background") — real seasonal tree sprites, small and low-opacity so they
-// read as a far backdrop rather than clutter, and skipping the middle band
-// where Home sits so they never crowd the house. Same hashPos-per-seed
-// determinism as every other scatter in this file.
-const BACKDROP_TREES = Array.from({ length: 11 }, (_, i) => {
+
+// The backdrop woodland — set back near the hill line, drawn small and
+// dim so it's a horizon, not clutter. Clustered into copses with the
+// centre kept clear so Home never sits in a bush. ~18 trees.
+const BACKDROP_TREES = Array.from({ length: 18 }, (_, i) => {
   const seed = `bg-tree-${i}`
-  const x = 24 + i * 74 + hashPos(seed + 'x') * 34
+  const x = clusterX(seed, [40, 96, 150, 210, 560, 620, 690, 748], 44, 0.14, [20, 780])
   const depth = hashPos(seed + 'd')
   return {
-    x, y: GROUND_Y - 16 + depth * 10,
-    kind: (hashPos(seed + 'k') < 0.45 ? 'pine' : 'round') as 'pine' | 'round',
-    h: 15 + depth * 8, opacity: 0.4 + depth * 0.2,
+    x, y: GROUND_Y - 20 + depth * 14,
+    kind: (hashPos(seed + 'k') < 0.5 ? 'pine' : 'round') as 'pine' | 'round',
+    h: 13 + depth * 10, opacity: 0.34 + depth * 0.24,
+    sway: hashPos(seed + 'sw') < 0.5,
   }
-}).filter(t => t.x < 320 || t.x > 480)
-const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; opacity?: number }[] = [
+}).filter(t => t.x < 315 || t.x > 500)
+
+// A few mid-distance trees standing among the districts themselves, near
+// Archive and off past People — the village reads as sitting IN the woods,
+// not next to a painting of them.
+const YARD_TREES = [
+  { x: 690, y: GROUND_Y + 6, kind: 'round' as const, h: 20, opacity: 0.9, sway: true },
+  { x: 44, y: GROUND_Y + 30, kind: 'pine' as const, h: 24, opacity: 0.95, sway: true },
+  { x: 772, y: GROUND_Y + 40, kind: 'round' as const, h: 22, opacity: 0.92, sway: true },
+]
+
+const EXTRA_TREES: { x: number; y: number; kind: 'pine' | 'round'; h: number; opacity?: number; sway?: boolean }[] = [
   ...BACKDROP_TREES,
   ...GROVE_TREES,
+  ...YARD_TREES,
 ]
 
 // A path through the ground, and a few small props along it (2026-08-24) —
@@ -254,6 +277,24 @@ const PATH_D = catmullRom([
   { x: 345, y: GROUND_Y + 33 }, { x: 455, y: GROUND_Y + 56 }, { x: 560, y: GROUND_Y + 34 },
   { x: 668, y: GROUND_Y + 52 }, { x: 780, y: GROUND_Y + 30 },
 ])
+
+// Fixed cozy nature details (round 74, 2026-08-29, "make everything more
+// aesthetic and cozy" / "import all elements") — boulders, wildflower
+// meadows and flower patches placed by hand in the open ground away from
+// the path and the districts, so the village reads as a lived-in clearing
+// in the woods rather than props on a lawn. Not draggable — atmosphere,
+// same idiom as GRASS_TUFTS / EXTRA_TREES.
+const NATURE_DETAILS: { src: string; x: number; y: number; w: number; flip?: boolean }[] = [
+  { src: 'boulder-cluster.png', x: 96, y: GROUND_Y + 70, w: 20 },
+  { src: 'boulder-cluster.png', x: 726, y: GROUND_Y + 30, w: 15, flip: true },
+  { src: 'rock-cluster.png', x: 300, y: GROUND_Y + 66, w: 15 },
+  { src: 'rock-cluster.png', x: 590, y: GROUND_Y + 72, w: 13, flip: true },
+  { src: 'wildflower-meadow.png', x: 200, y: GROUND_Y + 86, w: 78 },
+  { src: 'wildflower-meadow.png', x: 640, y: GROUND_Y + 90, w: 66, flip: true },
+  { src: 'flower-patch.png', x: 486, y: GROUND_Y + 40, w: 16 },
+  { src: 'flower-patch.png', x: 140, y: GROUND_Y + 44, w: 14 },
+  { src: 'firewood-bundle.png', x: 250, y: GROUND_Y + 20, w: 11 },
+]
 function catmullRom(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return ''
   let d = `M ${pts[0].x} ${pts[0].y}`
@@ -412,21 +453,6 @@ const POSTCARDS: { id: string; label: string }[] = [
 ]
 
 export type { Slot } from '@/lib/village/layout'
-
-// The weather card's own short phrase (round 3, 2026-08-27) — "1:12 AM 61° /
-// Thursday, August 27 · Clear · full moon / A still night in your village."
-// was three lines of increasingly specific data; "Still tonight / 61° · Full
-// moon" says the same thing as a place, not a readout, and matches what the
-// brief actually asked for. A separate short map rather than trimming
-// POSTCARD_LINE itself — that one's still used at full sentence length
-// elsewhere (its own three lines' worth of context is the point there).
-const SHORT_POSTCARD: Record<VillageState['timeOfDay'], string> = {
-  dawn: 'Quiet morning', day: 'Bright day', dusk: 'Evening settles', night: 'Still tonight',
-}
-function shortPostcard(timeOfDay: VillageState['timeOfDay'], condition?: WeatherCondition | null): string {
-  if (condition === 'rain' || condition === 'storm') return 'Rain on the path'
-  return SHORT_POSTCARD[timeOfDay]
-}
 
 // Village district labels read as a dashboard the moment a number leads a
 // string — DistrictLabel puts an iOS-style red notification-badge circle on
@@ -1650,21 +1676,24 @@ export default function VillageScene({
           })}
         </g>
 
-        {/* EXTRA_TREES — see its own comment above. Static (the badge's own
-            trees already sway; four more doing the same would drift past
-            the ambient-motion budget Ambient.tsx documents). */}
+        {/* EXTRA_TREES — the clustered woodland (round 74). A gentle
+            per-tree sway on the nearer ones (village-sway-soft, staggered
+            so the wood never rocks in lockstep); the dim far backdrop
+            holds still to keep the moving-node count down. */}
         <g>
           {EXTRA_TREES.map((t, i) => {
-            // Seasonal since round 51 (2026-08-28) — the background tree line
-            // now turns with v.season (blossom / green / orange / bare)
-            // instead of holding summer year-round.
             const spr = seasonTree(t.kind, v.season)
             const w = t.h * spr.aspect
+            const sway = t.sway && !quiet
             return (
               <g key={i} opacity={t.opacity ?? 0.9}>
                 <ellipse cx={t.x} cy={t.y + 1.5} rx={w * 0.42} ry={2.2} fill="var(--text)" opacity={0.14} />
                 <image href={spr.src} x={t.x - w / 2} y={t.y - t.h} width={w} height={t.h}
-                  style={{ imageRendering: 'pixelated' }} />
+                  className={sway ? 'village-sway-soft' : undefined}
+                  style={{
+                    imageRendering: 'pixelated',
+                    ...(sway ? { animationDuration: `${(4.4 + hashPos(`tsw-${i}`) * 2.6).toFixed(2)}s`, animationDelay: `${(-hashPos(`tsd-${i}`) * 5).toFixed(2)}s` } : {}),
+                  }} />
               </g>
             )
           })}
@@ -1673,6 +1702,26 @@ export default function VillageScene({
               the path band and read as a big centrepiece tree. The grove
               behind Growth Garden and the background tree line carry the
               greenery now. */}
+        </g>
+
+        {/* Fixed cozy nature details — boulders, wildflower meadows, a
+            firewood bundle (round 74). See NATURE_DETAILS above. */}
+        <g pointerEvents="none">
+          {NATURE_DETAILS.map((d, i) => {
+            const ar: Record<string, number> = {
+              'boulder-cluster.png': 258 / 161, 'rock-cluster.png': 183 / 125,
+              'wildflower-meadow.png': 680 / 204, 'flower-patch.png': 1.55,
+              'firewood-bundle.png': 174 / 120,
+            }
+            const w = d.w, h = w / (ar[d.src] ?? 1.5)
+            return (
+              <g key={i} transform={d.flip ? `translate(${d.x} ${d.y}) scale(-1 1)` : `translate(${d.x} ${d.y})`}>
+                <ellipse cx={0} cy={0.5} rx={w * 0.44} ry={h * 0.14} fill="var(--text)" opacity={0.12} />
+                <image href={`/village-assets/${d.src}`} x={-w / 2} y={-h} width={w} height={h}
+                  style={{ imageRendering: 'pixelated' }} />
+              </g>
+            )
+          })}
         </g>
       </g>
 
@@ -2036,6 +2085,10 @@ export default function VillageScene({
             it's lit, and a thin curl of chimney smoke always rises (a house
             with someone in it), drifting on village-smoke. */}
         {((homeOccupied ?? dark) || gathering) && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        {/* A window box of flowers under the upstairs window (round 74) —
+            the one small "someone tends this place" detail on the house. */}
+        <image href="/village-assets/window-flowerbox.png" x={-10} y={-46} width={14} height={8.4}
+          style={{ imageRendering: 'pixelated' }} pointerEvents="none" />
         <g className="village-smoke" opacity={0.16} pointerEvents="none">
           <circle cx={26} cy={-84} r={2.4} fill="var(--text)" />
           <circle cx={28} cy={-92} r={3.2} fill="var(--text)" opacity={0.7} />
@@ -2792,55 +2845,11 @@ export default function VillageScene({
           subtitle={selectedBuilding.building.phase === 'complete' || selectedBuilding.building.phase === 'landmark' ? 'finished' : 'in progress'} />
       )}
 
-      {/* Time/season/weather readout (2026-08-24) — small, top-left, purely
-          informational: what the sky/palette are already reacting to, put
-          into words. Real values only (see the props' own comments); never
-          shown if the caller has nothing real to say yet. */}
-      {(timeLabel || weather) && (
-        <g transform="translate(16 24)" pointerEvents="none">
-          {/* Pinned-card treatment (2026-08-27) — was a plain rounded plate,
-              which read as a conventional dashboard widget sitting ON the
-              scene rather than a little card pinned INTO it. A drop shadow +
-              a small sun/moon/cloud glyph (hand-drawn, same construction as
-              everything else in this file — no external icon set) plus a
-              slightly taller card to fit the glyph without crowding. */}
-          <rect x={-8} y={-17} width={160} height={38} rx={10} fill="var(--text)" opacity={0.1} transform="translate(0 2)" />
-          <rect x={-8} y={-17} width={160} height={38} rx={10} fill="var(--surface)" opacity={0.6} />
-          {/* Glyph: moon (crescent) at night, sun (rayed circle) by day, a
-              plain cloud puff when it's actually cloudy/rainy regardless of
-              hour — reuses weatherMeta's own condition string, no new data. */}
-          <g transform="translate(4 -1)">
-            {weather && weather.condition !== 'clear' ? (
-              <g fill="var(--text)" opacity={0.55}>
-                <circle cx={-2} cy={0} r={3.2} /><circle cx={2} cy={-1.5} r={3.8} /><circle cx={5.5} cy={0.5} r={2.6} />
-              </g>
-            ) : v.timeOfDay === 'night' || v.timeOfDay === 'dusk' ? (
-              <path d="M 4 -4 A 5 5 0 1 0 4 6 A 4 4 0 0 1 4 -4 Z" fill="var(--text)" opacity={0.6} />
-            ) : (
-              <>
-                <circle cx={2} cy={1} r={3.4} fill="var(--amber)" opacity={0.75} />
-                <g stroke="var(--amber)" strokeWidth={1} strokeLinecap="round" opacity={0.6}>
-                  <line x1={2} y1={-4.5} x2={2} y2={-2.8} /><line x1={2} y1={4.8} x2={2} y2={6.5} />
-                  <line x1={-3.5} y1={1} x2={-1.8} y2={1} /><line x1={5.8} y1={1} x2={7.5} y2={1} />
-                </g>
-              </>
-            )}
-          </g>
-          {/* Two lines now (round 3, 2026-08-27) — was three lines building
-              from a short phrase down to the most literal data (exact time,
-              exact date); condensed toward the brief's own "Still tonight /
-              61° · Full moon" example, which drops the literal clock time
-              and date entirely (both already shown elsewhere — Header's own
-              date line) in favor of reading as a place, not a readout. */}
-          <text x={18} fontSize={12} fill="var(--text)" fontFamily="var(--font-body)" fontWeight={500} fontStyle="italic">
-            {shortPostcard(v.timeOfDay, weather?.condition)}
-          </text>
-          <text x={18} y={15} fontSize={9.5} fill="var(--text)" opacity={0.75} fontFamily="var(--font-body)">
-            {[weather ? `${weather.tempF}°` : null, weather ? weatherMeta(weather.condition).label : null, moonLabel]
-              .filter(Boolean).join(' · ')}
-          </text>
-        </g>
-      )}
+      {/* The time/season/weather readout card was removed (2026-08-29, "remove
+          the weather widget from top left") — it overlapped the Fullscreen
+          control and read as a dashboard chip stuck on the picture. The sky,
+          palette and lighting already say what time and weather it is; the
+          words belong in the Brief, not on the scene. */}
 
       {/* World cast (round 19, 2026-08-27, "make everything look apart of
           the same world so if there is a cast there should be a cast over
