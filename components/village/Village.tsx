@@ -20,6 +20,8 @@ import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
+import QRCode from 'qrcode'
+import type { Gathering } from '@/lib/hooks/useGathering'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -46,7 +48,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0 }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -73,8 +75,36 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  arrival banner, no widgets dock, no story text — those belong to the
    *  real thing, not a teaser of it. See TodayVillageWindow. */
   compact?: boolean
+  /** Guest Mode (2026-08-29). Non-null = the village is open to guests: the
+   *  scene warms up (lanterns, bunting, livelier cast) and a host strip
+   *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
+  gathering?: Gathering | null
+  onStartGathering?: (title: string) => void
+  onCloseGathering?: () => void
+  /** Visible guest contributions so far — shown as a quiet count, never a
+   *  "N guests online" readout. */
+  guestCount?: number
 }) {
   const [arranging, setArranging] = useState(false)
+  // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
+  // the strip enlarges it so guests can scan from across the room.
+  const guestActive = !!gathering
+  const [qrDataUri, setQrDataUri] = useState<string | null>(null)
+  const [qrBig, setQrBig] = useState(false)
+  const guestUrl = useMemo(() => {
+    if (!gathering) return null
+    const base = process.env.NEXT_PUBLIC_APP_URL
+      || (typeof window !== 'undefined' ? window.location.origin : '')
+    return `${base.replace(/\/$/, '')}/g/${gathering.token}`
+  }, [gathering])
+  useEffect(() => {
+    if (!guestUrl) { setQrDataUri(null); setQrBig(false); return }
+    let alive = true
+    QRCode.toDataURL(guestUrl, { margin: 1, width: 320 })
+      .then(uri => { if (alive) setQrDataUri(uri) })
+      .catch(() => { if (alive) setQrDataUri(null) })
+    return () => { alive = false }
+  }, [guestUrl])
   // The Inventory (round 31, 2026-08-27, "make a inventory tab in arrange
   // where we can place anything from asset library") — a small picker
   // panel, only reachable from inside arrange mode, that drops a new real
@@ -361,6 +391,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}
+            gathering={guestActive}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -514,6 +545,89 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 </span>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Guest Mode host strip (2026-08-29) — a quiet control, not a
+            dashboard. Off: one "Open the village to guests" button. On: the
+            guest QR (tap to enlarge), a soft guest count, and "End
+            gathering". Bottom-left, clear of Arrange and the zoom cluster.
+            Hidden while arranging or in the picture-frame ambient view. */}
+        {!compact && !ambient && !arranging && (onStartGathering || guestActive) && (
+          <div style={{ position: 'absolute', bottom: '0.7rem', left: '0.7rem', zIndex: 3, maxWidth: 'calc(100% - 1.4rem)' }}>
+            {!guestActive ? (
+              <button
+                onClick={() => {
+                  const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
+                  if (title !== null) onStartGathering?.(title)
+                }}
+                className="press"
+                style={{
+                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                  borderRadius: '8px', padding: '0.35rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35em',
+                }}
+              ><span aria-hidden>🪔</span> Open the village to guests</button>
+            ) : (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.55rem',
+                background: 'color-mix(in srgb, var(--surface) 90%, transparent)', backdropFilter: 'blur(6px)',
+                border: '1px solid var(--border)', borderRadius: '12px', padding: '0.45rem 0.55rem',
+                boxShadow: '0 4px 14px color-mix(in srgb, var(--text) 12%, transparent)',
+              }}>
+                {qrDataUri && (
+                  <button
+                    onClick={() => setQrBig(true)}
+                    title="Enlarge the QR for guests to scan"
+                    className="press"
+                    style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', lineHeight: 0 }}
+                  >
+                    <img src={qrDataUri} alt="Guest QR code" width={44} height={44}
+                      style={{ display: 'block', borderRadius: '4px' }} />
+                  </button>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontWeight: 600 }}>
+                    The village is open
+                  </span>
+                  <span style={{ fontSize: '0.58rem', color: 'var(--muted)', fontFamily: 'var(--font-body)' }}>
+                    {guestCount > 0 ? `${guestCount} left something` : 'waiting for the first guest'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { if (window.confirm('End the gathering? The village goes back to normal and a keepsake is saved.')) onCloseGathering?.() }}
+                  className="press"
+                  style={{
+                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '0.3rem 0.5rem', color: 'var(--muted)', cursor: 'pointer',
+                    fontSize: '0.6rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                  }}
+                >End</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Enlarged QR overlay — fills the scene card so a guest can scan it
+            from across the room. Any tap dismisses. */}
+        {qrBig && qrDataUri && (
+          <div
+            onClick={() => setQrBig(false)}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer',
+              background: 'color-mix(in srgb, var(--bg) 92%, transparent)', backdropFilter: 'blur(3px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem',
+            }}
+          >
+            <span style={{ fontSize: '0.9rem', color: 'var(--text)', fontFamily: 'var(--font-display, var(--font-body))', letterSpacing: '0.04em' }}>
+              WELCOME TO OUR VILLAGE
+            </span>
+            <img src={qrDataUri} alt="Guest QR code"
+              style={{ width: 'min(60vw, 20rem)', height: 'auto', borderRadius: '10px', background: '#fff', padding: '0.75rem' }} />
+            <span style={{ fontSize: '0.65rem', color: 'var(--muted)', fontFamily: 'var(--font-body)' }}>
+              Scan with your phone camera — no app needed
+            </span>
           </div>
         )}
 

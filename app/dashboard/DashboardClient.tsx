@@ -17,6 +17,7 @@ import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
+import { useGathering } from '@/lib/hooks/useGathering'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
@@ -271,6 +272,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // back to the personal layout above when there's no shared space (or the
   // migration hasn't run).
   const sharedVillage = useSharedVillageLayout(userId, villageLayout, changeVillageLayout)
+  const gathering = useGathering(userId)
 
   async function changeHouseholdTabs(next: SectionConfig[]) {
     setHouseholdTabs(next)
@@ -438,7 +440,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Only armed in sharedMode (see useIdleAmbient's own comment); only
   // actually hides chrome when Village is the visible tab, so switching to
   // Household/Places from a shared device isn't fighting a vanishing nav.
-  const [idleAmbient, resetIdleTimer] = useIdleAmbient(sharedMode)
+  // A longer idle grace while the village is open to guests (2026-08-29) —
+  // the wall iPad shouldn't dim mid-gathering.
+  const [idleAmbient, resetIdleTimer] = useIdleAmbient(sharedMode, gathering.gathering ? 300_000 : undefined)
   const ambient = idleAmbient && currentTab === 'village'
 
   // The other half of the same privacy story (2026-08-25) — useIdleAmbient
@@ -483,7 +487,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} />
         case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).

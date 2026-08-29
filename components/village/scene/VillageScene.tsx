@@ -563,7 +563,7 @@ const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
 
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
-  horizon = [], changes, locked = false, onLockedNavigate,
+  horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
@@ -623,6 +623,10 @@ export default function VillageScene({
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
   onLockedNavigate?: (label: string) => void
+  /** Guest Mode (2026-08-29) — the village is open to guests. Orthogonal to
+   *  `locked`. Warms the scene up regardless of time of day: lanterns and
+   *  window glow forced on, party bunting over Home, a warm colour wash. */
+  gathering?: boolean
   /** Dragged positions for the five landmark labels — only the pins move,
    *  not the scenery underneath them (see Village.tsx's own header comment
    *  on why: labels already float above their district as independent map
@@ -684,6 +688,11 @@ export default function VillageScene({
 
   // Dusk/night — windows glow, otherwise they're just glass (2026-08-24).
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
+  // Guest Mode warms the village up whatever the hour: lanterns and window
+  // glow come on, but the ground plane is NOT dimmed (that's `dark`'s job at
+  // night). `lit` is "should the warm lights be on", `dark` stays "is it
+  // actually night" (2026-08-29).
+  const lit = dark || gathering
   // Quiet compositions (round 48, 2026-08-28, "certain moments where
   // almost nothing happens. but looks and feels very nice... Evening. The
   // sun is low. Birds are gone. ... Somi is asleep nearby.") — the cast's
@@ -703,6 +712,10 @@ export default function VillageScene({
   // night only. Dusk keeps the cast wandering (just under a warm low sun);
   // the fully-still bench / sleepwear composition is a night thing now.
   const quiet = v.timeOfDay === 'night'
+  // A gathering overrides the night stillness — the cast stays up and about,
+  // no bench/sleepwear swap (2026-08-29). `settled` is the real "let the
+  // scene go quiet" gate everywhere the cast renders.
+  const settled = quiet && !gathering
   // Auto wardrobe (round 71) — rain coat when it's actually raining, a
   // winter coat + knit hat when it's cold, a cosy sweater in autumn.
   const outfit: Outfit =
@@ -933,7 +946,7 @@ export default function VillageScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [layout])
   const life = useCoupleLife({
-    enabled: !arranging && !quiet,
+    enabled: !arranging && (!quiet || gathering),
     sylviaHome: decorPos('sylvia'),
     harryHome: decorPos('harry'),
     bounds: { x0: 70, x1: 730, y0: GROUND_Y + 2, y1: GROUND_Y + 74 },
@@ -947,7 +960,7 @@ export default function VillageScene({
   // couple. Off during arrange and quiet/night (she's asleep then).
   const somiHome = decorPos('somi')
   const somiLife = useWanderer({
-    enabled: !arranging && !quiet,
+    enabled: !arranging && (!quiet || gathering),
     home: somiHome,
     bounds: { x0: 60, x1: 740, y0: GROUND_Y - 6, y1: GROUND_Y + 78 },
     restfulness: 0.62,
@@ -1457,7 +1470,7 @@ export default function VillageScene({
           interaction (round 53). Sits under every prop/figure/district in
           paint order, so those keep their own clicks; only a bare-ground
           tap reaches here. Off in arrange/quiet. */}
-      {!arranging && !quiet && (
+      {!arranging && !settled && (
         <rect x={0} y={GROUND_Y - 6} width={800} height={440 - (GROUND_Y - 6)} fill="transparent"
           style={{ pointerEvents: 'all', cursor: 'pointer' }}
           onClick={e => { const pt = toSvgPoint(e.clientX, e.clientY); if (pt) life.walkTo(pt.x, pt.y) }} />
@@ -1610,7 +1623,7 @@ export default function VillageScene({
       ) })}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <LampShape x={0} y={0} dark={dark} scale={1.1} />
+          <LampShape x={0} y={0} dark={lit} scale={1.1} />
         </Draggable>
       ) })}
       {(() => { const p = decorPos('clockTower'); return (
@@ -1632,9 +1645,9 @@ export default function VillageScene({
           <g>
             <title>A garden lantern</title>
             <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-            <circle cx={0} cy={-h * 0.5} r={dark ? 8 : 5} fill="var(--amber)" opacity={dark ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
+            <circle cx={0} cy={-h * 0.5} r={lit ? 8 : 5} fill="var(--amber)" opacity={lit ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
             <image href="/village-assets/garden-lantern.png" x={-w / 2} y={-h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
+              style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
           </g>
         </Draggable>
       ) })()}
@@ -1644,7 +1657,7 @@ export default function VillageScene({
           <g onClick={!arranging ? () => setPostcardsOpen(o => !o) : undefined}
             className={!arranging ? 'village-entity' : undefined} style={{ cursor: !arranging ? 'pointer' : undefined }}>
             <title>Your postcards</title>
-            {!arranging && <circle cx={0} cy={-h / 2} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
+            {!arranging && <rect x={-w / 2 - 2} y={-h - 2} width={w + 4} height={h + 4} fill="transparent" style={{ pointerEvents: 'all' }} />}
             <ellipse cx={0} cy={1.5} rx={w / 2.4} ry={1.8} fill="var(--text)" opacity={0.13} />
             <image href="/village-assets/postcard-rack.png" x={-w / 2} y={-h} width={w} height={h}
               style={{ imageRendering: 'pixelated' }} />
@@ -1814,9 +1827,9 @@ export default function VillageScene({
             <title>A paper lantern</title>
             <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
             <rect x={-0.7} y={-postH} width={1.4} height={postH} fill={TRIM} opacity={0.8} />
-            {dark && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
-            <image href={`/village-assets/paper-lantern-${dark ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
+            {lit && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
+            <image href={`/village-assets/paper-lantern-${lit ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
             {arranging && (
               <rect x={-w / 2 - 2} y={-postH - h - 2} width={w + 4} height={postH + h + 4} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
@@ -1924,14 +1937,14 @@ export default function VillageScene({
         {/* Smaller round 58 ("make house smaller and other buildings a bit
             bigger") — 107 -> 90 wide, so Home anchors the scene without
             dwarfing the districts. */}
-        <image href={`/village-assets/cottage-${(homeOccupied ?? dark) ? 'lit' : 'dark'}.png`}
+        <image href={`/village-assets/cottage-${((homeOccupied ?? dark) || gathering) ? 'lit' : 'dark'}.png`}
           x={-45} y={-75.3} width={90} height={75.3}
           style={{ imageRendering: 'pixelated' }} />
         {/* Home breathes too now (round 66, "make sure the house also
             animates") — the window glow pulses on village-glow whenever
             it's lit, and a thin curl of chimney smoke always rises (a house
             with someone in it), drifting on village-smoke. */}
-        {(homeOccupied ?? dark) && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        {((homeOccupied ?? dark) || gathering) && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
         <g className="village-smoke" opacity={0.16} pointerEvents="none">
           <circle cx={26} cy={-84} r={2.4} fill="var(--text)" />
           <circle cx={28} cy={-92} r={3.2} fill="var(--text)" opacity={0.7} />
@@ -2006,7 +2019,7 @@ export default function VillageScene({
               <rect x={hx - w / 2 - 2} y={hy - h - 2} width={w + 4} height={h + 26} fill="transparent" style={{ pointerEvents: 'all' }} />
               <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
-              {dark && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
+              {lit && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
               {arranging && (
                 <rect x={hx - w / 2 - 3} y={hy - h - 3} width={w + 6} height={h + 8} rx={5}
                   fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
@@ -2185,6 +2198,9 @@ export default function VillageScene({
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
       {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}
+      {/* Guest Mode bunting (2026-08-29) — a string over Home while the
+          village is open to guests, so the place reads as "we're hosting". */}
+      {gathering && <BuntingShape x={pos('home').x} y={pos('home').y - 4} />}
 
       {/* The cast (2026-08-25) — replaces the old per-contact PersonMarker
           dots with the three actual, always-present characters, standing in
@@ -2223,15 +2239,15 @@ export default function VillageScene({
           Still off entirely during arrange (Draggable wants a static target)
           and quiet/night (the bench / sleepwear block below takes over). */}
       <g>
-        {!arranging && !quiet && (
+        {!arranging && !settled && (
           <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
             <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} />
           </g>
         )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
-        {(() => { const p = decorPos('sylvia'); const active = !arranging && !quiet; return (
+        {(() => { const p = decorPos('sylvia'); const active = !arranging && !settled; return (
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-            {!(quiet && !arranging) && (
+            {!(settled && !arranging) && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
                   onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
@@ -2241,9 +2257,9 @@ export default function VillageScene({
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
           </Draggable>
         ) })()}
-        {(() => { const p = decorPos('harry'); const active = !arranging && !quiet; return (
+        {(() => { const p = decorPos('harry'); const active = !arranging && !settled; return (
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-            {!(quiet && !arranging) && (
+            {!(settled && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
                   onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
@@ -2259,7 +2275,7 @@ export default function VillageScene({
           conditions are false), and this renders instead — an outright
           swap, not an opacity gate, so there's no shared-timeline risk to
           manage here at all. */}
-      {!arranging && quiet && (() => {
+      {!arranging && settled && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
         if (night) return (
           <>
@@ -2279,12 +2295,12 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
-      {(() => { const p = decorPos('somi'); const active = !arranging && !quiet; return (
+      {(() => { const p = decorPos('somi'); const active = !arranging && !settled; return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
             <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
               onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
-              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging} />
+              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging && !gathering} />
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
@@ -2627,6 +2643,9 @@ export default function VillageScene({
           <>
             {tOp > 0 && <rect width="800" height="440" fill={tColor} opacity={tOp} pointerEvents="none" />}
             {wOp > 0 && <rect width="800" height="440" fill={wColor} opacity={wOp} pointerEvents="none" />}
+            {/* Guest Mode: a faint golden wash over the whole scene so a
+                gathering feels warmer than an ordinary day (2026-08-29). */}
+            {gathering && <rect width="800" height="440" fill="#F3C88A" opacity={0.06} pointerEvents="none" />}
           </>
         )
       })()}

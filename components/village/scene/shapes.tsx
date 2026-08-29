@@ -190,7 +190,7 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
           habits/growth grove bigger") — was max(16, size/2+6), the
           smallest hit target of any clickable entity in the scene next to
           how densely the grove now scatters plants and trees together. */}
-      {onClick && <circle cx={0} cy={-size / 2} r={Math.max(22, size / 2 + 10)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && (() => { const hw = Math.max(9, size / 2 + 3); return <rect x={-hw} y={-size - 3} width={2 * hw} height={size + 6} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} /> })()}
       <g onClick={handleClick}
         className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
         {/* Native <title> stays as the a11y fallback (screen readers, and
@@ -248,7 +248,7 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
           own comment on why (fill-box's scale-origin calculation includes
           this circle's geometry if nested inside, throwing off every
           bounce/hover animation). */}
-      {onClick && <circle cx={0} cy={-spec.h / 2} r={Math.max(18, spec.h / 2 + 6)} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <rect x={-w / 2 - 3} y={-spec.h - 3} width={w + 6} height={spec.h + 6} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick}
         className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
         <title>{`${building.title} — ${building.phase}`}</title>
@@ -305,7 +305,7 @@ export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
-      {onClick && <circle cx={0} cy={0} r={24} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      {onClick && <ellipse cx={0} cy={0} rx={24} ry={9} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="var(--slate)" opacity={0.28} />
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="none" stroke="var(--slate)" strokeWidth={0.7} opacity={0.35} />
       <ellipse cx={-5} cy={-1.5} rx={6} ry={1.6} fill="var(--surface)" opacity={0.25} />
@@ -344,7 +344,7 @@ export function FlowerBedShape({ x, y, scale = 1, hue = 'var(--blush)', onClick 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
-      {onClick && <circle cx={0} cy={0} r={16} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      {onClick && <ellipse cx={0} cy={-1} rx={14} ry={6} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={2} rx={13} ry={3.4} fill="var(--emerald)" opacity={0.18} />
       {petals.map((dx, i) => (
         <circle key={i} cx={dx} cy={-0.5 - (i % 2)} r={2} fill={hue} opacity={0.8} />
@@ -466,7 +466,9 @@ export function WishingWellShape({ x, y, onClick, glow = false }: { x: number; y
   const w = 38, h = 38 // 330x322 source, ~1:1 — sized up rounds 62/63 ("make ... wishing well bigger" / "a bit bigger")
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={0} cy={-h / 2} r={24} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {/* Hit target = the sprite itself + a hair (round 72, "make sure all
+          hit boxes match the element"). */}
+      {onClick && <rect x={-w / 2 - 1} y={-h - 1} width={w + 2} height={h + 3} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>Drop a thank-you in the well</title>
         <ellipse cx={0} cy={1.5} rx={10} ry={2.4} fill="var(--text)" opacity={0.13} />
@@ -495,7 +497,7 @@ export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?
   const w = 19.7, h = 20 // re-sourced round 23 from the master-assets folder (256×260), sized up rounds 24/35 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={0} cy={-h / 2} r={14} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {onClick && <rect x={-w / 2 - 1.5} y={-h - 1.5} width={w + 3} height={h + 4} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
         <title>Jot something down</title>
         <ellipse cx={0} cy={1.5} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
@@ -517,7 +519,9 @@ export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; 
   const w = 19.75, h = 26 // re-sourced round 23 from the master-assets folder (205×270), sized up rounds 24/35 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
-      {onClick && <circle cx={4} cy={-9} r={16} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
+      {/* Was an off-centre circle (cx 4, cy -9) that missed the post and
+          overhung the right (round 72). Now the sprite box + a hair. */}
+      {onClick && <rect x={-w / 2 - 1.5} y={-h} width={w + 3} height={h + 3} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
         <title>{label}</title>
         <ellipse cx={0} cy={1.5} rx={5} ry={1.3} fill="var(--text)" opacity={0.12} />
@@ -816,7 +820,10 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
-      {onClick && <circle cx={0} cy={-h / 2} r={Math.max(16, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      {/* Hit box hugs the figure (round 72) — was a 41-wide circle on a
+          ~18-wide sprite, which stole taps from whoever was standing
+          next to them. A bit of side pad for the wave arm. */}
+      {onClick && <rect x={-w / 2 - 4} y={-h - 3} width={w + 8} height={h + 7} fill="transparent" style={{ pointerEvents: 'all' }} />}
       {/* Facing via the standalone CSS `scale` property (composes with the
           outer `transform` rather than replacing it — see this file's round
           47 note) — flipped the instant a walk starts (round 55, "always
@@ -913,8 +920,10 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
         className={[onClick && 'village-entity', reacting && 'village-tapped'].filter(Boolean).join(' ') || undefined}
         style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>{name}</title>
-        {/* Oversized invisible hit circle — see VillagerShape's own note. */}
-        {onClick && <circle cx={0} cy={-h / 2} r={Math.max(14, h / 2 + 4)} fill="transparent" style={{ pointerEvents: 'all' }} />}
+        {/* Hit box matches Somi's widest pose (the stretch) + a hair
+            (round 72) — was a circle wide enough to also catch Sylvia
+            standing beside her. */}
+        {onClick && <rect x={-14} y={-h - 2} width={28} height={h + 5} fill="transparent" style={{ pointerEvents: 'all' }} />}
         {/* Facing composes with the caller's translate() via the standalone
             `scale` property, same trick VillagerShape uses. */}
         <g style={wander ? { scale: `${face} 1` } : undefined}>
@@ -1092,6 +1101,22 @@ export const TRIM = '#6B5640'
 // first pass (round two, same reason as the color fix above) — measured
 // against a real screenshot, the buildings read as small props next to their
 // own labels; this wrapper is the single knob that fixes that everywhere.
+// Rendered footprint of each DistrictArt case, in its own local units
+// BEFORE the outer <g scale(1.3)> DistrictLabel applies. `home` and
+// `building` draw nothing here (Home's cottage and the Projects log cabin
+// are real structures in VillageScene, each with its own hit area). Used to
+// size DistrictLabel's invisible tap target so it matches the sprite that's
+// actually drawn instead of a one-size fixed rect (round 72, "make sure all
+// hit boxes match the element").
+const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
+  home: { w: 0, h: 0 },
+  building: { w: 0, h: 0 },
+  leaf: { w: 30, h: 14 },   // the swaying-flower cluster
+  book: { w: 46, h: 41 },   // greenhouse.png
+  places: { w: 32, h: 24 }, // car.png
+  people: { w: 44, h: 53 }, // people-tree.png
+}
+
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
   switch (kind) {
     case 'home': // Nothing — Home already has its own real house, drawn directly in
@@ -1233,10 +1258,19 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
       onMouseEnter={draggable ? undefined : onHoverIn} onMouseLeave={draggable ? undefined : onHoverOut}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
       <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Tap to open.`}</title>
-      {/* Invisible hit area, generous enough to cover the tallest roofline
-          (a peaked roof now reaches further up than the old flat tile did)
-          plus the label stack below — unchanged footprint otherwise. */}
-      <rect x={-22} y={-40} width={44} height={64} fill="transparent" style={{ pointerEvents: 'all' }} />
+      {/* Invisible hit area, sized from the actual DistrictArt footprint
+          (×1.3, the scale it's drawn at) plus the label/count text stack
+          below (round 72). For `home`/`building` the art is empty, so this
+          falls back to a small rect covering the glow + label — the real
+          cottage/cabin carry their own bigger hit areas in VillageScene. */}
+      {(() => {
+        const box = DISTRICT_ART_BOX[icon]
+        const artW = box.w * 1.3, artH = box.h * 1.3
+        const halfW = Math.max(19, artW / 2 + 2)
+        const top = Math.min(-18, -artH - 2)
+        const bottom = 27 // covers the label (y 13) and count (y 23) lines
+        return <rect x={-halfW} y={top} width={2 * halfW} height={bottom - top} fill="transparent" style={{ pointerEvents: 'all' }} />
+      })()}
       {/* A dashed ring while arranging — floats free of whichever silhouette
           is underneath, same "not settled yet" language blueprint-phase
           buildings already use. */}
