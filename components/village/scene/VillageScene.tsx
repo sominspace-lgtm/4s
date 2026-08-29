@@ -920,14 +920,28 @@ export default function VillageScene({
   // onScenePointerMove already makes for the scene's own pan gesture.
   const [resizingId, setResizingId] = useState<string | null>(null)
   const itemDragRef = useRef<{ id: string; startClientX: number; startClientY: number; moved: boolean } | null>(null)
-  const pos = (id: LandmarkId) => layout[id] ?? DEFAULT_LANDMARK_POS[id]
+  // Keep everything inside the visible window (2026-08-29) — a stale saved
+  // layout (or a drag that ran off the edge) used to be able to park a
+  // district symbol or a prop below the frame, where it just silently
+  // vanished ("make sure sylvia's flower is shown"). These clamps are
+  // applied on READ, so an off-screen saved position is pulled back into
+  // view instead of being lost, and a drag can't push past the floor.
+  // Districts carry a label + count under the anchor, so their floor sits
+  // higher than a bare prop's.
+  const clampDistrict = (p: { x: number; y: number }) => ({
+    x: Math.max(46, Math.min(756, p.x)),
+    y: Math.max(90, Math.min(356, p.y)),
+  })
+  const clampDecor = <T extends { x: number; y: number }>(p: T): T =>
+    ({ ...p, x: Math.max(24, Math.min(776, p.x)), y: Math.max(56, Math.min(378, p.y)) })
+  const pos = (id: LandmarkId) => clampDistrict(layout[id] ?? DEFAULT_LANDMARK_POS[id])
   // Decorative props' own position lookup (round 12, 2026-08-27) — same
   // "custom position if dragged, else a fixed default" rule as pos() above,
   // just for the open-ended prop set in DECOR_DEFAULTS instead of the six
   // districts. One shared layout blob (VillageLayout is now string-keyed),
   // so a decor id and a landmark id can never collide as long as
   // DECOR_DEFAULTS' keys don't reuse a LandmarkId — they don't.
-  const decorPos = (id: string) => layout[id] ?? DECOR_DEFAULTS[id]
+  const decorPos = (id: string) => clampDecor(layout[id] ?? DECOR_DEFAULTS[id])
 
   // Sylvia & Harry's day (round 53, 2026-08-28, "figures can wander around
   // the map / walk to clicked area and interact / usually still and smiling
@@ -1226,13 +1240,28 @@ export default function VillageScene({
   // "cream bar" class of bug flagged earlier this project), not more sky.
   const CANVAS_W = 800, CANVAS_H = 440
   let baseW = 800
-  let baseH = 330
+  // Taller default window (2026-08-29, "make sure the sky and moon/sun is
+  // seen") — 330 kept the top edge around y=78 while the sun/moon arc peaks
+  // at y=60, clipping the disc every midday. 380 + the top-edge cap in
+  // skyThirdCY opens the sky back up without giving up the foreground.
+  let baseH = 380
   let BASE_VB_CX = 400
-  // Horizon ~40% down the frame (round 69, "move the view down a little to
-  // show more sky") — a touch more sky than round 68's 1/3, still ground-
-  // weighted. top of window = GROUND_Y - 0.4·h, i.e. a centre of
-  // GROUND_Y + 0.1·h, clamped to the canvas.
-  const skyThirdCY = (h: number) => Math.max(h / 2, Math.min(CANVAS_H - h / 2, GROUND_Y + h * 0.1))
+  // Horizon ~40% down the frame (round 69) — ground-weighted, top of window
+  // = GROUND_Y - 0.4·h. But the sun/moon arc runs y 60..120 (lib/village/
+  // sky.ts) and the sun sprite + glow reaches ~25px above its centre, so a
+  // ground-weighted centre left the disc clipped off the top at midday
+  // ("make sure the sky and moon/sun is seen", 2026-08-29). Cap the window's
+  // TOP edge at y=18 (CY ≤ 18 + h/2) so the whole celestial body is always
+  // in frame, then clamp CY ≥ h/2 so the top can't cross y=0 into blank
+  // canvas.
+  const skyThirdCY = (h: number) => {
+    // Ground-weighted centre, but kept inside the canvas on both edges…
+    const inCanvas = Math.max(h / 2, Math.min(CANVAS_H - h / 2, GROUND_Y + h * 0.1))
+    // …then pulled up if needed so the window's TOP edge is never below
+    // y=18 — the sun/moon disc + glow reaches ~25px above its centre and the
+    // centre gets as high as y=60, so anything lower clips it.
+    return Math.max(h / 2, Math.min(inCanvas, 18 + h / 2))
+  }
   let BASE_VB_CY = skyThirdCY(baseH)
   // Fill an arbitrary container aspect (round 67, "ipad still shows white in
   // fullscreen") — when the caller passes the real viewport ratio, the
@@ -1867,7 +1896,13 @@ export default function VillageScene({
           Village.tsx's plantSlots useMemo for where the saved override
           actually gets read back in). A plant can never be ADDED this
           way — only ever moved once it exists from real habit data. */}
-      {plantSlots.map(({ plant, x, y, scale, back }) => (
+      {plantSlots.map(({ plant, x: rawX, y: rawY, scale, back }) => {
+        // Clamp on read so a stale saved position can't hide a habit-plant
+        // below the frame (2026-08-29, "make sure sylvia's flower is
+        // shown") — plant slots come pre-merged with layout[plant.id] in
+        // Village.tsx, so this is the presentation-side safety net.
+        const { x, y } = clampDecor({ x: rawX, y: rawY })
+        return (
         <g key={plant.id} opacity={back ? 0.55 : 1}
           onPointerDown={startDrag(plant.id)}
           style={{ cursor: arranging ? (draggingId === plant.id ? 'grabbing' : 'grab') : undefined }}>
@@ -1882,7 +1917,8 @@ export default function VillageScene({
               opacity={draggingId === plant.id ? 0.9 : 0.4} />
           )}
         </g>
-      ))}
+        )
+      })}
       {/* A zero-habit account leaves this whole band of ground bare — the
           same "quiet setup note, never an alarm" treatment the rest of the
           app gives an empty state, drawn small enough not to compete with a
@@ -1994,12 +2030,15 @@ export default function VillageScene({
         // its logs, and the "Projects" label stay one coherent unit
         // wherever the badge is dragged. Clamped so a badge near the very
         // edge doesn't push the cabin off-canvas.
+        // pos('projects') is already clamped to the visible band (see
+        // clampDistrict) so the cabin now tracks the badge across that whole
+        // range — round 71's "only the hit box moves at the bottom" was the
+        // cabin's own tighter clamp (GROUND_Y+90) stopping ~50px short of
+        // where the badge could still be dragged. Base sits right on the
+        // district anchor (round 68) so the cabin and the label's hit-rect
+        // cover the same spot.
         const bp = pos('projects')
-        // Base sits right on the district anchor (round 68, "make the
-        // loghouse match to the hit box for projects") so the cabin and the
-        // label's own invisible hit-rect cover the same spot — tapping
-        // anywhere on the cabin or just under it opens Projects.
-        const hx = Math.max(120, Math.min(680, bp.x)), hy = Math.min(GROUND_Y + 90, Math.max(GROUND_Y - 6, bp.y))
+        const hx = bp.x, hy = Math.min(356, Math.max(GROUND_Y - 40, bp.y))
         // Eased back round 68 ("make the log house ... a bit smaller") —
         // 88 -> 76.
         const w = 76, h = w / (390 / 293)
