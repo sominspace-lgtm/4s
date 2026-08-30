@@ -718,13 +718,18 @@ export default function VillageScene({
   // it's a URL param, not a setting, and it only ever touches this one
   // render's local `v.timeOfDay`, never the real clock or any stored data.
   const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
+  const [vseasonOverride, setVseasonOverride] = useState<VillageState['season'] | null>(null)
   useEffect(() => {
     try {
-      const p = new URLSearchParams(window.location.search).get('vtod')
+      const q = new URLSearchParams(window.location.search)
+      const p = q.get('vtod')
       if (p === 'dawn' || p === 'day' || p === 'dusk' || p === 'night') setVtodOverride(p)
+      const s = q.get('vseason')
+      if (s === 'spring' || s === 'summer' || s === 'autumn' || s === 'winter') setVseasonOverride(s)
     } catch { /* ignore */ }
   }, [])
   if (vtodOverride) v = { ...v, timeOfDay: vtodOverride }
+  if (vseasonOverride) v = { ...v, season: vseasonOverride }
 
   // Same idea for the wardrobe (round 73) — `?outfit=party|tennis|travel|
   // artsy|business|winter|rain|cozy` so the new sets can be previewed
@@ -1755,6 +1760,38 @@ export default function VillageScene({
           })}
         </g>
 
+        {/* Seasonal ground litter (round 75) — the master weather-ground
+            sheet's leaf piles / mushrooms / acorns in autumn, snow mounds in
+            winter. A few deterministic decals near the grove and path edges,
+            so the season shows on the ground and not just the trees. */}
+        {(v.season === 'autumn' || v.season === 'winter') && (
+          <g pointerEvents="none" opacity={0.9}>
+            {(v.season === 'autumn'
+              ? [
+                  { src: 'leaf-pile.png', ar: 292 / 121, x: 214, y: GROUND_Y + 20, w: 20 },
+                  { src: 'leaf-pile.png', ar: 292 / 121, x: 596, y: GROUND_Y + 30, w: 16, flip: true },
+                  { src: 'mushrooms.png', ar: 298 / 79, x: 118, y: GROUND_Y + 44, w: 15 },
+                  { src: 'acorns.png', ar: 130 / 116, x: 470, y: GROUND_Y + 12, w: 7 },
+                  { src: 'acorns.png', ar: 130 / 116, x: 152, y: 262, w: 6 },
+                ]
+              : [
+                  { src: 'snow-mound.png', ar: 221 / 104, x: 150, y: GROUND_Y + 16, w: 22 },
+                  { src: 'snow-mound.png', ar: 221 / 104, x: 470, y: GROUND_Y + 34, w: 17 },
+                  { src: 'snow-mound.png', ar: 221 / 104, x: 636, y: GROUND_Y + 22, w: 19, flip: true },
+                ]
+            ).map((d, i) => {
+              const w = d.w, h = w / d.ar
+              return (
+                <g key={i} transform={d.flip ? `translate(${d.x} ${d.y}) scale(-1 1)` : `translate(${d.x} ${d.y})`}>
+                  <ellipse cx={0} cy={0.4} rx={w * 0.44} ry={h * 0.16} fill="var(--text)" opacity={0.1} />
+                  <image href={`/village-assets/${d.src}`} x={-w / 2} y={-h} width={w} height={h}
+                    style={{ imageRendering: 'pixelated' }} />
+                </g>
+              )
+            })}
+          </g>
+        )}
+
         {/* Cozy fixed features (round 74) — a flowering arbor bench to sit
             under, two path lamps that catch the light at dusk / during a
             gathering, tulip planters by the garden and the house. Static
@@ -2443,13 +2480,31 @@ export default function VillageScene({
         })
         return (
           <g>
-            {/* Dinner table — the gathering's centre, set with food + a lantern */}
+            {/* Dinner table — the gathering's centre, set with a cake + mugs */}
             <g transform={`translate(${table.x} ${table.y})`}>
               <title>The table is set</title>
               <ellipse cx={0} cy={2} rx={16} ry={3.4} fill="var(--text)" opacity={0.16} />
-              <image href="/village-assets/dinner-table.png" x={-13.5} y={-21} width={27} height={23.6}
+              <image href="/village-assets/cake-table.png" x={-15} y={-21.5} width={30} height={21.2}
                 style={{ imageRendering: 'pixelated' }} />
             </g>
+
+            {/* Party decor (round 75) — a flower garland strung over the
+                table, balloons by the welcome sign, a gift or two by Home.
+                Static; part of the "people are here" read, not interactive. */}
+            <g transform={`translate(${table.x} ${table.y - 30})`} opacity={0.95} pointerEvents="none">
+              <image href="/village-assets/flower-garland.png" x={-19} y={0} width={38} height={38 * (107 / 272)}
+                style={{ imageRendering: 'pixelated' }} />
+            </g>
+            <g transform={`translate(${signX + 17} ${signY})`} pointerEvents="none">
+              <image href="/village-assets/balloons.png" x={-7} y={-30} width={14} height={14 * (175 / 128)}
+                style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-2" />
+            </g>
+            {[[home.x - 24, GROUND_Y + 40], [home.x + 30, GROUND_Y + 46]].map(([gx, gy], i) => (
+              <g key={i} transform={`translate(${clampX(gx)} ${gy})`} pointerEvents="none">
+                <image href="/village-assets/gift-box.png" x={-4} y={-8} width={8} height={8}
+                  style={{ imageRendering: 'pixelated' }} />
+              </g>
+            ))}
 
             {/* Photo booth — tapping opens the shared album */}
             <g transform={`translate(${booth.x} ${booth.y})`}

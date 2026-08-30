@@ -108,6 +108,17 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'hobbyBicycle', label: 'Bicycle', href: 'hobby-bicycle.png', aspect: 292 / 253, h: 12 },
   { key: 'hobbyGardenBasket', label: 'Gardening basket', href: 'hobby-garden-basket.png', aspect: 293 / 216, h: 9 },
   { key: 'hobbyBasket', label: 'Picnic basket', href: 'hobby-basket.png', aspect: 189 / 181, h: 8 },
+
+  // Round 75 ("import the remaining nature and village sheets") — decor from
+  // village-party-decor-expansion-alpha.png. The party set's balloons /
+  // garland / cake table are auto-placed only during Guest Mode (see
+  // VillageScene), so they're not listed here; these four are year-round
+  // props. The flower barrel / wheelbarrow keep their baked-in blooms
+  // (containers, not a way to plant one — same reasoning as flowerPlanter).
+  { key: 'flowerBarrel', label: 'Flower barrel', href: 'flower-barrel.png', aspect: 142 / 162, h: 13 },
+  { key: 'wheelbarrowFlowers', label: 'Flower cart', href: 'wheelbarrow-flowers.png', aspect: 270 / 170, h: 12 },
+  { key: 'photoFrame', label: 'Photo frame', href: 'photo-frame.png', aspect: 211 / 198, h: 14 },
+  { key: 'giftBox', label: 'Gift', href: 'gift-box.png', aspect: 88 / 90, h: 7 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {
