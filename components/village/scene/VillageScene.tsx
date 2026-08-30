@@ -1445,6 +1445,12 @@ export default function VillageScene({
           <stop offset="55%" stopColor="#BCCFAA" />
           <stop offset="100%" stopColor="#A9C096" />
         </linearGradient>
+        {/* Sun-shaft gradient (round 74) — warm at the top, gone by the
+            bottom, so a light beam fades out before it hits the grass. */}
+        <linearGradient id="vshaft" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F2D08A" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#F2D08A" stopOpacity="0" />
+        </linearGradient>
         <radialGradient id="vsheen" cx="32%" cy="28%" r="78%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0.30" />
           <stop offset="55%" stopColor="#fff" stopOpacity="0.06" />
@@ -1567,6 +1573,31 @@ export default function VillageScene({
               fill={palette.ground} className="village-fade" />
           </g>
         )}
+        {/* Seasonal ground freckle (round 74, "cozy atmosphere" / "the
+            ground itself should turn with the season") — a light scatter of
+            tiny marks across the grass: fallen leaves in autumn, snow
+            patches in winter, flower flecks in spring, clover in summer.
+            Deterministic per index, same hashPos idiom as GRASS_TUFTS. */}
+        {live && (() => {
+          const spec = {
+            autumn: { fills: ['#c86a3a', '#b9532e', '#d98b45'], r: [0.8, 1.7], op: 0.5, n: 44 },
+            winter: { fills: ['#eef2f6', '#e2e9f0'], r: [1.4, 3.2], op: 0.55, n: 30 },
+            spring: { fills: ['#e8899f', '#f0c65a', '#ffffff'], r: [0.6, 1.1], op: 0.6, n: 40 },
+            summer: { fills: ['#5f8f4e', '#6fa057'], r: [0.7, 1.3], op: 0.3, n: 24 },
+          }[v.season]
+          return (
+            <g className="village-fade">
+              {Array.from({ length: spec.n }, (_, i) => {
+                const s = `frk-${v.season}-${i}`
+                const x = 12 + hashPos(s) * 776
+                const y = GROUND_Y + 6 + hashPos(s + 'y') * 150
+                const r = spec.r[0] + hashPos(s + 'r') * (spec.r[1] - spec.r[0])
+                const fill = spec.fills[Math.floor(hashPos(s + 'f') * spec.fills.length) % spec.fills.length]
+                return <circle key={i} cx={x} cy={y} r={r} fill={fill} opacity={spec.op * (0.5 + hashPos(s + 'o') * 0.5)} />
+              })}
+            </g>
+          )
+        })()}
       </g>
 
       {/* Behind the ground line and above the sky: places you've both been.
@@ -1719,6 +1750,42 @@ export default function VillageScene({
                 <ellipse cx={0} cy={0.5} rx={w * 0.44} ry={h * 0.14} fill="var(--text)" opacity={0.12} />
                 <image href={`/village-assets/${d.src}`} x={-w / 2} y={-h} width={w} height={h}
                   style={{ imageRendering: 'pixelated' }} />
+              </g>
+            )
+          })}
+        </g>
+
+        {/* Cozy fixed features (round 74) — a flowering arbor bench to sit
+            under, two path lamps that catch the light at dusk / during a
+            gathering, tulip planters by the garden and the house. Static
+            scenery, not draggable — same idiom as the nature details. */}
+        <g pointerEvents="none">
+          {/* Flower arbor + bench */}
+          {(() => { const w = 23, h = w / (301 / 235), x = 348, y = GROUND_Y + 74; return (
+            <g transform={`translate(${x} ${y})`}>
+              <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={2} fill="var(--text)" opacity={0.13} />
+              <image href="/village-assets/arbor-bench.png" x={-w / 2} y={-h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
+            </g>
+          ) })()}
+          {/* Path lamps */}
+          {[{ x: 176, y: GROUND_Y + 20 }, { x: 528, y: GROUND_Y + 24 }].map((p, i) => {
+            const w = 8, h = w / (136 / 242)
+            return (
+              <g key={i} transform={`translate(${p.x} ${p.y})`}>
+                {lit && <circle cx={0} cy={-h + 3} r={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-glow" />}
+                <ellipse cx={0} cy={0.5} rx={3} ry={1.3} fill="var(--text)" opacity={0.14} />
+                <image href="/village-assets/street-lamp.png" x={-w / 2} y={-h} width={w} height={h}
+                  style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
+              </g>
+            )
+          })}
+          {/* Tulip planters */}
+          {[{ x: 40, y: GROUND_Y + 52 }, { x: 366, y: GROUND_Y + 28 }].map((p, i) => {
+            const w = 13, h = w / (251 / 115)
+            return (
+              <g key={i} transform={`translate(${p.x} ${p.y})`}>
+                <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={1.4} fill="var(--text)" opacity={0.12} />
+                <image href="/village-assets/flower-planter-tulips.png" x={-w / 2} y={-h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
               </g>
             )
           })}
@@ -2260,7 +2327,7 @@ export default function VillageScene({
 
       {/* The things that move. Above the scenery so smoke reads as being in
           front of the house, below the labels so it never fights the text. */}
-      {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} weatherCondition={weather?.condition} />}
+      {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} weatherCondition={weather?.condition} warm={gathering} />}
 
       {/* Click-to-care sparkles — see careFor() above. Self-removing via its
           own setTimeout, so this array is only ever non-empty for ~650ms. */}
@@ -2884,6 +2951,11 @@ export default function VillageScene({
         const [wColor, wOp] = weatherCast[weather?.condition ?? 'clear']
         return (
           <>
+            {/* A whisper of hearth-warmth over everything, always (round 74,
+                "cozy atmosphere") — 2.5% amber so the village is never a
+                cold picture even at flat midday. Below the time-of-day
+                cast so dusk/night still lead. */}
+            <rect width="800" height="440" fill="#F6D9A8" opacity={0.028} pointerEvents="none" style={{ mixBlendMode: 'soft-light' }} />
             {tOp > 0 && <rect width="800" height="440" fill={tColor} opacity={tOp} pointerEvents="none" />}
             {wOp > 0 && <rect width="800" height="440" fill={wColor} opacity={wOp} pointerEvents="none" />}
             {/* Guest Mode: a faint golden wash over the whole scene so a

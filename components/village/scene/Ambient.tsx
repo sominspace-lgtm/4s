@@ -17,7 +17,7 @@ import type { WeatherCondition } from '@/lib/village/weather'
  * reads as a bug; fireflies only when there's actually a forest for them to be
  * over, because an empty village shouldn't be decorated to look less empty.
  */
-export default function Ambient({ village: v, palette, groundY, weatherCondition }: {
+export default function Ambient({ village: v, palette, groundY, weatherCondition, warm = false }: {
   village: VillageState
   palette: SeasonPalette
   groundY: number
@@ -25,10 +25,15 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
    *  visual today (see the rain-streak note below); everything else is just
    *  the text readout in VillageText/wherever the caller shows it. */
   weatherCondition?: WeatherCondition | null
+  /** Guest Mode (round 74) — the village is hosting, so the warm-evening
+   *  layers (ground-glow pools, fireflies) come on whatever the hour. */
+  warm?: boolean
 }) {
   const cold = v.season === 'winter' || v.season === 'autumn'
   const dark = v.timeOfDay === 'dusk' || v.timeOfDay === 'night'
+  const glowy = dark || warm
   const golden = v.timeOfDay === 'dawn' || v.timeOfDay === 'dusk'
+  const bright = v.timeOfDay === 'day' || v.timeOfDay === 'dawn'
   const lived = v.buildings.length + v.plants.length > 6
 
   return (
@@ -41,10 +46,25 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
           opacity={v.timeOfDay === 'dusk' ? 0.09 : 0.07} filter="url(#vglow)" />
       )}
 
-      {/* Warm glow pooling on the ground after dark (round 53) — under Home
-          and a couple of spots along the path, the light everyone's windows
-          and lamps are casting. Gated on `dark` like the smoke/fireflies. */}
-      {dark && (
+      {/* Light shafts slanting down through the tree line on a bright
+          morning/afternoon (round 74, "cozy atmosphere") — narrow, faint,
+          starting just below the horizon so they read as sun through
+          branches, not spotlights. soft-light blend + a gradient that fades
+          to nothing before it reaches the ground. */}
+      {bright && weatherCondition !== 'rain' && weatherCondition !== 'storm' && (
+        <g opacity={v.timeOfDay === 'dawn' ? 0.22 : 0.13} style={{ mixBlendMode: 'soft-light' }}>
+          {[[150, 34, 7, 96, 12], [470, 30, 5, 110, -9], [660, 36, 6, 90, 8]].map(([x, y, w, len, skew], i) => (
+            <path key={i}
+              d={`M ${x} ${y} L ${x + w} ${y} L ${x + w + skew + len * 0.16} ${y + len} L ${x + skew - len * 0.16} ${y + len} Z`}
+              fill="url(#vshaft)" className={`village-mote village-mote-${i}`} />
+          ))}
+        </g>
+      )}
+
+      {/* Warm glow pooling on the ground after dark (round 53; round 74 —
+          also during Guest Mode). Under Home and a couple of spots along
+          the path, the light everyone's windows and lamps are casting. */}
+      {glowy && (
         <g>
           {[[432, 0.16], [150, 0.1], [600, 0.1], [300, 0.08]].map(([cx, op], i) => (
             <ellipse key={i} cx={cx} cy={groundY + 8} rx={i === 0 ? 60 : 42} ry={i === 0 ? 15 : 11}
@@ -110,8 +130,9 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
 
       {/* Fireflies (round 53: spread across the whole village at dusk/night;
           round 66 "add fireflies glow" — a couple more, bigger blur, and a
-          soft pooled halo under the swarm). Each drifts on its own slow path. */}
-      {dark && (
+          soft pooled halo under the swarm; round 74 — also during a
+          gathering). Each drifts on its own slow path. */}
+      {glowy && (
         <g opacity={0.95}>
           <ellipse cx={230} cy={groundY + 30} rx={120} ry={26} fill="var(--amber)" opacity={0.06} filter="url(#vglow)" />
           <ellipse cx={560} cy={groundY + 28} rx={130} ry={26} fill="var(--amber)" opacity={0.06} filter="url(#vglow)" />
