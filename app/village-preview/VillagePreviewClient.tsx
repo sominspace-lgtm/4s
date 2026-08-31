@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import VillageScene, { GROUND_Y } from '@/components/village/scene/VillageScene'
-import Village from '@/components/village/Village'
 import { type VillageState, type Plant, type Building } from '@/lib/village/state'
 import { forestSlots, districtSlots } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -72,16 +71,6 @@ export default function VillagePreviewClient() {
             color: t === theme ? 'var(--bg)' : 'var(--text)',
           }}>{THEME_LABELS[t] ?? t}</button>
         ))}
-      </div>
-
-      {/* The slim cross-tab band (round 76) — the real <Village strip /> as
-          it appears at the top of every other dashboard tab. Runs the real
-          data hooks (empty here, no auth) so it also smoke-tests that path. */}
-      <div style={{ marginBottom: '1.4rem' }}>
-        <div style={{ color: 'var(--text)', fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-          tab band (strip)
-        </div>
-        <Village strip userId="preview" />
       </div>
 
       {/* Density: growth has to stay visible past the old caps rather than

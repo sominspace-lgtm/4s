@@ -49,7 +49,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact: compactProp = false, strip = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -76,11 +76,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  arrival banner, no widgets dock, no story text — those belong to the
    *  real thing, not a teaser of it. See TodayVillageWindow. */
   compact?: boolean
-  /** A slim living band shown at the top of the other dashboard tabs
-   *  (2026-08-31, "make the village show up on 4s tabs, remove controls").
-   *  Same chromeless, tap-to-open behaviour as `compact` but short and
-   *  cropped to the village's ground band rather than a full 800×440 card. */
-  strip?: boolean
   /** Guest Mode (2026-08-29). Non-null = the village is open to guests: the
    *  scene warms up (lanterns, bunting, livelier cast) and a host strip
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
@@ -101,11 +96,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
   onDeleteMemory?: (id: string) => void
 }) {
-  // `strip` is a chromeless variant of `compact` — every control guard keys
-  // off `compact`, so folding strip in here hides all of them without
-  // touching each `!compact` check below.
-  const compact = compactProp || strip
   const [arranging, setArranging] = useState(false)
+  // The single ⋯ control-menu on the full tab (2026-08-31) — everything the
+  // scene used to float on top (Arrange, guest hosting, fullscreen) now
+  // lives behind this one button so the resting village is just the picture.
+  const [menuOpen, setMenuOpen] = useState(false)
   // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
   // the strip enlarges it so guests can scan from across the room.
   const guestActive = !!gathering
@@ -159,18 +154,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     })).sort((a, b) => b.minDist - a.minDist)[0]?.s ?? { x: 400, y: GROUND_Y + 10 }
     onChangeLayout({ ...layout, [id]: spot })
   }
-  // Zoom (2026-08-27, round 4) — "make it like a mini village we can zoom
-  // in and out of and enjoy doing so." A discrete +/- control rather than
-  // wheel/pinch gestures: those need to distinguish a zoom gesture from
-  // page scroll and from arrange-mode dragging, real added risk for a
-  // first pass. Floor clamped to 1 (not below), not 0.7 as first shipped —
-  // the canvas is a fixed 800×440 with nothing drawn past its own edges,
-  // so "zooming out" past the full view has no content to reveal and just
-  // exposes blank canvas (the empty band reported live, round 4 point 2).
-  // 1 already shows everything there is; "-" only matters once you've
-  // zoomed in past it. Ceiling of 2 is close enough to read one building's
-  // detail. Reset button only shows once actually zoomed.
-  const [zoom, setZoom] = useState(1)
+  // Zoom used to be a discrete +/- control (round 4); it was dropped from
+  // the tab when the controls collapsed into the ⋯ menu (round 77, "remove
+  // the control from that tab"). The scene still reads `zoom` in its viewBox
+  // math, so it stays pinned at 1.
+  const zoom = 1
   // Fullscreen (round 59, "allow so we can view village in fullscreen on
   // ipad/mobile") — a CSS pseudo-fullscreen (fixed inset:0) rather than the
   // Fullscreen API, which iOS Safari only supports for <video>. Escape
@@ -372,16 +360,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // sky. aspect-ratio scales height to the card's actual width, so
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
-          ...(compact && !strip ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
-          // The slim cross-tab band: a fixed short height, cropped to the
-          // village's ground band by the inner transform below.
-          ...(strip ? {
-            // Width-based sizing so it scales in step with the -19% pull on
-            // the inner scene (also width-relative), keeping the framed band
-            // steady across viewports.
-            height: 'clamp(150px, 19vw, 216px)', cursor: 'pointer',
-            borderRadius: 'var(--radius-organic, 14px)',
-          } : {}),
+          ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
           // In fullscreen the card fills the whole viewport; VillageScene
           // re-shapes its own viewBox to that exact ratio (see
           // containerAspect below), so the SVG covers it edge to edge with
@@ -412,12 +391,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
         <div style={
-          // The band shows the village's ground stripe: the scene renders at
-          // its natural aspect (width-locked), pulled up by a % of its own
-          // width so the horizon/houses/figures sit in the short window and
-          // the empty sky above is clipped by the card's overflow:hidden.
-          strip ? { marginTop: '-16.5%' }
-          : compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
+          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
           : fullscreen ? { width: '100%', height: '100%' }
           : undefined
         }>
@@ -465,35 +439,119 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           />
         )}
 
-        {/* Fullscreen toggle (round 59) — top-left, clear of Arrange
-            (top-right) and the zoom controls (bottom-right). Shown in the
-            full view always, including shared/locked mode: going fullscreen
-            reveals nothing. */}
-        {!compact && !ambient && (
+        {/* Fullscreen needs exactly one control — a close affordance. Escape
+            also works (see the keydown handler above). */}
+        {!compact && expanded && (
           <button
-            onClick={() => setExpanded(e => !e)}
-            title={expanded ? 'Exit fullscreen' : 'View fullscreen'}
-            aria-label={expanded ? 'Exit fullscreen' : 'View fullscreen'}
+            onClick={() => setExpanded(false)}
+            title="Exit fullscreen" aria-label="Exit fullscreen"
             className="press"
             style={{
-              position: 'absolute', top: '0.7rem', left: '0.7rem', zIndex: 2,
+              position: 'absolute', top: '0.7rem', right: '0.7rem', zIndex: 6,
               background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-              borderRadius: '8px', padding: '0.3rem 0.45rem', color: 'var(--muted)', cursor: 'pointer',
-              fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-              display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+              borderRadius: '8px', padding: '0.25rem 0.55rem', color: 'var(--muted)', cursor: 'pointer',
+              fontSize: '0.85rem', lineHeight: 1, fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
             }}
-          ><span aria-hidden style={{ fontSize: '0.85em' }}>{expanded ? '✕' : '⤢'}</span>{expanded ? ' Close' : ' Fullscreen'}</button>
+          >✕</button>
         )}
 
-        {/* Arrange toggle — same "arrange" convention Household's Home
-            tab already uses for its own drag-reorderable blocks. Available
-            even in shared/locked mode: repositioning a landmark doesn't
-            reveal anything, it's purely cosmetic. Hidden while ambient —
-            the picture-frame default shouldn't show a settings button. */}
-        {!compact && onChangeLayout && !ambient && (
-          <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
-            {arranging && Object.keys(layout).length > 0 && (
+        {/* The one ⋯ menu (round 77, "remove the control from that tab") —
+            Arrange, guest hosting and fullscreen used to be three floating
+            button clusters on the scene; they're all behind this now so the
+            resting village is just the picture. Hidden in the picture-frame
+            ambient view, in fullscreen, and while arranging (which shows its
+            own transient toolbar instead). */}
+        {!compact && !ambient && !expanded && !arranging && (
+          <>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              title="Village options" aria-label="Village options" aria-expanded={menuOpen}
+              className="press"
+              style={{
+                position: 'absolute', top: '0.7rem', right: '0.7rem', zIndex: 6,
+                background: menuOpen ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
+                border: `1px solid ${menuOpen ? 'var(--gold)' : 'var(--border)'}`,
+                borderRadius: '8px', padding: '0.15rem 0.5rem',
+                color: menuOpen ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
+                fontSize: '1rem', lineHeight: 1, fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+              }}
+            >⋯</button>
+            {menuOpen && (
               <>
+                <div aria-hidden onClick={() => setMenuOpen(false)}
+                  style={{ position: 'absolute', inset: 0, zIndex: 4, background: 'transparent' }} />
+                <div role="menu" style={{
+                  position: 'absolute', top: '2.6rem', right: '0.7rem', zIndex: 5, minWidth: '11rem',
+                  background: 'color-mix(in srgb, var(--surface) 95%, transparent)', backdropFilter: 'blur(6px)',
+                  border: '1px solid var(--border)', borderRadius: '10px', padding: '0.3rem',
+                  display: 'flex', flexDirection: 'column',
+                  boxShadow: '0 6px 18px color-mix(in srgb, var(--text) 14%, transparent)',
+                }}>
+                  {[
+                    ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
+                    ...(guestActive
+                      ? [
+                          { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
+                          { label: 'Show the guest QR', on: () => setQrBig(true) },
+                        ]
+                      : onStartGathering
+                        ? [{
+                            label: 'Open the village to guests',
+                            on: () => {
+                              const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
+                              if (title !== null) onStartGathering?.(title)
+                            },
+                          }]
+                        : []),
+                    { label: 'View fullscreen', on: () => setExpanded(true) },
+                  ].map(item => (
+                    <button key={item.label} role="menuitem" className="press"
+                      onClick={() => { item.on(); setMenuOpen(false) }}
+                      style={{
+                        textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+                        padding: '0.4rem 0.5rem', borderRadius: '7px', color: 'var(--text)',
+                        fontSize: '0.7rem', fontFamily: 'var(--font-body)',
+                      }}
+                    >{item.label}</button>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Arrange session toolbar — transient working chrome while
+            arranging; the resting scene has none of this. */}
+        {!compact && !ambient && arranging && onChangeLayout && (
+          <div style={{
+            position: 'absolute', top: '0.7rem', right: '0.7rem', zIndex: 6,
+            display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end',
+            maxWidth: 'calc(100% - 1.4rem)',
+          }}>
+            <button
+              onClick={() => setInventoryOpen(o => !o)}
+              title="Add something from the asset library"
+              className="press"
+              style={{
+                background: inventoryOpen ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
+                border: `1px solid ${inventoryOpen ? 'var(--gold)' : 'var(--border)'}`,
+                borderRadius: '8px', padding: '0.3rem 0.6rem',
+                color: inventoryOpen ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
+                fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+              }}
+            ><Icon name="box" size={10} /> Add</button>
+            {Object.keys(layout).length > 0 && (
+              <>
+                <button
+                  onClick={() => onChangeLayout({})}
+                  className="press"
+                  style={{
+                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
+                    borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
+                    fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                  }}
+                >Reset positions</button>
                 <button
                   onClick={() => { try { navigator.clipboard?.writeText(JSON.stringify(layout)) } catch { /* ignore */ } }}
                   title="Copy this arrangement as JSON"
@@ -504,48 +562,18 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
                   }}
                 >Copy layout</button>
-                <button
-                  onClick={() => onChangeLayout({})}
-                  className="press"
-                  style={{
-                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                    borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-                    fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                  }}
-                >Reset positions</button>
               </>
             )}
-            {/* Inventory toggle — only reachable inside arrange mode, same
-                "settings only when you're already customizing" logic as
-                Reset positions above. */}
-            {arranging && (
-              <button
-                onClick={() => setInventoryOpen(o => !o)}
-                title="Add something from the asset library"
-                className="press"
-                style={{
-                  background: inventoryOpen ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
-                  border: `1px solid ${inventoryOpen ? 'var(--gold)' : 'var(--border)'}`,
-                  borderRadius: '8px', padding: '0.3rem 0.6rem',
-                  color: inventoryOpen ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
-                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                  display: 'inline-flex', alignItems: 'center', gap: '0.3em',
-                }}
-              ><Icon name="box" size={10} /> Inventory</button>
-            )}
             <button
-              onClick={() => setArranging(a => !a)}
-              title={arranging ? 'Done arranging' : 'Arrange the village'}
+              onClick={() => setArranging(false)}
               className="press"
               style={{
-                background: arranging ? 'var(--gold)' : 'color-mix(in srgb, var(--bg) 65%, transparent)',
-                border: `1px solid ${arranging ? 'var(--gold)' : 'var(--border)'}`,
-                borderRadius: '8px', padding: '0.3rem 0.6rem',
-                color: arranging ? 'var(--bg)' : 'var(--muted)', cursor: 'pointer',
-                fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
+                background: 'var(--gold)', border: '1px solid var(--gold)',
+                borderRadius: '8px', padding: '0.3rem 0.6rem', color: 'var(--bg)', cursor: 'pointer',
+                fontSize: '0.65rem', fontFamily: 'var(--font-body)',
                 display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}
-            >{arranging ? <><Icon name="check" size={10} /> Done</> : <><Icon name="gear" size={10} /> Arrange</>}</button>
+            ><Icon name="check" size={10} /> Done</button>
           </div>
         )}
 
@@ -584,71 +612,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           </div>
         )}
 
-        {/* Guest Mode host strip (2026-08-29) — a quiet control, not a
-            dashboard. Off: one "Open the village to guests" button. On: the
-            guest QR (tap to enlarge), a soft guest count, and "End
-            gathering". Bottom-left, clear of Arrange and the zoom cluster.
-            Hidden while arranging or in the picture-frame ambient view. */}
-        {!compact && !ambient && !arranging && (onStartGathering || guestActive) && (
-          <div style={{ position: 'absolute', bottom: '0.7rem', left: '0.7rem', zIndex: 3, maxWidth: 'calc(100% - 1.4rem)' }}>
-            {!guestActive ? (
-              <button
-                onClick={() => {
-                  const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
-                  if (title !== null) onStartGathering?.(title)
-                }}
-                className="press"
-                style={{
-                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                  borderRadius: '8px', padding: '0.35rem 0.6rem', color: 'var(--muted)', cursor: 'pointer',
-                  fontSize: '0.65rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                  display: 'inline-flex', alignItems: 'center', gap: '0.35em',
-                }}
-              ><span aria-hidden>🪔</span> Open the village to guests</button>
-            ) : (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.55rem',
-                background: 'color-mix(in srgb, var(--surface) 90%, transparent)', backdropFilter: 'blur(6px)',
-                border: '1px solid var(--border)', borderRadius: '12px', padding: '0.45rem 0.55rem',
-                boxShadow: '0 4px 14px color-mix(in srgb, var(--text) 12%, transparent)',
-              }}>
-                {qrDataUri && (
-                  <button
-                    onClick={() => setQrBig(true)}
-                    title="Enlarge the QR for guests to scan"
-                    className="press"
-                    style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', lineHeight: 0 }}
-                  >
-                    <img src={qrDataUri} alt="Guest QR code" width={44} height={44}
-                      style={{ display: 'block', borderRadius: '4px' }} />
-                  </button>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
-                  <span style={{ fontSize: '0.62rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontWeight: 600 }}>
-                    The village is open
-                  </span>
-                  <span style={{ fontSize: '0.58rem', color: 'var(--muted)', fontFamily: 'var(--font-body)' }}>
-                    {guestCount > 0 ? `${guestCount} left something` : 'waiting for the first guest'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setGuestPanelOpen(true)}
-                  className="press"
-                  style={{
-                    background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                    borderRadius: '8px', padding: '0.3rem 0.5rem', color: 'var(--muted)', cursor: 'pointer',
-                    fontSize: '0.6rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-                  }}
-                >Manage</button>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Host panel — music playlist, photo album, guest moderation, and
-            "end the gathering" → the keepsake editor. A real panel, opened
-            deliberately from the strip's "Manage" button; the strip itself
-            stays a quiet one-liner. */}
+            "end the gathering" → the keepsake editor. Opened from the ⋯
+            menu's "Manage the gathering". */}
         {guestPanelOpen && gathering && (
           <VillageGuestPanel
             gathering={gathering}
@@ -689,59 +655,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           </div>
         )}
 
-        {/* Zoom controls — bottom-right, clear of Arrange (top-right) and
-            the weather card (top-left). Not shown while arranging: a zoom
-            change mid-drag would be disorienting, and the two controls
-            competing for the same corner language isn't worth it. */}
-        {!compact && !ambient && !arranging && (
-          // Buttons sized 1.8rem->2.4rem (round 4 iPad fix, 2026-08-27) —
-          // ~32px was noticeably under Apple's own 44pt touch-target
-          // guidance; 2.4rem (43.2px at this app's 18px root) gets close
-          // without the corner control cluster overwhelming the frame.
-          <div style={{ position: 'absolute', bottom: '0.7rem', right: '0.7rem', display: 'flex', gap: '0.4rem' }}>
-            {zoom !== 1 && (
-              <button
-                onClick={() => setZoom(1)}
-                title="Reset zoom"
-                className="press"
-                style={{
-                  background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                  borderRadius: '8px', padding: '0.3rem 0.55rem', color: 'var(--muted)', cursor: 'pointer',
-                  fontSize: '0.62rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                }}
-              >Reset</button>
-            )}
-            <button
-              onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))}
-              disabled={zoom <= 1}
-              title="Zoom out"
-              aria-label="Zoom out"
-              className="press"
-              style={{
-                background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                borderRadius: '8px', width: '2.4rem', height: '2.4rem', color: 'var(--muted)',
-                cursor: zoom <= 1 ? 'default' : 'pointer', opacity: zoom <= 1 ? 0.4 : 1,
-                fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-              }}
-            >−</button>
-            <button
-              onClick={() => setZoom(z => Math.min(2, +(z + 0.25).toFixed(2)))}
-              disabled={zoom >= 2}
-              title="Zoom in"
-              aria-label="Zoom in"
-              className="press"
-              style={{
-                background: 'color-mix(in srgb, var(--bg) 65%, transparent)', border: '1px solid var(--border)',
-                borderRadius: '8px', width: '2.4rem', height: '2.4rem', color: 'var(--muted)',
-                cursor: zoom >= 2 ? 'default' : 'pointer', opacity: zoom >= 2 ? 0.4 : 1,
-                fontSize: '0.85rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-              }}
-            >+</button>
-          </div>
-        )}
-
         {/* The shared/kiosk-mode swipe-up sheet (2026-08-25) — an overlay
             inside this panel (already position:relative + overflow:hidden)
             rather than a block below it, so it reads as sliding up over the
@@ -766,15 +679,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
           Drag any landmark or prop to move it, or tap it once for size controls. Inventory adds
           something new — tap × on it to remove it. Your layout is saved automatically.
-        </p>
-      )}
-
-      {/* Pan hint (2026-08-27, round 5) — only shown once zoomed in, since
-          that's the only state where dragging the scene actually does
-          anything (see VillageScene's own pan-clamp comment). */}
-      {!compact && !arranging && zoom > 1 && (
-        <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
-          Drag to look around.
         </p>
       )}
 

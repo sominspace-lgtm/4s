@@ -395,13 +395,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // (2026-08-25). Every member has to be a real, visible section or its
   // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
   // so those two groups vanish rather than rendering an empty icon).
-  // 'village' gets an extra shared-mode-only gate below (2026-08-25 round
-  // two) — it stays a fully real, renderable section (navIds still has it;
-  // the compact preview in Today still opens the real thing on tap) but
-  // loses its permanent Home Bar icon in personal mode, where the live
-  // Village window inside Today covers that instead. Shared mode keeps the
-  // icon exactly as before — Village IS that device's whole point, and
-  // Today doesn't exist there to hold a preview of it.
+  // 'village' is a permanent Home Bar icon in both modes now (2026-08-31) —
+  // it sits between Personal and Household. (It briefly lost its personal-
+  // mode icon in favour of a Today preview / a cross-tab band; the user
+  // wanted it back as a plain tab.)
   // 'smarthome' is never a navSections member (it's overlay-only, see
   // ALL_HOME_BAR_GROUPS's own comment above) so it needs its own bypass of
   // the navIds check below, unconditionally — round two above briefly also
@@ -425,7 +422,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       ...g,
       members: g.members.filter(m => {
         if (m === 'smarthome') return true
-        if (m === 'village') return sharedMode
         return navIds.has(m)
       }),
     }))
@@ -556,18 +552,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           (a context with sub-destinations open) is taller than the old
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
-        {/* The living village band (2026-08-31) — the scene shows up as a
-            slim, control-free header on every other tab and opens the real
-            Village tab on tap. Hidden on the Village tab itself, in the
-            picture-frame ambient view, and on shared devices (which already
-            land on the Village). */}
-        {!ambient && !sharedMode && currentTab !== 'village' && (
-          <div style={{ marginBottom: '1.2rem' }}>
-            <Village key="village-strip" strip userId={userId} accountCreatedAt={accountCreatedAt}
-              layout={sharedVillage.layout}
-              gathering={gathering.gathering} contributions={gathering.contributions} />
-          </div>
-        )}
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
