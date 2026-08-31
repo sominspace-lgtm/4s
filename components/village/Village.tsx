@@ -49,7 +49,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact: compactProp = false, strip = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -76,6 +76,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  arrival banner, no widgets dock, no story text — those belong to the
    *  real thing, not a teaser of it. See TodayVillageWindow. */
   compact?: boolean
+  /** A slim living band shown at the top of the other dashboard tabs
+   *  (2026-08-31, "make the village show up on 4s tabs, remove controls").
+   *  Same chromeless, tap-to-open behaviour as `compact` but short and
+   *  cropped to the village's ground band rather than a full 800×440 card. */
+  strip?: boolean
   /** Guest Mode (2026-08-29). Non-null = the village is open to guests: the
    *  scene warms up (lanterns, bunting, livelier cast) and a host strip
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
@@ -96,6 +101,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
   onDeleteMemory?: (id: string) => void
 }) {
+  // `strip` is a chromeless variant of `compact` — every control guard keys
+  // off `compact`, so folding strip in here hides all of them without
+  // touching each `!compact` check below.
+  const compact = compactProp || strip
   const [arranging, setArranging] = useState(false)
   // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
   // the strip enlarges it so guests can scan from across the room.
@@ -363,7 +372,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // sky. aspect-ratio scales height to the card's actual width, so
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
-          ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
+          ...(compact && !strip ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
+          // The slim cross-tab band: a fixed short height, cropped to the
+          // village's ground band by the inner transform below.
+          ...(strip ? {
+            // Width-based sizing so it scales in step with the -19% pull on
+            // the inner scene (also width-relative), keeping the framed band
+            // steady across viewports.
+            height: 'clamp(150px, 19vw, 216px)', cursor: 'pointer',
+            borderRadius: 'var(--radius-organic, 14px)',
+          } : {}),
           // In fullscreen the card fills the whole viewport; VillageScene
           // re-shapes its own viewBox to that exact ratio (see
           // containerAspect below), so the SVG covers it edge to edge with
@@ -394,7 +412,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
         <div style={
-          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
+          // The band shows the village's ground stripe: the scene renders at
+          // its natural aspect (width-locked), pulled up by a % of its own
+          // width so the horizon/houses/figures sit in the short window and
+          // the empty sky above is clipped by the card's overflow:hidden.
+          strip ? { marginTop: '-16.5%' }
+          : compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
           : fullscreen ? { width: '100%', height: '100%' }
           : undefined
         }>

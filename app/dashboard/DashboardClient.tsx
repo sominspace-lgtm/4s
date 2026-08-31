@@ -556,6 +556,18 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           (a context with sub-destinations open) is taller than the old
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
+        {/* The living village band (2026-08-31) — the scene shows up as a
+            slim, control-free header on every other tab and opens the real
+            Village tab on tap. Hidden on the Village tab itself, in the
+            picture-frame ambient view, and on shared devices (which already
+            land on the Village). */}
+        {!ambient && !sharedMode && currentTab !== 'village' && (
+          <div style={{ marginBottom: '1.2rem' }}>
+            <Village key="village-strip" strip userId={userId} accountCreatedAt={accountCreatedAt}
+              layout={sharedVillage.layout}
+              gathering={gathering.gathering} contributions={gathering.contributions} />
+          </div>
+        )}
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
