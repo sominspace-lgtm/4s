@@ -29,7 +29,6 @@ export default async function DashboardPage() {
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
-  const householdTabs = prefs?.layout?.householdTabs as SectionConfig[] | null
   const householdHomeBlocks = prefs?.layout?.householdHomeBlocks as SectionConfig[] | null
   const villageLayout = prefs?.layout?.villageLayout as VillageLayout | null
 
@@ -45,7 +44,6 @@ export default async function DashboardPage() {
       // read it.
       accountCreatedAt={user.created_at ?? null}
       initialVillageLastSeen={(prefs?.layout?.villageLastSeen as string | undefined) ?? null}
-      initialUnlockAll={Boolean(prefs?.layout?.unlockAll)}
       initialName={prefs?.display_name ?? null}
       initialTheme={normalizeTheme(prefs?.theme)}
       // Not read from `prefs` above (2026-08-21) — custom_theme is a new
@@ -59,7 +57,6 @@ export default async function DashboardPage() {
       initialMode={normalizeMode(prefs?.mode)}
       initialLayout={layout ?? null}
       initialTodayBlocks={todayBlocks ?? null}
-      initialHouseholdTabs={householdTabs ?? null}
       initialHouseholdHomeBlocks={householdHomeBlocks ?? null}
       initialVillageLayout={villageLayout ?? null}
     />

@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
-import { MODES, normalizeMode } from '@/lib/constants/modes'
 
-// One AI endpoint for the whole app: refill label/link extraction and Ask
-// Jarvis. Haiku keeps per-call cost negligible for a
+// One AI endpoint for the whole app: refill label/link extraction and
+// natural-language task parsing. Haiku keeps per-call cost negligible for a
 // personal dashboard; override with AI_MODEL in env if you want more depth.
 // If ANTHROPIC_API_KEY is not set, every task returns 503 and the client
-// falls back to its previous mock / rule-based behavior.
+// falls back to its rule-based behavior.
 const MODEL = process.env.AI_MODEL ?? 'claude-haiku-4-5'
 
 const REFILL_SCHEMA = {
@@ -24,6 +23,17 @@ const REFILL_SCHEMA = {
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
   },
   required: ['name', 'category', 'quantity', 'servingCount', 'servingSize', 'usagePerDay', 'estimatedDaysSupply', 'price', 'confidence'],
+  additionalProperties: false,
+} as const
+
+const TASK_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', description: 'Short imperative task title with all date/time words removed' },
+    dueDate: { type: ['string', 'null'], description: 'yyyy-MM-dd, or null if no date is implied' },
+    energy: { type: ['string', 'null'], enum: ['light', 'medium', 'deep', null], description: 'deep = focused/creative work; light = a quick errand; medium otherwise; null if unclear' },
+  },
+  required: ['title', 'dueDate', 'energy'],
   additionalProperties: false,
 } as const
 
@@ -105,21 +115,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
       }
 
-      case 'jarvis': {
-        const question: string = (body.question ?? '').slice(0, 500)
-        if (!question.trim()) return NextResponse.json({ error: 'Missing question' }, { status: 400 })
-        const guide = normalizeMode(body.mode)
-        const guideTone = MODES[guide]?.description ?? ''
+      // Natural-language quick-add (2026-09-01) — the caller shows the
+      // result as a suggestion chip before anything is saved, and falls
+      // back to lib/utils/parseTask.ts' pure-string rules if this 503s.
+      case 'parse-task': {
+        const text: string = (body.text ?? '').slice(0, 300)
+        if (!text.trim()) return NextResponse.json({ error: 'Missing text' }, { status: 400 })
+        const today = new Date().toISOString().slice(0, 10)
         const response = await client.messages.create({
           model: MODEL,
-          max_tokens: 600,
-          system: `You are Jarvis, the assistant inside 4S Home, a calm personal life dashboard. Answer from the provided dashboard snapshot only — do not invent data that is not in it. Be brief (2-5 sentences), concrete, and never alarmist. Speak in the voice of the "${guide}" guide (${guideTone}). If the snapshot lacks the answer, say so and suggest where in the app to add it. Plain text, no markdown headers.`,
-          messages: [{
-            role: 'user',
-            content: `Dashboard snapshot:\n${JSON.stringify(body.snapshot ?? {})}\n\nQuestion: ${question}`,
-          }],
+          max_tokens: 200,
+          output_config: { format: { type: 'json_schema', schema: TASK_SCHEMA } },
+          system: `Today is ${today}. Turn a quick task note into structured fields for a personal to-do list. The title must be short and imperative with every date, time, and "due" word stripped out. Resolve relative dates ("tomorrow", "next thursday", "in 2 weeks") against today.`,
+          messages: [{ role: 'user', content: text }],
         })
-        return NextResponse.json({ result: firstText(response.content) })
+        return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
       }
 
       default:

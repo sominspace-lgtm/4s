@@ -20,8 +20,7 @@ import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
-import { DEFAULT_HOUSEHOLD_TABS, DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
-import { consumeHouseholdTab } from '@/lib/utils/navigate'
+import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 // slot was captured on every meal from the start but never shown or sorted
@@ -41,12 +40,12 @@ type HouseholdTab = HouseholdTabId
 // a household worse, and the product's whole premise is reducing guilt
 // rather than redistributing it.
 //
-// Three top tabs (2026-08-21), organised by why you opened the app rather
-// than by database table — Home (the weekly stuff), Calendar (what's coming),
-// Reference (what you look up). Setup moved to Settings and Move-in retired;
-// Places went back to being its own top-level tab. Both the tab bar and
-// what's INSIDE Home are reorderable and hideable — `tabs`/`homeBlocks` are
-// owned by DashboardClient, same relationship Today has with its own blocks.
+// Home / Calendar / Reference are top-level nav sections now (2026-08-25),
+// each rendered as <HouseholdHub forcedTab={id}>. Organised by why you
+// opened the app rather than by database table — Home (the weekly stuff),
+// Calendar (what's coming), Reference (what you look up). What's INSIDE
+// Home is reorderable and hideable — `homeBlocks` is owned by
+// DashboardClient, same relationship Today has with its own blocks.
 // The emoji vibe check (2026-08-26) — a Discord DM reaction the companion
 // bot now mirrors to 4S as a 'vibe' answer (see checkinStore.VIBE_QUESTION_KEY
 // in the companion repo). The four it pre-seeds map to a word + color, same
@@ -71,11 +70,9 @@ function VibeBadge({ emoji }: { emoji: string }) {
   )
 }
 
-export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate, forcedTab }: {
+export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate, forcedTab }: {
   userId: string
   userEmail: string
-  tabs: SectionConfig[]
-  onChangeTabs: (next: SectionConfig[]) => void
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
   /** From the no-PIN "Shared" login tile. Opens straight on Reference —
@@ -88,11 +85,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
    *  gate genuinely personal content (Check-ins) while sharedMode is on,
    *  same mechanism Village already uses (2026-08-25). */
   onLockedNavigate?: (reason: string) => void
-  /** Set by DashboardClient in shared mode, where Household's own sub-tabs
-   *  are promoted to the top-level nav bar (see navSections) instead of
-   *  living behind one "Household" tab — the top nav drives which sub-tab
-   *  shows, so this overrides the internal tab state and hides the
-   *  redundant tab-switcher below (2026-08-25). */
+  /** Which sub-tab to show. Always set by DashboardClient — one
+   *  <HouseholdHub forcedTab={id}> per Home/Calendar/Reference section. */
   forcedTab?: HouseholdTab
 }) {
   const { spaces, members } = useSharedSpaces(userId)
@@ -124,16 +118,11 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // the Household check-in reflect BOTH people again (2026-09-01, "check-in
   // only shows one person's data — show both sources").
   const companion = useCompanionSync()
-  // A consumed value + live event lets a caller (goToHousehold) land on a
-  // SPECIFIC sub-tab rather than whichever one was
-  // open last. A pending deep link wins over sharedMode's Reference default.
-  const [internalTab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
-  useEffect(() => {
-    function onTab(e: Event) { setTab((e as CustomEvent<HouseholdTab>).detail) }
-    window.addEventListener('4s:household-tab', onTab)
-    return () => window.removeEventListener('4s:household-tab', onTab)
-  }, [])
-  const tab = forcedTab ?? internalTab
+  // Which sub-tab shows is driven entirely by the top-level nav now
+  // (2026-08-25) — DashboardClient renders one <HouseholdHub forcedTab={id}>
+  // per Home/Calendar/Reference section. The `?? 'home'` only matters if a
+  // future caller renders it without forcedTab.
+  const tab = forcedTab ?? (sharedMode ? 'reference' : 'home')
   const h = useHousehold(spaceId)
   const routinesHook = useRoutines(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
@@ -182,7 +171,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const [ruleText, setRuleText] = useState('')
   const [ruleCategory, setRuleCategory] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
-  const [tabsCustomizeOpen, setTabsCustomizeOpen] = useState(false)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
@@ -225,16 +213,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     if (d < 0) return { text: `${-d}d overdue`, color: 'var(--rose)' }
     if (d === 0) return { text: 'due today', color: 'var(--amber)' }
     return { text: `in ${d}d`, color: 'var(--muted)' }
-  }
-
-  const visibleTabs = tabs.filter(t => !t.hidden)
-
-  // A deep link must never land on a tab the user has hidden — un-hide it
-  // rather than rendering a blank pane.
-  function goToTab(id: HouseholdTab) {
-    setTab(id)
-    const entry = tabs.find(t => t.id === id)
-    if (entry?.hidden) onChangeTabs(tabs.map(t => (t.id === id ? { ...t, hidden: false } : t)))
   }
 
   // What's inside Home (2026-08-12) — pulled out of four scattered,
@@ -739,23 +717,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </div>
       )}
 
-      {!forcedTab && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-            {visibleTabs.map(tb => (
-              <button key={tb.id} onClick={() => goToTab(tb.id as HouseholdTab)} className="btn press" style={{
-                fontSize: '0.72rem', padding: '0.4em 0.9em',
-                background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
-                color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
-              }}>{tb.label}</button>
-            ))}
-          </div>
-          <button onClick={() => setTabsCustomizeOpen(true)} title="Customize Household" className="press" style={{
-            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, padding: '0.3rem', display: 'inline-flex',
-          }}><Icon name="gear" size={14} /></button>
-        </div>
-      )}
-
       {tab === 'home' && (
         <>
           {/* Fixed, not part of homeBlocks — this is the one section meant
@@ -1067,14 +1028,6 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         )
       })()}
 
-      <SectionCustomizer
-        open={tabsCustomizeOpen}
-        title="Customize Household"
-        sections={tabs}
-        defaultSections={DEFAULT_HOUSEHOLD_TABS}
-        onChange={onChangeTabs}
-        onClose={() => setTabsCustomizeOpen(false)}
-      />
       <SectionCustomizer
         open={homeCustomizeOpen}
         title="Arrange Home"

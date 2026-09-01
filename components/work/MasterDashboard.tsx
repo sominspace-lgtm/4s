@@ -368,11 +368,48 @@ export default function MasterDashboard({ userId }: { userId: string }) {
   const [recurDays, setRecurDays] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
   // Smart entry: "hw due today" → suggest title "hw" + due date. Nothing is
-  // saved from a suggestion until the user explicitly confirms it.
+  // saved from a suggestion until the user explicitly confirms it. The
+  // rule-based parse (lib/utils/parseTask) runs synchronously as an instant
+  // fallback; a debounced /api/ai call upgrades it in place when AI is
+  // configured, and quietly does nothing when it 503s.
   const [dismissedFor, setDismissedFor] = useState('')
+  const [aiSuggestion, setAiSuggestion] = useState<{ forText: string; parsed: ParsedTask } | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
 
-  const suggestion: ParsedTask | null = title.trim() && title !== dismissedFor ? parseTaskInput(title) : null
+  const ruleSuggestion: ParsedTask | null = title.trim() && title !== dismissedFor ? parseTaskInput(title) : null
+  const suggestion: ParsedTask | null =
+    title.trim() && title !== dismissedFor && aiSuggestion?.forText === title.trim()
+      ? aiSuggestion.parsed
+      : ruleSuggestion
+
+  useEffect(() => {
+    const text = title.trim()
+    if (text.length < 6 || text === dismissedFor) { setAiSuggestion(null); return }
+    let alive = true
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: 'parse-task', text }),
+        })
+        if (!alive || !res.ok) return
+        const { result } = await res.json() as { result: { title: string; dueDate: string | null; energy: Energy | null } }
+        if (!result?.title) return
+        const summary: string[] = []
+        if (result.dueDate) {
+          const today = format(new Date(), 'yyyy-MM-dd')
+          const tomorrow = format(new Date(Date.now() + 864e5), 'yyyy-MM-dd')
+          summary.push(result.dueDate === today ? 'due today'
+            : result.dueDate === tomorrow ? 'due tomorrow'
+            : `due ${format(parseISO(result.dueDate), 'EEE, MMM d')}`)
+        }
+        if (result.energy) summary.push(result.energy === 'deep' ? 'deep focus' : result.energy)
+        setAiSuggestion({ forText: text, parsed: { title: result.title, dueDate: result.dueDate, energy: result.energy, summary } })
+      } catch { /* offline / rate-limited — keep the rule-based suggestion */ }
+    }, 650)
+    return () => { alive = false; clearTimeout(timer) }
+  }, [title, dismissedFor])
 
   function applySuggestion(s: ParsedTask) {
     setTitle(s.title)
@@ -538,7 +575,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
               if (e.key === 'Enter') { suggestion ? confirmAndAdd(suggestion) : submit() }
               if (e.key === 'Escape') { setShowAdd(false); setTitle(''); setDismissedFor('') }
             }}
-            placeholder={t('New task title — try "hw due today"', lang)}
+            placeholder={t('New task — try "call the vet next thursday afternoon"', lang)}
             style={inputStyle}
           />
 

@@ -58,28 +58,10 @@ export function openSmartHome() {
   window.dispatchEvent(new CustomEvent('app:open-smarthome'))
 }
 
-// Household's sub-tabs are real top-level sections now, not one wrapping
-// "household" tab with its own internal switcher (that flattening happened
-// 2026-08-25, for both personal and shared use — see DashboardClient's
-// ALL_HOME_BAR_GROUPS comment). goToHousehold(tab) used to dispatch a
-// pending value + goToSection('household'); 'household' hasn't been a real
-// section id since that refactor, so every caller (this file's own
-// MemoryMarker click in VillageScene, and Somi's tap) was silently landing
-// on whatever navSections[0] happened to be instead of the intended tab —
-// this is the actual "tapping doesn't work" bug, not a hit-target issue.
-// Each tab id IS the section id now, so this is just goToSection with the
-// one remaining exception (smarthome, which isn't a section at all).
+// Household's sub-tabs are real top-level sections now (2026-08-25), so
+// every tab id IS a section id — this is just goToSection, with the one
+// exception of smarthome, which is an overlay, not a section.
 export function goToHousehold(tab: HouseholdTab) {
   if (tab === 'smarthome') { openSmartHome(); return }
   goToSection(tab)
-}
-
-// No longer meaningful — goToHousehold above no longer dispatches a pending
-// value (there's nothing left to consume). Kept as a safe no-op purely so
-// HouseholdHub.tsx's fallback-tab computation still compiles; that whole
-// internal-tab-switcher code path is unreachable in practice today (both
-// real callers always pass `forcedTab`), but untangling it is a separate,
-// more invasive cleanup than this bug fix warrants — flagged, not done here.
-export function consumeHouseholdTab(): HouseholdTab | null {
-  return null
 }

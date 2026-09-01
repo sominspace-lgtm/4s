@@ -17,7 +17,9 @@ import type { VillageLayout } from '@/lib/village/layout'
 
 export interface LayoutState {
   sections: SectionConfig[]
-  unlockAll: boolean
+  // (An `unlockAll` key lived here until 2026-09-01, when the progressive-
+  // unlocking system was removed — every section is visible from first
+  // login now. A stale value in a saved row is simply ignored.)
   // Today's own blocks (One thing, Capacity, Calendar, …) — hide/reorder one
   // level down from the top-level tabs. Optional in the type only so old
   // saved rows that predate this key don't fail to parse; every WRITE still
@@ -25,13 +27,10 @@ export interface LayoutState {
   // DashboardClient, which is what stops the five-writer bug this file
   // already fixed once from coming back for a sixth field.
   todayBlocks?: TodayBlockConfig[]
-  // Same idea, one level down from Household's own tab bar, and
-  // (householdHomeBlocks) one level further down still, into what's inside
-  // Household's Home tab. Added 2026-08-12 — see lib/utils/householdLayout.ts
-  // for the defaults and merge functions these keys round-trip through.
-  // (A `personalTabs` key existed here through 2026-09-01, when Personal's
-  // sub-tabs became top-level `sections`; a stale value is simply ignored.)
-  householdTabs?: SectionConfig[]
+  // What's inside Household's Home tab — hide/reorder one level down from the
+  // top-level sections. See lib/utils/householdLayout.ts. (`personalTabs` and
+  // `householdTabs` keys lived here until 2026-09-01, when the Personal and
+  // Household sub-tabs became top-level `sections`; stale values are ignored.)
   householdHomeBlocks?: SectionConfig[]
   // When the Village was last opened, so it can say what changed since. Not a
   // layout setting, but it lives here for the same reason the others do: it's

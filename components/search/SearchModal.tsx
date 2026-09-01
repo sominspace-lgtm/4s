@@ -77,9 +77,10 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-work',     label: 'Go to Tasks',       icon: '◈', keywords: ['task', 'todo', 'to do', 'work', 'due', 'deadline'], run: () => goToPersonal('tasks') },
     { id: 'go-habits',   label: 'Go to Habits',      icon: '◉', keywords: ['habit', 'routine', 'streak', 'ritual', 'gym', 'exercise', 'daily'], run: () => goToPersonal('habits') },
     { id: 'go-notes',    label: 'Go to Notes',       icon: '◇', keywords: ['notes', 'note', 'jot', 'write', 'memo'], run: () => goToPersonal('notes') },
-    // Home Brain moved to Household, so its keywords have to move with it —
-    // searching "wifi password" landing on Life would be a dead end.
-    { id: 'go-household', label: 'Go to Household',  icon: '◫', keywords: ['household', 'shared', 'home brain', 'wifi', 'password', 'serial', 'manual', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'partner'], run: () => goTo('household') },
+    // Household's sections are top-level now — chores/meals live in Home,
+    // wifi/manuals/serials in Reference.
+    { id: 'go-home',      label: 'Go to Home',       icon: '◫', keywords: ['household', 'shared', 'home', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'this week'], run: () => goTo('home') },
+    { id: 'go-reference', label: 'Go to Reference',  icon: '◫', keywords: ['reference', 'home brain', 'wifi', 'password', 'serial', 'manual', 'maintenance', 'rules', 'lookup'], run: () => goTo('reference') },
     { id: 'go-places',   label: 'Go to Places',      icon: '◇', keywords: ['places', 'pin', 'pins', 'map', 'trip', 'trips', 'restaurant', 'travel'], run: () => goTo('places') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goToPersonal('money') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },

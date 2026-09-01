@@ -11,13 +11,11 @@ import Icon from '@/components/ui/Icon'
 // unchanged (forcedTab already hides its internal tab-switcher) — only the
 // PRESENTATION is new, not the Smart Home feature itself; the doc explicitly
 // leaves the deeper Smart Home information architecture for later.
-export default function SmartHomeOverlay({ open, onClose, userId, userEmail, tabs, onChangeTabs, homeBlocks, onChangeHomeBlocks, sharedMode, onLockedNavigate }: {
+export default function SmartHomeOverlay({ open, onClose, userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode, onLockedNavigate }: {
   open: boolean
   onClose: () => void
   userId: string
   userEmail: string
-  tabs: SectionConfig[]
-  onChangeTabs: (next: SectionConfig[]) => void
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
   sharedMode?: boolean
@@ -71,7 +69,6 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, tab
           {open && (
             <HouseholdHub
               userId={userId} userEmail={userEmail}
-              tabs={tabs} onChangeTabs={onChangeTabs}
               homeBlocks={homeBlocks} onChangeHomeBlocks={onChangeHomeBlocks}
               sharedMode={sharedMode} onLockedNavigate={onLockedNavigate}
               forcedTab="smarthome"

@@ -13,7 +13,6 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
-import { useProgression } from '@/lib/hooks/useProgression'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -37,7 +36,7 @@ import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor } from '@/lib/utils/navigate'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
-import { mergeHouseholdTabs, mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
+import { mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -56,7 +55,6 @@ interface Props {
   accountCreatedAt: string | null
   /** ISO string of the last Village visit, from user_prefs.layout. */
   initialVillageLastSeen: string | null
-  initialUnlockAll: boolean
   initialName: string | null
   initialTheme: string
   /** From user_prefs.custom_theme — only meaningful when initialTheme === 'custom'. */
@@ -64,7 +62,6 @@ interface Props {
   initialMode: string
   initialLayout: SectionConfig[] | null
   initialTodayBlocks: TodayBlockConfig[] | null
-  initialHouseholdTabs: SectionConfig[] | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
   initialVillageLayout: VillageLayout | null
 }
@@ -184,7 +181,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
 ]
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -201,24 +198,22 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   }, [])
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
-  // Household sub-tab and Home-block customization (2026-08-12) — same
-  // reasoning as todayBlocks below: owned here because saveLayout() needs
-  // the FULL LayoutState to avoid the five-writer bug its own header
-  // comment describes, so the write path lives at this level even though
-  // the customize UI itself renders inside HouseholdHub. (Personal's own
-  // sub-tab customization is gone — its areas are top-level sections now,
-  // managed by the main Customize-layout panel.)
-  const [householdTabs, setHouseholdTabs] = useState<SectionConfig[]>(mergeHouseholdTabs(initialHouseholdTabs))
+  // Home-block customization (what's inside Household's Home tab) — owned
+  // here because saveLayout() needs the FULL LayoutState to avoid the
+  // five-writer bug its own header comment describes. (The Household and
+  // Personal sub-tab customizers are both gone — those areas are top-level
+  // sections now, managed by the main Customize-layout panel.)
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
   const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
 
   const lang = 'en' as const
-  // Every session lands on the Village (2026-09-01, "make the village the
-  // first screen people see when they login") — shared devices always did;
-  // personal logins used to open on Today. `village` is a never-gated,
-  // always-visible section so it's a safe initial tab in both modes.
-  const [activeTab, setActiveTab] = useState('village')
+  // Shared devices (the wall iPad) land on the Village — it's the ambient
+  // household view worth glancing at from across the room. A personal login
+  // opens on Today, where your own day is (2026-09-01, reverted the
+  // everyone-lands-on-Village change: on a phone it was an extra tap to
+  // "what do I need to do today").
+  const [activeTab, setActiveTab] = useState(sharedMode ? 'village' : 'brief')
   // Non-null = the unlock prompt is open. The value is what they tried to
   // reach ("Growth Forest") so the prompt can say why it's asking; an empty
   // string opens it with no specific destination (the header's own entry).
@@ -250,10 +245,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('app:open-smarthome', onOpenSmartHome)
   }, [])
 
-  // Progressive unlocking — see lib/hooks/useProgression.ts. "Open everything
-  // now" is a one-way choice, persisted in the layout JSON.
-  const [unlockAll, setUnlockAll] = useState(initialUnlockAll)
-
   // Frozen for the whole session on purpose: if this tracked the value we're
   // about to write, the "since you were last here" line would vanish under the
   // reader a moment after they arrived. The stamp moves, the story doesn't.
@@ -271,7 +262,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, unlockAll, todayBlocks, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
+    return { sections, todayBlocks, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
   }
 
   async function changeVillageLayout(next: VillageLayout) {
@@ -285,55 +276,22 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const sharedVillage = useSharedVillageLayout(userId, villageLayout, changeVillageLayout)
   const gathering = useGathering(userId)
 
-  async function changeHouseholdTabs(next: SectionConfig[]) {
-    setHouseholdTabs(next)
-    await saveLayout(userId, layoutState(), { householdTabs: next })
-  }
-
   async function changeHouseholdHomeBlocks(next: SectionConfig[]) {
     setHouseholdHomeBlocks(next)
     await saveLayout(userId, layoutState(), { householdHomeBlocks: next })
   }
 
-  // Guest mode's entire point is "experience the product before committing to
-  // an account" — gating sections behind a progress bar asks a guest to prove
-  // themselves before they've agreed to anything. Anonymous sessions always
-  // see the full app; unlockAll itself stays untouched so if they later keep
-  // their space (see the guest banner below), it starts fresh with real
-  // progression rather than permanently unlocked by a guest-mode side effect.
-  const prog = useProgression(unlockAll || isAnonymous)
-  async function openEverything() {
-    setUnlockAll(true)
-    await saveLayout(userId, layoutState(), { unlockAll: true })
-  }
-
-  // Kept current via refs so the nav listener below (mounted once) always
-  // sees live unlock state and the current openEverything closure without
-  // re-subscribing on every render. Written in an effect, not during render
-  // — mutating a ref while rendering is a React footgun even though it
-  // "works" in practice.
-  const progRef = useRef(prog)
-  const openEverythingRef = useRef(openEverything)
-  useEffect(() => { progRef.current = prog; openEverythingRef.current = openEverything })
-
   // Tab navigation from anywhere (Today's summary cards, search).
   // 'week-review', 'brief-inbox' and 'brief-calendar' are anchors inside the
   // Today tab rather than tabs of their own.
-  // A direct request for a still-gated section (from search, say)
-  // must never silently fail to appear — progression is a suggested order,
-  // not a wall. Honoring it by opening everything, same as the journey bar's
-  // own "open everything now" — there's no reason to invent a second,
-  // narrower unlock path for the same choice.
   useEffect(() => {
     function onNav(e: Event) {
       const id = (e as CustomEvent<string>).detail
       const anchor = ANCHORS.has(id) ? id : null
       if (!anchor) {
-        if (!progRef.current.isUnlocked(id)) openEverythingRef.current()
         // A deep link (search, a Brief card, a Village panel) to a section
         // the user hid via Customize should reveal it for the session
-        // rather than dead-end on the first visible tab — same behaviour
-        // PersonalHub's own goTo had for its sub-tabs.
+        // rather than dead-end on the first visible tab.
         setSections(prev => prev.some(s => s.id === id && s.hidden)
           ? prev.map(s => (s.id === id ? { ...s, hidden: false } : s))
           : prev)
@@ -391,7 +349,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
   const visible = sections.filter(s =>
     !s.hidden
-    && prog.isUnlocked(s.id)
     // Shared mode sees Household's sections, the Village and Places. The
     // Village is drawn FROM personal data (plants are habits, buildings are
     // tasks), which is deliberate here: it's a shared household device, so
@@ -518,14 +475,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
-        // Household's own sub-tabs — real top-level sections now, for both
-        // personal and shared use (2026-08-25, was a single wrapping
-        // 'household' tab with its own internal switcher). Same HouseholdHub
-        // instance every time, just told which of its own tabs to show via
-        // forcedTab. Smart Home is deliberately not one of these cases — it
-        // only ever renders inside SmartHomeOverlay now.
+        // Home / Calendar / Reference — one <HouseholdHub forcedTab={id}>
+        // per section (2026-08-25). Smart Home is not one of these: it only
+        // renders inside SmartHomeOverlay.
         case 'home': case 'calendar': case 'reference':
-          return <HouseholdHub key={id} userId={userId} userEmail={email} tabs={householdTabs} onChangeTabs={changeHouseholdTabs} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
+          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }
     })()
@@ -614,7 +568,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <SmartHomeOverlay
         open={smartHomeOpen} onClose={() => setSmartHomeOpen(false)}
         userId={userId} userEmail={email}
-        tabs={householdTabs} onChangeTabs={changeHouseholdTabs}
         homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks}
         sharedMode={sharedMode} onLockedNavigate={setUnlockReason}
       />
