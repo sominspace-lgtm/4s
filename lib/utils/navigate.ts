@@ -38,10 +38,16 @@ export function scrollToAnchor(id: string, attempt = 0) {
 
 export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people'
 
-// Tasks/Goals/Habits/Notes/Money/People are their own top-level sections
-// now (2026-09-01), so this is just goToSection with a narrower type —
-// kept as its own name so the ~20 existing callers don't need touching.
+// Tasks/Habits/Notes/Money/People are their own top-level sections now
+// (2026-09-01), so this is mostly just goToSection with a narrower type.
+// Goals folded into the Habits tab (2026-09-01) — a 'goals' target lands
+// there and asks it to open the Goals section (see HabitsTab).
 export function goToPersonal(tab: PersonalTab) {
+  if (tab === 'goals') {
+    goToSection('habits')
+    window.dispatchEvent(new CustomEvent('4s:open-goals'))
+    return
+  }
   goToSection(tab)
 }
 

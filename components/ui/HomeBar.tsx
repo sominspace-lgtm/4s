@@ -17,7 +17,7 @@ export interface HomeBarGroup {
   icon: IconName
   label: string
   /** The real section ids this context covers — DashboardClient's section
-   *  ids (brief/tasks/goals/habits/notes/money/people/village/home/calendar/
+   *  ids (brief/tasks/habits/notes/money/people/village/home/calendar/
    *  smarthome/reference/places). members[0] is where selecting the group
    *  (without already being inside it) lands. */
   members: string[]
@@ -32,7 +32,7 @@ export interface HomeBarGroup {
 
 const MEMBER_LABELS: Record<string, string> = {
   brief: 'Today',
-  tasks: 'Tasks', goals: 'Goals', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People',
+  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People',
   village: 'Village', home: 'Home', calendar: 'Calendar',
   smarthome: 'Controls', reference: 'Reference', places: 'Places',
 }

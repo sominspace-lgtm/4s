@@ -23,9 +23,7 @@ import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
 import MasterDashboard from '@/components/work/MasterDashboard'
-import GoalsSection from '@/components/goals/GoalsSection'
-import HabitTracker from '@/components/habits/HabitTracker'
-import PersonalRoutines from '@/components/habits/PersonalRoutines'
+import HabitsTab from '@/components/habits/HabitsTab'
 import NotesHub from '@/components/notes/NotesHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
@@ -80,6 +78,7 @@ const DEPRECATED_SECTION_IDS = new Set([
   'relationship', 'shared',                          // → people
   'domains', 'growth',                              // → habits / notes
   'council',                                         // removed entirely (2026-09-01)
+  'goals',                                          // folded into the Habits tab (2026-09-01)
   'work',                                            // → 'tasks' (2026-08-20)
   // 'personal' dissolved 2026-09-01 — Tasks/Goals/Habits/Notes/Money/People
   // are top-level sections again. mergeLayout strips the dangling 'personal'
@@ -122,7 +121,6 @@ const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
 const SECTION_GROUPS: Record<string, string> = {
   brief:     'mine',
   tasks:     'mine',
-  goals:     'mine',
   habits:    'mine',
   notes:     'mine',
   money:     'mine',
@@ -179,7 +177,7 @@ const SECTION_GROUPS: Record<string, string> = {
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'goals', 'habits', 'notes', 'money', 'people'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
@@ -456,7 +454,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       brief: t('Today', lang), village: t('Village', lang), places: t('Places', lang),
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
-      tasks: t('Tasks', lang), goals: t('Goals', lang), habits: t('Habits', lang),
+      tasks: t('Tasks', lang), habits: t('Habits', lang),
       notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
@@ -483,12 +481,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} />
-        // Personal areas — one section id each (2026-09-01), rendered
-        // directly. Same "one id per former sub-tab" pattern Household uses
-        // below. 'habits' is the only one that draws two components.
+        // Personal areas — one section id each (2026-09-01). Goals folded
+        // into the Habits section the same day (see HabitsTab).
         case 'tasks':    return <MasterDashboard key="tasks" userId={userId} />
-        case 'goals':    return <GoalsSection key="goals" userId={userId} />
-        case 'habits':   return <div key="habits"><PersonalRoutines userId={userId} /><HabitTracker /></div>
+        case 'habits':   return <HabitsTab key="habits" userId={userId} />
         case 'notes':    return <NotesHub key="notes" userId={userId} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />

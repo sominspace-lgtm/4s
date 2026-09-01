@@ -9,14 +9,14 @@ import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 // that file's header for why it's shared rather than hand-copied per screen.
 export type { SectionConfig }
 
-// Today · Tasks · Goals · Habits · Notes · Money · People · Village · Household · Places
+// Today · Tasks · Habits · Notes · Money · People · Village · Household · Places
 //
 // Six tabs, ordered by how often you actually open them, each answering a
 // question nobody has to guess at:
 //   Today      — what's happening now?   (brief · inbox · calendar)
 //   Tasks      — what do I need to do?   (the notice board)
 //   Village    — what does my life look like?
-//   Personal   — tasks · goals · habits · notes · money · people (each a section)
+//   Personal   — tasks · habits (+ goals) · notes · money · people (each a section)
 //   Household  — everything we share     (chores · meals)
 //   Places     — where do we want to be? (a themed map, saved pins, trips)
 //
@@ -29,10 +29,10 @@ export type { SectionConfig }
 // to live, it's something you check — and once it was 4S's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
 // twice. It's a panel inside Today now.
-// The personal areas (Tasks/Goals/Habits/Notes/Money/People) are their own
+// The personal areas (Tasks/Habits/Notes/Money/People) are their own
 // top-level sections as of 2026-09-01 — they used to live one click behind
-// a single "Personal" tab. Household still nests one level down; see
-// householdLayout.ts.
+// a single "Personal" tab. Goals folded into Habits the same day. Household
+// still nests one level down; see householdLayout.ts.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
@@ -44,7 +44,6 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // "Personal" tab with an internal switcher). Grouped visually under the
   // Personal icon in the Home Bar, but flat here.
   { id: 'tasks',    label: 'Tasks',    hidden: false },
-  { id: 'goals',    label: 'Goals',    hidden: false },
   { id: 'habits',   label: 'Habits',   hidden: false },
   { id: 'notes',    label: 'Notes',    hidden: false },
   { id: 'money',    label: 'Money',    hidden: false },
