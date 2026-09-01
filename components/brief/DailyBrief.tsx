@@ -15,6 +15,7 @@ import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import PersonalOverview from '@/components/personal/PersonalOverview'
+import CheckinCard from '@/components/checkin/CheckinCard'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
@@ -474,6 +475,9 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     </div>
 
     {tailOrder.map(id => {
+      // The weekly relationship check-in — self-hides except near the
+      // weekend / once someone's answered (2026-09-01).
+      if (id === 'checkin') return <CheckinCard key="checkin" userId={userId} />
       // The personal glance strip, relocated from above the (now dissolved)
       // Personal sub-tabs (2026-09-01). Hideable/reorderable via Customize Today.
       if (id === 'overview') return <PersonalOverview key="overview" userId={userId} />

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { weekOfMonday } from '@/lib/utils/checkinQuestions'
 
 export interface CheckinAnswer {
   questionKey: string
@@ -18,13 +20,19 @@ export interface Checkin {
   completed_at: string
 }
 
-// Written by the companion bot's DM-based weekly check-in flow, one row per
-// (space, person, week). Read-only here — see checkins.sql: only the
-// answering partner can write their own row, so there is no addCheckin/edit
-// in this hook on purpose. Own-or-space RLS means both partners' rows for the
-// same week both come back in one query; the component groups them.
-export function useCheckins() {
+// One row per (space, person, week). Answered natively in 4S now
+// (components/checkin) — the companion bot still pushes rows too, and both
+// paths land here. `checkins_write_own` RLS (for all on user_id = auth.uid())
+// lets the browser upsert directly, so no admin route is needed.
+//
+// Pass `userId` to enable writing — it resolves the shared space the same
+// way HouseholdHub does. Read-only callers (HouseholdHub's history view)
+// pass nothing.
+export function useCheckins(userId: string | null = null) {
   const supabase = createClient()
+  const { spaces, members } = useSharedSpaces(userId ?? '')
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? spaces[0]?.id ?? null
+
   const [checkins, setCheckins] = useState<Checkin[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -39,9 +47,32 @@ export function useCheckins() {
     setLoading(false)
   }, [supabase])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    function onChanged() { load() }
+    window.addEventListener('4s:checkins-changed', onChanged)
+    return () => window.removeEventListener('4s:checkins-changed', onChanged)
+  }, [load])
 
-  return { checkins, loading }
+  const submitCheckin = useCallback(async (answers: CheckinAnswer[]): Promise<{ error: string | null }> => {
+    if (!userId || !spaceId) return { error: 'No shared space yet' }
+    const clean = answers
+      .filter(a => typeof a.questionKey === 'string' && typeof a.answer === 'string' && a.answer.trim())
+      .map(a => ({ questionKey: a.questionKey, questionText: a.questionText ?? null, answer: a.answer.slice(0, 2000) }))
+    if (clean.length === 0) return { error: 'Nothing to save' }
+    const { error } = await supabase.from('checkins').upsert(
+      { user_id: userId, space_id: spaceId, week_of: weekOfMonday(), answers: clean, completed_at: new Date().toISOString() },
+      { onConflict: 'space_id,user_id,week_of' },
+    )
+    if (error) return { error: error.message }
+    window.dispatchEvent(new CustomEvent('4s:checkins-changed'))
+    return { error: null }
+  }, [supabase, userId, spaceId])
+
+  /** This user's row for the current week, if it exists. */
+  const thisWeek = checkins.find(c => c.user_id === userId && c.week_of.slice(0, 10) >= weekOfMonday())
+
+  return { checkins, loading, submitCheckin, thisWeekMine: thisWeek ?? null }
 }
 
 export interface CheckinWeek {

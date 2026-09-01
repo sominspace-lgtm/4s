@@ -852,11 +852,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </section>
       )}
 
-      {/* Check-ins (2026-08-18) — the weekly relationship check-in you answer
-          in Discord, read-only here. This is deliberately NOT where you answer
-          them: the DM flow exists because a modal/DM is the only place that
-          feels private enough to write an honest answer in the moment. 4S is
-          just where you go back and read what was actually said. */}
+      {/* Check-ins — the weekly relationship check-in history. Answered on
+          the Today page now (2026-09-01, CheckinCard); the Discord bot still
+          pushes rows too. Read-only here — this is where you go back and
+          read what was said. */}
       {tab === 'reference' && sharedMode && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <button onClick={() => onLockedNavigate?.('Check-ins')} className="press" style={{
@@ -898,13 +897,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
               </summary>
               <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
-                  Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept. The
-                  week&rsquo;s summary and who answered come from the Companion bot.
+                  Your weekly check-in, kept here. Answer it on the Today page.
                 </div>
 
                 {weeks.length === 0 && !checkinsLoading && !companion.loading && (
                   <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                    No check-ins yet. They show up here once you&rsquo;ve answered one in Discord.
+                    No check-ins yet — the first one you answer on Today shows up here.
                   </div>
                 )}
 
