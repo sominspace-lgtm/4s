@@ -194,13 +194,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
 
   const lang = 'en' as const
-  // Landing view depends on who's here (2026-08-21). A shared-device session
-  // opens on the Village — it's the ambient household view, the thing worth
-  // glancing at from across the room. A personal login opens on Today, which
-  // is where your own actual day is. Note `visible` filters shared mode to
-  // Household only, so this is overridden there until Village is allowed
-  // through — see the sharedMode clause in the filter below.
-  const [activeTab, setActiveTab] = useState(sharedMode ? 'village' : 'brief')
+  // Every session lands on the Village (2026-09-01, "make the village the
+  // first screen people see when they login") — shared devices always did;
+  // personal logins used to open on Today. `village` is a never-gated,
+  // always-visible section so it's a safe initial tab in both modes.
+  const [activeTab, setActiveTab] = useState('village')
   // Non-null = the unlock prompt is open. The value is what they tried to
   // reach ("Growth Forest") so the prompt can say why it's asking; an empty
   // string opens it with no specific destination (the header's own entry).

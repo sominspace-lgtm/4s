@@ -8,13 +8,12 @@
 // 'onething' and 'inbox' were removed entirely (2026-08-25), not just
 // hidden — along with FamilyTodayCard, which was never part of this block
 // system at all (an unconditional fixed card in DailyBrief) and is now
-// gone too. 'controls' followed the same day (round three) — it was a pure
-// navigation shortcut to the exact same Smart Home overlay the Home Bar's
-// own Controls icon already opens in one tap from anywhere, with no real
-// info of its own the way Household's panel has, so it was just duplicate
-// clutter. Today declutters down to: the greeting/stats card, the Village
-// window, Household's needs panel, the area index, and the calendar.
-export type TodayBlockId = 'budget' | 'areas' | 'calendar' | 'village' | 'household'
+// gone too. 'controls' followed the same day (round three). 'village' was
+// removed 2026-09-01 ("remove the windowed village on the today page") —
+// the Village is its own landing screen now, so a small preview of it on
+// Today was redundant. Today declutters down to: the greeting/stats card,
+// Household's needs panel, the area index, and the calendar.
+export type TodayBlockId = 'budget' | 'areas' | 'calendar' | 'household'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -25,10 +24,6 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   budget:     { label: 'Capacity',       hint: 'Deep/medium/light slots for today' },
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Month view by default' },
-  // Village is a real live window, not a shortcut card (2026-08-25 round
-  // two) — Village.tsx's `compact` prop renders the actual scene, tap
-  // anywhere to open the full Village.
-  village:    { label: 'Village',        hint: 'A live window into your village' },
   // A real "what needs you" panel, not a shortcut (2026-08-25 round two) —
   // see TodayHouseholdNeeds.
   household:  { label: 'Household',      hint: 'Chores and shopping still needed' },
@@ -39,18 +34,17 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // card); Calendar is rendered by DashboardClient after DailyBrief returns, a
 // different component entirely, so its position here is cosmetic (see
 // DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. Only
-// these three are true siblings in the render tree and can be reordered
+// these two are true siblings in the render tree and can be reordered
 // against each other.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'village', 'household'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'household'])
 
 // Order here is the default order — not enforced at render time, so a
-// reorder in the customize panel actually changes what you see. Village and
-// Household lead, Areas sits last among the reorderable group, Calendar
-// trails the whole list (matching where it actually renders — see
-// REORDERABLE's own comment).
+// reorder in the customize panel actually changes what you see. Household
+// leads, Areas sits last among the reorderable group, Calendar trails the
+// whole list (matching where it actually renders — see REORDERABLE's own
+// comment).
 export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
   { id: 'budget',     hidden: false },
-  { id: 'village',    hidden: false },
   { id: 'household',  hidden: false },
   { id: 'areas',      hidden: false },
   { id: 'calendar',   hidden: false },
