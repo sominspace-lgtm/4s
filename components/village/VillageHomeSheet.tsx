@@ -51,7 +51,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
   // Bumped 260->300 (2026-08-25) alongside the section restyle below — real
   // rounded cards with icons take a bit more vertical room than the old
   // plain-text list did, and 260 was starting to clip the last card.
-  const SHEET_HEIGHT = 300
+  const SHEET_HEIGHT = 344
 
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as Element).setPointerCapture(e.pointerId)
@@ -124,8 +124,18 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
             <div style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic' }}>No dinner planned yet.</div>
           )}
           {choresToday.length > 0 && (
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
-              {choresToday.length} chore{choresToday.length > 1 ? 's' : ''} due
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
+              {choresToday.slice(0, 4).map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <button
+                    onClick={() => { h.markChoreDone(c.id); onInteract?.() }}
+                    aria-label={`Mark "${c.name}" done`}
+                    className="press"
+                    style={{ width: 18, height: 18, flexShrink: 0, borderRadius: 5, border: '1.5px solid var(--border)', background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.7rem', lineHeight: 1 }}
+                  >✓</button>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text)' }}>{c.name}</span>
+                </div>
+              ))}
             </div>
           )}
         </Card>
@@ -166,7 +176,38 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
             </div>
           </Card>
         )}
+
+        {/* Quick adds — the wall iPad's one bit of "do", not just "look".
+            Shared household data, no PIN. */}
+        <Card icon="box" tint="var(--gold)" title="Add">
+          <QuickAdd placeholder="Add to shopping" onAdd={t => { h.addShopping(t, null, null); onInteract?.() }} />
+          <QuickAdd placeholder="Leave a note" onAdd={t => { h.addNote(t); onInteract?.() }} />
+        </Card>
       </div>
+    </div>
+  )
+}
+
+function QuickAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (text: string) => void }) {
+  const [text, setText] = useState('')
+  const submit = () => { const t = text.trim(); if (!t) return; onAdd(t); setText('') }
+  return (
+    <div style={{ display: 'flex', gap: '0.3rem' }}>
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') submit() }}
+        placeholder={placeholder}
+        style={{
+          flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 8, padding: '0.35rem 0.5rem', fontSize: '0.72rem', color: 'var(--text)',
+          outline: 'none', fontFamily: 'inherit',
+        }}
+      />
+      <button onClick={submit} className="press" aria-label={placeholder} style={{
+        background: 'var(--gold)', color: 'var(--bg)', border: 'none', borderRadius: 8,
+        padding: '0 0.55rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600, lineHeight: 1,
+      }}>+</button>
     </div>
   )
 }
