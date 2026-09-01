@@ -49,14 +49,27 @@ export interface CheckinWeek {
   byUser: Record<string, Checkin>
 }
 
+// The Monday (ISO week start) of whatever date string a row carries, so two
+// partners whose rows land a day or two apart (different week-start
+// conventions on the bot side) still group into the SAME week instead of
+// each showing up as "one of you answered" (2026-09-01).
+function weekStartOf(dateStr: string): string {
+  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00Z`)
+  if (isNaN(d.getTime())) return dateStr.slice(0, 10)
+  const dow = d.getUTCDay() // 0 = Sun
+  d.setUTCDate(d.getUTCDate() - ((dow + 6) % 7)) // back up to Monday
+  return d.toISOString().slice(0, 10)
+}
+
 // Groups the flat row list into one entry per week, both partners' answers
 // together — the shape the UI actually wants, kept out of the hook so the
 // hook stays a plain reflection of the table.
 export function groupCheckinsByWeek(checkins: Checkin[]): CheckinWeek[] {
   const byWeek = new Map<string, CheckinWeek>()
   for (const c of checkins) {
-    let week = byWeek.get(c.week_of)
-    if (!week) { week = { weekOf: c.week_of, byUser: {} }; byWeek.set(c.week_of, week) }
+    const key = weekStartOf(c.week_of)
+    let week = byWeek.get(key)
+    if (!week) { week = { weekOf: key, byUser: {} }; byWeek.set(key, week) }
     week.byUser[c.user_id] = c
   }
   return [...byWeek.values()].sort((a, b) => b.weekOf.localeCompare(a.weekOf))

@@ -8,6 +8,7 @@ import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
+import { useCompanionSync } from '@/lib/hooks/useCompanionSync'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
@@ -115,6 +116,14 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
     setSpaceId((shared ?? spaces[0]).id)
   }, [spaces, members, spaceId])
   const { checkins, loading: checkinsLoading } = useCheckins()
+  // The Companion bot exposes a second view of the same weekly check-in —
+  // a per-week summary + who completed it — over its live API. The 4S
+  // `checkins` table only carries rows the bot POSTed per person, so if one
+  // partner hasn't linked Discord (or the bot only sent one token) the
+  // table shows just one side. Merging the bot's week summary back in makes
+  // the Household check-in reflect BOTH people again (2026-09-01, "check-in
+  // only shows one person's data — show both sources").
+  const companion = useCompanionSync()
   // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
   // lets a caller land on a SPECIFIC sub-tab rather than whichever one was
   // open last. A pending deep link wins over sharedMode's Reference default.
@@ -901,7 +910,23 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         </section>
       )}
       {tab === 'reference' && !sharedMode && (() => {
-        const weeks = groupCheckinsByWeek(checkins)
+        const dbWeeks = groupCheckinsByWeek(checkins)
+        // Only merge the bot's live summary when it's a real, connected feed —
+        // the hook hands back mock data before a pair + connection exist.
+        const botReal = !companion.loading && !companion.mocked && !companion.degraded
+          && !companion.needsPair && !companion.needsConnection
+        const botByWeek = new Map(
+          (botReal ? companion.checkins : []).map(c => [c.weekOf.slice(0, 10), c] as const),
+        )
+        const weekKeys = [...new Set([
+          ...dbWeeks.map(w => w.weekOf.slice(0, 10)),
+          ...botByWeek.keys(),
+        ])].sort((a, b) => b.localeCompare(a))
+        const weeks = weekKeys.map(weekOf => ({
+          weekOf,
+          byUser: dbWeeks.find(w => w.weekOf.slice(0, 10) === weekOf)?.byUser ?? {},
+          bot: botByWeek.get(weekOf) ?? null,
+        }))
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
             <details>
@@ -911,23 +936,34 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
               </summary>
               <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
-                  Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept.
+                  Your weekly check-in, answered in Discord — this is just where it&rsquo;s kept. The
+                  week&rsquo;s summary and who answered come from the Companion bot.
                 </div>
 
-                {weeks.length === 0 && !checkinsLoading && (
+                {weeks.length === 0 && !checkinsLoading && !companion.loading && (
                   <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
                     No check-ins yet. They show up here once you&rsquo;ve answered one in Discord.
                   </div>
                 )}
 
-                {weeks.map(w => (
+                {weeks.map(w => {
+                  const dbCount = Object.keys(w.byUser).length
+                  const botCount = w.bot?.completedBy.length ?? 0
+                  const answered = Math.max(dbCount, botCount)
+                  return (
                   <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span>Week of {w.weekOf}</span>
                       <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
-                        {Object.keys(w.byUser).length === 1 ? 'one of you answered' : 'both answered'}
+                        {answered >= 2 ? 'both of you checked in' : answered === 1 ? 'one of you checked in' : 'no answers yet'}
                       </span>
                     </summary>
+                    {w.bot?.summary && (
+                      <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5, borderLeft: '2px solid color-mix(in srgb, var(--gold) 40%, transparent)', paddingLeft: '0.6rem' }}>
+                        <span style={{ fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gold)', opacity: 0.85, marginRight: '0.4rem' }}>From Discord</span>
+                        {w.bot.summary}
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                       {Object.entries(w.byUser).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
@@ -949,9 +985,17 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
                           </div>
                         )
                       })}
+                      {botCount > dbCount && (
+                        <div style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem', fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', lineHeight: 1.5 }}>
+                          {dbCount === 0
+                            ? `${botCount === 2 ? 'Both of you' : 'One of you'} checked in on Discord — the full answers didn't sync here, just the summary above.`
+                            : 'The other partner checked in too — their full answers didn’t sync here.'}
+                        </div>
+                      )}
                     </div>
                   </details>
-                ))}
+                  )
+                })}
               </div>
             </details>
           </section>
