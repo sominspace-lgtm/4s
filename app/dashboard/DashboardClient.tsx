@@ -108,7 +108,7 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
 
 const SECTION_GROUPS: Record<string, string> = {
-  brief:     'now',
+  brief:     'mine',
   village:   'your world',
   personal:  'mine',
   places:    'ours',
@@ -129,7 +129,11 @@ const SECTION_GROUPS: Record<string, string> = {
 // are actually in `navSections` for the current mode and, in shared mode
 // only, additionally splits Calendar out into its own top-level icon (see
 // groupsForMode/homeBarGroups below) — shared mode has no Today/Personal,
-// personal mode has everything and keeps Calendar nested. Tasks/goals/
+// personal mode has everything and keeps Calendar nested. Today folded into
+// the Personal group (2026-09-01, "mix today into personal like the
+// household tab") now that the app lands on the Village, not Today — so
+// Personal covers Today + the personal hub, shown as a secondary pill row,
+// exactly the way Household covers Home/Calendar/Reference. Tasks/goals/
 // projects stay out of Household here on purpose: those are personal data
 // gated behind a PIN even in shared mode (see VillageScene's
 // districtLocked). Places got its own icon back (2026-08-25 fix) — nesting
@@ -158,8 +162,7 @@ const SECTION_GROUPS: Record<string, string> = {
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'brief',    icon: 'today',     label: 'Today',      members: ['brief'] },
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['personal'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'personal'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
@@ -390,7 +393,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // ALL_HOME_BAR_GROUPS filtered to what's actually reachable this mode
   // (2026-08-25). Every member has to be a real, visible section or its
   // group is dropped entirely (e.g. shared mode has no 'brief'/'personal',
-  // so those two groups vanish rather than rendering an empty icon).
+  // so the Personal group — which now covers both — vanishes rather than
+  // rendering an empty icon).
   // 'village' is a permanent Home Bar icon in both modes now (2026-08-31) —
   // it sits between Personal and Household. (It briefly lost its personal-
   // mode icon in favour of a Today preview / a cross-tab band; the user
