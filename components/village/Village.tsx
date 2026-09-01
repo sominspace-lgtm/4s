@@ -154,11 +154,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     })).sort((a, b) => b.minDist - a.minDist)[0]?.s ?? { x: 400, y: GROUND_Y + 10 }
     onChangeLayout({ ...layout, [id]: spot })
   }
-  // Zoom used to be a discrete +/- control (round 4); it was dropped from
-  // the tab when the controls collapsed into the ⋯ menu (round 77, "remove
-  // the control from that tab"). The scene still reads `zoom` in its viewBox
-  // math, so it stays pinned at 1.
-  const zoom = 1
+  // Zoom (round 4; folded into the ⋯ menu round 78). Discrete 0.25 steps,
+  // clamped to [1, 2] — the canvas has nothing past its own edges so
+  // "zooming out" below 1 just exposes blank space, and 2 is close enough
+  // to read one building. The scene consumes `zoom` in its viewBox math.
+  const [zoom, setZoom] = useState(1)
+  const zoomIn = () => setZoom(z => Math.min(2, +(z + 0.25).toFixed(2)))
+  const zoomOut = () => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))
   // Fullscreen (round 59, "allow so we can view village in fullscreen on
   // ipad/mobile") — a CSS pseudo-fullscreen (fixed inset:0) rather than the
   // Fullscreen API, which iOS Safari only supports for <video>. Escape
@@ -487,7 +489,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                   display: 'flex', flexDirection: 'column',
                   boxShadow: '0 6px 18px color-mix(in srgb, var(--text) 14%, transparent)',
                 }}>
-                  {[
+                  {([
                     ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
                     ...(guestActive
                       ? [
@@ -503,12 +505,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                             },
                           }]
                         : []),
+                    // Zoom stays in the menu — the buttons repeat, so these
+                    // keep it open instead of dismissing on each step.
+                    { label: 'Zoom in', on: zoomIn, keepOpen: true, disabled: zoom >= 2 },
+                    ...(zoom > 1 ? [
+                      { label: 'Zoom out', on: zoomOut, keepOpen: true },
+                      { label: 'Reset zoom', on: () => setZoom(1), keepOpen: true },
+                    ] : []),
                     { label: 'View fullscreen', on: () => setExpanded(true) },
-                  ].map(item => (
-                    <button key={item.label} role="menuitem" className="press"
-                      onClick={() => { item.on(); setMenuOpen(false) }}
+                  ] as { label: string; on: () => void; keepOpen?: boolean; disabled?: boolean }[]).map(item => (
+                    <button key={item.label} role="menuitem" className="press" disabled={item.disabled}
+                      onClick={() => { item.on(); if (!item.keepOpen) setMenuOpen(false) }}
                       style={{
-                        textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+                        textAlign: 'left', background: 'none', border: 'none',
+                        cursor: item.disabled ? 'default' : 'pointer', opacity: item.disabled ? 0.4 : 1,
                         padding: '0.4rem 0.5rem', borderRadius: '7px', color: 'var(--text)',
                         fontSize: '0.7rem', fontFamily: 'var(--font-body)',
                       }}
@@ -679,6 +689,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
           Drag any landmark or prop to move it, or tap it once for size controls. Inventory adds
           something new — tap × on it to remove it. Your layout is saved automatically.
+        </p>
+      )}
+
+      {/* Pan hint — only once zoomed in, the one state where dragging the
+          scene does anything (see VillageScene's pan-clamp comment). */}
+      {!compact && !arranging && zoom > 1 && (
+        <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
+          Drag to look around.
         </p>
       )}
 

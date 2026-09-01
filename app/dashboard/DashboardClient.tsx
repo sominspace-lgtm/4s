@@ -149,22 +149,20 @@ const SECTION_GROUPS: Record<string, string> = {
 // pre-refactor name — only means the second and third of those, same as
 // it always did.
 //
-// Controls always opens the Smart Home overlay (special-cased in onSelect
-// below) rather than ever being a real navSections member — 'smarthome' is
-// unconditionally kept regardless of navSections for that reason (see the
-// filter logic below), reachable both as Household's own trailing pill and
-// as its own standalone Controls icon, in both personal and shared mode.
-// It's also structurally never `activeGroup` (nothing ever sets currentTab
-// to 'smarthome'), so unlike every other icon it can never show the normal
-// "you are here" active state — see HomeBar's own dot-cue comment for how
-// that gets made legible instead of just looking unavailable.
+// Smart Home ("Controls") always opens as an overlay (special-cased in
+// onSelect below) rather than ever being a real navSections member —
+// 'smarthome' is unconditionally kept regardless of navSections for that
+// reason (see the filter logic below). Its standalone bottom-nav icon was
+// removed (2026-09-01, "remove the control tab from the bottom navigation")
+// — it's now reached from Household's own trailing "Controls" pill, or by
+// tapping the Home cottage in the Village scene (panelContent.home in
+// VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'brief',    icon: 'today',     label: 'Today',      members: ['brief'] },
   { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['personal'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
-  { id: 'controls', icon: 'controls',  label: 'Controls',   members: ['smarthome'], opensOverlay: true },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
