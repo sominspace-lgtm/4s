@@ -7,7 +7,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
-import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
+import { useCheckins, groupCheckinsByWeek, dayMs, WEEK_WINDOW_MS } from '@/lib/hooks/useCheckins'
 import { useCompanionSync } from '@/lib/hooks/useCompanionSync'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
@@ -915,18 +915,19 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
         // the hook hands back mock data before a pair + connection exist.
         const botReal = !companion.loading && !companion.mocked && !companion.degraded
           && !companion.needsPair && !companion.needsConnection
-        const botByWeek = new Map(
-          (botReal ? companion.checkins : []).map(c => [c.weekOf.slice(0, 10), c] as const),
-        )
-        const weekKeys = [...new Set([
-          ...dbWeeks.map(w => w.weekOf.slice(0, 10)),
-          ...botByWeek.keys(),
-        ])].sort((a, b) => b.localeCompare(a))
-        const weeks = weekKeys.map(weekOf => ({
-          weekOf,
-          byUser: dbWeeks.find(w => w.weekOf.slice(0, 10) === weekOf)?.byUser ?? {},
-          bot: botByWeek.get(weekOf) ?? null,
-        }))
+        type BotCheckin = (typeof companion.checkins)[number]
+        const weeks: { weekOf: string; byUser: typeof dbWeeks[number]['byUser']; bot: BotCheckin | null }[] =
+          dbWeeks.map(w => ({ weekOf: w.weekOf, byUser: w.byUser, bot: null }))
+        // Attach each bot summary to the nearest DB week within the same
+        // 6-day window groupCheckinsByWeek clusters on; unmatched bot weeks
+        // become their own entry.
+        for (const b of (botReal ? companion.checkins : [])) {
+          const bt = dayMs(b.weekOf)
+          const match = weeks.find(w => Math.abs(dayMs(w.weekOf) - bt) <= WEEK_WINDOW_MS)
+          if (match) { if (!match.bot) match.bot = b }
+          else weeks.push({ weekOf: b.weekOf.slice(0, 10), byUser: {}, bot: b })
+        }
+        weeks.sort((a, b) => b.weekOf.localeCompare(a.weekOf))
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
             <details>

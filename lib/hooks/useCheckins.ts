@@ -49,28 +49,32 @@ export interface CheckinWeek {
   byUser: Record<string, Checkin>
 }
 
-// The Monday (ISO week start) of whatever date string a row carries, so two
-// partners whose rows land a day or two apart (different week-start
-// conventions on the bot side) still group into the SAME week instead of
-// each showing up as "one of you answered" (2026-09-01).
-function weekStartOf(dateStr: string): string {
-  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00Z`)
-  if (isNaN(d.getTime())) return dateStr.slice(0, 10)
-  const dow = d.getUTCDay() // 0 = Sun
-  d.setUTCDate(d.getUTCDate() - ((dow + 6) % 7)) // back up to Monday
-  return d.toISOString().slice(0, 10)
+/** Midnight-UTC epoch ms for a YYYY-MM-DD(...) date string. */
+export function dayMs(dateStr: string): number {
+  return Date.parse(`${dateStr.slice(0, 10)}T00:00:00Z`)
 }
+export const WEEK_WINDOW_MS = 6 * 24 * 60 * 60 * 1000
 
 // Groups the flat row list into one entry per week, both partners' answers
-// together — the shape the UI actually wants, kept out of the hook so the
-// hook stays a plain reflection of the table.
+// together. NOT a fixed Monday/Sunday bucket — the two partners often answer
+// a couple of days apart, and the companion bot's own week boundary doesn't
+// always match a calendar week, so a fixed anchor split the same week's two
+// answers into two "one of you answered" entries (2026-09-01 report: 8/25
+// and 8/17 showed one person when both had checked in). Instead: rows whose
+// dates are within 6 days of any row already in a bucket join that bucket.
 export function groupCheckinsByWeek(checkins: Checkin[]): CheckinWeek[] {
-  const byWeek = new Map<string, CheckinWeek>()
-  for (const c of checkins) {
-    const key = weekStartOf(c.week_of)
-    let week = byWeek.get(key)
-    if (!week) { week = { weekOf: key, byUser: {} }; byWeek.set(key, week) }
-    week.byUser[c.user_id] = c
+  // Rows are processed newest-first; a row joins a bucket only if it's within
+  // 6 days of that bucket's NEWEST row (its anchor), never a chained middle
+  // row — otherwise a long run of near-daily check-ins could collapse weeks
+  // apart into one bucket.
+  const buckets: (CheckinWeek & { _anchor: number })[] = []
+  for (const c of [...checkins].sort((a, b) => b.week_of.localeCompare(a.week_of))) {
+    const t = dayMs(c.week_of)
+    let bucket = buckets.find(b => Math.abs(b._anchor - t) <= WEEK_WINDOW_MS)
+    if (!bucket) { bucket = { weekOf: c.week_of.slice(0, 10), byUser: {}, _anchor: t }; buckets.push(bucket) }
+    bucket.byUser[c.user_id] = c
   }
-  return [...byWeek.values()].sort((a, b) => b.weekOf.localeCompare(a.weekOf))
+  return buckets
+    .map((b): CheckinWeek => ({ weekOf: b.weekOf, byUser: b.byUser }))
+    .sort((a, b) => b.weekOf.localeCompare(a.weekOf))
 }
