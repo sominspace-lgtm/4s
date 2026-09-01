@@ -29,7 +29,6 @@ export default async function DashboardPage() {
 
   const layout = prefs?.layout?.sections as SectionConfig[] | null
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
-  const personalTabs = prefs?.layout?.personalTabs as SectionConfig[] | null
   const householdTabs = prefs?.layout?.householdTabs as SectionConfig[] | null
   const householdHomeBlocks = prefs?.layout?.householdHomeBlocks as SectionConfig[] | null
   const villageLayout = prefs?.layout?.villageLayout as VillageLayout | null
@@ -60,7 +59,6 @@ export default async function DashboardPage() {
       initialMode={normalizeMode(prefs?.mode)}
       initialLayout={layout ?? null}
       initialTodayBlocks={todayBlocks ?? null}
-      initialPersonalTabs={personalTabs ?? null}
       initialHouseholdTabs={householdTabs ?? null}
       initialHouseholdHomeBlocks={householdHomeBlocks ?? null}
       initialVillageLayout={villageLayout ?? null}

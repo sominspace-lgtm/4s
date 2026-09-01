@@ -13,7 +13,7 @@
 // the Village is its own landing screen now, so a small preview of it on
 // Today was redundant. Today declutters down to: the greeting/stats card,
 // Household's needs panel, the area index, and the calendar.
-export type TodayBlockId = 'budget' | 'areas' | 'calendar' | 'household'
+export type TodayBlockId = 'budget' | 'overview' | 'areas' | 'calendar' | 'household'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -22,6 +22,9 @@ export interface TodayBlockConfig {
 
 export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: string }> = {
   budget:     { label: 'Capacity',       hint: 'Deep/medium/light slots for today' },
+  // The personal glance strip that used to sit above the Personal sub-tabs
+  // (2026-09-01) — open tasks, what's coming up, a quick note.
+  overview:   { label: 'Overview',       hint: 'Open tasks, what’s coming up, a quick note' },
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Month view by default' },
   // A real "what needs you" panel, not a shortcut (2026-08-25 round two) —
@@ -33,18 +36,18 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // Capacity lives at a fixed spot (physically nested inside the greeting
 // card); Calendar is rendered by DashboardClient after DailyBrief returns, a
 // different component entirely, so its position here is cosmetic (see
-// DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. Only
-// these two are true siblings in the render tree and can be reordered
-// against each other.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['areas', 'household'])
+// DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. These
+// three are true siblings in the render tree and can be reordered.
+export const REORDERABLE: Set<TodayBlockId> = new Set(['overview', 'areas', 'household'])
 
 // Order here is the default order — not enforced at render time, so a
-// reorder in the customize panel actually changes what you see. Household
+// reorder in the customize panel actually changes what you see. Overview
 // leads, Areas sits last among the reorderable group, Calendar trails the
 // whole list (matching where it actually renders — see REORDERABLE's own
 // comment).
 export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
   { id: 'budget',     hidden: false },
+  { id: 'overview',   hidden: false },
   { id: 'household',  hidden: false },
   { id: 'areas',      hidden: false },
   { id: 'calendar',   hidden: false },

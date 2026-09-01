@@ -9,14 +9,14 @@ import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 // that file's header for why it's shared rather than hand-copied per screen.
 export type { SectionConfig }
 
-// Today · Tasks · Village · Personal · Household · Places
+// Today · Tasks · Goals · Habits · Notes · Money · People · Village · Household · Places
 //
 // Six tabs, ordered by how often you actually open them, each answering a
 // question nobody has to guess at:
 //   Today      — what's happening now?   (brief · inbox · calendar)
 //   Tasks      — what do I need to do?   (the notice board)
 //   Village    — what does my life look like?
-//   Personal   — everything about me     (tasks · habits · notes · money · people)
+//   Personal   — tasks · goals · habits · notes · money · people (each a section)
 //   Household  — everything we share     (chores · meals)
 //   Places     — where do we want to be? (a themed map, saved pins, trips)
 //
@@ -29,12 +29,10 @@ export type { SectionConfig }
 // to live, it's something you check — and once it was 4S's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
 // twice. It's a panel inside Today now.
-// Five top-level tabs (2026-08-21). Tasks stays folded into Personal as a
-// sub-tab, but Places came back out to top level — a map, pins and trips is a
-// destination you go to deliberately, not something you reach through the
-// household's chore list, and burying it cost more clicks than the tidier tab
-// bar was worth. See personalTabs.ts and householdLayout.ts for what still
-// lives one level down.
+// The personal areas (Tasks/Goals/Habits/Notes/Money/People) are their own
+// top-level sections as of 2026-09-01 — they used to live one click behind
+// a single "Personal" tab. Household still nests one level down; see
+// householdLayout.ts.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
@@ -42,10 +40,15 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Renaming the id to match the label would be a migration with nothing to
   // gain — the label is the only part anyone sees.
   { id: 'brief',    label: 'Today',    hidden: false },
-  // Personal — Tasks, Goals, Habits, Notes, Money and People as flat
-  // sub-tabs. Flat on purpose: nesting a "Growth" group inside Personal
-  // would put those three levels deep. See components/personal/PersonalHub.tsx.
-  { id: 'personal', label: 'Personal', hidden: false },
+  // The personal areas — top-level sections as of 2026-09-01 (was one
+  // "Personal" tab with an internal switcher). Grouped visually under the
+  // Personal icon in the Home Bar, but flat here.
+  { id: 'tasks',    label: 'Tasks',    hidden: false },
+  { id: 'goals',    label: 'Goals',    hidden: false },
+  { id: 'habits',   label: 'Habits',   hidden: false },
+  { id: 'notes',    label: 'Notes',    hidden: false },
+  { id: 'money',    label: 'Money',    hidden: false },
+  { id: 'people',   label: 'People',   hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
   // Household's own sub-tabs, promoted to real top-level sections
@@ -84,7 +87,7 @@ export default function CustomizePanel({ open, sections, current, userId, onChan
     onChange(next)
     // `current` must be the COMPLETE LayoutState. This used to be built here
     // from four props, so reordering your sections silently reset your Today
-    // blocks and your Personal and Household tab arrangements — the exact bug
+    // blocks and your Household tab arrangement — the exact bug
     // lib/persistence/saveLayout.ts was written to end, reintroduced by
     // rebuilding the object by hand in a second place.
     await saveLayout(userId, current, { sections: next })

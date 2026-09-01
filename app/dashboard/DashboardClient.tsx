@@ -21,7 +21,13 @@ import { useGathering } from '@/lib/hooks/useGathering'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
-import PersonalHub from '@/components/personal/PersonalHub'
+import MasterDashboard from '@/components/work/MasterDashboard'
+import GoalsSection from '@/components/goals/GoalsSection'
+import HabitTracker from '@/components/habits/HabitTracker'
+import PersonalRoutines from '@/components/habits/PersonalRoutines'
+import NotesHub from '@/components/notes/NotesHub'
+import MoneyHub from '@/components/money/MoneyHub'
+import PeopleHub from '@/components/people/PeopleHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
 import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
 import PlacesHub from '@/components/places/PlacesHub'
@@ -31,7 +37,6 @@ import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import { scrollToAnchor } from '@/lib/utils/navigate'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
-import { mergePersonalTabs } from '@/lib/utils/personalTabs'
 import { mergeHouseholdTabs, mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
@@ -59,7 +64,6 @@ interface Props {
   initialMode: string
   initialLayout: SectionConfig[] | null
   initialTodayBlocks: TodayBlockConfig[] | null
-  initialPersonalTabs: SectionConfig[] | null
   initialHouseholdTabs: SectionConfig[] | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
   initialVillageLayout: VillageLayout | null
@@ -72,11 +76,17 @@ interface Props {
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
   'pulse', 'wishlist', 'spending', 'capture',
-  'relationship', 'shared',                          // → people (a Personal sub-tab)
-  'habits', 'domains', 'growth',                     // → Personal sub-tabs
+  'relationship', 'shared',                          // → people
+  'domains', 'growth',                              // → habits / notes
   'council',                                         // removed entirely (2026-09-01)
-  'people', 'money',                                 // → Personal sub-tabs
-  'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
+  'work',                                            // → 'tasks' (2026-08-20)
+  // 'personal' dissolved 2026-09-01 — Tasks/Goals/Habits/Notes/Money/People
+  // are top-level sections again. mergeLayout strips the dangling 'personal'
+  // and appends the six real ids from DEFAULT_SECTIONS. ('habits'/'people'/
+  // 'money' were briefly listed here while they lived under Personal — they
+  // are live section ids once more, so any old layout that still names them
+  // keeps them.)
+  'personal',
   // 'household' folded into four real top-level sections (2026-08-25) —
   // home/calendar/reference (smarthome deliberately excluded, see
   // DEFAULT_SECTIONS' own comment; 'routines' was briefly a fifth, folded
@@ -110,8 +120,13 @@ const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
 
 const SECTION_GROUPS: Record<string, string> = {
   brief:     'mine',
+  tasks:     'mine',
+  goals:     'mine',
+  habits:    'mine',
+  notes:     'mine',
+  money:     'mine',
+  people:    'mine',
   village:   'your world',
-  personal:  'mine',
   places:    'ours',
   // Household's own sub-tabs — real top-level sections for both personal
   // and shared use as of 2026-08-25 (used to nest one click behind a single
@@ -163,13 +178,13 @@ const SECTION_GROUPS: Record<string, string> = {
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'personal'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'goals', 'habits', 'notes', 'money', 'people'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
 ]
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialPersonalTabs, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialUnlockAll, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialHouseholdTabs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -186,12 +201,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   }, [])
   const [mode, setMode] = useState<Mode>(initialMode as Mode)
   const [sections, setSections] = useState<SectionConfig[]>(mergeLayout(initialLayout))
-  // Personal/Household sub-tab and Home-block customization (2026-08-12) —
-  // same reasoning as todayBlocks below: owned here because saveLayout()
-  // needs the FULL LayoutState to avoid the five-writer bug its own header
-  // comment describes, so the write path lives at this level even though the
-  // customize UI itself renders inside PersonalHub/HouseholdHub.
-  const [personalTabs, setPersonalTabs] = useState<SectionConfig[]>(mergePersonalTabs(initialPersonalTabs))
+  // Household sub-tab and Home-block customization (2026-08-12) — same
+  // reasoning as todayBlocks below: owned here because saveLayout() needs
+  // the FULL LayoutState to avoid the five-writer bug its own header
+  // comment describes, so the write path lives at this level even though
+  // the customize UI itself renders inside HouseholdHub. (Personal's own
+  // sub-tab customization is gone — its areas are top-level sections now,
+  // managed by the main Customize-layout panel.)
   const [householdTabs, setHouseholdTabs] = useState<SectionConfig[]>(mergeHouseholdTabs(initialHouseholdTabs))
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
@@ -255,12 +271,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, unlockAll, todayBlocks, personalTabs, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
-  }
-
-  async function changePersonalTabs(next: SectionConfig[]) {
-    setPersonalTabs(next)
-    await saveLayout(userId, layoutState(), { personalTabs: next })
+    return { sections, unlockAll, todayBlocks, householdTabs, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
   }
 
   async function changeVillageLayout(next: VillageLayout) {
@@ -317,7 +328,16 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     function onNav(e: Event) {
       const id = (e as CustomEvent<string>).detail
       const anchor = ANCHORS.has(id) ? id : null
-      if (!anchor && !progRef.current.isUnlocked(id)) openEverythingRef.current()
+      if (!anchor) {
+        if (!progRef.current.isUnlocked(id)) openEverythingRef.current()
+        // A deep link (search, a Brief card, a Village panel) to a section
+        // the user hid via Customize should reveal it for the session
+        // rather than dead-end on the first visible tab — same behaviour
+        // PersonalHub's own goTo had for its sub-tabs.
+        setSections(prev => prev.some(s => s.id === id && s.hidden)
+          ? prev.map(s => (s.id === id ? { ...s, hidden: false } : s))
+          : prev)
+      }
       setActiveTab(anchor ? 'brief' : id)
       // scrollToAnchor retries until the target mounts and verifies the
       // scroll actually happened — see lib/utils/navigate.ts for why both
@@ -458,8 +478,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const group = SECTION_GROUPS[id]
 
     const LABELS: Record<string, string> = {
-      brief: t('Today', lang), village: t('Village', lang),
-      personal: t('Personal', lang), places: t('Places', lang),
+      brief: t('Today', lang), village: t('Village', lang), places: t('Places', lang),
+      // Personal areas — top-level sections as of 2026-09-01 (was one
+      // "Personal" tab with an internal switcher).
+      tasks: t('Tasks', lang), goals: t('Goals', lang), habits: t('Habits', lang),
+      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -485,9 +508,15 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} />
-        case 'personal': return <PersonalHub key="personal" userId={userId} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
-        // Tasks still folds into Personal as a sub-tab (see PersonalHub);
-        // Places came back out to top level (2026-08-21).
+        // Personal areas — one section id each (2026-09-01), rendered
+        // directly. Same "one id per former sub-tab" pattern Household uses
+        // below. 'habits' is the only one that draws two components.
+        case 'tasks':    return <MasterDashboard key="tasks" userId={userId} />
+        case 'goals':    return <GoalsSection key="goals" userId={userId} />
+        case 'habits':   return <div key="habits"><PersonalRoutines userId={userId} /><HabitTracker /></div>
+        case 'notes':    return <NotesHub key="notes" userId={userId} />
+        case 'money':    return <MoneyHub key="money" userId={userId} />
+        case 'people':   return <PeopleHub key="people" />
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
         // Household's own sub-tabs — real top-level sections now, for both
         // personal and shared use (2026-08-25, was a single wrapping

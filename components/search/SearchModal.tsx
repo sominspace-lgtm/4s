@@ -50,17 +50,12 @@ function goTo(sectionId: string) {
   goToSection(sectionId)
 }
 
-// Where each search result lives, so activating one jumps to the right tab.
-// 'work'/'wishlist'/'habit'/'note' are all handled separately below (see
-// runAt) — they live in Personal sub-tabs, and landing on Personal's
-// last-open tab instead of the right one would make the search result look
-// like it went nowhere. This map is really only load-bearing for 'capture'
-// now; 'work' used to point at a section id ('work') that was never real —
-// same silent-fallback-to-navSections[0] bug goToHousehold/goToSection's own
-// callers hit earlier (2026-08-27 fix) — clicking a task result landed
-// wherever navSections[0] happened to be instead of Tasks.
+// Where each search result lives, so activating one jumps to the right
+// section. `runAt` handles work/wishlist/habit/note explicitly; this map is
+// the fallback, kept pointing at the real section ids so it stays correct
+// if that ever changes.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
-  capture: 'brief', work: 'personal', wishlist: 'personal', habit: 'personal', note: 'personal',
+  capture: 'brief', work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes',
 }
 
 interface Props {

@@ -38,29 +38,11 @@ export function scrollToAnchor(id: string, attempt = 0) {
 
 export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people'
 
-// Personal holds Tasks/Goals/Habits/Notes/Money/People as sub-tabs (see
-// components/personal/PersonalHub.tsx) — plain goToSection('personal')
-// always lands on whichever sub-tab was last open, which breaks callers
-// (search's "Go to Money", deep links) that mean a specific one.
-// goToPersonal() carries that intent two ways: a module-level value
-// PersonalHub reads once on mount (covers the common case where Personal
-// isn't mounted yet, so a live event fired now would never be heard) and a
-// CustomEvent for the case where it's already mounted and just needs to
-// switch its own sub-tab.
-let pendingPersonalTab: PersonalTab | null = null
-
+// Tasks/Goals/Habits/Notes/Money/People are their own top-level sections
+// now (2026-09-01), so this is just goToSection with a narrower type —
+// kept as its own name so the ~20 existing callers don't need touching.
 export function goToPersonal(tab: PersonalTab) {
-  pendingPersonalTab = tab
-  window.dispatchEvent(new CustomEvent('4s:personal-tab', { detail: tab }))
-  goToSection('personal')
-}
-
-// Read once, at mount — consumes the pending value so a later remount
-// doesn't re-apply a stale target.
-export function consumePersonalTab(): PersonalTab | null {
-  const t = pendingPersonalTab
-  pendingPersonalTab = null
-  return t
+  goToSection(tab)
 }
 
 // Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two

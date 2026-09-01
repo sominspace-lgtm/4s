@@ -3,28 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-// Progressive unlocking — a new account starts with just Brief + Tasks and
-// grows the rest of the OS by DOING specific things, not by racking up raw
-// activity. Each stage is one concrete milestone ("track a habit", "capture
-// a thought"...), so the same actions onboarding already asks for (add a
-// habit, jot a first thought) show up done on the very first dashboard load
-// — nobody is asked to redo what they just did.
-//
-// No stored unlock state, no migration: unlock status is derived live from
-// real row counts, so every existing account computes past every milestone
-// instantly and sees the full app exactly as before.
-//
-// UNLOCK BY RELEVANCE, NOT BY QUOTA (2026-08-07 rework): the original list
-// gated Money behind "check off a habit" and Shared behind "complete a task"
-// — no causal story a user could construct, just quota-filling. Money and
-// Calendar are utilities people may need on day one (a subscription renews,
-// a deadline exists) and must never be gated. Shared already carried a
-// comment saying it was "surfaced early so shared items aren't an
-// afterthought" while simultaneously being locked behind a milestone — that
-// contradiction is gone now too. What's left only gates the one section
-// where the milestone genuinely produces the content that section exists to
-// show: Personal (tasks/goals/habits/notes/money/people — components/personal/PersonalHub)
-// needs either a habit or a capture to have anything to show at all.
+// Progressive unlocking — historically a new account started minimal and
+// grew the OS by DOING things. As of 2026-09-01 there are no gated stages
+// left (`UNLOCK_STAGES` is empty): every section is visible from the first
+// login. The hook stays as a thin `isUnlocked() → true` so its two callers
+// in DashboardClient don't need touching, and so a stage could be
+// reintroduced here without rewiring anything.
 export type ActionKey = 'task' | 'capture' | 'habit' | 'checkHabit' | 'completeTask'
 
 export interface Counts {
@@ -64,15 +48,7 @@ export const NEVER_GATED = new Set(['village', 'home', 'calendar', 'routines', '
  *  adding a section silently made the bar report the wrong total. */
 const ALWAYS_OPEN_COUNT = 6
 
-export const UNLOCK_STAGES: UnlockStage[] = [
-  {
-    id: 'personal', label: 'Personal', icon: '◈',
-    teaser: 'Tasks, Goals, Habits, Notes, Money and People — all in one place.',
-    milestone: 'Track a habit or capture a thought',
-    action: 'habit',
-    isDone: c => c.habits >= 1 || c.captures >= 1,
-  },
-]
+export const UNLOCK_STAGES: UnlockStage[] = []
 
 const REFRESH_EVENTS = [
   '4s:work-items-changed', '4s:captures-changed', '4s:habits-changed',

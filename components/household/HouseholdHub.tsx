@@ -124,8 +124,8 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   // the Household check-in reflect BOTH people again (2026-09-01, "check-in
   // only shows one person's data — show both sources").
   const companion = useCompanionSync()
-  // Same "consumed value + live event" shape as PersonalHub/goToPersonal —
-  // lets a caller land on a SPECIFIC sub-tab rather than whichever one was
+  // A consumed value + live event lets a caller (goToHousehold) land on a
+  // SPECIFIC sub-tab rather than whichever one was
   // open last. A pending deep link wins over sharedMode's Reference default.
   const [internalTab, setTab] = useState<HouseholdTab>(() => consumeHouseholdTab() ?? (sharedMode ? 'reference' : 'home'))
   useEffect(() => {
@@ -230,7 +230,7 @@ export default function HouseholdHub({ userId, userEmail, tabs, onChangeTabs, ho
   const visibleTabs = tabs.filter(t => !t.hidden)
 
   // A deep link must never land on a tab the user has hidden — un-hide it
-  // rather than rendering a blank pane, same reasoning as PersonalHub's goTo.
+  // rather than rendering a blank pane.
   function goToTab(id: HouseholdTab) {
     setTab(id)
     const entry = tabs.find(t => t.id === id)

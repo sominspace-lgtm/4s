@@ -50,7 +50,7 @@ export default function SectionCustomizer({
   open, title, intro, sections, reorderable, defaultSections, onChange, onClose,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  // Portal to document.body (2026-08-12 fix): PersonalHub/HouseholdHub render
+  // Portal to document.body (2026-08-12 fix): the hub tab-bars render
   // inside DashboardClient's `.tab-in` wrapper, which carries a CSS
   // `animation` that sets a real (non-'none') `transform` on it for the
   // first 240ms after every tab switch. Per spec, ANY transform on an

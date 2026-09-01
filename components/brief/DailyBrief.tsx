@@ -14,6 +14,7 @@ import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
+import PersonalOverview from '@/components/personal/PersonalOverview'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
@@ -473,6 +474,9 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     </div>
 
     {tailOrder.map(id => {
+      // The personal glance strip, relocated from above the (now dissolved)
+      // Personal sub-tabs (2026-09-01). Hideable/reorderable via Customize Today.
+      if (id === 'overview') return <PersonalOverview key="overview" userId={userId} />
       if (id === 'areas' && !lowDay) return (
         <div key="areas">
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>

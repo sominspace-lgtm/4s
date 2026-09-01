@@ -16,10 +16,10 @@ export interface HomeBarGroup {
   id: string
   icon: IconName
   label: string
-  /** The real tab ids this context covers — DashboardClient's existing
-   *  section ids (brief/personal/village/home/calendar/smarthome/
-   *  reference/places). members[0] is where selecting the group (without
-   *  already being inside it) lands. */
+  /** The real section ids this context covers — DashboardClient's section
+   *  ids (brief/tasks/goals/habits/notes/money/people/village/home/calendar/
+   *  smarthome/reference/places). members[0] is where selecting the group
+   *  (without already being inside it) lands. */
   members: string[]
   /** True for a group whose tap opens an overlay (e.g. Smart Home) rather
    *  than switching `currentTab` — it can structurally never become
@@ -31,7 +31,8 @@ export interface HomeBarGroup {
 }
 
 const MEMBER_LABELS: Record<string, string> = {
-  brief: 'Today', personal: 'Personal',
+  brief: 'Today',
+  tasks: 'Tasks', goals: 'Goals', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People',
   village: 'Village', home: 'Home', calendar: 'Calendar',
   smarthome: 'Controls', reference: 'Reference', places: 'Places',
 }
