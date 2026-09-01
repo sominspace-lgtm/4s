@@ -299,10 +299,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       line: 'Your month, from everything dated',
     },
     {
-      label: 'Council', action: 'Ask Council', onAction: () => goToPersonal('council'),
-      line: '6 advisors ready',
-    },
-    {
       label: 'Money', action: 'Open Money', onAction: () => goToPersonal('money'),
       line: !moneyTracksAnything
         ? 'Nothing tracked yet'

@@ -9,43 +9,35 @@ import NotesHub from '@/components/notes/NotesHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import PersonalOverview from '@/components/personal/PersonalOverview'
-import CouncilSection from '@/components/council/CouncilSection'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_PERSONAL_TABS } from '@/lib/utils/personalTabs'
 import { consumePersonalTab, type PersonalTab } from '@/lib/utils/navigate'
-import type { Mode } from '@/lib/constants/modes'
 import Icon from '@/components/ui/Icon'
 
-// Personal — everything that's about you, in one place: your habits, your
-// life areas, your money, your people, and the Council that reads all of it.
+// Personal — everything that's about you, in one place: your tasks, goals,
+// habits, notes, money and people.
 //
 // The counterpart is Household (what we share). That's the actual split a
 // person feels day to day — "mine" vs "ours" — and it's a better dividing
 // line than the old one, where Money and People each owned a top-level tab
 // despite being visited far less often than Today or Tasks.
 //
-// Deliberately FLAT: Habits/Life/Council used to live inside a Growth tab,
-// which would have meant Personal → Growth → Council, three levels deep for
-// something that's one click from the Brief. Growth is dissolved here rather
-// than nested — five sibling sub-tabs beat two levels of hierarchy.
+// Deliberately FLAT: Habits/Life used to live inside a "Growth" tab, which
+// would have meant Personal → Growth → Habits, three levels deep for
+// something that's one click from the Brief. That grouping is dissolved —
+// sibling sub-tabs beat two levels of hierarchy.
 //
 // Sub-tabs are reorderable/hideable as of 2026-08-12 — `tabs` is owned by
 // DashboardClient (see its layoutState()/saveLayout wiring) and passed down
 // here, same relationship Today has with its own blocks.
-//
-// Council is a real tab again as of 2026-08-21 — it used to live only in
-// the header ⋯ menu next to Ask Jarvis, both gone now. goToPersonal
-// ('council') from the Brief's "Ask Council" card still lands here exactly
-// as before; it's just also reachable by clicking the tab like anything else.
-export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
+export default function PersonalHub({ userId, tabs, onChangeTabs }: {
   userId: string
-  mode: Mode
   tabs: SectionConfig[]
   onChangeTabs: (next: SectionConfig[]) => void
 }) {
-  // A caller can ask for a specific sub-tab (Brief's "Ask Council" card,
-  // search's "Go to Money"). See lib/utils/navigate.ts for why this is both
-  // a consumed value and a live event.
+  // A caller can ask for a specific sub-tab (search's "Go to Money", a deep
+  // link). See lib/utils/navigate.ts for why this is both a consumed value
+  // and a live event.
   const [tab, setTab] = useState<PersonalTab>(() => consumePersonalTab() ?? 'tasks')
   const [customizeOpen, setCustomizeOpen] = useState(false)
 
@@ -96,7 +88,6 @@ export default function PersonalHub({ userId, mode, tabs, onChangeTabs }: {
       {tab === 'notes'   && <NotesHub userId={userId} />}
       {tab === 'money'   && <MoneyHub userId={userId} />}
       {tab === 'people'  && <PeopleHub />}
-      {tab === 'council' && <CouncilSection mode={mode} userId={userId} calendarConnected />}
 
       <SectionCustomizer
         open={customizeOpen}

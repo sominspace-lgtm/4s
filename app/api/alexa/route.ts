@@ -362,8 +362,8 @@ export async function POST(request: Request) {
   }
 }
 
-// A short spoken "state of your day" — mirrors the Brief's counts and the
-// Council's suggested-next-action logic, condensed for voice.
+// A short spoken "state of your day" — mirrors the Brief's counts,
+// condensed for voice.
 async function buildBrief(admin: ReturnType<typeof createAdminClient>, userId: string, detailed = false): Promise<string> {
   const today = format(new Date(), 'yyyy-MM-dd')
 

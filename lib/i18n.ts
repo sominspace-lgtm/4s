@@ -11,7 +11,6 @@ const KO: Record<string, string> = {
   'Wishlist': '위시리스트',
   'Recurring Spending': '정기 지출',
   'Calendar': '캘린더',
-  'Your Council': '내 조언단',
 
   // ── Section nav labels ───────────────────────────────────────────────
   'Brief': '오늘',
@@ -19,7 +18,6 @@ const KO: Record<string, string> = {
   'Habits': '습관',
   'Pulse': '상태',
   'Money': '재정',
-  'Council': '조언단',
 
   // ── Section groups ───────────────────────────────────────────────────
   'at a glance': '한눈에',

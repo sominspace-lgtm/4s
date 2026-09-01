@@ -3,8 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { MODES, normalizeMode } from '@/lib/constants/modes'
 
-// One AI endpoint for the whole app: refill label/link extraction, Council
-// reviews, and Ask Jarvis. Haiku keeps per-call cost negligible for a
+// One AI endpoint for the whole app: refill label/link extraction and Ask
+// Jarvis. Haiku keeps per-call cost negligible for a
 // personal dashboard; override with AI_MODEL in env if you want more depth.
 // If ANTHROPIC_API_KEY is not set, every task returns 503 and the client
 // falls back to its previous mock / rule-based behavior.
@@ -24,30 +24,6 @@ const REFILL_SCHEMA = {
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
   },
   required: ['name', 'category', 'quantity', 'servingCount', 'servingSize', 'usagePerDay', 'estimatedDaysSupply', 'price', 'confidence'],
-  additionalProperties: false,
-} as const
-
-const COUNCIL_DOMAIN_IDS = ['biz-active', 'biz-future', 'money', 'health', 'relationship', 'creative', 'home', 'self', 'sharing', 'planning'] as const
-
-const COUNCIL_SCHEMA = {
-  type: 'object',
-  properties: {
-    advisors: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          domain: { type: 'string', enum: [...COUNCIL_DOMAIN_IDS] },
-          verdict: { type: 'string', enum: ['fine', 'watch', 'quiet'] },
-          advice: { type: 'string', description: '1-2 sentences, specific to the data, calm tone' },
-        },
-        required: ['domain', 'verdict', 'advice'],
-        additionalProperties: false,
-      },
-    },
-    suggestedAction: { type: 'string', description: 'One concrete next action, a single sentence' },
-  },
-  required: ['advisors', 'suggestedAction'],
   additionalProperties: false,
 } as const
 
@@ -124,20 +100,6 @@ export async function POST(request: Request) {
             content: pageText
               ? `This is text from a product page (${url}). Extract the product fields; null for anything not stated. Confidence "low" if the page text is ambiguous.\n\n${pageText}`
               : `I could not fetch this product page, so infer what you can from the URL alone (usually just an approximate name): ${url}. Set confidence to "low" and null for unknown fields.`,
-          }],
-        })
-        return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
-      }
-
-      case 'council': {
-        const response = await client.messages.create({
-          model: MODEL,
-          max_tokens: 2048,
-          output_config: { format: { type: 'json_schema', schema: COUNCIL_SCHEMA } },
-          system: `You are the Council in 4S Home, a calm personal life dashboard. Ten advisors each review one life domain: biz-active (Business), biz-future (Pipeline), money (Finance), health (Health), relationship (Relationship), creative (Creative), home (Home), self (Self), sharing (Sharing), planning (Planning). Guide (voice): ${body.mode ?? 'peaceful'} — adjust tone accordingly but stay kind and never alarmist. Verdicts: "watch" only when the data shows something real to act on, "fine" when actively healthy, "quiet" when there is simply no data yet. For empty areas suggest gentle setup, never guilt. Return exactly one entry per domain.`,
-          messages: [{
-            role: 'user',
-            content: `Here is my current dashboard data as JSON. Convene the council.\n\n${JSON.stringify(body.snapshot ?? {})}`,
           }],
         })
         return NextResponse.json({ result: JSON.parse(firstText(response.content)) })

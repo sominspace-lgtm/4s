@@ -1,5 +1,5 @@
-// Guides — the "voice" of 4S OS. A Guide shapes tone, greetings, Council
-// advice, and how proactive the system is; it never touches themes (appearance)
+// Guides — the "voice" of 4S OS. A Guide shapes tone, greetings, and how
+// proactive the system is; it never touches themes (appearance)
 // or data. Stored per user in user_prefs.mode for backward compatibility, so
 // the TypeScript identifiers stay `Mode`/`MODES` even though the product calls
 // them Guides.

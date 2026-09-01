@@ -1,6 +1,6 @@
 // Forces every existing user back through onboarding, WITHOUT touching any
 // user content (tasks, habits, notes, domains, money items, calendar prefs,
-// council data, companions/shared spaces, etc).
+// companions/shared spaces, etc).
 //
 // What it does: sets user_prefs.onboarded = false for every row.
 // The app's own middleware (proxy.ts) already redirects any signed-in user

@@ -3,9 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // The week in review — one computation, shared by 4S OS's "This week" Home
 // block and the companion bot's Sunday-evening post, so the two surfaces
 // can never disagree about what happened. Household-scoped only: the bot has
-// no visibility into personal task/habit data, the same boundary Ask Jarvis
-// and Council already respect, so this reads only tables that carry a
-// space_id.
+// no visibility into personal task/habit data, so this reads only tables
+// that carry a space_id.
 //
 // None of these tables keep a completion HISTORY — chores and routines only
 // ever store their most recent `last_done_at`, not a log of every time they

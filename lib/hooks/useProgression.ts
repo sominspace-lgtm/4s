@@ -8,9 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 // activity. Each stage is one concrete milestone ("track a habit", "capture
 // a thought"...), so the same actions onboarding already asks for (add a
 // habit, jot a first thought) show up done on the very first dashboard load
-// — nobody is asked to redo what they just did. Council is the one compound
-// stage: it opens once every other milestone is true, framed as "you've
-// tried the whole OS, the advisors are ready."
+// — nobody is asked to redo what they just did.
 //
 // No stored unlock state, no migration: unlock status is derived live from
 // real row counts, so every existing account computes past every milestone
@@ -25,7 +23,7 @@ import { createClient } from '@/lib/supabase/client'
 // afterthought" while simultaneously being locked behind a milestone — that
 // contradiction is gone now too. What's left only gates the one section
 // where the milestone genuinely produces the content that section exists to
-// show: Personal (habits/life/money/people/council — components/personal/PersonalHub)
+// show: Personal (tasks/goals/habits/notes/money/people — components/personal/PersonalHub)
 // needs either a habit or a capture to have anything to show at all.
 export type ActionKey = 'task' | 'capture' | 'habit' | 'checkHabit' | 'completeTask'
 
@@ -43,7 +41,7 @@ export interface UnlockStage {
   icon: string         // shown next to the milestone in JourneyBar
   teaser: string        // the "why you want this" line
   milestone: string     // the action that unlocks it, in imperative voice
-  action: ActionKey | null // null = compound (Council)
+  action: ActionKey | null
   isDone: (c: Counts) => boolean
 }
 
@@ -69,7 +67,7 @@ const ALWAYS_OPEN_COUNT = 6
 export const UNLOCK_STAGES: UnlockStage[] = [
   {
     id: 'personal', label: 'Personal', icon: '◈',
-    teaser: 'Habits, Life, Money, People and the Council — all in one place.',
+    teaser: 'Tasks, Goals, Habits, Notes, Money and People — all in one place.',
     milestone: 'Track a habit or capture a thought',
     action: 'habit',
     isDone: c => c.habits >= 1 || c.captures >= 1,

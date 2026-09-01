@@ -16,7 +16,7 @@ export type { SectionConfig }
 //   Today      — what's happening now?   (brief · inbox · calendar)
 //   Tasks      — what do I need to do?   (the notice board)
 //   Village    — what does my life look like?
-//   Personal   — everything about me     (habits · life · money · people · council)
+//   Personal   — everything about me     (tasks · habits · notes · money · people)
 //   Household  — everything we share     (chores · meals)
 //   Places     — where do we want to be? (a themed map, saved pins, trips)
 //
@@ -42,9 +42,9 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Renaming the id to match the label would be a migration with nothing to
   // gain — the label is the only part anyone sees.
   { id: 'brief',    label: 'Today',    hidden: false },
-  // Personal — Tasks, Habits, Life, Money, People and Council as flat
-  // sub-tabs. Flat on purpose: nesting Growth inside Personal would have put
-  // Council three levels deep. See components/personal/PersonalHub.tsx.
+  // Personal — Tasks, Goals, Habits, Notes, Money and People as flat
+  // sub-tabs. Flat on purpose: nesting a "Growth" group inside Personal
+  // would put those three levels deep. See components/personal/PersonalHub.tsx.
   { id: 'personal', label: 'Personal', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },

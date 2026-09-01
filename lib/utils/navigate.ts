@@ -36,12 +36,12 @@ export function scrollToAnchor(id: string, attempt = 0) {
   }, 350)
 }
 
-export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'council'
+export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people'
 
-// Personal holds Habits/Life/Money/People/Council as sub-tabs (see
+// Personal holds Tasks/Goals/Habits/Notes/Money/People as sub-tabs (see
 // components/personal/PersonalHub.tsx) — plain goToSection('personal')
 // always lands on whichever sub-tab was last open, which breaks callers
-// like Brief's "Ask Council" card that mean a specific one.
+// (search's "Go to Money", deep links) that mean a specific one.
 // goToPersonal() carries that intent two ways: a module-level value
 // PersonalHub reads once on mount (covers the common case where Personal
 // isn't mounted yet, so a live event fired now would never be heard) and a

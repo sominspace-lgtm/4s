@@ -110,7 +110,7 @@ export function useWorkItems() {
   useEffect(() => { load() }, [load])
 
   // useWorkItems() is called independently in several places (Work Hub,
-  // Brief's summary card, Council) — each call owns its own `items` state.
+  // Brief's summary card) — each call owns its own `items` state.
   // Without this, adding/completing a task in one place leaves every other
   // instance showing stale data until it happens to remount. Any instance
   // that mutates fires this event; every instance (including itself) reloads.

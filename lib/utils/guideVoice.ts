@@ -1,7 +1,6 @@
 // Shared "voice" of the active Guide — greeting + proactivity — so Brief and
 // Header speak with one consistent Guide personality instead of each rolling
-// their own. Council uses MODES[...].transform directly; this covers the
-// lighter-touch surfaces.
+// their own.
 import { MODES, type Mode, type Proactivity } from '@/lib/constants/modes'
 
 export function timeOfDay(hour: number): 'morning' | 'afternoon' | 'evening' | 'night' {

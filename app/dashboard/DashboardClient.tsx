@@ -73,7 +73,8 @@ interface Props {
 const DEPRECATED_SECTION_IDS = new Set([
   'pulse', 'wishlist', 'spending', 'capture',
   'relationship', 'shared',                          // → people (a Personal sub-tab)
-  'habits', 'domains', 'council', 'growth',          // → Personal sub-tabs
+  'habits', 'domains', 'growth',                     // → Personal sub-tabs
+  'council',                                         // removed entirely (2026-09-01)
   'people', 'money',                                 // → Personal sub-tabs
   'work',                                            // → Personal sub-tab 'tasks' (2026-08-20)
   // 'household' folded into four real top-level sections (2026-08-25) —
@@ -484,7 +485,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} />
-        case 'personal': return <PersonalHub key="personal" userId={userId} mode={mode} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
+        case 'personal': return <PersonalHub key="personal" userId={userId} tabs={personalTabs} onChangeTabs={changePersonalTabs} />
         // Tasks still folds into Personal as a sub-tab (see PersonalHub);
         // Places came back out to top level (2026-08-21).
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />

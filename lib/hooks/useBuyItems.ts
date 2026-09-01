@@ -109,7 +109,7 @@ export function useBuyItems() {
   useEffect(() => { fetch() }, [fetch])
 
   // useBuyItems() is called independently in several places (Buy Again,
-  // Brief's summary card, Council) — each call owns its own `items` state.
+  // Brief's summary card) — each call owns its own `items` state.
   // Without this, adding/marking-bought in one place leaves every other
   // instance stale until it happens to remount.
   useEffect(() => {

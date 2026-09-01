@@ -1,6 +1,6 @@
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
-export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'council'
+export type PersonalTabId = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people'
 
 export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   // Folded in from the old top-level Tasks tab (2026-08-20) — tasks are
@@ -23,11 +23,8 @@ export const DEFAULT_PERSONAL_TABS: SectionConfig[] = [
   // no other home. The underlying `preferences` table and its Discord write
   // path (lib/household/resources.ts) are untouched; only this in-app tab
   // is gone.
-  // Promoted from a header-menu-only deep link (2026-08-21) — "Convene the
-  // Council" lived in the ⋯ menu next to Ask Jarvis, which is now gone, and
-  // an occasional-use action deserves a real tab in the place it's about
-  // more than it deserves a permanent line in an overflow menu.
-  { id: 'council', label: 'Council', hidden: false },
+  // Council removed (2026-09-01) — the AI board-of-advisors tab is gone;
+  // mergePersonalTabs drops it from any saved layout automatically.
 ]
 
 // Same merge shape as mergeTodayBlocks(): a saved list might predate a tab

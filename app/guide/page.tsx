@@ -3,7 +3,7 @@ import Logo from '@/components/ui/Logo'
 
 export const metadata = {
   title: '4S — Guide',
-  description: 'How to use 4S Home: tasks, habits, life, money, calendar, council, sharing, AI, and Alexa.',
+  description: 'How to use 4S Home: tasks, habits, notes, money, calendar, sharing, AI, and Alexa.',
 }
 
 // Public, shareable guide for new users. Uses default (Moonlight) theme tokens
@@ -47,7 +47,6 @@ const NAV = [
   ['notes', 'Notes'],
   ['money', 'Money'],
   ['calendar', 'Calendar'],
-  ['council', 'Council'],
   ['shared', 'People'],
   ['household', 'Household'],
   ['places', 'Places'],
@@ -106,7 +105,7 @@ export default function GuidePage() {
       <Section id="start" kicker="the basics" title="Getting started">
         <Card>
           The top nav is your set of tabs. <strong style={{ color: 'var(--text)' }}>Brief</strong> is home — your command center.
-          The other tabs (Tasks, Habits, Life, Money, Calendar, Council, Shared) each open on their own so you only ever see full detail when you ask for it.
+          The other tabs (Tasks, Habits, Notes, Money, Calendar, People) each open on their own so you only ever see full detail when you ask for it.
         </Card>
         <Card title="Quick Add · Inbox">
           On Brief there&rsquo;s a Quick Add box. Drop any task, thought, or reminder there and sort it later — it lands in your Inbox until you file it.
@@ -172,13 +171,6 @@ export default function GuidePage() {
         </Card>
       </Section>
 
-      <Section id="council" kicker="a second opinion" title="Council">
-        <Card>
-          Convene the Council for a calm, per-area review of your dashboard — Finance, Health, Home, Planning, Sharing and more —
-          plus one suggested next action. It runs instantly on rules, and upgrades to a real AI review when AI is enabled (below).
-        </Card>
-      </Section>
-
       <Section id="shared" kicker="together, privately" title="People">
         <Card>
           The people who matter — birthdays, when you last said hello, and whatever you want to
@@ -211,9 +203,9 @@ export default function GuidePage() {
 
       <Section id="ai" kicker="alive but quiet" title="AI features">
         <Card>
-          When an <code style={{ fontSize: '0.72rem' }}>ANTHROPIC_API_KEY</code> is configured, two things come to life:
-          the <strong style={{ color: 'var(--text)' }}>Council</strong> AI review, and
-          <strong style={{ color: 'var(--text)' }}> Refill</strong> photo/link extraction. Only a light summary of your dashboard —
+          When an <code style={{ fontSize: '0.72rem' }}>ANTHROPIC_API_KEY</code> is configured,
+          <strong style={{ color: 'var(--text)' }}> Refill</strong> photo/link extraction comes to life —
+          point it at a product label or a shopping link and it fills in the details. Only a light summary of your dashboard —
           counts, titles, dates — is ever sent; never your note contents. Without a key, 4S falls back to its built-in rules automatically.
         </Card>
       </Section>
