@@ -67,7 +67,7 @@ export default function SearchModal({ open, onClose }: Props) {
   const lang = useLang()
   const [query, setQuery] = useState('')
   const [idx, setIdx] = useState(0)
-  const { results, loading, search, clear } = useSearch()
+  const { results, aiAnswer, loading, search, clear } = useSearch()
   const inputRef = useRef<HTMLInputElement>(null)
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -146,7 +146,7 @@ export default function SearchModal({ open, onClose }: Props) {
         onClick={onClose}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 500, backdropFilter: 'blur(4px)' }}
       />
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-label="Search" style={{
         position: 'fixed', top: '18%', left: '50%', transform: 'translateX(-50%)',
         width: 'min(560px, 92vw)', zIndex: 501,
         background: 'var(--surface)', border: '1px solid var(--border)',
@@ -172,8 +172,18 @@ export default function SearchModal({ open, onClose }: Props) {
         </div>
 
         {/* Commands + results */}
-        {(matchedCommands.length > 0 || results.length > 0) && (
+        {(matchedCommands.length > 0 || results.length > 0 || aiAnswer) && (
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+            {aiAnswer && (
+              <div style={{
+                margin: '0.6rem 1rem 0.2rem', padding: '0.7rem 0.85rem', borderRadius: '10px',
+                background: 'color-mix(in srgb, var(--gold) 8%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--gold) 22%, transparent)',
+                fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.5,
+              }}>
+                <span style={{ color: 'var(--gold)' }}>✦</span> {aiAnswer}
+              </div>
+            )}
             {matchedCommands.length > 0 && (
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.58, padding: '0.6rem 1.25rem 0.3rem' }}>
                 Quick actions
@@ -193,7 +203,7 @@ export default function SearchModal({ open, onClose }: Props) {
           </div>
         )}
 
-        {query && !loading && results.length === 0 && matchedCommands.length === 0 && (
+        {query && !loading && results.length === 0 && matchedCommands.length === 0 && !aiAnswer && (
           <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68 }}>
             {lang === 'ko' ? `"${query}"에 대한 결과가 없습니다` : `No results for "${query}"`}
           </div>

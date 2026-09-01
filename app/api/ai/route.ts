@@ -37,6 +37,16 @@ const TASK_SCHEMA = {
   additionalProperties: false,
 } as const
 
+const SEARCH_SCHEMA = {
+  type: 'object',
+  properties: {
+    answer: { type: ['string', 'null'], description: 'One plain sentence answering the question from the items, or null if the items do not contain an answer' },
+    matchIds: { type: 'array', items: { type: 'string' }, description: 'Ids of the most relevant items, best match first, at most 8' },
+  },
+  required: ['answer', 'matchIds'],
+  additionalProperties: false,
+} as const
+
 function firstText(content: Anthropic.ContentBlock[]): string {
   const block = content.find(b => b.type === 'text')
   return block && block.type === 'text' ? block.text : ''
@@ -128,6 +138,28 @@ export async function POST(request: Request) {
           output_config: { format: { type: 'json_schema', schema: TASK_SCHEMA } },
           system: `Today is ${today}. Turn a quick task note into structured fields for a personal to-do list. The title must be short and imperative with every date, time, and "due" word stripped out. Resolve relative dates ("tomorrow", "next thursday", "in 2 weeks") against today.`,
           messages: [{ role: 'user', content: text }],
+        })
+        return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
+      }
+
+      // Semantic search over the user's own items (2026-09-01) — the client
+      // has already done a literal ILIKE pass; this handles the questions
+      // that don't match a substring ("what did I say I'd do about the car").
+      // Falls back to the literal results if it 503s.
+      case 'search': {
+        const query: string = (body.query ?? '').slice(0, 200)
+        const items = Array.isArray(body.items) ? (body.items as { id?: unknown; title?: unknown; type?: unknown }[]) : []
+        const clean = items
+          .filter(i => typeof i.id === 'string' && typeof i.title === 'string')
+          .slice(0, 40)
+          .map(i => ({ id: i.id as string, title: (i.title as string).slice(0, 160), type: typeof i.type === 'string' ? i.type : '' }))
+        if (!query.trim() || clean.length === 0) return NextResponse.json({ error: 'Missing query or items' }, { status: 400 })
+        const response = await client.messages.create({
+          model: MODEL,
+          max_tokens: 300,
+          output_config: { format: { type: 'json_schema', schema: SEARCH_SCHEMA } },
+          system: 'You help someone search their own notes, tasks, and habits. Given their query and a list of their items (id, title, type), return the ids of the items that best answer or match the query, best first, at most 8. If the query is a question the item titles actually answer, also give a one-sentence plain answer; otherwise answer must be null. Never invent items or ids.',
+          messages: [{ role: 'user', content: `Query: ${query}\n\nItems:\n${clean.map(i => `${i.id} [${i.type}] ${i.title}`).join('\n')}` }],
         })
         return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
       }

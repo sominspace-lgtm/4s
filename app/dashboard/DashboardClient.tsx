@@ -9,6 +9,7 @@ import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/componen
 import QuickCapture from '@/components/ui/QuickCapture'
 import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
+import ShortcutHelp from '@/components/ui/ShortcutHelp'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import MobileNav from '@/components/ui/MobileNav'
@@ -33,7 +34,8 @@ import PlacesHub from '@/components/places/PlacesHub'
 import UnlockPanel from '@/components/ui/UnlockPanel'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
-import { scrollToAnchor } from '@/lib/utils/navigate'
+import { scrollToAnchor, goToSection } from '@/lib/utils/navigate'
+import { ignoreShortcut } from '@/lib/utils/shortcuts'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
@@ -320,19 +322,27 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('4s:set-guide', onGuide)
   }, [userId])
 
-  // Global keyboard shortcuts — ⌘/ for Search only. ⌘K used to also open
-  // Search here, colliding with QuickCapture's own ⌘K binding: both fired
-  // on the same keypress, and Search rendered on top of Quick Capture,
-  // reading as "quick capture opens search". Now ⌘K is Quick Capture's
-  // alone.
+  // Global keyboard shortcuts. ⌘/ opens Search (⌘K is Quick Capture's alone,
+  // see QuickCapture — they used to collide). Bare letters (t/h/c) and `/`
+  // and `?` are gated by ignoreShortcut() so they never fire while you're
+  // typing in a field or a dialog is open. `t`/`h` navigate first because
+  // only the active tab is mounted, so MasterDashboard/HabitTracker have to
+  // exist before their open-form event lands.
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSearchOpen(s => !s) }
-      if (e.key === 'Escape') setSearchOpen(false)
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSearchOpen(s => !s); return }
+      if (e.key === 'Escape') { setSearchOpen(false); setShortcutHelpOpen(false); return }
+      if (sharedMode || ignoreShortcut(e)) return
+      if (e.key === 't') { e.preventDefault(); goToSection('tasks'); setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-task')), 60) }
+      else if (e.key === 'h') { e.preventDefault(); goToSection('habits'); setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-habit')), 60) }
+      else if (e.key === 'c') { e.preventDefault(); window.dispatchEvent(new CustomEvent('app:open-quick-capture')) }
+      else if (e.key === '/') { e.preventDefault(); setSearchOpen(true) }
+      else if (e.key === '?') { e.preventDefault(); setShortcutHelpOpen(o => !o) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [sharedMode])
 
   // The quiet waiting-reminder that used to live here as a tab-only
   // Notification() call is now a real server push (app/api/cron/waiting-notice,
@@ -526,6 +536,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />

@@ -70,6 +70,9 @@ export default function UnlockPanel({ open, onClose, reason }: {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Unlock"
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 520, display: 'flex',

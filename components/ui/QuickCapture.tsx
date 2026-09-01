@@ -90,6 +90,9 @@ export default function QuickCapture() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quick capture"
       onClick={() => setOpen(false)}
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
