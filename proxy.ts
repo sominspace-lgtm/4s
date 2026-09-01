@@ -61,7 +61,7 @@ export async function proxy(request: NextRequest) {
     // route itself, same shape as /api/alexa and /api/household above. Without
     // this the cron request never reaches that check; it just gets bounced
     // to /login, and the route's own auth logic never runs.
-    || pathname === '/api/cron/waiting-notice'
+    || pathname.startsWith('/api/cron/')
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands

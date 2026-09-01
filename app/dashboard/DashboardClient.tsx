@@ -10,6 +10,7 @@ import QuickCapture from '@/components/ui/QuickCapture'
 import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
 import ShortcutHelp from '@/components/ui/ShortcutHelp'
+import NotificationsPanel from '@/components/ui/NotificationsPanel'
 import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import MobileNav from '@/components/ui/MobileNav'
@@ -64,6 +65,7 @@ interface Props {
   initialMode: string
   initialLayout: SectionConfig[] | null
   initialTodayBlocks: TodayBlockConfig[] | null
+  initialNotifyPrefs: Record<string, boolean> | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
   initialVillageLayout: VillageLayout | null
 }
@@ -183,7 +185,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
 ]
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -207,6 +209,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // sections now, managed by the main Customize-layout panel.)
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
+  const [notifyPrefs, setNotifyPrefs] = useState<Record<string, boolean>>(initialNotifyPrefs ?? {})
   const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
 
   const lang = 'en' as const
@@ -223,6 +226,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   // Village's Archive district needs to open this same panel from deep
@@ -264,7 +268,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, todayBlocks, householdHomeBlocks, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
+    return { sections, todayBlocks, householdHomeBlocks, notifyPrefs, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
+  }
+
+  async function changeNotifyPrefs(next: Record<string, boolean>) {
+    setNotifyPrefs(next)
+    await saveLayout(userId, layoutState(), { notifyPrefs: next })
   }
 
   async function changeVillageLayout(next: VillageLayout) {
@@ -345,11 +354,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   }, [sharedMode])
 
   // The quiet waiting-reminder that used to live here as a tab-only
-  // Notification() call is now a real server push (app/api/cron/waiting-notice,
-  // once a day via Vercel Cron) — same rule (at most once a day, named not
-  // counted, "waiting" not "missed"), just actually reaching you when the tab
-  // isn't open instead of only when it happens to be. Keeping both would
-  // double-notify anyone who has the tab open when the cron fires.
+  // Notification() call is now a real server push (app/api/cron/daily, once a
+  // day via Vercel Cron) — same rule (at most once a day, named not counted,
+  // "waiting" not "missed"), just actually reaching you when the tab isn't
+  // open. See the Notifications panel for the per-kind toggles.
 
   // Shared-mode section ids — everything Household used to bundle, plus
   // Village and Places. Now that Household's sub-tabs are real top-level
@@ -529,6 +537,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           onSearch={() => setSearchOpen(true)}
           onArchive={() => setArchiveOpen(true)}
           onConnect={() => setConnectOpen(true)}
+          onNotifications={() => setNotificationsOpen(true)}
         />
       )}
 
@@ -541,6 +550,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
+      <NotificationsPanel open={notificationsOpen} prefs={notifyPrefs} onChange={changeNotifyPrefs} onClose={() => setNotificationsOpen(false)} />
 
       {/* Bottom padding bumped 4rem→6rem (2026-08-25) — HomeBar is now the
           nav for every viewport, not just mobile, and its two-row state

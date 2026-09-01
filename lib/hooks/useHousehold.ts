@@ -249,7 +249,14 @@ export function useHousehold(spaceId: string | null) {
     const { error } = await supabase.from('household_notes')
       .insert({ user_id: user.id, space_id: spaceId, body })
     if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify(); return { error: null }
+    await load(); notify()
+    // Let the other partner know a fridge note went up (they can mute it —
+    // notifyPrefs.fridgeNote). Fire-and-forget; a failed push never blocks.
+    fetch('/api/notify/space', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'fridge-note', preview: body.slice(0, 80) }),
+    }).catch(() => {})
+    return { error: null }
   }
 
   async function toggleNotePin(id: string, pinned: boolean) {

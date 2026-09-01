@@ -32,6 +32,10 @@ export interface LayoutState {
   // `householdTabs` keys lived here until 2026-09-01, when the Personal and
   // Household sub-tabs became top-level `sections`; stale values are ignored.)
   householdHomeBlocks?: SectionConfig[]
+  // Web-push toggles, keyed by kind (overdueTasks / subRenewal / checkinNudge
+  // / fridgeNote). A missing key means on — see app/api/cron/daily. Lives in
+  // the layout blob so the cron can read it service-side without a new table.
+  notifyPrefs?: Record<string, boolean>
   // When the Village was last opened, so it can say what changed since. Not a
   // layout setting, but it lives here for the same reason the others do: it's
   // one small per-user value and this column already exists.

@@ -32,6 +32,7 @@ interface HeaderProps {
   onCapture: () => void
   onArchive: () => void
   onConnect: () => void
+  onNotifications: () => void
 }
 
 // One quiet overflow menu instead of a row of icon-only buttons — every
@@ -90,7 +91,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -276,10 +277,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           { icon: '⇄', label: 'Connect', onClick: onConnect },
           ...(push.status === 'unsupported' ? [] : [{
             icon: push.status === 'subscribed' ? '◉' : '◌',
-            label: push.status === 'subscribed' ? 'Notifications on'
-              : push.status === 'denied' ? 'Notifications blocked'
-              : 'Enable notifications',
-            onClick: push.status === 'subscribed' ? push.unsubscribe : push.status === 'denied' ? undefined : push.subscribe,
+            label: 'Notifications', onClick: onNotifications,
           }]),
           { divider: true, icon: '', label: '' },
           { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
