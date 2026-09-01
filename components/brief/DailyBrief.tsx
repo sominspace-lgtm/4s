@@ -10,7 +10,6 @@ import { useGiftOccasions, usePeople, daysSinceContact } from '@/lib/hooks/usePe
 import { useNotes } from '@/lib/hooks/useNotes'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
-import { useCompanions } from '@/lib/hooks/useCompanions'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
@@ -100,13 +99,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { notes } = useNotes(null)
   const { items: wishItems } = useWatchItems()
   const { items: buyItems } = useBuyItems()
-  const { received } = useCompanions(userId)
-  const pendingShares = received.filter(c => c.status === 'pending').length
-
-  const [sharedWithMeCount, setSharedWithMeCount] = useState(0)
-  useEffect(() => {
-    fetch('/api/companions/shared-with-me').then(r => r.json()).then(d => setSharedWithMeCount((d.items ?? []).length)).catch(() => {})
-  }, [])
 
   // A whisper is dismissible for the day, so it never nags.
   const [whisperDismissed, setWhisperDismissed] = useState(false)
@@ -202,7 +194,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   const summaryParts: string[] = []
   if (inboxCount > 0) summaryParts.push(`${inboxCount} inbox item${inboxCount > 1 ? 's' : ''}`)
-  if (pendingShares > 0) summaryParts.push(`${pendingShares} shared invite${pendingShares > 1 ? 's' : ''}`)
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
   if (peopleQuiet.length > 0) summaryParts.push(`${peopleQuiet.length} hello${peopleQuiet.length > 1 ? 's' : ''} overdue`)
@@ -310,7 +301,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     },
     {
       label: 'People', action: 'Open People', onAction: () => goToPersonal('people'),
-      line: sharedWithMeCount > 0 ? `${sharedWithMeCount} shared with you` : 'Nothing shared yet',
+      line: peopleQuiet.length > 0 ? `${peopleQuiet.length} to reach out to` : `${people.length} ${people.length === 1 ? 'person' : 'people'}`,
     },
   ]
 

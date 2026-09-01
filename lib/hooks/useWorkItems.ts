@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 export type Energy = 'light' | 'medium' | 'deep'
 
@@ -15,20 +16,17 @@ export interface WorkItem {
   domain: string | null
   status: 'todo' | 'in-progress' | 'done'
   recur_days: number | null
-  shared: boolean
+  space_id: string | null
   created_at: string
   completed_at: string | null
   landmark: boolean
   board_column: 'small' | 'growing' | 'projects' | 'later' | null
 }
 
-// Tasks shared into a household space via the ⇆ ShareMenu on a task row
-// (components/ui/ShareMenu.tsx, backed by shared_item_links — see its own
-// header comment). Two round trips because shared_item_links.item_id is a
-// loose polymorphic reference, not a foreign key, so PostgREST can't embed
-// work_items directly off it. Both queries are already covered by existing
-// RLS (item_links_select, work_items_select_if_shared) — no schema change
-// needed for the Household calendar to read a partner's shared tasks.
+// Every task in a household space — both partners' — for the Household
+// calendar. Since 2026-09-01 a task just carries space_id (set on creation
+// to the owner's primary space); there's no per-item toggle anymore. RLS
+// (work_items_select_space) grants every accepted member the read.
 export function useSharedWorkItems(spaceId: string | null) {
   const supabase = createClient()
   const [items, setItems] = useState<WorkItem[]>([])
@@ -37,14 +35,8 @@ export function useSharedWorkItems(spaceId: string | null) {
   const load = useCallback(async () => {
     if (!spaceId) { setItems([]); setLoading(false); return }
     setLoading(true)
-    const { data: links } = await supabase
-      .from('shared_item_links')
-      .select('item_id')
-      .eq('item_type', 'work_item')
-      .eq('space_id', spaceId)
-    const ids = (links ?? []).map(l => l.item_id as string)
-    if (ids.length === 0) { setItems([]); setLoading(false); return }
-    const { data, error } = await supabase.from('work_items').select('*').in('id', ids)
+    const { data, error } = await supabase
+      .from('work_items').select('*').eq('space_id', spaceId).neq('status', 'done')
     if (error) { setItems([]); setLoading(false); return }
     setItems(data as WorkItem[])
     setLoading(false)
@@ -55,11 +47,7 @@ export function useSharedWorkItems(spaceId: string | null) {
   useEffect(() => {
     function onChanged() { load() }
     window.addEventListener('4s:work-items-changed', onChanged)
-    window.addEventListener('4s:item-sharing-changed:work_item', onChanged)
-    return () => {
-      window.removeEventListener('4s:work-items-changed', onChanged)
-      window.removeEventListener('4s:item-sharing-changed:work_item', onChanged)
-    }
+    return () => window.removeEventListener('4s:work-items-changed', onChanged)
   }, [load])
 
   return { items, loading }
@@ -95,17 +83,30 @@ export function useWorkItems() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
+  // Your primary household space — a new task is stamped with it on creation
+  // so it's visible to your partner on the Household calendar. Personal views
+  // (this hook) still show only your own; the space read is useSharedWorkItems.
+  const { spaces, members } = useSharedSpaces('')
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
+    ?? spaces[0]?.id ?? null
+
   const load = useCallback(async () => {
     setLoading(true)
+    // Explicit owner filter — work_items_select_space (2026-09-01) also grants
+    // a partner's space-scoped tasks to accepted members, so an unqualified
+    // select would merge their tasks into "my tasks" here.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setItems([]); setLoading(false); return }
     const { data, error } = await supabase
       .from('work_items')
       .select('*')
+      .eq('user_id', user.id)
       .neq('status', 'done')
       .order('created_at')
     if (error) { setLoading(false); return }
     setItems(data as WorkItem[])
     setLoading(false)
-  }, [])
+  }, [supabase])
 
   useEffect(() => { load() }, [load])
 
@@ -126,7 +127,7 @@ export function useWorkItems() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('work_items')
-      .insert({ ...fields, user_id: user.id, status: 'todo', shared: false })
+      .insert({ ...fields, user_id: user.id, status: 'todo', space_id: spaceId })
       .select().single()
     if (error) return error.message
     // Re-fetch from the DB instead of trusting the insert's .select() return —
@@ -155,7 +156,7 @@ export function useWorkItems() {
             .insert({
               user_id: user.id, title: item.title, notes: item.notes,
               due_date: nextDue, energy: item.energy, domain: item.domain,
-              recur_days: item.recur_days, status: 'todo', shared: item.shared,
+              recur_days: item.recur_days, status: 'todo', space_id: item.space_id,
             })
             .select().single()
           if (newItem) {
@@ -184,11 +185,5 @@ export function useWorkItems() {
     notifyChanged()
   }
 
-  async function toggleShared(id: string) {
-    const item = items.find(i => i.id === id)
-    if (!item) return
-    await update(id, { shared: !item.shared })
-  }
-
-  return { items: sortWorkItems(items), loading, add, setStatus, update, remove, toggleShared }
+  return { items: sortWorkItems(items), loading, add, setStatus, update, remove }
 }

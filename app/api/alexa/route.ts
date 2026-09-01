@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       const parsed = parseTaskInput(text)
       const title = parsed?.title || text
       const { error } = await admin.from('work_items').insert({
-        user_id: userId, title, status: 'todo', shared: false,
+        user_id: userId, title, status: 'todo',
         due_date: parsed?.dueDate ?? null, energy: parsed?.energy ?? null,
         notes: null, domain: null, recur_days: null,
       })

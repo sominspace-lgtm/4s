@@ -8,10 +8,8 @@ import Icon from '@/components/ui/Icon'
 
 interface Props {
   items: WorkItem[]
-  userId: string
   onStatus: (id: string, s: WorkItem['status']) => void
   onRemove: (id: string) => void
-  onToggleShared: (id: string) => void
   onUpdate: (id: string, patch: Partial<WorkItem>) => void
 }
 
@@ -27,7 +25,7 @@ interface Props {
 // <select> per card for everyone else — native selects are fully keyboard
 // operable (Tab to focus, arrows to change), which covers the accessible
 // alternative without inventing custom arrow-key reordering.
-export default function NoticeBoard({ items, userId, onStatus, onRemove, onToggleShared, onUpdate }: Props) {
+export default function NoticeBoard({ items, onStatus, onRemove, onUpdate }: Props) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<BoardColumn | null>(null)
 
@@ -84,7 +82,7 @@ export default function NoticeBoard({ items, userId, onStatus, onRemove, onToggl
                   cursor: 'grab', background: 'var(--surface)', borderRadius: '9px', padding: '0 0.1rem',
                 }}
               >
-                <WorkRow item={item} userId={userId} onStatus={onStatus} onRemove={onRemove} onToggleShared={onToggleShared} onUpdate={onUpdate} />
+                <WorkRow item={item} onStatus={onStatus} onRemove={onRemove} onUpdate={onUpdate} />
                 <select
                   aria-label={`Move "${item.title}" to a different column`}
                   value={effectiveColumn(item)}

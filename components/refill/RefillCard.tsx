@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { computeStatus, runoutDate, STATUS_LABEL, REFILL_CATEGORIES, type BuyItem, type RefillStatus } from '@/lib/hooks/useBuyItems'
-import ShareMenu from '@/components/ui/ShareMenu'
 
 const STATUS_COLOR: Record<RefillStatus, string> = {
   stocked: 'var(--muted)', 'backup-stock': 'var(--slate)', 'running-low': 'var(--amber)',
@@ -120,7 +119,6 @@ export default function RefillCard({ item, userId, onMarkBought, onMarkOpened, o
           )}
           <button onClick={() => onSnooze(item.id, 7)} title="Snooze 7 days" className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.5em' }}>snooze</button>
           <button onClick={startEdit} title="Edit item" className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.5em' }}>edit</button>
-          <ShareMenu itemType="buy_item" itemId={item.id} userId={userId} />
           <button onClick={() => onTogglePaused(item.id)} title={item.status === 'paused' ? 'Resume tracking' : 'Pause tracking'} className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.4em' }}>
             {item.status === 'paused' ? '▶' : '⏸'}
           </button>

@@ -184,11 +184,6 @@ const KO: Record<string, string> = {
   'Layout': '레이아웃',
   'Drag to reorder': '드래그하여 순서 변경',
 
-  // ── Companion panel ────────────────────────────────────────────────────
-  'Companions': '동반자',
-  'What I Share': '내가 공유하는 것',
-  'Add companion': '동반자 추가',
-
   // ── Header / General ──────────────────────────────────────────────────
   'Help': '도움말',
   'sign out': '로그아웃',

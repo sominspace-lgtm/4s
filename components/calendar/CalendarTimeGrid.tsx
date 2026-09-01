@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { format, isSameDay, isToday, setHours, setMinutes } from 'date-fns'
 import { AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
-import ShareMenu from '@/components/ui/ShareMenu'
 
 const HOUR_HEIGHT = 44 // px per hour row
 const START_HOUR = 0
@@ -64,7 +63,6 @@ export default function CalendarTimeGrid({ days, entries, userId }: { days: Date
                   display: 'flex', alignItems: 'center', gap: '0.3em',
                 }}>
                   <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.label}</span>
-                  {e.type === 'event' && e.id && <ShareMenu itemType="event" itemId={e.id} userId={userId} />}
                   {e.type === 'event' && e.id && (
                     <button onClick={() => removeEvent(e.id!)} aria-label="Remove event"
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.6, fontSize: '0.62rem', padding: 0, lineHeight: 1 }}>✕</button>

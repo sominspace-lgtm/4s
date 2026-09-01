@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 export interface CalendarEvent {
   id: string
@@ -15,6 +16,7 @@ export interface CalendarEvent {
    *  start time, not a block. */
   event_time: string | null
   notes: string | null
+  space_id: string | null
   created_at: string
 }
 
@@ -26,6 +28,12 @@ export function useEvents() {
   const [items, setItems] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+
+  // Primary household space — stamped on every new event so it shows on the
+  // partner's Household calendar. Own-calendar reads stay owner-scoped.
+  const { spaces, members } = useSharedSpaces('')
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
+    ?? spaces[0]?.id ?? null
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -58,7 +66,7 @@ export function useEvents() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('events')
-      .insert({ user_id: user.id, title, event_date, notes, event_time })
+      .insert({ user_id: user.id, title, event_date, notes, event_time, space_id: spaceId })
       .select().single()
     if (error) return { error }
     if (data) setItems(prev => [...prev, data as CalendarEvent].sort((a, b) => a.event_date.localeCompare(b.event_date)))
@@ -75,37 +83,28 @@ export function useEvents() {
     return { error: null }
   }
 
-  // Create AND immediately share to a household space, in one call — "made
-  // in household" (2026-08-27): an event added directly from the Household
-  // calendar should show up for every member there, not sit privately under
-  // whoever happened to click Add. Two inserts (events row, then its
-  // shared_item_links row) rather than a DB trigger — same "two round
-  // trips, no schema coupling" reasoning useSharedWorkItems' own header
-  // comment already documents for the read side.
-  async function addShared(title: string, event_date: string, spaceId: string, event_time: string | null = null, notes: string | null = null) {
+  // Create an event straight onto a specific household space — "made in
+  // household" (2026-08-27): an event added from the Household calendar
+  // belongs to that space, not privately to whoever clicked Add. Since
+  // 2026-09-01 that's just a space_id on the row, no separate share record.
+  async function addShared(title: string, event_date: string, forSpaceId: string, event_time: string | null = null, notes: string | null = null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('events')
-      .insert({ user_id: user.id, title, event_date, notes, event_time })
+      .insert({ user_id: user.id, title, event_date, notes, event_time, space_id: forSpaceId })
       .select().single()
     if (error) return { error }
-    const { error: shareError } = await supabase.from('shared_item_links')
-      .insert({ owner_id: user.id, item_type: 'event', item_id: data.id, space_id: spaceId })
-    if (shareError) return { error: shareError }
     if (data) setItems(prev => [...prev, data as CalendarEvent].sort((a, b) => a.event_date.localeCompare(b.event_date)))
     notifyChanged()
-    window.dispatchEvent(new CustomEvent('4s:item-sharing-changed:event'))
     return { error: null }
   }
 
   return { items, loading, add, addShared, remove }
 }
 
-// Events someone shared into a household space — the mirror of
-// useSharedWorkItems (see its own header comment for why this is two round
-// trips instead of one embedded query: shared_item_links.item_id is a loose
-// polymorphic reference, not a foreign key). Both queries are covered by
-// events_sharing.sql's RLS; no further schema change needed.
+// Every event on a household space — both partners' — for the Household
+// calendar. Since 2026-09-01 an event just carries space_id; RLS
+// (events_select_space) grants every accepted member the read.
 export function useSharedEvents(spaceId: string | null) {
   const supabase = createClient()
   const [items, setItems] = useState<CalendarEvent[]>([])
@@ -114,14 +113,7 @@ export function useSharedEvents(spaceId: string | null) {
   const load = useCallback(async () => {
     if (!spaceId) { setItems([]); setLoading(false); return }
     setLoading(true)
-    const { data: links } = await supabase
-      .from('shared_item_links')
-      .select('item_id')
-      .eq('item_type', 'event')
-      .eq('space_id', spaceId)
-    const ids = (links ?? []).map(l => l.item_id as string)
-    if (ids.length === 0) { setItems([]); setLoading(false); return }
-    const { data, error } = await supabase.from('events').select('*').in('id', ids)
+    const { data, error } = await supabase.from('events').select('*').eq('space_id', spaceId)
     if (error) { setItems([]); setLoading(false); return }
     setItems((data as CalendarEvent[]).sort((a, b) => a.event_date.localeCompare(b.event_date)))
     setLoading(false)
@@ -132,11 +124,7 @@ export function useSharedEvents(spaceId: string | null) {
   useEffect(() => {
     function onChanged() { load() }
     window.addEventListener('4s:events-changed', onChanged)
-    window.addEventListener('4s:item-sharing-changed:event', onChanged)
-    return () => {
-      window.removeEventListener('4s:events-changed', onChanged)
-      window.removeEventListener('4s:item-sharing-changed:event', onChanged)
-    }
+    return () => window.removeEventListener('4s:events-changed', onChanged)
   }, [load])
 
   return { items, loading }

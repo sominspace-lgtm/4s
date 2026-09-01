@@ -34,12 +34,11 @@ export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; colo
 // window/bucket as needed (agenda list, month grid). No external calendar
 // here; Google stays in its embed.
 //
-// spaceId (2026-08-27) — private by default: your own events always show.
-// Pass the household space's id to also pull in events either shared into
-// it (via ShareMenu) or created directly from the Household calendar
-// (useEvents' addShared, which shares on creation) — "has to share, or be
-// made in household" per the user's own framing. Omit it (or pass null) to
-// see only your own, e.g. a context with no household space at all.
+// spaceId — pass the household space's id to also pull in every event on
+// that space (both partners'); since 2026-09-01 an event just carries a
+// space_id, so "the household calendar" is simply everything in the space,
+// no per-item sharing step. Omit it (or pass null) for a context with no
+// household space at all.
 export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
   const { items: workItems } = useWorkItems()
   const { subs } = useSubscriptions()

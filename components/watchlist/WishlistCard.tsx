@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { useWatchItems } from '@/lib/hooks/useWatchItems'
-import ShareMenu from '@/components/ui/ShareMenu'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -46,10 +45,7 @@ export default function WishlistCard({ userId }: { userId: string }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem', flexShrink: 0 }}>
             <button onClick={() => markChecked(item.id)} style={{ fontSize: '0.62rem', color: 'var(--muted)', background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.2em 0.5em', cursor: 'pointer', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap' }}>✓ checked</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <ShareMenu itemType="wishlist_item" itemId={item.id} userId={userId} />
-              <button onClick={() => remove(item.id)} aria-label="Delete" style={{ fontSize: '0.62rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4 }}>✕</button>
-            </div>
+            <button onClick={() => remove(item.id)} aria-label="Delete" style={{ fontSize: '0.62rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4 }}>✕</button>
           </div>
         </div>
       ))}

@@ -5,16 +5,14 @@ import RelationshipMemory from '@/components/relationships/RelationshipMemory'
 // Down to one thing (2026-08-21): the household is exactly two accounts,
 // Harry and Sylvia, and always will be — there is no "invite a friend" or
 // "share this item with someone else" scenario to design for. The Sharing
-// tab (Spaces + With Me/By Me, backed by the general-purpose `companions`
-// table meant for arbitrary N-person friend networks) and the Friends list
-// in the old People tab both assumed other accounts might join. Removed
-// entirely, not hidden — companions.sql and useCompanions() are untouched
-// if a real multi-account use case ever shows up again, but nothing in the
-// UI points at them from here anymore.
+// tab and the Friends list that assumed other accounts might join were
+// removed then; the code behind them (the `companions` table, useCompanions,
+// per-item ShareMenu) was deleted on 2026-09-01 in favour of plain space
+// scoping — everything in the household space is simply visible to both.
 //
 // Household space creation/pairing (the actual "connect Harry and Sylvia's
 // two accounts" flow, backed by relationship_pairs — a different table
-// entirely) still lives in the header's Companions panel and Household →
+// entirely) still lives in the header's Connect panel and Household →
 // Setup, both untouched by this change.
 //
 // A garden visualization (people as trees, sized by history) lived here

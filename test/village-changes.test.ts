@@ -10,7 +10,7 @@ const habit = (id: string, created = '2020-01-01T00:00:00Z'): Habit => ({
 
 const done = (id: string, completedAt: string, createdAt = '2026-01-01T00:00:00Z', landmark = false): WorkItem => ({
   id, title: `Task ${id}`, notes: null, due_date: null, energy: null, domain: null,
-  status: 'done', recur_days: null, shared: false,
+  status: 'done', recur_days: null, space_id: null,
   created_at: createdAt, completed_at: completedAt, landmark, board_column: null,
 })
 

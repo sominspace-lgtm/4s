@@ -12,17 +12,10 @@ import { useSharedWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useSharedEvents, useEvents } from '@/lib/hooks/useEvents'
 
 // One calendar for everything the household has going on: chores, meals,
-// routines/maintenance, trips, and — as of 2026-08-22 — any personal task a
-// partner has shared into this space via the ⇆ ShareMenu on a task row
-// (useSharedWorkItems, backed by shared_item_links — see its own header
-// comment). That's the "put household events/chores/reminders/tasks and
-// personal stuff (if shared)" ask in one place, rather than a second
-// calendar to check.
-//
-// Separate from the personal calendar in Today on purpose. That one answers
-// "what do I have on"; this answers "what does this house have on" — an
-// unshared personal task never appears here, same as it never appeared here
-// before this change.
+// routines/maintenance, trips, and every dated task or event on this space —
+// both partners' (useSharedWorkItems / useSharedEvents, plain space_id
+// scoping since 2026-09-01). Per-item sharing is gone; anything either
+// person adds is on the shared space and shows here.
 //
 // Agenda and Month, same toggle pattern as Today's CalendarEmbed — a
 // fortnight is denser and better for "what's coming up this week", a month

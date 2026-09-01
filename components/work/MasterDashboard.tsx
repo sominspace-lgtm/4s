@@ -9,7 +9,6 @@ import NoticeBoard from './NoticeBoard'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
-import ShareMenu from '@/components/ui/ShareMenu'
 import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Energy, not priority — how much of a person a task takes, not a ranking of
@@ -56,12 +55,10 @@ const EMPTY_LINE: Record<Filter, string> = {
   done:     'No completed items yet. The first one counts.',
 }
 
-export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUpdate }: {
+export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
   item: WorkItem
-  userId: string
   onStatus: (id: string, s: WorkItem['status']) => void
   onRemove: (id: string) => void
-  onToggleShared: (id: string) => void
   onUpdate: (id: string, patch: Partial<WorkItem>) => void
 }) {
   const lang = useLang()
@@ -179,24 +176,6 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
         }}>{item.title}
           {item.recur_days && <span style={{ marginLeft: '0.4rem', fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68 }}>↻</span>}
         </span>
-
-        {/* Category-wide share toggle — visible to any companion sharing "Tasks" */}
-        <button
-          onClick={() => onToggleShared(item.id)}
-          title={item.shared ? 'Visible to companions sharing Tasks' : 'Make visible to companions sharing Tasks'}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-            fontSize: '0.62rem', lineHeight: 1,
-            color: item.shared ? 'var(--gold)' : 'var(--muted)',
-            opacity: item.shared ? 0.8 : (hovered ? 0.3 : 0),
-            transition: 'opacity 0.15s',
-          }}
-        >⇆</button>
-
-        {/* Share with a specific person or group */}
-        <div style={{ opacity: hovered ? 1 : 0.6, flexShrink: 0 }}>
-          <ShareMenu itemType="work_item" itemId={item.id} userId={userId} />
-        </div>
 
         {/* Landmark — earned, not automatic on every completion, or every
             grocery run would become a monument. Ran 14+ days: automatic, see
@@ -355,7 +334,7 @@ export function WorkRow({ item, userId, onStatus, onRemove, onToggleShared, onUp
 
 export default function MasterDashboard({ userId }: { userId: string }) {
   const lang = useLang()
-  const { items, loading, add, setStatus, update, remove, toggleShared } = useWorkItems()
+  const { items, loading, add, setStatus, update, remove } = useWorkItems()
   const [filter, setFilter] = useState<Filter>('all')
   const [view, setView] = useState<'board' | 'list'>('board')
   const [showAdd, setShowAdd] = useState(false)
@@ -536,7 +515,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
             </div>
           )}
           {!loading && boardItems.length > 0 && (
-            <NoticeBoard items={boardItems} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+            <NoticeBoard items={boardItems} onStatus={setStatus} onRemove={remove} onUpdate={update} />
           )}
         </>
       ) : (
@@ -550,7 +529,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
           )}
 
           {!loading && filtered.map(i => (
-            <WorkRow key={i.id} item={i} userId={userId} onStatus={setStatus} onRemove={remove} onToggleShared={toggleShared} onUpdate={update} />
+            <WorkRow key={i.id} item={i} onStatus={setStatus} onRemove={remove} onUpdate={update} />
           ))}
         </>
       )}
