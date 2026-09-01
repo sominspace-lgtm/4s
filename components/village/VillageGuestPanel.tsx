@@ -127,6 +127,68 @@ export default function VillageGuestPanel({
   )
 }
 
+// Browse every past "Tonight at the Village" keepsake — reachable any time
+// from the village ⋯ menu, not just while a gathering is live. Same Shell /
+// styles / RecapEditor as the host panel.
+export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory, onClose }: {
+  memories: GatheringMemory[]
+  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
+  onDeleteMemory?: (id: string) => void
+  onClose: () => void
+}) {
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [editing, setEditing] = useState<GatheringMemory | null>(null)
+
+  if (editing) {
+    return <RecapEditor memory={editing} onSave={onUpdateMemory} onClose={() => setEditing(null)} />
+  }
+
+  return (
+    <Shell onClose={onClose} title="Village keepsakes">
+      {memories.length === 0 && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--muted)', padding: '0.6rem 0' }}>
+          No gatherings yet. When one ends, its keepsake lands here.
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        {memories.map(m => {
+          const s = m.summary
+          const isOpen = openId === m.id
+          return (
+            <div key={m.id} style={{ background: 'var(--bg)', borderRadius: '10px', padding: '0.5rem 0.6rem', opacity: m.status === 'hidden' ? 0.55 : 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <button onClick={() => setOpenId(isOpen ? null : m.id)} style={{ ...S.link, textDecoration: 'none', flex: 1, textAlign: 'left', color: 'var(--text)', fontSize: '0.78rem' }}>
+                  {m.title.replace('Tonight at the Village — ', '')}
+                  <span style={{ color: 'var(--muted)', fontSize: '0.68rem' }}> · {m.happened_on}</span>
+                </button>
+                <button onClick={() => setEditing(m)} title="Edit" style={S.iconBtn}>✎</button>
+                <button onClick={() => onUpdateMemory?.(m.id, { status: m.status === 'visible' ? 'hidden' : 'visible' })} title={m.status === 'visible' ? 'Hide' : 'Show'} style={S.iconBtn}>{m.status === 'visible' ? '🙈' : '👁'}</button>
+                <button onClick={() => { if (confirm('Delete this keepsake?')) onDeleteMemory?.(m.id) }} title="Delete" style={S.iconBtn}>🗑</button>
+              </div>
+              {isOpen && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.73rem', color: 'var(--text)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div style={{ color: 'var(--muted)' }}>
+                    {s.guests?.length ? `${s.guests.length} guest${s.guests.length === 1 ? '' : 's'}${s.guests.length ? ' · ' + s.guests.slice(0, 6).join(', ') : ''}` : 'A quiet one'}
+                    {s.fromPlaces?.length ? ` · from ${s.fromPlaces.slice(0, 4).join(', ')}` : ''}
+                    {s.photoCount ? ` · ${s.photoCount} photo${s.photoCount === 1 ? '' : 's'}` : ''}
+                  </div>
+                  {(s.messages ?? []).map((msg, i) => (
+                    <div key={i}>“{msg.text}”{msg.name && <span style={{ color: 'var(--muted)' }}> — {msg.name}</span>}</div>
+                  ))}
+                  {(s.songs ?? []).length > 0 && <div style={{ color: 'var(--muted)' }}>♪ {(s.songs ?? []).join(' · ')}</div>}
+                  {s.photoAlbumUrl && (
+                    <a href={s.photoAlbumUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)' }}>Open the photo album →</a>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </Shell>
+  )
+}
+
 function RecapEditor({ memory, onSave, onClose }: {
   memory: GatheringMemory
   onSave?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary'>>) => void

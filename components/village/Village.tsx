@@ -22,7 +22,7 @@ import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
 import type { Gathering, GuestContribution, GatheringMemory } from '@/lib/hooks/useGathering'
-import VillageGuestPanel from './VillageGuestPanel'
+import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -107,6 +107,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
+  const [keepsakesOpen, setKeepsakesOpen] = useState(false)
   const guestUrl = useMemo(() => {
     if (!gathering) return null
     const base = process.env.NEXT_PUBLIC_APP_URL
@@ -505,6 +506,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                             },
                           }]
                         : []),
+                    ...(memories.length > 0 && !guestActive
+                      ? [{ label: 'Village keepsakes', on: () => setKeepsakesOpen(true) }]
+                      : []),
                     // Zoom stays in the menu — the buttons repeat, so these
                     // keep it open instead of dismissing on each step.
                     { label: 'Zoom in', on: zoomIn, keepOpen: true, disabled: zoom >= 2 },
@@ -640,6 +644,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onCloseGathering={onCloseGathering}
             onUpdateMemory={onUpdateMemory}
             onDeleteMemory={onDeleteMemory}
+          />
+        )}
+
+        {/* Browse every past gathering's keepsake — from the ⋯ menu, any time. */}
+        {keepsakesOpen && (
+          <VillageKeepsakesPanel
+            memories={memories}
+            onUpdateMemory={onUpdateMemory}
+            onDeleteMemory={onDeleteMemory}
+            onClose={() => setKeepsakesOpen(false)}
           />
         )}
 
