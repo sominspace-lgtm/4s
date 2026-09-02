@@ -15,6 +15,8 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 // channel per space, and every write is awaited (the round-69 lazy-builder
 // bug — `void supabase.from().insert()` silently never fires).
 
+export interface PrepItem { id: string; text: string; done: boolean }
+
 export interface Gathering {
   id: string
   space_id: string
@@ -23,9 +25,22 @@ export interface Gathering {
   music_url: string | null
   photo_album_url: string | null
   active: boolean
+  /** 'prep' = hosts getting ready (calm scene, prep checklist on the wall);
+   *  'live' = doors open (welcome QR, warm scene). */
+  phase: 'prep' | 'live'
+  starts_at: string | null
+  prep: PrepItem[]
   started_at: string
   closes_at: string | null
 }
+
+const DEFAULT_PREP: Omit<PrepItem, 'id'>[] = [
+  { text: 'Tidy the main rooms', done: false },
+  { text: 'Set the table', done: false },
+  { text: 'Start the playlist', done: false },
+  { text: 'Make the photo album', done: false },
+  { text: 'Chill the drinks', done: false },
+]
 
 export interface GatheringMemory {
   id: string
@@ -74,7 +89,11 @@ export interface UseGathering {
   /** "Tonight at the Village" keepsakes from gatherings that have ended. */
   memories: GatheringMemory[]
   ready: boolean
-  startGathering: (title: string) => Promise<void>
+  startGathering: (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => Promise<void>
+  /** Replace the prep checklist. */
+  updatePrep: (items: PrepItem[]) => Promise<void>
+  /** Move a prep gathering to 'live' — the doors are open. */
+  openDoors: () => Promise<void>
   /** Ends the gathering AND writes a keepsake snapshot. Returns the memory
    *  so the host can open it straight into an editor. */
   closeGathering: () => Promise<GatheringMemory | null>
@@ -168,6 +187,12 @@ export function useGathering(userId: string): UseGathering {
             const rest = prev.filter(c => c.id !== row.id)
             return [...rest, row].sort((a, b) => a.created_at.localeCompare(b.created_at))
           })
+          // A guest showed up while we were still in prep — the doors are
+          // effectively open, so flip the wall over to welcome mode.
+          if (g.phase === 'prep') {
+            setGathering(prev => (prev ? { ...prev, phase: 'live' } : prev))
+            void supabase.from('gatherings').update({ phase: 'live' }).eq('id', g.id)
+          }
         },
       )
       .subscribe()
@@ -175,18 +200,39 @@ export function useGathering(userId: string): UseGathering {
     return () => { alive = false; supabase.removeChannel(ch) }
   }, [supabase, spaceId, loadContributions])
 
-  const startGathering = useCallback(async (title: string) => {
+  const startGathering = useCallback(async (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => {
     const sid = spaceRef.current
     if (!sid) return
+    const phase = opts?.phase ?? 'live'
     const { data, error } = await supabase
       .from('gatherings')
-      .insert({ space_id: sid, created_by: userId, title: title.trim() || 'Our gathering', token: makeToken() })
+      .insert({
+        space_id: sid, created_by: userId, title: title.trim() || 'Our gathering', token: makeToken(),
+        phase, starts_at: opts?.startsAt ?? null,
+        prep: phase === 'prep' ? DEFAULT_PREP.map(p => ({ ...p, id: crypto.randomUUID() })) : [],
+      })
       .select('*')
       .single()
     if (error) { console.error('[4s] startGathering failed:', error.message); return }
     setGathering(data as Gathering)
     setContributions([])
   }, [supabase, userId])
+
+  const updatePrep = useCallback(async (items: PrepItem[]) => {
+    const g = gatheringRef.current
+    if (!g) return
+    setGathering(prev => (prev ? { ...prev, prep: items } : prev))
+    const { error } = await supabase.from('gatherings').update({ prep: items }).eq('id', g.id)
+    if (error) console.error('[4s] updatePrep failed:', error.message)
+  }, [supabase])
+
+  const openDoors = useCallback(async () => {
+    const g = gatheringRef.current
+    if (!g || g.phase === 'live') return
+    setGathering(prev => (prev ? { ...prev, phase: 'live' } : prev))
+    const { error } = await supabase.from('gatherings').update({ phase: 'live' }).eq('id', g.id)
+    if (error) console.error('[4s] openDoors failed:', error.message)
+  }, [supabase])
 
   const closeGathering = useCallback(async (): Promise<GatheringMemory | null> => {
     const g = gatheringRef.current
@@ -258,7 +304,7 @@ export function useGathering(userId: string): UseGathering {
 
   return {
     gathering, contributions, memories, ready,
-    startGathering, closeGathering, setMusicUrl, setPhotoAlbumUrl,
+    startGathering, updatePrep, openDoors, closeGathering, setMusicUrl, setPhotoAlbumUrl,
     moderate, removeContribution, updateMemory, deleteMemory,
   }
 }

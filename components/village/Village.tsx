@@ -21,7 +21,7 @@ import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
-import type { Gathering, GuestContribution, GatheringMemory } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory, PrepItem } from '@/lib/hooks/useGathering'
 import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
@@ -49,7 +49,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -80,7 +80,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  scene warms up (lanterns, bunting, livelier cast) and a host strip
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
   gathering?: Gathering | null
-  onStartGathering?: (title: string) => void
+  onStartGathering?: (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => void
+  onUpdatePrep?: (items: PrepItem[]) => void
+  onOpenDoors?: () => void
   onCloseGathering?: () => void | Promise<GatheringMemory | null>
   /** Visible guest contributions so far — shown as a quiet count, never a
    *  "N guests online" readout. */
@@ -104,6 +106,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Guest Mode host strip (2026-08-29). The QR encodes /g/<token>; tapping
   // the strip enlarges it so guests can scan from across the room.
   const guestActive = !!gathering
+  // The scene only warms up (lanterns, party outfits, livelier cast) once
+  // the doors are open. During 'prep' the village stays its calm self while
+  // the hosts get ready — see the prep panel in VillageHomeSheet.
+  const guestLive = !!gathering && gathering.phase !== 'prep'
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
@@ -403,7 +409,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate}
-            gathering={guestActive} contributions={contributions} guestQrUri={qrDataUri}
+            gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
@@ -494,17 +500,29 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
                     ...(guestActive
                       ? [
+                          ...(gathering?.phase === 'prep' && onOpenDoors
+                            ? [{ label: 'Open the doors', on: () => onOpenDoors?.() }]
+                            : []),
                           { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
-                          { label: 'Show the guest QR', on: () => setQrBig(true) },
+                          ...(gathering?.phase !== 'prep' ? [{ label: 'Show the guest QR', on: () => setQrBig(true) }] : []),
                         ]
                       : onStartGathering
-                        ? [{
-                            label: 'Open the village to guests',
-                            on: () => {
-                              const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
-                              if (title !== null) onStartGathering?.(title)
+                        ? [
+                            {
+                              label: 'Plan a gathering',
+                              on: () => {
+                                const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
+                                if (title !== null) onStartGathering?.(title, { phase: 'prep' })
+                              },
                             },
-                          }]
+                            {
+                              label: 'Open to guests now',
+                              on: () => {
+                                const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
+                                if (title !== null) onStartGathering?.(title, { phase: 'live' })
+                              },
+                            },
+                          ]
                         : []),
                     ...(memories.length > 0 && !guestActive
                       ? [{ label: 'Village keepsakes', on: () => setKeepsakesOpen(true) }]
@@ -685,7 +703,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             picture rather than another widget under it. See
             VillageHomeSheet's own header comment. */}
         {!compact && locked && (
-          <VillageHomeSheet userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer} />
+          <VillageHomeSheet
+            userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer}
+            gathering={gathering}
+            onStartGathering={onStartGathering}
+            onUpdatePrep={onUpdatePrep}
+            onOpenDoors={onOpenDoors}
+          />
         )}
       </div>
   )
