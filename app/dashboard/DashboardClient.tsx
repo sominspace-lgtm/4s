@@ -107,6 +107,9 @@ const DEPRECATED_SECTION_IDS = new Set([
   // into Household, and came back out to top level a day later. Anyone whose
   // layout was saved during that window had it stripped; mergeLayout appends
   // missing DEFAULT_SECTIONS entries, so it returns on next load by itself.
+  // 'calendar' deprecated again 2026-09-02 — folded back into a Home block
+  // (see householdLayout.ts). Any layout that still names it gets it stripped.
+  'calendar',
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -135,7 +138,6 @@ const SECTION_GROUPS: Record<string, string> = {
   // HOME_BAR_GROUPS below, but the underlying sections are flat everywhere
   // now, not just in shared mode).
   home:      'ours',
-  calendar:  'ours',
   reference: 'ours',
 }
 
@@ -181,7 +183,7 @@ const SECTION_GROUPS: Record<string, string> = {
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'calendar', 'reference', 'smarthome'] },
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'reference', 'smarthome'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
 ]
 
@@ -369,7 +371,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'calendar', 'reference', 'village', 'places'])
+  const SHARED_MODE_IDS = new Set(['home', 'reference', 'village', 'places'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -408,17 +410,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // the Controls icon from personal mode's Home Bar entirely (2026-08-25,
   // caught and reverted the same day: "add smarthome back").
   const navIds = new Set(navSections.map(s => s.id))
-  // Calendar gets its own icon in shared mode specifically (2026-08-25) —
-  // pulled out of Household's secondary row into a standalone group, right
-  // after Household, before the rest run through the same visible-in-
-  // navSections filter below. Personal mode is untouched: Calendar stays
-  // inside Household there, same as Home/Reference/Routines.
-  const groupsForMode = sharedMode
-    ? ALL_HOME_BAR_GROUPS.flatMap(g => g.id === 'home'
-        ? [{ ...g, members: g.members.filter(m => m !== 'calendar') },
-           { id: 'calendar', icon: 'calendar' as const, label: 'Calendar', members: ['calendar'] }]
-        : [g])
-    : ALL_HOME_BAR_GROUPS
+  // Calendar folded back into a Home block 2026-09-02 — no longer a section,
+  // so no shared-mode split-out. Household's group is Home/Reference/Smart
+  // Home in both modes now.
+  const groupsForMode = ALL_HOME_BAR_GROUPS
   const homeBarGroups = groupsForMode
     .map(g => ({
       ...g,
@@ -467,7 +462,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
-      home: t('Home', lang), calendar: t('Calendar', lang),
+      home: t('Home', lang),
       reference: t('Reference', lang),
     }
 
@@ -497,10 +492,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
         case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
-        // Home / Calendar / Reference — one <HouseholdHub forcedTab={id}>
-        // per section (2026-08-25). Smart Home is not one of these: it only
-        // renders inside SmartHomeOverlay.
-        case 'home': case 'calendar': case 'reference':
+        // Home / Reference — one <HouseholdHub forcedTab={id}> per section
+        // (2026-08-25). Calendar folded back into a Home block 2026-09-02;
+        // Smart Home only renders inside SmartHomeOverlay.
+        case 'home': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }

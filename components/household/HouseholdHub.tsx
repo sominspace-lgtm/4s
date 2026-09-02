@@ -7,8 +7,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
-import { useCheckins, groupCheckinsByWeek, dayMs, WEEK_WINDOW_MS } from '@/lib/hooks/useCheckins'
-import { useCompanionSync } from '@/lib/hooks/useCompanionSync'
+import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
@@ -109,15 +108,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     const shared = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))
     setSpaceId((shared ?? spaces[0]).id)
   }, [spaces, members, spaceId])
+  // The weekly check-in lives entirely in 4S OS now (2026-09-02) — answered
+  // on the Today page (CheckinCard), read back here from the `checkins`
+  // table. The Discord bot no longer runs it; its history was backfilled in.
   const { checkins, loading: checkinsLoading } = useCheckins()
-  // The Companion bot exposes a second view of the same weekly check-in —
-  // a per-week summary + who completed it — over its live API. The 4S
-  // `checkins` table only carries rows the bot POSTed per person, so if one
-  // partner hasn't linked Discord (or the bot only sent one token) the
-  // table shows just one side. Merging the bot's week summary back in makes
-  // the Household check-in reflect BOTH people again (2026-09-01, "check-in
-  // only shows one person's data — show both sources").
-  const companion = useCompanionSync()
   // Which sub-tab shows is driven entirely by the top-level nav now
   // (2026-08-25) — DashboardClient renders one <HouseholdHub forcedTab={id}>
   // per Home/Calendar/Reference section. The `?? 'home'` only matters if a
@@ -140,9 +134,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [routineName, setRoutineName] = useState('')
   const [routineCadence, setRoutineCadence] = useState('7')
   const [routineSteps, setRoutineSteps] = useState('')
-  const [addingMaintenance, setAddingMaintenance] = useState(false)
-  const [maintName, setMaintName] = useState('')
-  const [maintCadence, setMaintCadence] = useState('90')
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
@@ -220,6 +211,15 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // filterable map, the same refactor todayBlocks.ts already did for Today's
   // own content. Each renderer closes over the local state/handlers above.
   const homeBlockRenderers: Record<HomeBlockId, () => React.ReactNode> = {
+    // The household calendar — its own section until 2026-09-02, a Home block
+    // again now (calendar isn't a place you live in, it's something you
+    // check). Maintenance-kind routines are filtered out — that feature was
+    // removed 2026-09-02.
+    calendar: () => (
+      <HouseholdCalendar chores={h.chores} meals={h.meals}
+        routines={routinesHook.routines.filter(r => r.kind === 'routine')} trips={trips} spaceId={spaceId} />
+    ),
+
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
 
     // Everything the house has on, in one fortnight view. Separate from
@@ -439,6 +439,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       </div>
     ),
 
+    // House rules — standing conventions. Moved here from the Reference tab
+    // 2026-09-02. `renderRules` is a hoisted function declaration below.
+    rules: () => renderRules(),
   }
 
   // Chores, Routines, and Maintenance — pulled out of homeBlockRenderers
@@ -446,6 +449,67 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // under the new Routines tab below. Same JSX as before, just no longer
   // tied to Home's customizable-block system (there's nothing to hide or
   // reorder here — one tab, three sections, always all three).
+  // House rules — standing conventions, not one-off tasks. Retiring keeps a
+  // rule visible under a fold rather than deleting it. Moved from Reference
+  // to a Home block 2026-09-02.
+  function renderRules() {
+    return (
+      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+        <div className="t-card" style={{ marginBottom: '0.7rem' }}>House rules</div>
+
+        {h.rules.filter(r => r.active).length === 0 && !h.loading && (
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
+            No rules yet. The first one is usually about shoes.
+          </div>
+        )}
+
+        {h.rules.filter(r => r.active).map(r => (
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{r.text}</span>
+            {r.category && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', flexShrink: 0 }}>{r.category}</span>}
+            <button onClick={() => h.toggleRuleActive(r.id, false)} title="Retire this rule" className="press"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
+              retire
+            </button>
+            <button onClick={() => h.removeRule(r.id)} aria-label={`Delete ${r.text}`} className="press"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+          </div>
+        ))}
+
+        {h.rules.some(r => !r.active) && (
+          <div style={{ marginTop: '0.8rem' }}>
+            <button onClick={() => setShowRetiredRules(v => !v)} className="btn btn-ghost press" style={{ fontSize: '0.64rem' }}>
+              {showRetiredRules ? 'Hide' : 'Show'} {h.rules.filter(r => !r.active).length} retired
+            </button>
+            {showRetiredRules && h.rules.filter(r => !r.active).map(r => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.35rem 0', opacity: 0.55 }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: '0.74rem', color: 'var(--text)', textDecoration: 'line-through' }}>{r.text}</span>
+                <button onClick={() => h.toggleRuleActive(r.id, true)} title="Bring this rule back" className="press"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.6rem', flexShrink: 0 }}>
+                  restore
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form
+          onSubmit={async e => {
+            e.preventDefault()
+            if (!ruleText.trim()) return
+            await h.addRule(ruleText.trim(), ruleCategory.trim() || null, null)
+            setRuleText(''); setRuleCategory('')
+          }}
+          style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
+        >
+          <input value={ruleText} onChange={e => setRuleText(e.target.value)} placeholder="Add a house rule" style={{ ...input, flex: 1, minWidth: '160px' }} />
+          <input value={ruleCategory} onChange={e => setRuleCategory(e.target.value)} placeholder="Category (optional)" style={{ ...input, width: '140px' }} />
+          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
+        </form>
+      </section>
+    )
+  }
+
   function renderChores() {
     // Folders (2026-08-26) — a free-text grouping a person names as they go
     // ("Somi", "Car", "Seasonal"), not a fixed taxonomy like Shopping's
@@ -722,7 +786,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {/* Fixed, not part of homeBlocks — this is the one section meant
               to always be first, so it isn't reorderable or hideable like
               the blocks below it (2026-08-21). */}
-          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines} />
+          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines.filter(r => r.kind === 'routine')} />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={() => setHomeCustomizeOpen(true)} title="Customize Home" className="press" style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.68rem', padding: '0.2rem',
@@ -735,45 +799,34 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </>
       )}
 
-      {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),
-          see HouseholdDateIdeas's own header comment for why. */}
-      {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
-
-      {/* Its own tab as of 2026-08-21 — was a Home block competing with five
-          others for the top of a scroll. Same component, same data, just
-          given the room a calendar actually needs. */}
-      {tab === 'calendar' && (
-        <HouseholdCalendar chores={h.chores} meals={h.meals} routines={routinesHook.routines} trips={trips} spaceId={spaceId} />
-      )}
-
-      {/* Chores, Routines, and Maintenance (2026-08-22, folded into
-          Reference 2026-08-25 when the standalone Routines tab was
-          removed) — all three are "the cleaning and upkeep stuff", just
-          different granularities (a single recurring item, a named group of
-          steps, a long-cadence one-off). */}
-      {tab === 'reference' && renderChores()}
-      {tab === 'reference' && renderRoutines()}
-
       {/* Smart Home (2026-08-25) — a manual device/status list, see
           HouseholdSmartHome's own header comment for why this isn't a real
           automation integration. */}
       {tab === 'smarthome' && <HouseholdSmartHome spaceId={spaceId} />}
 
+      {/* Reference tab order (2026-09-02): Notes, Chores, Routines, Date
+          Ideas, Watchlist, Understanding (folded), Check-in. Calendar and
+          House rules moved to Home; Maintenance was removed. */}
+
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
-          Personal's Notes tab writes to, scoped to this household's space.
-          The old "fridge door" (household_notes, pinned one-liners) and
-          "Quick Lists" (household_lists) sections were both removed
-          2026-08-22 -- neither had real content, and this one shared Notes
-          feature covers what both were for. */}
+          Personal's Notes tab writes to, scoped to this household's space. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
+
+      {/* Chores and Routines — "the cleaning and upkeep stuff" at two
+          granularities (a single recurring item, a named group of steps). */}
+      {tab === 'reference' && renderChores()}
+      {tab === 'reference' && renderRoutines()}
+
+      {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),
+          see HouseholdDateIdeas's own header comment for why. */}
+      {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
+
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 
       {/* Understanding Each Other — real relationship content (love
           languages, preferences, the kind of thing Check-ins already gates),
           not household logistics. Locked in shared mode (2026-08-25 fix) —
-          same "tap to unlock" pattern as Check-ins just below; it was
-          previously rendering unconditionally, visible on the shared/kiosk
-          device with no PIN at all. */}
+          same "tap to unlock" pattern as Check-ins just below. */}
       {tab === 'reference' && sharedMode && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <button onClick={() => onLockedNavigate?.('Understanding Each Other')} className="press" style={{
@@ -788,68 +841,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </section>
       )}
       {tab === 'reference' && !sharedMode && (
-        <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} />
-      )}
-
-      {/* ── Rules ──────────────────────────────────────────────────
-          Standing conventions, not one-off tasks: "no shoes inside", not
-          "take the recycling out". Retiring a rule keeps it visible under a
-          fold rather than deleting it — "we used to do this" is worth
-          remembering when the reason it changed comes up again. */}
-      {tab === 'reference' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <div className="t-card" style={{ marginBottom: '0.7rem' }}>House rules</div>
-
-          {h.rules.filter(r => r.active).length === 0 && !h.loading && (
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-              No rules yet. The first one is usually about shoes.
-            </div>
-          )}
-
-          {h.rules.filter(r => r.active).map(r => (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{r.text}</span>
-              {r.category && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', flexShrink: 0 }}>{r.category}</span>}
-              <button onClick={() => h.toggleRuleActive(r.id, false)} title="Retire this rule" className="press"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
-                retire
-              </button>
-              <button onClick={() => h.removeRule(r.id)} aria-label={`Delete ${r.text}`} className="press"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-            </div>
-          ))}
-
-          {h.rules.some(r => !r.active) && (
-            <div style={{ marginTop: '0.8rem' }}>
-              <button onClick={() => setShowRetiredRules(v => !v)} className="btn btn-ghost press" style={{ fontSize: '0.64rem' }}>
-                {showRetiredRules ? 'Hide' : 'Show'} {h.rules.filter(r => !r.active).length} retired
-              </button>
-              {showRetiredRules && h.rules.filter(r => !r.active).map(r => (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.35rem 0', opacity: 0.55 }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.74rem', color: 'var(--text)', textDecoration: 'line-through' }}>{r.text}</span>
-                  <button onClick={() => h.toggleRuleActive(r.id, true)} title="Bring this rule back" className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.6rem', flexShrink: 0 }}>
-                    restore
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <form
-            onSubmit={async e => {
-              e.preventDefault()
-              if (!ruleText.trim()) return
-              await h.addRule(ruleText.trim(), ruleCategory.trim() || null, null)
-              setRuleText(''); setRuleCategory('')
-            }}
-            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
-          >
-            <input value={ruleText} onChange={e => setRuleText(e.target.value)} placeholder="Add a house rule" style={{ ...input, flex: 1, minWidth: '160px' }} />
-            <input value={ruleCategory} onChange={e => setRuleCategory(e.target.value)} placeholder="Category (optional)" style={{ ...input, width: '140px' }} />
-            <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-          </form>
-        </section>
+        <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} collapsible />
       )}
 
       {/* Check-ins — the weekly relationship check-in history. Answered on
@@ -870,24 +862,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </section>
       )}
       {tab === 'reference' && !sharedMode && (() => {
-        const dbWeeks = groupCheckinsByWeek(checkins)
-        // Only merge the bot's live summary when it's a real, connected feed —
-        // the hook hands back mock data before a pair + connection exist.
-        const botReal = !companion.loading && !companion.mocked && !companion.degraded
-          && !companion.needsPair && !companion.needsConnection
-        type BotCheckin = (typeof companion.checkins)[number]
-        const weeks: { weekOf: string; byUser: typeof dbWeeks[number]['byUser']; bot: BotCheckin | null }[] =
-          dbWeeks.map(w => ({ weekOf: w.weekOf, byUser: w.byUser, bot: null }))
-        // Attach each bot summary to the nearest DB week within the same
-        // 6-day window groupCheckinsByWeek clusters on; unmatched bot weeks
-        // become their own entry.
-        for (const b of (botReal ? companion.checkins : [])) {
-          const bt = dayMs(b.weekOf)
-          const match = weeks.find(w => Math.abs(dayMs(w.weekOf) - bt) <= WEEK_WINDOW_MS)
-          if (match) { if (!match.bot) match.bot = b }
-          else weeks.push({ weekOf: b.weekOf.slice(0, 10), byUser: {}, bot: b })
-        }
-        weeks.sort((a, b) => b.weekOf.localeCompare(a.weekOf))
+        const weeks = groupCheckinsByWeek(checkins)
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
             <details>
@@ -900,16 +875,14 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                   Your weekly check-in, kept here. Answer it on the Today page.
                 </div>
 
-                {weeks.length === 0 && !checkinsLoading && !companion.loading && (
+                {weeks.length === 0 && !checkinsLoading && (
                   <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
                     No check-ins yet — the first one you answer on Today shows up here.
                   </div>
                 )}
 
                 {weeks.map(w => {
-                  const dbCount = Object.keys(w.byUser).length
-                  const botCount = w.bot?.completedBy.length ?? 0
-                  const answered = Math.max(dbCount, botCount)
+                  const answered = Object.keys(w.byUser).length
                   return (
                   <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -918,12 +891,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                         {answered >= 2 ? 'both of you checked in' : answered === 1 ? 'one of you checked in' : 'no answers yet'}
                       </span>
                     </summary>
-                    {w.bot?.summary && (
-                      <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5, borderLeft: '2px solid color-mix(in srgb, var(--gold) 40%, transparent)', paddingLeft: '0.6rem' }}>
-                        <span style={{ fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gold)', opacity: 0.85, marginRight: '0.4rem' }}>From Discord</span>
-                        {w.bot.summary}
-                      </div>
-                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                       {Object.entries(w.byUser).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
@@ -945,83 +912,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                           </div>
                         )
                       })}
-                      {botCount > dbCount && (
-                        <div style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem', fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', lineHeight: 1.5 }}>
-                          {dbCount === 0
-                            ? `${botCount === 2 ? 'Both of you' : 'One of you'} checked in on Discord — the full answers didn't sync here, just the summary above.`
-                            : 'The other partner checked in too — their full answers didn’t sync here.'}
-                        </div>
-                      )}
                     </div>
                   </details>
                   )
                 })}
               </div>
             </details>
-          </section>
-        )
-      })()}
-
-      {/* Maintenance (2026-08-13) — long-cadence items ("HVAC filter every 3
-          months") that would get lost in a weekly chore/routine list. Same
-          household_routines table as Routines, kind='maintenance'. Lived in
-          Routines alongside Chores/Routines from 2026-08-22 until that tab
-          was folded into Reference (2026-08-25). */}
-      {tab === 'reference' && (() => {
-        const maint = [...routinesHook.routines.filter(r => r.kind === 'maintenance')].sort((a, b) => routineDue(a) - routineDue(b))
-        return (
-          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            <div className="t-card" style={{ marginBottom: '0.7rem' }}>Maintenance</div>
-
-            {maint.length === 0 && !routinesHook.loading && (
-              <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
-                Nothing yet. The stuff that happens occasionally: HVAC filter every 3 months, smoke detector batteries every year.
-              </div>
-            )}
-
-            {maint.map(m => {
-              const due = routineDue(m)
-              return (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{m.name}</div>
-                    {m.last_done_at && nameFor(m.last_done_by) && (
-                      <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.55 }}>
-                        Last done by {nameFor(m.last_done_by)}, {daysAgo(m.last_done_at)}
-                      </div>
-                    )}
-                  </div>
-                  <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : due === 0 ? 'var(--amber)' : 'var(--muted)', flexShrink: 0 }}>
-                    every {m.cadence_days}d · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
-                  </span>
-                  <button onClick={() => routinesHook.markRoutineDone(m.id)} className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6, fontSize: '0.62rem', flexShrink: 0 }}>done</button>
-                  <button onClick={() => routinesHook.removeRoutine(m.id)} aria-label={`Remove ${m.name}`} className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-                </div>
-              )
-            })}
-
-            {addingMaintenance ? (
-              <form
-                onSubmit={async e => {
-                  e.preventDefault()
-                  if (!maintName.trim()) return
-                  await routinesHook.addRoutine('maintenance', maintName.trim(), Number(maintCadence) || 90, [])
-                  setMaintName(''); setMaintCadence('90'); setAddingMaintenance(false)
-                }}
-                style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
-              >
-                <input value={maintName} onChange={e => setMaintName(e.target.value)} placeholder="e.g. Replace HVAC filter" style={{ ...input, flex: 1, minWidth: '160px' }} autoFocus />
-                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', alignSelf: 'center' }}>every</span>
-                <input type="number" min="1" value={maintCadence} onChange={e => setMaintCadence(e.target.value)} style={{ ...input, width: '60px' }} />
-                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', alignSelf: 'center' }}>days</span>
-                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-                <button type="button" onClick={() => setAddingMaintenance(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
-              </form>
-            ) : (
-              <button onClick={() => setAddingMaintenance(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', marginTop: '0.7rem' }}>+ New maintenance item</button>
-            )}
           </section>
         )
       })()}

@@ -34,11 +34,13 @@ function areaSort(a: string, b: string): number {
 // it). Within an area, every topic shows both people's answers side by
 // side — your own is a click-to-edit textarea, your partner's is read-only,
 // same boundary the table's own RLS enforces (write your own, read both).
-export default function HouseholdUnderstanding({ spaceId, userId, partnerName }: {
+export default function HouseholdUnderstanding({ spaceId, userId, partnerName, collapsible = false }: {
   spaceId: string | null
   userId: string
   /** For the read-only side's label — "Harry" instead of a raw user id. */
   partnerName: (uid: string) => string
+  /** Fold the whole section behind its own header (Reference tab, 2026-09-02). */
+  collapsible?: boolean
 }) {
   const { entries, loading, setAnswer, removeAnswer } = useUnderstanding(spaceId)
   const [editing, setEditing] = useState<{ area: string; topic: string } | null>(null)
@@ -63,9 +65,8 @@ export default function HouseholdUnderstanding({ spaceId, userId, partnerName }:
     setEditing(null)
   }
 
-  return (
-    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-      <div className="t-card">Understanding each other</div>
+  const body = (
+    <>
       <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6 }}>
         How you each show care, communicate, handle conflict, recharge — private to the two of you.
       </div>
@@ -157,6 +158,24 @@ export default function HouseholdUnderstanding({ spaceId, userId, partnerName }:
         </form>
       ) : (
         spaceId && <button onClick={() => setAddingArea(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New area</button>
+      )}
+    </>
+  )
+
+  return (
+    <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+      {collapsible ? (
+        <details>
+          <summary style={{ cursor: 'pointer', listStyleType: 'none' }}>
+            <span className="t-card">Understanding each other</span>
+          </summary>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', marginTop: '0.7rem' }}>{body}</div>
+        </details>
+      ) : (
+        <>
+          <div className="t-card">Understanding each other</div>
+          {body}
+        </>
       )}
 
       {editing && (
