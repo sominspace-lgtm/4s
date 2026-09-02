@@ -75,6 +75,9 @@ export function useCoupleLife(opts: {
   const [interactAt, setInteractAt] = useState<Pt>({ x: (shx + hhx) / 2, y: (shy + hhy) / 2 })
   const [greeting, setGreeting] = useState<'sylvia' | 'harry' | null>(null)
   const greetRef = useRef<(who: 'sylvia' | 'harry') => void>(() => {})
+  // Set while a scene holds the couple — walk them to a tapped point and
+  // hold there (still no wander loop). Null when not in a hold.
+  const holdWalkRef = useRef<((x: number, y: number) => void) | null>(null)
 
   // Live positions + facing, so a move can size its own duration and pick a
   // facing off where the figure actually is without threading React state.
@@ -140,32 +143,43 @@ export function useCoupleLife(opts: {
     // wander-home guard: they hold here until `hold` clears (a dep change
     // re-runs this effect into the normal loop, which starts with goHome).
     if (hold) {
-      const gx = clampX(hold.x), gy = clampY(hold.y)
-      const st = { x: gx - 9, y: gy }, ht = { x: gx + 9, y: gy }
-      const L0 = liveRef.current
-      const already = Math.hypot(L0.sx - st.x, L0.sy - st.y) < 12 && Math.hypot(L0.hx - ht.x, L0.hy - ht.y) < 12
-      setInteractAt({ x: gx, y: gy })
-      setInteractPose(hold.frame)
-      if (already) {
-        // A re-entry (StrictMode, a dep tick) with them still on the spot —
-        // hold the pose straight away, no phantom walk.
-        walk('sylvia', st.x, st.y); walk('harry', ht.x, ht.y)
-        setTogether(true)
-      } else {
-        setTogether(false)
-        const sd = walk('sylvia', st.x, st.y)
-        const hd = walk('harry', ht.x, ht.y)
-        at(Math.max(sd, hd) + 400, () => setTogether(true))
+      // The spot they're held at — starts as the scene's spot, moves to
+      // wherever the user taps (holdWalkRef, below). No wander loop either way.
+      const spot = { x: clampX(hold.x), y: clampY(hold.y) }
+
+      const settle = () => {
+        const st = { x: spot.x - 9, y: spot.y }, ht = { x: spot.x + 9, y: spot.y }
+        setInteractAt({ x: spot.x, y: spot.y })
+        setInteractPose(hold.frame)
+        const L = liveRef.current
+        const near = Math.hypot(L.sx - st.x, L.sy - st.y) < 12 && Math.hypot(L.hx - ht.x, L.hy - ht.y) < 12
+        if (near) {
+          walk('sylvia', st.x, st.y); walk('harry', ht.x, ht.y)
+          setTogether(true)
+        } else {
+          setTogether(false)
+          const d = Math.max(walk('sylvia', st.x, st.y), walk('harry', ht.x, ht.y))
+          at(d + 400, () => setTogether(true))
+        }
       }
+
+      holdWalkRef.current = (px: number, py: number) => {
+        spot.x = clampX(px); spot.y = clampY(py)
+        clearTimers()
+        settle()
+      }
+      settle()
+
       const holdGuard = window.setInterval(() => {
         if (!alive) return
         const L = liveRef.current
+        const st = { x: spot.x - 9, y: spot.y }, ht = { x: spot.x + 9, y: spot.y }
         if (Math.hypot(L.sx - st.x, L.sy - st.y) > 24 || Math.hypot(L.hx - ht.x, L.hy - ht.y) > 24) {
           const d = Math.max(walk('sylvia', st.x, st.y), walk('harry', ht.x, ht.y))
           at(d + 400, () => setTogether(true))
         }
       }, 5000)
-      return () => { alive = false; clearTimers(); clearInterval(holdGuard) }
+      return () => { alive = false; clearTimers(); clearInterval(holdGuard); holdWalkRef.current = null }
     }
 
     const wander = () => {
@@ -273,7 +287,11 @@ export function useCoupleLife(opts: {
   }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1, restKey, holdKey])
 
   const walkTo = useCallback((x: number, y: number) => {
-    if (!enabled || holdKey) return
+    if (!enabled) return
+    // In a scene hold — walk to the tapped spot and hold there, don't kick
+    // off a wandering meet.
+    if (holdWalkRef.current) { holdWalkRef.current(x, y); return }
+    if (holdKey) return
     clearTimers()
     setTogether(false)
     meetRef.current({ x, y })

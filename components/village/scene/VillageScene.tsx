@@ -1669,8 +1669,9 @@ export default function VillageScene({
       {/* Tap the open ground to send Sylvia & Harry over there for an
           interaction (round 53). Sits under every prop/figure/district in
           paint order, so those keep their own clicks; only a bare-ground
-          tap reaches here. Off in arrange/quiet and while a scene holds them. */}
-      {!arranging && !settledNight && !sceneHidesFigures && !holdTarget && (
+          tap reaches here. Off in arrange/quiet and We're-out; during a
+          scene hold a tap re-parks them there (still no wander). */}
+      {!arranging && !settledNight && !sceneHidesFigures && (
         <rect x={0} y={GROUND_Y - 6} width={800} height={440 - (GROUND_Y - 6)} fill="transparent"
           style={{ pointerEvents: 'all', cursor: 'pointer' }}
           onClick={e => { const pt = toSvgPoint(e.clientX, e.clientY); if (pt) life.walkTo(pt.x, pt.y) }} />
