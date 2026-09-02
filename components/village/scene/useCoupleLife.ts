@@ -57,9 +57,15 @@ export function useCoupleLife(opts: {
   /** Benches / picnic spot — when the couple gather here they do that
    *  spot's specific interaction instead of a random one (round 59). */
   restSpots?: RestSpot[]
+  /** Scene hold (2026-09-02) — non-null = walk to this spot and stay there
+   *  in `frame`, no wander loop, until it clears. Used by the Goodnight /
+   *  Movie / Party smart-home scenes: the couple walk over when prompted,
+   *  then hold still. */
+  hold?: { x: number; y: number; frame: number } | null
 }): CoupleLife {
-  const { enabled, sylviaHome, harryHome, bounds, restSpots } = opts
+  const { enabled, sylviaHome, harryHome, bounds, restSpots, hold } = opts
   const restKey = (restSpots ?? []).map(r => `${Math.round(r.x)},${Math.round(r.y)},${r.frame}`).join('|')
+  const holdKey = hold ? `${Math.round(hold.x)},${Math.round(hold.y)},${hold.frame}` : ''
   const shx = sylviaHome.x, shy = sylviaHome.y, hhx = harryHome.x, hhy = harryHome.y
 
   const [sylvia, setSylvia] = useState<FigureLife>({ x: shx, y: shy, pose: 'idle', face: 1, dur: 0 })
@@ -128,6 +134,38 @@ export function useCoupleLife(opts: {
       setTogether(false)
       walk('sylvia', shx, shy)
       walk('harry', hhx, hhy)
+    }
+
+    // Scene hold — walk over, then stay put in the pose. No loop, no
+    // wander-home guard: they hold here until `hold` clears (a dep change
+    // re-runs this effect into the normal loop, which starts with goHome).
+    if (hold) {
+      const gx = clampX(hold.x), gy = clampY(hold.y)
+      const st = { x: gx - 9, y: gy }, ht = { x: gx + 9, y: gy }
+      const L0 = liveRef.current
+      const already = Math.hypot(L0.sx - st.x, L0.sy - st.y) < 12 && Math.hypot(L0.hx - ht.x, L0.hy - ht.y) < 12
+      setInteractAt({ x: gx, y: gy })
+      setInteractPose(hold.frame)
+      if (already) {
+        // A re-entry (StrictMode, a dep tick) with them still on the spot —
+        // hold the pose straight away, no phantom walk.
+        walk('sylvia', st.x, st.y); walk('harry', ht.x, ht.y)
+        setTogether(true)
+      } else {
+        setTogether(false)
+        const sd = walk('sylvia', st.x, st.y)
+        const hd = walk('harry', ht.x, ht.y)
+        at(Math.max(sd, hd) + 400, () => setTogether(true))
+      }
+      const holdGuard = window.setInterval(() => {
+        if (!alive) return
+        const L = liveRef.current
+        if (Math.hypot(L.sx - st.x, L.sy - st.y) > 24 || Math.hypot(L.hx - ht.x, L.hy - ht.y) > 24) {
+          const d = Math.max(walk('sylvia', st.x, st.y), walk('harry', ht.x, ht.y))
+          at(d + 400, () => setTogether(true))
+        }
+      }, 5000)
+      return () => { alive = false; clearTimers(); clearInterval(holdGuard) }
     }
 
     const wander = () => {
@@ -232,21 +270,21 @@ export function useCoupleLife(opts: {
 
     return () => { alive = false; clearTimers(); clearInterval(guard) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1, restKey])
+  }, [enabled, shx, shy, hhx, hhy, bounds.x0, bounds.x1, bounds.y0, bounds.y1, restKey, holdKey])
 
   const walkTo = useCallback((x: number, y: number) => {
-    if (!enabled) return
+    if (!enabled || holdKey) return
     clearTimers()
     setTogether(false)
     meetRef.current({ x, y })
-  }, [enabled])
+  }, [enabled, holdKey])
 
   const greet = useCallback((who: 'sylvia' | 'harry') => {
-    if (!enabled) return
+    if (!enabled || holdKey) return
     clearTimers()
     setTogether(false)
     greetRef.current(who)
-  }, [enabled])
+  }, [enabled, holdKey])
 
   return { sylvia, harry, together, interactPose, interactAt, walkTo, greet, greeting }
 }

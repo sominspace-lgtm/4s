@@ -751,7 +751,6 @@ export default function VillageScene({
     : mood
   const moodActive = !gathering && activeMood.kind != null && activeMood.kind !== 'home'
   const sceneHidesFigures = moodActive && activeMood.hideFigures
-  const sceneStill = moodActive && (activeMood.figures === 'sleep' || activeMood.figures === 'movie' || activeMood.figures === 'party')
   if (moodActive && activeMood.forceNight) v = { ...v, timeOfDay: 'night' }
 
   // Same idea for the wardrobe (round 73) — `?outfit=party|tennis|travel|
@@ -827,7 +826,7 @@ export default function VillageScene({
   // can be seen before they get their own real triggers.
   const outfit: Outfit =
     outfitOverrideState ?? (
-      gathering ? 'party'
+      gathering || (moodActive && activeMood.kind === 'party') ? 'party'
       : weather?.condition === 'rain' || weather?.condition === 'storm' ? 'rain'
       : v.season === 'winter' ? 'winter'
       : v.season === 'autumn' ? 'cozy'
@@ -839,10 +838,9 @@ export default function VillageScene({
   const night = v.timeOfDay === 'night'
 
   // Scene-mood overrides layered on top of the time-of-day flags above.
-  //   settledNow — the cast goes fully still (night, OR Goodnight/Movie/Party).
-  //   nightish   — draw the bedtime composition (real night, OR Goodnight).
-  //   warm       — force the lanterns/window glow on (gathering, OR Party).
-  const settledNow = (settled || sceneStill) && !gathering
+  //   nightish — night sky / dark cottage (real night, OR Goodnight).
+  //   warm     — force the lanterns/window glow on (gathering, OR Party).
+  // `holdTarget` / `settledNight` need decorPos and are computed lower down.
   const nightish = night || (moodActive && activeMood.forceNight)
   const warm = lit || (moodActive && activeMood.lanterns)
   // The cottage window: dark for Goodnight (everyone's asleep, lights off)
@@ -1081,12 +1079,31 @@ export default function VillageScene({
     (() => { const p = decorPos('picnicMat'); return { x: p.x, y: p.y - 2, frame: COUPLE_PICNIC_FRAME } })(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [layout])
+
+  // Scene "hold" (2026-09-02) — Goodnight / Movie / Party walk the couple to
+  // a spot, then hold them there in a pose (useCoupleLife's `hold`). Null for
+  // We're home (normal wander) and We're out (figures gone).
+  const holdTarget: { x: number; y: number; frame: number } | null = (() => {
+    if (gathering || !moodActive) return null
+    const sp = decorPos('sylvia'), hp = decorPos('harry')
+    const mx = (sp.x + hp.x) / 2, my = Math.max(sp.y, hp.y)
+    if (activeMood.kind === 'goodnight') return { x: mx, y: my, frame: COUPLE_NIGHTCAP_FRAME }
+    if (activeMood.kind === 'movie') return { x: mx, y: my + 2, frame: COUPLE_MOVIE_FRAME }
+    if (activeMood.kind === 'party') { const g = decorPos('gazebo'); return { x: g.x - 8, y: g.y + 10, frame: 0 } }
+    return null
+  })()
+  // Real night with no scene → the fully-still bedtime composition. A scene
+  // walks them to `holdTarget` instead of freezing them home.
+  const settledNight = settled && !holdTarget
   const life = useCoupleLife({
-    enabled: !arranging && !sceneHidesFigures && !sceneStill && (!quiet || gathering),
+    // On for a scene hold too (they walk over, then hold) — only real
+    // night with no scene, We're out, or arrange fully stop the machine.
+    enabled: !arranging && !sceneHidesFigures && !settledNight && (!quiet || gathering || holdTarget != null),
     sylviaHome: decorPos('sylvia'),
     harryHome: decorPos('harry'),
     bounds: { x0: 70, x1: 730, y0: GROUND_Y + 2, y1: GROUND_Y + 74 },
     restSpots,
+    hold: holdTarget,
   })
   const coupleTogether = life.together
   const interactPose = life.interactPose
@@ -1096,7 +1113,8 @@ export default function VillageScene({
   // couple. Off during arrange and quiet/night (she's asleep then).
   const somiHome = decorPos('somi')
   const somiLife = useWanderer({
-    enabled: !arranging && !sceneHidesFigures && !sceneStill && (!quiet || gathering),
+    // Somi settles for a hold scene too (curls up for Movie / Goodnight).
+    enabled: !arranging && !sceneHidesFigures && !settledNight && holdTarget == null && (!quiet || gathering),
     home: somiHome,
     bounds: { x0: 60, x1: 740, y0: GROUND_Y - 6, y1: GROUND_Y + 78 },
     restfulness: 0.62,
@@ -1651,8 +1669,8 @@ export default function VillageScene({
       {/* Tap the open ground to send Sylvia & Harry over there for an
           interaction (round 53). Sits under every prop/figure/district in
           paint order, so those keep their own clicks; only a bare-ground
-          tap reaches here. Off in arrange/quiet. */}
-      {!arranging && !settledNow && !sceneHidesFigures && (
+          tap reaches here. Off in arrange/quiet and while a scene holds them. */}
+      {!arranging && !settledNight && !sceneHidesFigures && !holdTarget && (
         <rect x={0} y={GROUND_Y - 6} width={800} height={440 - (GROUND_Y - 6)} fill="transparent"
           style={{ pointerEvents: 'all', cursor: 'pointer' }}
           onClick={e => { const pt = toSvgPoint(e.clientX, e.clientY); if (pt) life.walkTo(pt.x, pt.y) }} />
@@ -2699,15 +2717,15 @@ export default function VillageScene({
           Still off entirely during arrange (Draggable wants a static target)
           and quiet/night (the bench / sleepwear block below takes over). */}
       <g>
-        {!arranging && !settledNow && !sceneHidesFigures && (
+        {!arranging && !settledNight && !sceneHidesFigures && (
           <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
             <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} outfit={outfit} />
           </g>
         )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
-        {(() => { const p = decorPos('sylvia'); const active = !arranging && !settledNow && !sceneHidesFigures; return (
+        {(() => { const p = decorPos('sylvia'); const active = !arranging && !settledNight && !sceneHidesFigures; return (
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-            {!(settledNow && !arranging) && !sceneHidesFigures && (
+            {!(settledNight && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
                   onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
@@ -2717,9 +2735,9 @@ export default function VillageScene({
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
           </Draggable>
         ) })()}
-        {(() => { const p = decorPos('harry'); const active = !arranging && !settledNow && !sceneHidesFigures; return (
+        {(() => { const p = decorPos('harry'); const active = !arranging && !settledNight && !sceneHidesFigures; return (
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-            {!(settledNow && !arranging) && !sceneHidesFigures && (
+            {!(settledNight && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
                   onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
@@ -2735,14 +2753,13 @@ export default function VillageScene({
           conditions are false), and this renders instead — an outright
           swap, not an opacity gate, so there's no shared-timeline risk to
           manage here at all. */}
-      {!arranging && settledNow && !sceneHidesFigures
-        && activeMood.figures !== 'movie' && activeMood.figures !== 'party' && (() => {
+      {/* Real night, no scene — the couple are already asleep in sleepwear
+          near Home (dusk keeps the reading bench). A Goodnight/Movie/Party
+          scene isn't `settledNight`: it walks them to a spot and holds them
+          there in a pose via useCoupleLife's `hold`, drawn by the
+          couple-cycle block above. */}
+      {!arranging && settledNight && !sceneHidesFigures && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
-        // Goodnight scene — the two of them up together for a last cup,
-        // wrapped in a blanket. Real night keeps the "already asleep" look.
-        if (moodActive && activeMood.kind === 'goodnight') {
-          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y) + 2} poseIndex={COUPLE_NIGHTCAP_FRAME} outfit="default" />
-        }
         if (nightish) return (
           <>
             <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} />
@@ -2751,18 +2768,6 @@ export default function VillageScene({
         )
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
         return <CoupleBenchShape x={midX} y={midY} />
-      })()}
-
-      {/* Scene-held couple pose (2026-09-02) — Movie: cuddled facing the
-          screen near Home. Party: a party-outfit beat near the gazebo. */}
-      {!arranging && !gathering && !sceneHidesFigures
-        && (activeMood.figures === 'movie' || activeMood.figures === 'party') && (() => {
-        const sp = decorPos('sylvia'), hp = decorPos('harry')
-        if (activeMood.figures === 'movie') {
-          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y) + 2} poseIndex={COUPLE_MOVIE_FRAME} outfit="default" />
-        }
-        const g = decorPos('gazebo')
-        return <CoupleInteraction x={g.x - 16} y={g.y + 10} poseIndex={0} outfit="party" />
       })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
@@ -2780,13 +2785,15 @@ export default function VillageScene({
           const h = pos('home')
           return <CatShape x={h.x + 22} y={h.y + 6} scale={0.7 * itemScale('somi')} name="Somi" wander={false} pose="idle" face={-1} />
         }
-        const active = !arranging && !settledNow
+        const active = !arranging && !settledNight && holdTarget == null
+        // Curled asleep for real night AND for a Movie / Goodnight hold.
+        const catSleeps = (nightish || (holdTarget != null && activeMood.kind !== 'party')) && !arranging && !gathering
         return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
             <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
               onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
-              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={nightish && !arranging && !gathering} />
+              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={catSleeps} />
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
