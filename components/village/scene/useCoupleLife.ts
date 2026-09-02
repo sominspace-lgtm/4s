@@ -166,8 +166,10 @@ export function useCoupleLife(opts: {
       const sd = walk('sylvia', gx - 9, gy)
       const hd = walk('harry', gx + 9, gy)
       at(Math.max(sd, hd) + 250, () => {
+        // 15 random meet vignettes (COUPLE_RANDOM_FRAMES in shapes.tsx);
+        // indices past that are scene-specific and never land here.
         if (spot) setInteractPose(spot.frame)
-        else setInteractPose(p => (p >= 9 ? 0 : (p + 1) % 9))
+        else setInteractPose(p => (p >= 15 ? 0 : (p + 1) % 15))
         setTogether(true)
         at(rand(spot ? 8000 : 6000, spot ? 13000 : 10000), () => { setTogether(false); goHome(); at(4600, loop) })
       })

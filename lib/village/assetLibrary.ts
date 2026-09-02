@@ -119,6 +119,28 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'wheelbarrowFlowers', label: 'Flower cart', href: 'wheelbarrow-flowers.png', aspect: 270 / 170, h: 12 },
   { key: 'photoFrame', label: 'Photo frame', href: 'photo-frame.png', aspect: 211 / 198, h: 14 },
   { key: 'giftBox', label: 'Gift', href: 'gift-box.png', aspect: 88 / 90, h: 7 },
+
+  // Round 81 (2026-09-02, "import the rest of the elements") — the
+  // stargazing / workshop / camp props from
+  // village-stargazing-workshop-props-alpha.png. The fire pit's lit and
+  // unlit states are two entries (place whichever suits the mood — no
+  // day/night switching, unlike the clock tower). Everything foliage-shaped
+  // stays out per the same rule as flowerVase/flowerCluster above; the
+  // potted plant is a container, same call as flowerPlanter.
+  { key: 'firePit', label: 'Fire pit', href: 'fire-pit.png', aspect: 320 / 200, h: 9 },
+  { key: 'firePitLit', label: 'Fire pit (lit)', href: 'fire-pit-lit.png', aspect: 320 / 214, h: 9 },
+  { key: 'treeStump', label: 'Tree stump', href: 'tree-stump.png', aspect: 156 / 180, h: 8 },
+  { key: 'campBlanket', label: 'Picnic blanket', href: 'camp-blanket.png', aspect: 244 / 150, h: 5 },
+  { key: 'thermos', label: 'Thermos', href: 'thermos.png', aspect: 118 / 220, h: 11 },
+  { key: 'telescope', label: 'Telescope', href: 'telescope.png', aspect: 262 / 262, h: 20 },
+  { key: 'starChart', label: 'Star chart', href: 'star-chart.png', aspect: 156 / 118, h: 5 },
+  { key: 'campLantern', label: 'Camp lantern', href: 'camp-lantern.png', aspect: 132 / 184, h: 12 },
+  { key: 'pottedPlant', label: 'Potted plant', href: 'potted-plant.png', aspect: 178 / 168, h: 9 },
+  { key: 'toolPegboard', label: 'Tool board', href: 'tool-pegboard.png', aspect: 340 / 232, h: 11 },
+  { key: 'toolbox', label: 'Toolbox', href: 'toolbox.png', aspect: 200 / 150, h: 7 },
+  { key: 'plankStack', label: 'Wood planks', href: 'plank-stack.png', aspect: 274 / 140, h: 6 },
+  { key: 'wheelbarrowTools', label: 'Work cart', href: 'wheelbarrow-tools.png', aspect: 290 / 176, h: 11 },
+  { key: 'hangLantern', label: 'Hanging lantern', href: 'hang-lantern-2.png', aspect: 160 / 360, h: 15 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

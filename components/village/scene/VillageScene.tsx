@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -2738,6 +2738,11 @@ export default function VillageScene({
       {!arranging && settledNow && !sceneHidesFigures
         && activeMood.figures !== 'movie' && activeMood.figures !== 'party' && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
+        // Goodnight scene — the two of them up together for a last cup,
+        // wrapped in a blanket. Real night keeps the "already asleep" look.
+        if (moodActive && activeMood.kind === 'goodnight') {
+          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y) + 2} poseIndex={COUPLE_NIGHTCAP_FRAME} outfit="default" />
+        }
         if (nightish) return (
           <>
             <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} />

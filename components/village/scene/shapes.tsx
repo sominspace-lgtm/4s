@@ -786,21 +786,34 @@ const COUPLE_INTERACT_FRAMES = [
   { src: '/village-assets/sh-int-walk-together.png', aspect: 432 / 395 },
   { src: '/village-assets/sh-int-watering.png', aspect: 492 / 393 },
   { src: '/village-assets/sh-int-umbrella.png', aspect: 435 / 429 },
-  // Index 9 — the couple reading on a bench (sh-int-bench). Not part of the
-  // random meta-cycle above; VillageScene selects it explicitly when the
-  // couple gather at a bench (round 59, "when we put sylvia harry in a
-  // known element like bench or picnic they do their respective interaction").
-  { src: '/village-assets/sh-int-bench.png', aspect: 346 / 323 },
-  // Index 10 — cuddled under a blanket facing the screen. Only reachable when
-  // VillageScene passes it explicitly for the Movie scene.
-  { src: '/village-assets/sh-int-movie.png', aspect: 214 / 246 },
+  // Round 81 (2026-09-02) — six more everyday couple vignettes from
+  // sylvia-harry-rare-couple-moments. All part of the random meet cycle
+  // (indices 0-14, see COUPLE_RANDOM_FRAMES + useCoupleLife's meet()).
+  { src: '/village-assets/sh-int-sitting.png', aspect: 320 / 232 },
+  { src: '/village-assets/sh-int-sunset.png', aspect: 320 / 232 },
+  { src: '/village-assets/sh-int-reading.png', aspect: 252 / 208 },
+  { src: '/village-assets/sh-int-selfie.png', aspect: 268 / 214 },
+  { src: '/village-assets/sh-int-hug.png', aspect: 190 / 258 },
+  { src: '/village-assets/sh-int-whisper.png', aspect: 262 / 202 },
+  // Indices 15+ — scene-specific, never in the random cycle. VillageScene
+  // passes these explicitly (a bench/picnic gather, the Movie/Goodnight
+  // scenes).
+  { src: '/village-assets/sh-int-bench.png', aspect: 346 / 323 },       // 15
+  { src: '/village-assets/sh-int-picnic.png', aspect: 372 / 214 },      // 16
+  { src: '/village-assets/sh-int-movie.png', aspect: 214 / 246 },       // 17
+  { src: '/village-assets/couple-nightcap.png', aspect: 342 / 306 },    // 18
 ]
+/** How many leading frames are eligible for a random meet (the rest are
+ *  scene-specific). Keep in sync with useCoupleLife's meet(). */
+export const COUPLE_RANDOM_FRAMES = 15
 /** Frame index for "reading on a bench". */
-export const COUPLE_BENCH_FRAME = 9
-/** Frame index for "picnic / sitting under the umbrella". */
-export const COUPLE_PICNIC_FRAME = 8
+export const COUPLE_BENCH_FRAME = 15
+/** Frame index for "picnic on a mat". */
+export const COUPLE_PICNIC_FRAME = 16
 /** Frame index for "movie night — cuddled facing the screen". */
-export const COUPLE_MOVIE_FRAME = 10
+export const COUPLE_MOVIE_FRAME = 17
+/** Frame index for "Goodnight — wrapped in a blanket with mugs". */
+export const COUPLE_NIGHTCAP_FRAME = 18
 
 // One interaction pose, chosen by the caller (round 52 follow-up) — was a
 // slow auto-cycling SpriteCycle, but the couple only actually meet for one
@@ -974,11 +987,19 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
   // small") — same modest bump as VillagerShape's own h, keeping Somi's
   // proportion to Sylvia/Harry roughly where it already was.
   const h = 22
+  // Round 81 (2026-09-02, "import the rest of the elements") — four ambient
+  // poses from somi-ambient-reactive-behaviors: a slow yawn, a flop onto her
+  // back, a lazy stretch on her side, a curled loaf. Same slow 60s cycle, so
+  // Somi drifts through them rather than performing.
   const idleFrames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 254 / 335 },
     { src: '/village-assets/somi-sit-2.png', aspect: 273 / 335 },
     { src: '/village-assets/somi-head-tilt-1.png', aspect: 261 / 337 },
+    { src: '/village-assets/somi-yawn.png', aspect: 164 / 186 },
     { src: '/village-assets/somi-head-tilt-2.png', aspect: 262 / 334 },
+    { src: '/village-assets/somi-lounge.png', aspect: 214 / 162 },
+    { src: '/village-assets/somi-roll.png', aspect: 202 / 152 },
+    { src: '/village-assets/somi-loaf.png', aspect: 224 / 132 },
     { src: '/village-assets/somi-stretch.png', aspect: 316 / 265 },
   ]
   const walkFrames = [
@@ -1008,11 +1029,10 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
             return <image href="/village-assets/somi-sleep.png" x={-sw / 2} y={-sh} width={sw} height={sh}
               style={{ imageRendering: 'pixelated' }} />
           })() : reacting ? (() => {
-            // Tapped — a stretch (round 66, "when we click figures they
-            // should react"). somi-stretch.png is her one non-idle single
-            // pose; the village-tapped bounce on the group sells the beat.
-            const rw = h * (316 / 265)
-            return <image href="/village-assets/somi-stretch.png" x={-rw / 2} y={-h} width={rw} height={h}
+            // Tapped — a crouched stalk (round 81, was the stretch). The
+            // village-tapped bounce on the group sells the beat.
+            const rw = h * (234 / 126)
+            return <image href="/village-assets/somi-stalk.png" x={-rw / 2} y={-h} width={rw} height={h}
               style={{ imageRendering: 'pixelated' }} />
           })() : showWalk ? (
             <SpriteCycle frames={walkFrames} x={0} y={0} height={h} periodSec={0.8} />
