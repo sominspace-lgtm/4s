@@ -808,7 +808,7 @@ const COUPLE_INTERACT_FRAMES = [
   // scenes).
   { src: '/village-assets/sh-int-bench.png', aspect: 346 / 323 },       // 15
   { src: '/village-assets/sh-int-picnic.png', aspect: 372 / 214 },      // 16
-  { src: '/village-assets/sh-int-movie.png', aspect: 214 / 246 },       // 17
+  { src: '/village-assets/sh-int-movie.png', aspect: 248 / 286 },       // 17
   { src: '/village-assets/couple-nightcap.png', aspect: 342 / 306 },    // 18
 ]
 /** How many leading frames are eligible for a random meet (the rest are

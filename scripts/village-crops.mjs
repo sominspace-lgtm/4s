@@ -16,7 +16,7 @@ export const CROPS = [
   // ── Movie-night couple (facing the screen, under a blanket) ─────────────
   {
     sheet: 'character/animation/interaction/sylvia-harry-movie-night-interactions-elements-alpha.png',
-    out: 'sh-int-movie', left: 682, top: 648, width: 214, height: 246,
+    out: 'sh-int-movie', left: 680, top: 628, width: 248, height: 286,
   },
 
   // ── Party / gathering couple beats (party outfit) ──────────────────────
