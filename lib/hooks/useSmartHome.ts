@@ -162,27 +162,44 @@ export function useSmartHome(spaceId: string | null) {
     if (activeScene?.id === id) await persistActiveScene(null)
   }
 
+  const isHome = (name: string) => name.trim().toLowerCase().replace(/'/g, '') === 'were home'
+
+  async function runScene(scene: Scene): Promise<string | null> {
+    setDevices(prev => prev.map(d => (d.id in scene.devices ? { ...d, on_state: scene.devices[d.id] } : d)))
+    const { error } = await applySceneToDevices(supabase, scene)
+    if (error) return error
+    // "We're home" is the resting state — applying it clears the mood.
+    await persistActiveScene(isHome(scene.name) ? null : { id: scene.id, name: scene.name, appliedAt: new Date().toISOString() })
+    return null
+  }
+
   /** Flip every device the scene names to its target state, and record it as
    *  the active scene. */
   async function applyScene(id: string): Promise<string | null> {
     const scene = scenes.find(s => s.id === id)
     if (!scene) return 'Scene not found'
-    setDevices(prev => prev.map(d => (d.id in scene.devices ? { ...d, on_state: scene.devices[d.id] } : d)))
-    const { error } = await applySceneToDevices(supabase, scene)
-    if (error) return error
-    // "We're home" is the resting state — applying it clears the mood
-    // rather than pinning one.
-    await persistActiveScene(
-      scene.name.trim().toLowerCase().replace(/'/g, '') === 'were home'
-        ? null
-        : { id: scene.id, name: scene.name, appliedAt: new Date().toISOString() },
-    )
-    return null
+    return runScene(scene)
+  }
+
+  /** Apply a named preset — finding the saved scene of that name, or creating
+   *  one on the spot (capturing the devices' current state, which may be
+   *  none). Lets "Goodnight" / "Movie" / "We're out" work on the wall before
+   *  any devices or a hub are wired — the village still reacts by name. */
+  async function applyPreset(name: string, icon: string): Promise<string | null> {
+    const key = name.trim().toLowerCase()
+    let scene = scenes.find(s => s.name.trim().toLowerCase() === key)
+    if (!scene) {
+      const snapshot: Record<string, boolean> = {}
+      for (const d of devices) snapshot[d.id] = d.on_state
+      scene = { id: crypto.randomUUID(), name: name.trim(), icon, devices: snapshot }
+      await persistScenes([...scenes, scene])
+    }
+    return runScene(scene)
   }
 
   return {
     devices, scenes, activeScene, loading,
     addDevice, toggleDevice, updateNote, removeDevice,
-    saveScene, deleteScene, applyScene,
+    saveScene, deleteScene, applyScene, applyPreset,
   }
 }

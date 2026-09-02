@@ -17,7 +17,7 @@ const input: React.CSSProperties = {
 }
 
 export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null }) {
-  const { devices, scenes, activeScene, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyScene } = useSmartHome(spaceId)
+  const { devices, scenes, activeScene, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyPreset } = useSmartHome(spaceId)
   const [savingScene, setSavingScene] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -52,25 +52,38 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
         </div>
       )}
 
-      {/* Scenes — named presets of device states. Applying one flips the
-          board (and real bulbs once a hub is linked, see lib/smarthome/apply.ts).
-          The same buttons appear on the Village home panel. */}
-      {devices.length > 0 && (
+      {/* Scenes — the five presets are always here (tapping one that isn't
+          saved yet creates it — the village reacts by name even before any
+          devices are wired). Plus any custom-named scenes, which you can
+          delete. */}
+      {spaceId && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <div className="t-label">Scenes</div>
-          {scenes.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {scenes.map(s => (
-                <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: activeScene?.id === s.id ? 'color-mix(in srgb, var(--gold) 16%, var(--surface2))' : 'var(--surface2)', border: `1px solid ${activeScene?.id === s.id ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 999, padding: '0.2rem 0.3rem 0.2rem 0.6rem' }}>
-                  <button onClick={() => applyScene(s.id)} className="press" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: activeScene?.id === s.id ? 'var(--gold)' : 'var(--text)', fontSize: '0.72rem', fontFamily: 'inherit' }}>
-                    <Icon name={(s.icon as IconName) || 'sparkle'} size={13} />{s.name}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {(() => {
+              const activeName = activeScene?.name.trim().toLowerCase()
+              const custom = scenes.filter(s => !SCENE_PRESETS.some(p => p.name.toLowerCase() === s.name.toLowerCase()))
+              const byName = new Map(scenes.map(s => [s.name.toLowerCase(), s]))
+              const rows = [
+                ...SCENE_PRESETS.map(p => ({ name: p.name, icon: (byName.get(p.name.toLowerCase())?.icon) || p.icon, custom: null as (typeof scenes)[number] | null })),
+                ...custom.map(s => ({ name: s.name, icon: s.icon, custom: s })),
+              ]
+              return rows.map(r => {
+                const on = activeName === r.name.trim().toLowerCase()
+                return (
+                <span key={r.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: on ? 'color-mix(in srgb, var(--gold) 16%, var(--surface2))' : 'var(--surface2)', border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 999, padding: r.custom ? '0.2rem 0.3rem 0.2rem 0.6rem' : '0.2rem 0.6rem' }}>
+                  <button onClick={() => applyPreset(r.name, r.icon)} className="press" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: on ? 'var(--gold)' : 'var(--text)', fontSize: '0.72rem', fontFamily: 'inherit' }}>
+                    <Icon name={(r.icon as IconName) || 'sparkle'} size={13} />{r.name}
                   </button>
-                  <button onClick={() => deleteScene(s.id)} aria-label={`Delete ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}>✕</button>
+                  {r.custom && (
+                    <button onClick={() => deleteScene(r.custom!.id)} aria-label={`Delete ${r.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}>✕</button>
+                  )}
                 </span>
-              ))}
-            </div>
-          )}
-          {savingScene ? (
+                )
+              })
+            })()}
+          </div>
+          {devices.length === 0 ? null : savingScene ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
               <span style={{ fontSize: '0.64rem', color: 'var(--muted)' }}>Save current state as</span>
               {SCENE_PRESETS.filter(p => !scenes.some(s => s.name.toLowerCase() === p.name.toLowerCase())).map(p => (

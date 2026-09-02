@@ -11,14 +11,24 @@ import Icon, { type IconName } from '@/components/ui/Icon'
 // Household → Smart Home; this is the "tap it on your way to bed" surface.
 
 export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | null; onInteract?: () => void }) {
-  const { devices, scenes, activeScene, loading, toggleDevice, saveScene, applyScene } = useSmartHome(spaceId)
+  const { devices, scenes, activeScene, toggleDevice, saveScene, applyPreset } = useSmartHome(spaceId)
   const [saving, setSaving] = useState(false)
 
-  if (loading && devices.length === 0 && scenes.length === 0) return null
+  if (!spaceId) return null
 
   const onCount = devices.filter(d => d.on_state).length
   const usedNames = new Set(scenes.map(s => s.name.toLowerCase()))
   const openPresets = SCENE_PRESETS.filter(p => !usedNames.has(p.name.toLowerCase()))
+
+  // Every preset is always tappable — tapping one that isn't saved yet
+  // creates it (see useSmartHome.applyPreset). Then any custom-named scenes.
+  const byName = new Map(scenes.map(s => [s.name.toLowerCase(), s]))
+  const rows: { name: string; icon: string }[] = [
+    ...SCENE_PRESETS.map(p => ({ name: p.name, icon: (byName.get(p.name.toLowerCase())?.icon) || p.icon })),
+    ...scenes.filter(s => !SCENE_PRESETS.some(p => p.name.toLowerCase() === s.name.toLowerCase()))
+      .map(s => ({ name: s.name, icon: s.icon })),
+  ]
+  const activeName = activeScene?.name.trim().toLowerCase()
 
   return (
     <div className="organic" style={{
@@ -35,15 +45,14 @@ export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | 
         )}
       </div>
 
-      {/* Scenes */}
-      {scenes.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))', gap: '0.4rem' }}>
-          {scenes.map(s => {
-            const on = activeScene?.id === s.id
-            return (
+      {/* Scenes — always the five presets, plus any you've named yourself. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))', gap: '0.4rem' }}>
+        {rows.map(r => {
+          const on = activeName === r.name.trim().toLowerCase()
+          return (
             <button
-              key={s.id}
-              onClick={() => { applyScene(s.id); onInteract?.() }}
+              key={r.name}
+              onClick={() => { applyPreset(r.name, r.icon); onInteract?.() }}
               className="press"
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
@@ -52,13 +61,12 @@ export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | 
                 padding: '0.6rem 0.4rem', cursor: 'pointer', color: on ? 'var(--gold)' : 'var(--text)', fontFamily: 'inherit',
               }}
             >
-              <Icon name={(s.icon as IconName) || 'sparkle'} size={20} />
-              <span style={{ fontSize: '0.68rem' }}>{s.name}</span>
+              <Icon name={(r.icon as IconName) || 'sparkle'} size={20} />
+              <span style={{ fontSize: '0.68rem' }}>{r.name}</span>
             </button>
-            )
-          })}
-        </div>
-      )}
+          )
+        })}
+      </div>
 
       {/* Device toggles */}
       {devices.length > 0 && (
@@ -98,8 +106,9 @@ export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | 
       )}
 
       {devices.length === 0 && (
-        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic' }}>
-          Add your lights and locks in Household → Smart Home, then save scenes here.
+        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
+          Tap a scene — the village follows along. Add your lights and locks in
+          Household → Smart Home and they&rsquo;ll switch with it.
         </div>
       )}
 
