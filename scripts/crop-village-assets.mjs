@@ -15,7 +15,7 @@ import { mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { SHEET_ROOT, CROPS } from './village-crops.mjs'
+import { SHEET_ROOT, CROPS, COMPOSITES } from './village-crops.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_DIR = join(REPO, 'public', 'village-assets')
@@ -50,7 +50,23 @@ async function run() {
     console.log(`  ${c.out}.png  ${meta.width}x${meta.height}`)
     ok++
   }
-  console.log(`\n${ok}/${CROPS.length} crops written to public/village-assets/`)
+  for (const c of COMPOSITES ?? []) {
+    const metas = await Promise.all(c.parts.map(p => sharp(join(OUT_DIR, p)).metadata()))
+    const gap = c.overlap ?? 0
+    const w = metas.reduce((s, m) => s + m.width, 0) - gap * (metas.length - 1)
+    const h = Math.max(...metas.map(m => m.height))
+    let x = 0
+    const layers = c.parts.map((p, i) => {
+      const layer = { input: join(OUT_DIR, p), left: x, top: h - metas[i].height }
+      x += metas[i].width - gap
+      return layer
+    })
+    await sharp({ create: { width: w, height: h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite(layers).png().toFile(join(OUT_DIR, c.out + '.png'))
+    console.log(`  ${c.out}.png  ${w}x${h}  (composite)`)
+    ok++
+  }
+  console.log(`\n${ok} sprites written to public/village-assets/`)
 }
 
 if (process.argv[2] === 'slice') slice()

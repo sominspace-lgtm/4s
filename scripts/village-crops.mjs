@@ -19,10 +19,6 @@ export const CROPS = [
     out: 'sh-int-movie', left: 680, top: 628, width: 248, height: 286,
   },
 
-  // ── Party / gathering couple beats (party outfit) ──────────────────────
-  { sheet: GUEST, out: 'couple-party-1', left: 652, top: 526, width: 268, height: 244 }, // close together
-  { sheet: GUEST, out: 'couple-party-2', left: 22,  top: 866, width: 280, height: 250 }, // laughing
-  { sheet: GUEST, out: 'couple-party-3', left: 20,  top: 138, width: 284, height: 262 }, // waving welcome
 
   // ── More default-outfit couple vignettes → COUPLE_INTERACT_FRAMES ───────
   { sheet: RARE, out: 'sh-int-sitting', left: 8,    top: 300, width: 320, height: 232 }, // sitting together
@@ -71,4 +67,15 @@ export const CROPS = [
   { sheet: AMBI, out: 'ambient-flower-2', left: 200, top: 650, width: 240, height: 240 },
   { sheet: AMBI, out: 'hang-lantern-1',   left: 690, top: 90,  width: 160, height: 360 },
   { sheet: AMBI, out: 'hang-lantern-2',   left: 690, top: 560, width: 160, height: 360 },
+]
+
+// Sprites built by placing already-cropped PNGs side by side (not cut from a
+// sheet). The party couple pose is composited from the individual party
+// wardrobe sprites so the toast matches the outfit — the guest-gathering
+// sheet's party couples are a slightly different variant.
+export const COMPOSITES = [
+  {
+    out: 'couple-party', overlap: 24,
+    parts: ['sylvia-party.png', 'harry-party.png'],
+  },
 ]

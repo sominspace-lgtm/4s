@@ -839,11 +839,11 @@ const COUPLE_OUTFIT_POSE: Partial<Record<Outfit, { src: string; aspect: number }
   tennis: [{ src: '/village-assets/couple-tennis.png', aspect: 247 / 266 }],
   travel: [{ src: '/village-assets/couple-travel.png', aspect: 333 / 333 }],
   artsy:  [{ src: '/village-assets/couple-artsy.png', aspect: 299 / 300 }],
-  party: [
-    { src: '/village-assets/couple-party-1.png', aspect: 268 / 244 },
-    { src: '/village-assets/couple-party-2.png', aspect: 280 / 250 },
-    { src: '/village-assets/couple-party-3.png', aspect: 284 / 262 },
-  ],
+  // Composited from the sylvia-party / harry-party wardrobe sprites so the
+  // toast pose matches the outfit the figures actually walk in wearing (the
+  // guest-gathering sheet's party couples are a different variant — no red
+  // neckerchief, Harry in a sweater not a blazer). scripts/village-crops.mjs.
+  party: [{ src: '/village-assets/couple-party.png', aspect: 290 / 249 }],
 }
 
 const wrap = (i: number, n: number) => ((i % n) + n) % n
