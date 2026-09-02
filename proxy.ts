@@ -49,6 +49,8 @@ export async function proxy(request: NextRequest) {
     // so the QR/sprites the portal loads aren't affected.
     || pathname.startsWith('/g/')
     || pathname.startsWith('/api/g/')
+    // Shared keepsake page — public read-only, resolved by unguessable token.
+    || pathname.startsWith('/keepsake/')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each
     // does its own PIN check (or none, for pin-status's read-only lookup)

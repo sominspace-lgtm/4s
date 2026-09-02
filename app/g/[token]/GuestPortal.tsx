@@ -22,16 +22,21 @@ const ACTIONS: { kind: Action; icon: string; label: string; blurb: string }[] = 
 const THANKS_CHIPS = ['Thank you for having us', 'What a night', 'So cozy in here', 'We’ll be back', 'This was special']
 const FRIDGE_ICONS = ['❤️', '⭐', '🌻', '🍞', '☕', '🎈', '🐈', '🌙']
 
-export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl }: {
+interface GuestInfo { wifiName?: string; wifiPassword?: string; notes?: string }
+
+export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, guestInfo }: {
   token: string
   title: string
   photoAlbumUrl?: string | null
   musicUrl?: string | null
+  guestInfo?: GuestInfo
 }) {
   const [open, setOpen] = useState<Action | null>(null)
   const [done, setDone] = useState<Action | null>(null)
   const [showQueue, setShowQueue] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
   const [name, setName] = useState('')
+  const hasInfo = !!(guestInfo && (guestInfo.notes || guestInfo.wifiName))
 
   useEffect(() => {
     try { setName(localStorage.getItem('4s-guest-name') ?? '') } catch { /* ignore */ }
@@ -52,7 +57,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl }: {
           </p>
         </header>
 
-        {!open && !done && !showQueue && (
+        {!open && !done && !showQueue && !showInfo && (
           <>
             <label style={S.nameField}>
               <span style={S.nameLabel}>Your name</span>
@@ -84,6 +89,13 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl }: {
                 <span style={S.tileLabel}>What’s playing</span>
                 <span style={S.tileBlurb}>See the queue &amp; vote</span>
               </button>
+              {hasInfo && (
+                <button onClick={() => setShowInfo(true)} style={S.tile}>
+                  <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>🏠</span>
+                  <span style={S.tileLabel}>House info</span>
+                  <span style={S.tileBlurb}>Wifi &amp; where things are</span>
+                </button>
+              )}
             </div>
             {!photoAlbumUrl && <p style={S.footnote}>📸 Ask your host to open up the photo album.</p>}
           </>
@@ -91,6 +103,28 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl }: {
 
         {showQueue && !open && !done && (
           <SongQueue token={token} musicUrl={musicUrl} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
+        )}
+
+        {showInfo && !open && !done && guestInfo && (
+          <div style={S.card}>
+            <button onClick={() => setShowInfo(false)} style={S.back}>← back</button>
+            <div style={{ fontSize: '1.9rem' }}>🏠</div>
+            <h2 style={S.h2}>House info</h2>
+            {guestInfo.wifiName && (
+              <div style={{ margin: '0.8rem 0', padding: '0.8rem', background: '#f6ecd8', borderRadius: '12px', textAlign: 'left' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8987f', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Wifi</div>
+                <div style={{ fontSize: '0.95rem', color: '#4a3f35', marginTop: '0.2rem' }}>{guestInfo.wifiName}</div>
+                {guestInfo.wifiPassword && (
+                  <div style={{ fontSize: '0.95rem', color: '#4a3f35', fontFamily: 'ui-monospace, monospace' }}>{guestInfo.wifiPassword}</div>
+                )}
+              </div>
+            )}
+            {guestInfo.notes && (
+              <p style={{ fontSize: '0.9rem', color: '#6a5f52', lineHeight: 1.7, whiteSpace: 'pre-wrap', textAlign: 'left', margin: 0 }}>
+                {guestInfo.notes}
+              </p>
+            )}
+          </div>
         )}
 
         {open && !done && (

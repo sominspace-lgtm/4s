@@ -21,8 +21,9 @@ import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
-import type { Gathering, GuestContribution, GatheringMemory, PrepItem } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory, PrepItem, GuestInfo } from '@/lib/hooks/useGathering'
 import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
+import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import VillageText from './VillageText'
@@ -49,7 +50,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -95,8 +96,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onSetPhotoAlbumUrl?: (url: string) => void
   onModerate?: (id: string, status: 'visible' | 'hidden') => void
   onRemoveContribution?: (id: string) => void
-  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
+  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status' | 'series'>>) => void
   onDeleteMemory?: (id: string) => void
+  guestInfo?: GuestInfo
+  onSetGuestInfo?: (info: GuestInfo) => void
 }) {
   const [arranging, setArranging] = useState(false)
   // The single ⋯ control-menu on the full tab (2026-08-31) — everything the
@@ -114,6 +117,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
+  const [partyScreenOpen, setPartyScreenOpen] = useState(false)
   const guestUrl = useMemo(() => {
     if (!gathering) return null
     const base = process.env.NEXT_PUBLIC_APP_URL
@@ -504,7 +508,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                             ? [{ label: 'Open the doors', on: () => onOpenDoors?.() }]
                             : []),
                           { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
-                          ...(gathering?.phase !== 'prep' ? [{ label: 'Show the guest QR', on: () => setQrBig(true) }] : []),
+                          ...(gathering?.phase !== 'prep'
+                            ? [
+                                { label: 'Show the party screen', on: () => setPartyScreenOpen(true) },
+                                { label: 'Show the guest QR', on: () => setQrBig(true) },
+                              ]
+                            : []),
                         ]
                       : onStartGathering
                         ? [
@@ -655,6 +664,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             qrDataUri={qrDataUri}
             memories={memories}
             onClose={() => setGuestPanelOpen(false)}
+            guestInfo={guestInfo}
+            onSetGuestInfo={onSetGuestInfo}
             onSetMusicUrl={onSetMusicUrl}
             onSetPhotoAlbumUrl={onSetPhotoAlbumUrl}
             onModerate={onModerate}
@@ -672,6 +683,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onUpdateMemory={onUpdateMemory}
             onDeleteMemory={onDeleteMemory}
             onClose={() => setKeepsakesOpen(false)}
+          />
+        )}
+
+        {/* Party screen — the room's shared display during a live gathering.
+            Opened from the ⋯ menu, and shown automatically once the wall
+            goes idle mid-party (2026-09-02). */}
+        {(partyScreenOpen || (guestLive && ambient)) && gathering && (
+          <VillagePartyScreen
+            title={gathering.title}
+            musicUrl={gathering.music_url ?? spaces[0]?.music_url ?? null}
+            contributions={contributions}
+            guestUrl={guestUrl}
+            qrDataUri={qrDataUri}
+            onClose={() => { setPartyScreenOpen(false); resetIdleTimer?.() }}
           />
         )}
 

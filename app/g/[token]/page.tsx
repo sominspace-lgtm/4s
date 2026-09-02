@@ -32,7 +32,7 @@ export default async function GuestPortalPage({ params }: { params: Promise<{ to
     )
   }
 
-  return <GuestPortal token={token} title={g.title} photoAlbumUrl={g.photoAlbumUrl} musicUrl={g.musicUrl} />
+  return <GuestPortal token={token} title={g.title} photoAlbumUrl={g.photoAlbumUrl} musicUrl={g.musicUrl} guestInfo={g.guestInfo} />
 }
 
 const SHELL: React.CSSProperties = {

@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import type { Gathering, GuestContribution, GatheringMemory } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory, GuestInfo } from '@/lib/hooks/useGathering'
+
+function keepsakeLink(token: string | null): string | null {
+  if (!token || typeof window === 'undefined') return null
+  return `${window.location.origin}/keepsake/${token}`
+}
+function copy(text: string) { try { navigator.clipboard?.writeText(text) } catch { /* ignore */ } }
 
 // The host's Guest Mode panel — opened from the "Manage" button on the
 // in-scene strip, never shown by default. Music playlist + photo album
@@ -15,8 +21,8 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 export default function VillageGuestPanel({
-  gathering, contributions, guestUrl, qrDataUri, memories,
-  onClose, onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution,
+  gathering, contributions, guestUrl, qrDataUri, memories, guestInfo,
+  onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution,
   onCloseGathering, onUpdateMemory, onDeleteMemory,
 }: {
   gathering: Gathering
@@ -24,7 +30,9 @@ export default function VillageGuestPanel({
   guestUrl: string | null
   qrDataUri: string | null
   memories: GatheringMemory[]
+  guestInfo?: GuestInfo
   onClose: () => void
+  onSetGuestInfo?: (info: GuestInfo) => void
   onSetMusicUrl?: (url: string) => void
   onSetPhotoAlbumUrl?: (url: string) => void
   onModerate?: (id: string, status: 'visible' | 'hidden') => void
@@ -37,6 +45,9 @@ export default function VillageGuestPanel({
   const [album, setAlbum] = useState(gathering.photo_album_url ?? '')
   const [ending, setEnding] = useState(false)
   const [recap, setRecap] = useState<GatheringMemory | null>(null)
+  const [wifiName, setWifiName] = useState(guestInfo?.wifiName ?? '')
+  const [wifiPassword, setWifiPassword] = useState(guestInfo?.wifiPassword ?? '')
+  const [houseNotes, setHouseNotes] = useState(guestInfo?.notes ?? '')
 
   const endGathering = async () => {
     if (!onCloseGathering) return
@@ -75,6 +86,26 @@ export default function VillageGuestPanel({
           <button onClick={() => onSetPhotoAlbumUrl?.(album)} style={S.save}>Save</button>
         </div>
       </Field>
+
+      {onSetGuestInfo && (
+        <Field label="House info for guests" hint="Shown in the guest portal. Wifi, where the bathroom is, help yourself to drinks — whatever saves them asking.">
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.35rem' }}>
+            <input value={wifiName} onChange={e => setWifiName(e.target.value)} placeholder="Wifi name" style={S.input} />
+            <input value={wifiPassword} onChange={e => setWifiPassword(e.target.value)} placeholder="Wifi password" style={S.input} />
+          </div>
+          <textarea
+            value={houseNotes}
+            onChange={e => setHouseNotes(e.target.value)}
+            placeholder="Bathroom is down the hall. Help yourself to anything in the fridge."
+            rows={3}
+            style={{ ...S.input, resize: 'vertical', lineHeight: 1.5 }}
+          />
+          <button
+            onClick={() => onSetGuestInfo({ wifiName: wifiName.trim(), wifiPassword: wifiPassword.trim(), notes: houseNotes.trim() })}
+            style={{ ...S.save, marginTop: '0.35rem', padding: '0.4rem 0.9rem' }}
+          >Save house info</button>
+        </Field>
+      )}
 
       {/* Moderation */}
       <div style={{ marginTop: '0.9rem' }}>
@@ -115,6 +146,9 @@ export default function VillageGuestPanel({
               <span style={{ flex: 1, fontSize: '0.73rem', color: 'var(--text)' }}>
                 {m.title.replace('Tonight at the Village — ', '')} · {m.happened_on}
               </span>
+              {keepsakeLink(m.token) && (
+                <button onClick={() => copy(keepsakeLink(m.token)!)} title="Copy share link" style={S.iconBtn}>🔗</button>
+              )}
               <button onClick={() => onUpdateMemory?.(m.id, { status: m.status === 'visible' ? 'hidden' : 'visible' })} style={S.iconBtn}>
                 {m.status === 'visible' ? '🙈' : '👁'}
               </button>
@@ -132,7 +166,7 @@ export default function VillageGuestPanel({
 // styles / RecapEditor as the host panel.
 export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory, onClose }: {
   memories: GatheringMemory[]
-  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
+  onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status' | 'series'>>) => void
   onDeleteMemory?: (id: string) => void
   onClose: () => void
 }) {
@@ -143,15 +177,17 @@ export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory
     return <RecapEditor memory={editing} onSave={onUpdateMemory} onClose={() => setEditing(null)} />
   }
 
-  return (
-    <Shell onClose={onClose} title="Village keepsakes">
-      {memories.length === 0 && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--muted)', padding: '0.6rem 0' }}>
-          No gatherings yet. When one ends, its keepsake lands here.
-        </div>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        {memories.map(m => {
+  // Group by series — named series get a heading, everything else falls under
+  // "One-off". Order: named series first (by most recent), then one-offs.
+  const bySeries = new Map<string, GatheringMemory[]>()
+  for (const m of memories) {
+    const key = m.series?.trim() || ''
+    bySeries.set(key, [...(bySeries.get(key) ?? []), m])
+  }
+  const groups = [...bySeries.entries()]
+    .sort((a, b) => (a[0] === '' ? 1 : b[0] === '' ? -1 : 0))
+
+  const renderRow = (m: GatheringMemory) => {
           const s = m.summary
           const isOpen = openId === m.id
           return (
@@ -161,6 +197,9 @@ export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory
                   {m.title.replace('Tonight at the Village — ', '')}
                   <span style={{ color: 'var(--muted)', fontSize: '0.68rem' }}> · {m.happened_on}</span>
                 </button>
+                {keepsakeLink(m.token) && (
+                  <button onClick={() => copy(keepsakeLink(m.token)!)} title="Copy share link" style={S.iconBtn}>🔗</button>
+                )}
                 <button onClick={() => setEditing(m)} title="Edit" style={S.iconBtn}>✎</button>
                 <button onClick={() => onUpdateMemory?.(m.id, { status: m.status === 'visible' ? 'hidden' : 'visible' })} title={m.status === 'visible' ? 'Hide' : 'Show'} style={S.iconBtn}>{m.status === 'visible' ? '🙈' : '👁'}</button>
                 <button onClick={() => { if (confirm('Delete this keepsake?')) onDeleteMemory?.(m.id) }} title="Delete" style={S.iconBtn}>🗑</button>
@@ -183,7 +222,22 @@ export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory
               )}
             </div>
           )
-        })}
+  }
+
+  return (
+    <Shell onClose={onClose} title="Village keepsakes">
+      {memories.length === 0 && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--muted)', padding: '0.6rem 0' }}>
+          No gatherings yet. When one ends, its keepsake lands here.
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        {groups.map(([series, items]) => (
+          <div key={series || '_'} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {series && <div style={S.sectionLabel}>{series}</div>}
+            {items.map(renderRow)}
+          </div>
+        ))}
       </div>
     </Shell>
   )
@@ -191,17 +245,20 @@ export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory
 
 function RecapEditor({ memory, onSave, onClose }: {
   memory: GatheringMemory
-  onSave?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary'>>) => void
+  onSave?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'series'>>) => void
   onClose: () => void
 }) {
   const [title, setTitle] = useState(memory.title)
+  const [series, setSeries] = useState(memory.series ?? '')
   const s = memory.summary
   const [keepMsgs, setKeepMsgs] = useState<boolean[]>((s.messages ?? []).map(() => true))
   const [keepSongs, setKeepSongs] = useState<boolean[]>((s.songs ?? []).map(() => true))
+  const link = keepsakeLink(memory.token)
 
   const save = () => {
     onSave?.(memory.id, {
       title,
+      series: series.trim() || undefined,
       summary: {
         ...s,
         messages: (s.messages ?? []).filter((_, i) => keepMsgs[i]),
@@ -213,7 +270,11 @@ function RecapEditor({ memory, onSave, onClose }: {
 
   return (
     <Shell onClose={onClose} title="Tonight at the Village">
-      <input value={title} onChange={e => setTitle(e.target.value)} style={{ ...S.input, fontSize: '0.9rem', marginBottom: '0.6rem' }} />
+      <input value={title} onChange={e => setTitle(e.target.value)} style={{ ...S.input, fontSize: '0.9rem', marginBottom: '0.4rem' }} />
+      <input value={series} onChange={e => setSeries(e.target.value)} placeholder="Part of a series? e.g. Sunday dinners" style={{ ...S.input, fontSize: '0.78rem', marginBottom: '0.5rem' }} />
+      {link && (
+        <button onClick={() => copy(link)} style={{ ...S.link, marginBottom: '0.6rem', display: 'block' }}>🔗 Copy the share link</button>
+      )}
       <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: '0.8rem' }}>
         {s.guests?.length ? `${s.guests.length} guest${s.guests.length === 1 ? '' : 's'}` : 'A quiet one'}
         {s.fromPlaces?.length ? ` · from ${s.fromPlaces.slice(0, 4).join(', ')}` : ''}

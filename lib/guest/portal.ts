@@ -25,6 +25,12 @@ export const KIND_FIELDS: Record<GuestKind, { body: boolean; meta: string[] }> =
   photo: { body: false, meta: [] }, // handled by the photo route, not the text route
 }
 
+export interface GuestInfo {
+  wifiName?: string
+  wifiPassword?: string
+  notes?: string
+}
+
 export interface ResolvedGathering {
   id: string
   spaceId: string
@@ -32,6 +38,7 @@ export interface ResolvedGathering {
   musicUrl: string | null
   photoAlbumUrl: string | null
   active: boolean
+  guestInfo: GuestInfo
 }
 
 /** Resolve a gathering by its public token. null = no such token. */
@@ -45,6 +52,13 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
     .maybeSingle()
   if (error || !data) return null
   const closed = data.closes_at ? new Date(data.closes_at).getTime() < Date.now() : false
+
+  const { data: space } = await admin
+    .from('shared_spaces')
+    .select('guest_info')
+    .eq('id', data.space_id)
+    .maybeSingle()
+
   return {
     id: data.id,
     spaceId: data.space_id,
@@ -52,6 +66,7 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
     musicUrl: data.music_url,
     photoAlbumUrl: data.photo_album_url ?? null,
     active: data.active && !closed,
+    guestInfo: (space?.guest_info as GuestInfo | null) ?? {},
   }
 }
 
