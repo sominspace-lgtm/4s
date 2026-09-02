@@ -34,6 +34,10 @@ export function useSmartHome(spaceId: string | null) {
   // channel doesn't echo our own write back (same trick as
   // useSharedVillageLayout). 'null' is a real sentinel value here.
   const lastSceneWriteRef = useRef<string>('')
+  // useSmartHome runs in several places at once (the Village panel's House
+  // card, the Village scene, the Smart Home overlay) — give each instance
+  // its own channel topic so they don't evict each other's subscription.
+  const instanceRef = useRef(Math.random().toString(36).slice(2))
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -60,7 +64,7 @@ export function useSmartHome(spaceId: string | null) {
     if (!spaceId) return
     let alive = true
     const ch = supabase
-      .channel(`smarthome:${spaceId}`)
+      .channel(`smarthome:${spaceId}:${instanceRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'shared_spaces', filter: `id=eq.${spaceId}` },
@@ -84,16 +88,16 @@ export function useSmartHome(spaceId: string | null) {
             return
           }
           const row = payload.new as SmartHomeDevice | null
-          if (!row) return
+          if (!row || !row.id || row.name == null) return
           setDevices(prev => {
             const rest = prev.filter(d => d.id !== row.id)
             return [...rest, row].sort((a, b) =>
-              (a.category ?? '').localeCompare(b.category ?? '') || a.name.localeCompare(b.name))
+              (a.category ?? '').localeCompare(b.category ?? '') || (a.name ?? '').localeCompare(b.name ?? ''))
           })
         },
       )
-      .subscribe()
-    return () => { alive = false; supabase.removeChannel(ch) }
+    try { ch.subscribe() } catch { /* realtime not available — reads still work */ }
+    return () => { alive = false; try { supabase.removeChannel(ch) } catch { /* already gone */ } }
   }, [supabase, spaceId])
 
   async function persistActiveScene(next: ActiveScene | null) {
