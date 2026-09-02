@@ -60,6 +60,12 @@ export const CROPS = [
   { sheet: STAR, out: 'plank-stack',   left: 884,  top: 770, width: 274, height: 140 },
   { sheet: STAR, out: 'wheelbarrow-tools', left: 1192, top: 740, width: 290, height: 176 },
 
+  // ── Harry's pyjama walk (Sylvia's were already cropped) — for the
+  //    Goodnight scene walk-in ─────────────────────────────────────────
+  { sheet: SLEEP, out: 'harry-pajama-walk-1', left: 906,  top: 28, width: 152, height: 288 },
+  { sheet: SLEEP, out: 'harry-pajama-walk-2', left: 1072, top: 28, width: 162, height: 288 },
+  { sheet: SLEEP, out: 'harry-pajama-walk-3', left: 1248, top: 28, width: 160, height: 288 },
+
   // ── Ambient 2-frame animations ──────────────────────────────────────
   { sheet: AMBI, out: 'ambient-flower-1', left: 200, top: 190, width: 240, height: 240 },
   { sheet: AMBI, out: 'ambient-flower-2', left: 200, top: 650, width: 240, height: 240 },

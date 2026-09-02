@@ -645,9 +645,10 @@ const VILLAGER_SPRITE: Record<string, { src: string; w: number; h: number }> = {
 // WALK below). `party` / `tennis` / `travel` / `artsy` are cropped and
 // wired but have no auto-trigger yet — they're one line in VillageScene's
 // `outfit` selector away from an event hook. cozy stays on its older crop.
-export type Outfit = 'default' | 'winter' | 'rain' | 'cozy' | 'party' | 'business' | 'tennis' | 'travel' | 'artsy'
+export type Outfit = 'default' | 'winter' | 'rain' | 'cozy' | 'party' | 'business' | 'tennis' | 'travel' | 'artsy' | 'pajama'
 const VILLAGER_OUTFIT: Record<string, Partial<Record<Outfit, { src: string; w: number; h: number }>>> = {
   Sylvia: {
+    pajama: { src: '/village-assets/sylvia-pajama.png', w: 144, h: 289 },
     winter: { src: '/village-assets/sylvia-winter.png', w: 146, h: 268 },
     rain: { src: '/village-assets/sylvia-rain.png', w: 212, h: 339 },
     cozy: { src: '/village-assets/sylvia-cozy.png', w: 154, h: 357 },
@@ -658,6 +659,7 @@ const VILLAGER_OUTFIT: Record<string, Partial<Record<Outfit, { src: string; w: n
     artsy: { src: '/village-assets/sylvia-artsy.png', w: 138, h: 271 },
   },
   Harry: {
+    pajama: { src: '/village-assets/harry-pajama.png', w: 149, h: 281 },
     winter: { src: '/village-assets/harry-winter.png', w: 153, h: 246 },
     rain: { src: '/village-assets/harry-rain.png', w: 231, h: 341 },
     cozy: { src: '/village-assets/harry-cozy.png', w: 157, h: 342 },
@@ -672,8 +674,13 @@ const VILLAGER_OUTFIT: Record<string, Partial<Record<Outfit, { src: string; w: n
 // village in the rain actually walks with an umbrella (round 73).
 const outfitWalk = (who: string, k: Exclude<Outfit, 'default' | 'cozy'>, aspects: number[]) =>
   aspects.map((aspect, i) => ({ src: `/village-assets/${who.toLowerCase()}-${k}-walk-${i + 1}.png`, aspect }))
+// The sleepwear sheet only has a 3-frame walk; pad to 4 (1-2-3-2) so it
+// uses the village-cycle-4 keyframes rather than a nonexistent -3.
+const pajamaWalk = (who: string, a: number[]) =>
+  [1, 2, 3, 2].map((f, i) => ({ src: `/village-assets/${who.toLowerCase()}-pajama-walk-${f}.png`, aspect: a[i] }))
 const VILLAGER_OUTFIT_WALK: Record<string, Partial<Record<Outfit, { src: string; aspect: number }[]>>> = {
   Sylvia: {
+    pajama: pajamaWalk('Sylvia', [144 / 292, 144 / 293, 149 / 292, 144 / 293]),
     winter: outfitWalk('Sylvia', 'winter', [151 / 256, 149 / 257, 145 / 255, 146 / 255]),
     rain: outfitWalk('Sylvia', 'rain', [227 / 318, 218 / 316, 230 / 317, 238 / 320]),
     party: outfitWalk('Sylvia', 'party', [127 / 249, 125 / 249, 120 / 249, 127 / 251]),
@@ -683,6 +690,7 @@ const VILLAGER_OUTFIT_WALK: Record<string, Partial<Record<Outfit, { src: string;
     artsy: outfitWalk('Sylvia', 'artsy', [138 / 271, 166 / 269, 161 / 271, 160 / 271]),
   },
   Harry: {
+    pajama: pajamaWalk('Harry', [152 / 288, 162 / 288, 160 / 288, 162 / 288]),
     winter: outfitWalk('Harry', 'winter', [117 / 203, 121 / 204, 122 / 204, 120 / 205]),
     rain: outfitWalk('Harry', 'rain', [220 / 308, 228 / 309, 231 / 309, 226 / 304]),
     party: outfitWalk('Harry', 'party', [121 / 231, 121 / 230, 122 / 230, 123 / 230]),
@@ -987,10 +995,12 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
   // small") — same modest bump as VillagerShape's own h, keeping Somi's
   // proportion to Sylvia/Harry roughly where it already was.
   const h = 22
-  // Round 81 (2026-09-02, "import the rest of the elements") — four ambient
-  // poses from somi-ambient-reactive-behaviors: a slow yawn, a flop onto her
-  // back, a lazy stretch on her side, a curled loaf. Same slow 60s cycle, so
-  // Somi drifts through them rather than performing.
+  // Round 81 (2026-09-02, "import the rest of the elements") — three ambient
+  // poses from somi-ambient-reactive-behaviors: a slow yawn, a lazy lounge,
+  // a curled loaf, worked into the slow 60s cycle so Somi drifts through
+  // them. EXACTLY 8 frames — the cycle keyframes in globals.css are defined
+  // per frame count (village-cycle-2/4/5/8/12); an unlisted count leaves
+  // every frame stuck visible.
   const idleFrames = [
     { src: '/village-assets/somi-sit-1.png', aspect: 254 / 335 },
     { src: '/village-assets/somi-sit-2.png', aspect: 273 / 335 },
@@ -998,7 +1008,6 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
     { src: '/village-assets/somi-yawn.png', aspect: 164 / 186 },
     { src: '/village-assets/somi-head-tilt-2.png', aspect: 262 / 334 },
     { src: '/village-assets/somi-lounge.png', aspect: 214 / 162 },
-    { src: '/village-assets/somi-roll.png', aspect: 202 / 152 },
     { src: '/village-assets/somi-loaf.png', aspect: 224 / 132 },
     { src: '/village-assets/somi-stretch.png', aspect: 316 / 265 },
   ]

@@ -760,7 +760,7 @@ export default function VillageScene({
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search).get('outfit')
-      const ok: Outfit[] = ['default', 'winter', 'rain', 'cozy', 'party', 'business', 'tennis', 'travel', 'artsy']
+      const ok: Outfit[] = ['default', 'winter', 'rain', 'cozy', 'party', 'business', 'tennis', 'travel', 'artsy', 'pajama']
       if (p && (ok as string[]).includes(p)) setOutfitOverrideState(p as Outfit)
     } catch { /* ignore */ }
   }, [])
@@ -826,7 +826,8 @@ export default function VillageScene({
   // can be seen before they get their own real triggers.
   const outfit: Outfit =
     outfitOverrideState ?? (
-      gathering || (moodActive && activeMood.kind === 'party') ? 'party'
+      moodActive && activeMood.kind === 'goodnight' ? 'pajama'
+      : gathering || (moodActive && activeMood.kind === 'party') ? 'party'
       : weather?.condition === 'rain' || weather?.condition === 'storm' ? 'rain'
       : v.season === 'winter' ? 'winter'
       : v.season === 'autumn' ? 'cozy'
