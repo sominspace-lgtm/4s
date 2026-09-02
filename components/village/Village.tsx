@@ -9,6 +9,7 @@ import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useSmartHome } from '@/lib/hooks/useSmartHome'
+import { sceneMood } from '@/lib/smarthome/sceneMood'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
@@ -233,8 +234,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // (not false) while devices are still loading or there's no household
   // space at all — VillageScene falls back to its own day/night glow in
   // that case rather than reading "no data yet" as "definitely away."
-  const { devices: smartHomeDevices, loading: smartHomeLoading } = useSmartHome(spaces[0]?.id ?? null)
+  const { devices: smartHomeDevices, loading: smartHomeLoading, activeScene } = useSmartHome(spaces[0]?.id ?? null)
   const homeOccupied = smartHomeLoading || smartHomeDevices.length === 0 ? null : smartHomeDevices.some(d => d.on_state)
+  // How the scene should read for the applied smart-home scene (Goodnight →
+  // asleep, Movie → still, We're out → gone…). Memoised so the couple's
+  // wander state machine doesn't thrash on a fresh object every render.
+  const mood = useMemo(
+    () => sceneMood(activeScene),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeScene?.id, activeScene?.name],
+  )
   const { places } = usePlaces()
   const { people } = usePeople()
   const soonestBirthdayDays = useMemo(() => {
@@ -414,7 +423,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           : fullscreen ? { width: '100%', height: '100%' }
           : undefined
         }>
-          <VillageScene village={v} live={clock !== null} palette={palette} celestial={celestial}
+          <VillageScene village={v} live={clock !== null} palette={palette}
+            celestial={mood.forceNight ? null : celestial}
+            sceneMood={mood}
             containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { applySceneToDevices, type Scene } from '@/lib/smarthome/apply'
 
@@ -15,34 +15,93 @@ export interface SmartHomeDevice {
   updated_at: string
 }
 
-// Smart Home (2026-08-25) — a manual device/status list, same shape as
-// House Rules and Move-In's buy-list: no real automation integration exists
-// in this app (no Home Assistant/IoT API), so this is deliberately just a
-// place to note what's connected and flip its state, not a device
-// controller. Shared "for all" access, same as household_rules.
+// Which scene is currently applied to the space. Persisted on
+// shared_spaces.active_scene so the Village reacts and both partners agree.
+export interface ActiveScene { id: string; name: string; appliedAt: string }
+
+// Smart Home (2026-08-25) — a manual device/status list. No real IoT
+// integration yet; applying a scene flips the shared board (and, once a hub
+// is linked, real bulbs — see lib/smarthome/apply.ts). Scenes + the active
+// pointer live on shared_spaces; devices sync live between partners.
 export function useSmartHome(spaceId: string | null) {
   const supabase = createClient()
   const [devices, setDevices] = useState<SmartHomeDevice[]>([])
   const [scenes, setScenes] = useState<Scene[]>([])
+  const [activeScene, setActiveScene] = useState<ActiveScene | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Serialised copy of what we last wrote to active_scene, so the realtime
+  // channel doesn't echo our own write back (same trick as
+  // useSharedVillageLayout). 'null' is a real sentinel value here.
+  const lastSceneWriteRef = useRef<string>('')
 
   const load = useCallback(async () => {
     setLoading(true)
     const scope = spaceId
       ? supabase.from('household_smarthome_devices').select('*').eq('space_id', spaceId)
       : supabase.from('household_smarthome_devices').select('*').is('space_id', null)
-    const [{ data }, sceneRes] = await Promise.all([
+    const [{ data }, spaceRes] = await Promise.all([
       scope.order('category').order('name'),
       spaceId
-        ? supabase.from('shared_spaces').select('scenes').eq('id', spaceId).maybeSingle()
+        ? supabase.from('shared_spaces').select('scenes, active_scene').eq('id', spaceId).maybeSingle()
         : Promise.resolve({ data: null }),
     ])
     setDevices((data as SmartHomeDevice[] | null) ?? [])
-    setScenes(((sceneRes?.data as { scenes?: Scene[] } | null)?.scenes as Scene[] | undefined) ?? [])
+    const row = spaceRes?.data as { scenes?: Scene[]; active_scene?: ActiveScene | null } | null
+    setScenes((row?.scenes as Scene[] | undefined) ?? [])
+    setActiveScene(row?.active_scene ?? null)
     setLoading(false)
   }, [supabase, spaceId])
 
   useEffect(() => { load() }, [load])
+
+  // Live sync between partners' screens + the wall.
+  useEffect(() => {
+    if (!spaceId) return
+    let alive = true
+    const ch = supabase
+      .channel(`smarthome:${spaceId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shared_spaces', filter: `id=eq.${spaceId}` },
+        payload => {
+          if (!alive) return
+          const n = payload.new as { scenes?: Scene[]; active_scene?: ActiveScene | null } | null
+          if (!n) return
+          if (Array.isArray(n.scenes)) setScenes(n.scenes)
+          const nextActive = n.active_scene ?? null
+          if (JSON.stringify(nextActive) !== lastSceneWriteRef.current) setActiveScene(nextActive)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'household_smarthome_devices', filter: `space_id=eq.${spaceId}` },
+        payload => {
+          if (!alive) return
+          if (payload.eventType === 'DELETE') {
+            const id = (payload.old as { id?: string } | null)?.id
+            if (id) setDevices(prev => prev.filter(d => d.id !== id))
+            return
+          }
+          const row = payload.new as SmartHomeDevice | null
+          if (!row) return
+          setDevices(prev => {
+            const rest = prev.filter(d => d.id !== row.id)
+            return [...rest, row].sort((a, b) =>
+              (a.category ?? '').localeCompare(b.category ?? '') || a.name.localeCompare(b.name))
+          })
+        },
+      )
+      .subscribe()
+    return () => { alive = false; supabase.removeChannel(ch) }
+  }, [supabase, spaceId])
+
+  async function persistActiveScene(next: ActiveScene | null) {
+    if (!spaceId) return
+    lastSceneWriteRef.current = JSON.stringify(next)
+    setActiveScene(next)
+    await supabase.from('shared_spaces').update({ active_scene: next }).eq('id', spaceId)
+  }
 
   async function addDevice(name: string, category: string | null): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
@@ -58,7 +117,10 @@ export function useSmartHome(spaceId: string | null) {
   async function toggleDevice(id: string, on: boolean) {
     const { error } = await supabase.from('household_smarthome_devices')
       .update({ on_state: on, updated_at: new Date().toISOString() }).eq('id', id)
-    if (!error) setDevices(prev => prev.map(d => (d.id === id ? { ...d, on_state: on } : d)))
+    if (error) return
+    setDevices(prev => prev.map(d => (d.id === id ? { ...d, on_state: on } : d)))
+    // A hands-on toggle means the scene no longer describes the room.
+    if (activeScene) await persistActiveScene(null)
   }
 
   async function updateNote(id: string, note: string | null) {
@@ -93,20 +155,29 @@ export function useSmartHome(spaceId: string | null) {
 
   async function deleteScene(id: string) {
     await persistScenes(scenes.filter(s => s.id !== id))
+    if (activeScene?.id === id) await persistActiveScene(null)
   }
 
-  /** Flip every device the scene names to its target state. */
+  /** Flip every device the scene names to its target state, and record it as
+   *  the active scene. */
   async function applyScene(id: string): Promise<string | null> {
     const scene = scenes.find(s => s.id === id)
     if (!scene) return 'Scene not found'
-    // Optimistic — the board is the whole visible effect today.
     setDevices(prev => prev.map(d => (d.id in scene.devices ? { ...d, on_state: scene.devices[d.id] } : d)))
     const { error } = await applySceneToDevices(supabase, scene)
-    return error
+    if (error) return error
+    // "We're home" is the resting state — applying it clears the mood
+    // rather than pinning one.
+    await persistActiveScene(
+      scene.name.trim().toLowerCase().replace(/'/g, '') === 'were home'
+        ? null
+        : { id: scene.id, name: scene.name, appliedAt: new Date().toISOString() },
+    )
+    return null
   }
 
   return {
-    devices, scenes, loading,
+    devices, scenes, activeScene, loading,
     addDevice, toggleDevice, updateNote, removeDevice,
     saveScene, deleteScene, applyScene,
   }

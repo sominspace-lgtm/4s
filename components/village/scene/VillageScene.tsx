@@ -24,6 +24,7 @@ import { LANDMARK_IDS, type VillageLayout, type LandmarkId } from '@/lib/village
 import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
 import { useCoupleLife } from './useCoupleLife'
 import { useWanderer } from './useWanderer'
+import { DEFAULT_SCENE_MOOD, type SceneMood } from '@/lib/smarthome/sceneMood'
 
 // Raised from 372 (2026-08-25) — the ground used to be a thin strip at the
 // very bottom of the canvas (68px of 440, ~15%) with almost the whole frame
@@ -594,12 +595,14 @@ export default function VillageScene({
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
-  homeOccupied = null, dateKey = null, containerAspect = null,
+  homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
 }: {
   village: VillageState
   live: boolean
   palette: SeasonPalette
   celestial: CelestialData | null
+  /** How the scene reads for the applied smart-home scene — see lib/smarthome/sceneMood.ts. */
+  sceneMood?: SceneMood
   plantSlots: (Slot & { plant: VillageState['plants'][number] })[]
   buildingSlots: (Slot & { building: VillageState['buildings'][number] })[]
   horizon?: HorizonPlace[]
@@ -731,6 +734,26 @@ export default function VillageScene({
   if (vtodOverride) v = { ...v, timeOfDay: vtodOverride }
   if (vseasonOverride) v = { ...v, season: vseasonOverride }
 
+  // Scene mood (2026-09-02) — a live gathering always wins over it (real
+  // guests beat a preset). `?scene=goodnight|movie|out|party` previews it.
+  const [sceneOverride, setSceneOverride] = useState<SceneMood['kind']>(null)
+  useEffect(() => {
+    try {
+      const s = new URLSearchParams(window.location.search).get('scene')
+      if (s === 'goodnight' || s === 'movie' || s === 'out' || s === 'party') setSceneOverride(s)
+    } catch { /* ignore */ }
+  }, [])
+  const activeMood: SceneMood = sceneOverride
+    ? { ...DEFAULT_SCENE_MOOD, kind: sceneOverride,
+        figures: sceneOverride === 'goodnight' ? 'sleep' : sceneOverride === 'movie' ? 'movie' : sceneOverride === 'out' ? 'gone' : 'party',
+        forceNight: sceneOverride === 'goodnight', dim: sceneOverride === 'goodnight' ? 0.5 : sceneOverride === 'movie' ? 0.4 : sceneOverride === 'out' ? 0.12 : 0,
+        screenGlow: sceneOverride === 'movie', lanterns: sceneOverride === 'party', hideFigures: sceneOverride === 'out' }
+    : mood
+  const moodActive = !gathering && activeMood.kind != null && activeMood.kind !== 'home'
+  const sceneHidesFigures = moodActive && activeMood.hideFigures
+  const sceneStill = moodActive && (activeMood.figures === 'sleep' || activeMood.figures === 'movie' || activeMood.figures === 'party')
+  if (moodActive && activeMood.forceNight) v = { ...v, timeOfDay: 'night' }
+
   // Same idea for the wardrobe (round 73) — `?outfit=party|tennis|travel|
   // artsy|business|winter|rain|cozy` so the new sets can be previewed
   // before they each get a real trigger. Dev-only URL param, no stored state.
@@ -814,6 +837,19 @@ export default function VillageScene({
   // animations elements"): the real bedtime art behind round 48's evening
   // mood. Dusk keeps the bench.
   const night = v.timeOfDay === 'night'
+
+  // Scene-mood overrides layered on top of the time-of-day flags above.
+  //   settledNow — the cast goes fully still (night, OR Goodnight/Movie/Party).
+  //   nightish   — draw the bedtime composition (real night, OR Goodnight).
+  //   warm       — force the lanterns/window glow on (gathering, OR Party).
+  const settledNow = (settled || sceneStill) && !gathering
+  const nightish = night || (moodActive && activeMood.forceNight)
+  const warm = lit || (moodActive && activeMood.lanterns)
+  // The cottage window: dark for Goodnight (everyone's asleep, lights off)
+  // whatever the clock says, otherwise the usual occupancy/night/warm rule.
+  const cottageGlow = (moodActive && activeMood.kind === 'goodnight')
+    ? false
+    : ((homeOccupied ?? dark) || warm)
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -1046,7 +1082,7 @@ export default function VillageScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [layout])
   const life = useCoupleLife({
-    enabled: !arranging && (!quiet || gathering),
+    enabled: !arranging && !sceneHidesFigures && !sceneStill && (!quiet || gathering),
     sylviaHome: decorPos('sylvia'),
     harryHome: decorPos('harry'),
     bounds: { x0: 70, x1: 730, y0: GROUND_Y + 2, y1: GROUND_Y + 74 },
@@ -1060,7 +1096,7 @@ export default function VillageScene({
   // couple. Off during arrange and quiet/night (she's asleep then).
   const somiHome = decorPos('somi')
   const somiLife = useWanderer({
-    enabled: !arranging && (!quiet || gathering),
+    enabled: !arranging && !sceneHidesFigures && !sceneStill && (!quiet || gathering),
     home: somiHome,
     bounds: { x0: 60, x1: 740, y0: GROUND_Y - 6, y1: GROUND_Y + 78 },
     restfulness: 0.62,
@@ -1616,7 +1652,7 @@ export default function VillageScene({
           interaction (round 53). Sits under every prop/figure/district in
           paint order, so those keep their own clicks; only a bare-ground
           tap reaches here. Off in arrange/quiet. */}
-      {!arranging && !settled && (
+      {!arranging && !settledNow && !sceneHidesFigures && (
         <rect x={0} y={GROUND_Y - 6} width={800} height={440 - (GROUND_Y - 6)} fill="transparent"
           style={{ pointerEvents: 'all', cursor: 'pointer' }}
           onClick={e => { const pt = toSvgPoint(e.clientX, e.clientY); if (pt) life.walkTo(pt.x, pt.y) }} />
@@ -1809,10 +1845,10 @@ export default function VillageScene({
             const w = 8, h = w / (136 / 242)
             return (
               <g key={i} transform={`translate(${p.x} ${p.y})`}>
-                {lit && <circle cx={0} cy={-h + 3} r={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-glow" />}
+                {warm && <circle cx={0} cy={-h + 3} r={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-glow" />}
                 <ellipse cx={0} cy={0.5} rx={3} ry={1.3} fill="var(--text)" opacity={0.14} />
                 <image href="/village-assets/street-lamp.png" x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
+                  style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
               </g>
             )
           })}
@@ -1860,7 +1896,7 @@ export default function VillageScene({
       ) })}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <LampShape x={0} y={0} dark={lit} scale={1.1} />
+          <LampShape x={0} y={0} dark={warm} scale={1.1} />
         </Draggable>
       ) })}
       {(() => { const p = decorPos('clockTower'); return (
@@ -1882,9 +1918,9 @@ export default function VillageScene({
           <g>
             <title>A garden lantern</title>
             <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-            <circle cx={0} cy={-h * 0.5} r={lit ? 8 : 5} fill="var(--amber)" opacity={lit ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
+            <circle cx={0} cy={-h * 0.5} r={warm ? 8 : 5} fill="var(--amber)" opacity={warm ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
             <image href="/village-assets/garden-lantern.png" x={-w / 2} y={-h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
+              style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
           </g>
         </Draggable>
       ) })()}
@@ -2064,9 +2100,9 @@ export default function VillageScene({
             <title>A paper lantern</title>
             <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
             <rect x={-0.7} y={-postH} width={1.4} height={postH} fill={TRIM} opacity={0.8} />
-            {lit && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
-            <image href={`/village-assets/paper-lantern-${lit ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={lit ? 'village-glow' : undefined} />
+            {warm && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
+            <image href={`/village-assets/paper-lantern-${warm ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
+              style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
             {arranging && (
               <rect x={-w / 2 - 2} y={-postH - h - 2} width={w + 4} height={postH + h + 4} rx={4}
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
@@ -2181,14 +2217,20 @@ export default function VillageScene({
         {/* Smaller round 58 ("make house smaller and other buildings a bit
             bigger") — 107 -> 90 wide, so Home anchors the scene without
             dwarfing the districts. */}
-        <image href={`/village-assets/cottage-${((homeOccupied ?? dark) || gathering) ? 'lit' : 'dark'}.png`}
+        <image href={`/village-assets/cottage-${cottageGlow ? 'lit' : 'dark'}.png`}
           x={-45} y={-75.3} width={90} height={75.3}
           style={{ imageRendering: 'pixelated' }} />
         {/* Home breathes too now (round 66, "make sure the house also
             animates") — the window glow pulses on village-glow whenever
             it's lit, and a thin curl of chimney smoke always rises (a house
             with someone in it), drifting on village-smoke. */}
-        {((homeOccupied ?? dark) || gathering) && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        {cottageGlow && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        {/* Movie night — a cool flickering wash from the downstairs window. */}
+        {moodActive && activeMood.screenGlow && (
+          <rect x={-14} y={-40} width={13} height={10} rx={1.5} fill="#9fc7ff" style={{ mixBlendMode: 'screen' }}>
+            <animate attributeName="opacity" values="0.5;0.85;0.4;0.75;0.55" dur="2.6s" repeatCount="indefinite" />
+          </rect>
+        )}
         {/* A window box of flowers under the upstairs window (round 74) —
             the one small "someone tends this place" detail on the house. */}
         <image href="/village-assets/window-flowerbox.png" x={-10} y={-46} width={14} height={8.4}
@@ -2270,7 +2312,7 @@ export default function VillageScene({
               <rect x={hx - w / 2 - 2} y={hy - h - 2} width={w + 4} height={h + 26} fill="transparent" style={{ pointerEvents: 'all' }} />
               <image href="/village-assets/log-cabin.png" x={hx - w / 2} y={hy - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
-              {lit && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
+              {warm && <circle cx={hx - 4} cy={hy - h * 0.55} r={10} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" className="village-glow" />}
               {arranging && (
                 <rect x={hx - w / 2 - 3} y={hy - h - 3} width={w + 6} height={h + 8} rx={5}
                   fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
@@ -2365,6 +2407,15 @@ export default function VillageScene({
       {/* The things that move. Above the scenery so smoke reads as being in
           front of the house, below the labels so it never fights the text. */}
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} weatherCondition={weather?.condition} warm={gathering} />}
+
+      {/* Scene-mood dimmer — a cool wash for Movie / We're out / a custom
+          scene, eased in over ~1.2s so it never snaps. Below the labels so
+          navigation stays readable. Goodnight leans on the real night sky
+          instead (v.timeOfDay forced above) plus a gentler wash. */}
+      {moodActive && activeMood.dim > 0 && (
+        <rect x={0} y={0} width={800} height={440} fill="#0b1533" opacity={activeMood.dim}
+          pointerEvents="none" style={{ transition: 'opacity 1200ms ease' }} />
+      )}
 
       {/* Click-to-care sparkles — see careFor() above. Self-removing via its
           own setTimeout, so this array is only ever non-empty for ~650ms. */}
@@ -2648,15 +2699,15 @@ export default function VillageScene({
           Still off entirely during arrange (Draggable wants a static target)
           and quiet/night (the bench / sleepwear block below takes over). */}
       <g>
-        {!arranging && !settled && (
+        {!arranging && !settledNow && !sceneHidesFigures && (
           <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
             <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} outfit={outfit} />
           </g>
         )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
-        {(() => { const p = decorPos('sylvia'); const active = !arranging && !settled; return (
+        {(() => { const p = decorPos('sylvia'); const active = !arranging && !settledNow && !sceneHidesFigures; return (
           <Draggable x={p.x} y={p.y} id="sylvia" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('sylvia')} r={17}>
-            {!(settled && !arranging) && (
+            {!(settledNow && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
                   onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
@@ -2666,9 +2717,9 @@ export default function VillageScene({
             <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
           </Draggable>
         ) })()}
-        {(() => { const p = decorPos('harry'); const active = !arranging && !settled; return (
+        {(() => { const p = decorPos('harry'); const active = !arranging && !settledNow && !sceneHidesFigures; return (
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-            {!(settled && !arranging) && (
+            {!(settledNow && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
                   onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
@@ -2684,9 +2735,10 @@ export default function VillageScene({
           conditions are false), and this renders instead — an outright
           swap, not an opacity gate, so there's no shared-timeline risk to
           manage here at all. */}
-      {!arranging && settled && (() => {
+      {!arranging && settledNow && !sceneHidesFigures
+        && activeMood.figures !== 'movie' && activeMood.figures !== 'party' && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
-        if (night) return (
+        if (nightish) return (
           <>
             <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} />
             <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={149 / 281} x={hp.x} y={hp.y} />
@@ -2694,6 +2746,20 @@ export default function VillageScene({
         )
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
         return <CoupleBenchShape x={midX} y={midY} />
+      })()}
+
+      {/* Scene-held couple pose (2026-09-02) — Movie: sitting together facing
+          the screen. Party: a party-outfit beat near the gazebo. Phase 2
+          uses existing frames (bench for movie, a standing pose for party);
+          Phase 4 swaps in the real movie / party couple art. */}
+      {!arranging && !gathering && !sceneHidesFigures
+        && (activeMood.figures === 'movie' || activeMood.figures === 'party') && (() => {
+        const sp = decorPos('sylvia'), hp = decorPos('harry')
+        if (activeMood.figures === 'movie') {
+          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y)} poseIndex={COUPLE_BENCH_FRAME} outfit="default" />
+        }
+        const g = decorPos('gazebo')
+        return <CoupleInteraction x={g.x - 16} y={g.y + 10} poseIndex={5} outfit="party" />
       })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
@@ -2704,12 +2770,20 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
-      {(() => { const p = decorPos('somi'); const active = !arranging && !settled; return (
+      {(() => {
+        const p = decorPos('somi')
+        // We're out — Somi stays behind, sitting by the front door.
+        if (sceneHidesFigures && !arranging) {
+          const h = pos('home')
+          return <CatShape x={h.x + 22} y={h.y + 6} scale={0.7 * itemScale('somi')} name="Somi" wander={false} pose="idle" face={-1} />
+        }
+        const active = !arranging && !settledNow
+        return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
             <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
               onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
-              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={night && !arranging && !gathering} />
+              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={nightish && !arranging && !gathering} />
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>

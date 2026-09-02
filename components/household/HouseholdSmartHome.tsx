@@ -17,7 +17,7 @@ const input: React.CSSProperties = {
 }
 
 export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null }) {
-  const { devices, scenes, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyScene } = useSmartHome(spaceId)
+  const { devices, scenes, activeScene, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyScene } = useSmartHome(spaceId)
   const [savingScene, setSavingScene] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -61,8 +61,8 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
           {scenes.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
               {scenes.map(s => (
-                <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.2rem 0.3rem 0.2rem 0.6rem' }}>
-                  <button onClick={() => applyScene(s.id)} className="press" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: '0.72rem', fontFamily: 'inherit' }}>
+                <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: activeScene?.id === s.id ? 'color-mix(in srgb, var(--gold) 16%, var(--surface2))' : 'var(--surface2)', border: `1px solid ${activeScene?.id === s.id ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 999, padding: '0.2rem 0.3rem 0.2rem 0.6rem' }}>
+                  <button onClick={() => applyScene(s.id)} className="press" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: activeScene?.id === s.id ? 'var(--gold)' : 'var(--text)', fontSize: '0.72rem', fontFamily: 'inherit' }}>
                     <Icon name={(s.icon as IconName) || 'sparkle'} size={13} />{s.name}
                   </button>
                   <button onClick={() => deleteScene(s.id)} aria-label={`Delete ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}>✕</button>

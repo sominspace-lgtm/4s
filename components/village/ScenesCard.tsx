@@ -11,7 +11,7 @@ import Icon, { type IconName } from '@/components/ui/Icon'
 // Household → Smart Home; this is the "tap it on your way to bed" surface.
 
 export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | null; onInteract?: () => void }) {
-  const { devices, scenes, loading, toggleDevice, saveScene, applyScene } = useSmartHome(spaceId)
+  const { devices, scenes, activeScene, loading, toggleDevice, saveScene, applyScene } = useSmartHome(spaceId)
   const [saving, setSaving] = useState(false)
 
   if (loading && devices.length === 0 && scenes.length === 0) return null
@@ -38,21 +38,25 @@ export default function ScenesCard({ spaceId, onInteract }: { spaceId: string | 
       {/* Scenes */}
       {scenes.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))', gap: '0.4rem' }}>
-          {scenes.map(s => (
+          {scenes.map(s => {
+            const on = activeScene?.id === s.id
+            return (
             <button
               key={s.id}
               onClick={() => { applyScene(s.id); onInteract?.() }}
               className="press"
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
-                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
-                padding: '0.6rem 0.4rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'inherit',
+                background: on ? 'color-mix(in srgb, var(--gold) 18%, var(--surface))' : 'var(--surface)',
+                border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 12,
+                padding: '0.6rem 0.4rem', cursor: 'pointer', color: on ? 'var(--gold)' : 'var(--text)', fontFamily: 'inherit',
               }}
             >
               <Icon name={(s.icon as IconName) || 'sparkle'} size={20} />
               <span style={{ fontSize: '0.68rem' }}>{s.name}</span>
             </button>
-          ))}
+            )
+          })}
         </div>
       )}
 
