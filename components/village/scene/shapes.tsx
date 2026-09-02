@@ -791,32 +791,47 @@ const COUPLE_INTERACT_FRAMES = [
   // couple gather at a bench (round 59, "when we put sylvia harry in a
   // known element like bench or picnic they do their respective interaction").
   { src: '/village-assets/sh-int-bench.png', aspect: 346 / 323 },
+  // Index 10 — cuddled under a blanket facing the screen. Only reachable when
+  // VillageScene passes it explicitly for the Movie scene.
+  { src: '/village-assets/sh-int-movie.png', aspect: 214 / 246 },
 ]
 /** Frame index for "reading on a bench". */
 export const COUPLE_BENCH_FRAME = 9
 /** Frame index for "picnic / sitting under the umbrella". */
 export const COUPLE_PICNIC_FRAME = 8
+/** Frame index for "movie night — cuddled facing the screen". */
+export const COUPLE_MOVIE_FRAME = 10
 
 // One interaction pose, chosen by the caller (round 52 follow-up) — was a
 // slow auto-cycling SpriteCycle, but the couple only actually meet for one
 // stretch per lap, so VillageScene now holds a `poseIndex` it bumps each
 // meeting and this just draws that frame. A different interaction every
 // time they come together, and nothing animating while they're apart.
-// One combined-pose crop per outfit (round 73) — when the couple meet in
-// the rain or the snow they do the outfit's own together-beat (sharing an
-// umbrella, warming their hands on mugs) instead of a default one.
-const COUPLE_OUTFIT_POSE: Partial<Record<Outfit, { src: string; aspect: number }>> = {
-  rain: { src: '/village-assets/couple-rain.png', aspect: 275 / 350 },
-  winter: { src: '/village-assets/couple-winter.png', aspect: 294 / 353 },
-  tennis: { src: '/village-assets/couple-tennis.png', aspect: 247 / 266 },
-  travel: { src: '/village-assets/couple-travel.png', aspect: 333 / 333 },
-  artsy: { src: '/village-assets/couple-artsy.png', aspect: 299 / 300 },
+// Combined-pose crops per outfit (round 73; round 80 → a list per outfit so
+// a party or rainy-day meet cycles through that outfit's own beats via
+// poseIndex, not just one static frame). When the couple meet in a
+// non-default outfit they do one of that outfit's together-beats; if the
+// outfit has none, it falls back to the default vignette set.
+const COUPLE_OUTFIT_POSE: Partial<Record<Outfit, { src: string; aspect: number }[]>> = {
+  rain:   [{ src: '/village-assets/couple-rain.png', aspect: 275 / 350 }],
+  winter: [{ src: '/village-assets/couple-winter.png', aspect: 294 / 353 }],
+  tennis: [{ src: '/village-assets/couple-tennis.png', aspect: 247 / 266 }],
+  travel: [{ src: '/village-assets/couple-travel.png', aspect: 333 / 333 }],
+  artsy:  [{ src: '/village-assets/couple-artsy.png', aspect: 299 / 300 }],
+  party: [
+    { src: '/village-assets/couple-party-1.png', aspect: 268 / 244 },
+    { src: '/village-assets/couple-party-2.png', aspect: 280 / 250 },
+    { src: '/village-assets/couple-party-3.png', aspect: 284 / 262 },
+  ],
 }
 
+const wrap = (i: number, n: number) => ((i % n) + n) % n
+
 export function CoupleInteraction({ x, y, poseIndex = 0, outfit = 'default' }: { x: number; y: number; poseIndex?: number; outfit?: Outfit }) {
-  const n = COUPLE_INTERACT_FRAMES.length
-  const outfitPose = outfit !== 'default' ? COUPLE_OUTFIT_POSE[outfit] : undefined
-  const f = outfitPose ?? COUPLE_INTERACT_FRAMES[((poseIndex % n) + n) % n]
+  const list = outfit !== 'default' ? COUPLE_OUTFIT_POSE[outfit] : undefined
+  const f = list && list.length
+    ? list[wrap(poseIndex, list.length)]
+    : COUPLE_INTERACT_FRAMES[wrap(poseIndex, COUPLE_INTERACT_FRAMES.length)]
   const h = 34
   const w = h * f.aspect
   return (

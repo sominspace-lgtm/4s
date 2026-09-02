@@ -44,3 +44,5 @@ next-env.d.ts
 .assets-staging/
 supabase/.temp/
 4s-os-handbook/
+
+.crop-tmp/

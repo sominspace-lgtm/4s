@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -2748,18 +2748,16 @@ export default function VillageScene({
         return <CoupleBenchShape x={midX} y={midY} />
       })()}
 
-      {/* Scene-held couple pose (2026-09-02) — Movie: sitting together facing
-          the screen. Party: a party-outfit beat near the gazebo. Phase 2
-          uses existing frames (bench for movie, a standing pose for party);
-          Phase 4 swaps in the real movie / party couple art. */}
+      {/* Scene-held couple pose (2026-09-02) — Movie: cuddled facing the
+          screen near Home. Party: a party-outfit beat near the gazebo. */}
       {!arranging && !gathering && !sceneHidesFigures
         && (activeMood.figures === 'movie' || activeMood.figures === 'party') && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
         if (activeMood.figures === 'movie') {
-          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y)} poseIndex={COUPLE_BENCH_FRAME} outfit="default" />
+          return <CoupleInteraction x={(sp.x + hp.x) / 2} y={Math.max(sp.y, hp.y) + 2} poseIndex={COUPLE_MOVIE_FRAME} outfit="default" />
         }
         const g = decorPos('gazebo')
-        return <CoupleInteraction x={g.x - 16} y={g.y + 10} poseIndex={5} outfit="party" />
+        return <CoupleInteraction x={g.x - 16} y={g.y + 10} poseIndex={0} outfit="party" />
       })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
