@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useSmartHome, type SmartHomeDevice } from '@/lib/hooks/useSmartHome'
+import { SCENE_PRESETS } from '@/lib/smarthome/apply'
+import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Smart Home (2026-08-25) — a manual device/status list, not a real
 // automation integration (no Home Assistant/IoT API exists anywhere in this
@@ -15,7 +17,8 @@ const input: React.CSSProperties = {
 }
 
 export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null }) {
-  const { devices, loading, addDevice, toggleDevice, updateNote, removeDevice } = useSmartHome(spaceId)
+  const { devices, scenes, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyScene } = useSmartHome(spaceId)
+  const [savingScene, setSavingScene] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
@@ -46,6 +49,43 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
       {devices.length === 0 && !loading && (
         <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
           Nothing added yet. Track what&rsquo;s connected — lights, locks, thermostat — and flip its state here.
+        </div>
+      )}
+
+      {/* Scenes — named presets of device states. Applying one flips the
+          board (and real bulbs once a hub is linked, see lib/smarthome/apply.ts).
+          The same buttons appear on the Village home panel. */}
+      {devices.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div className="t-label">Scenes</div>
+          {scenes.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {scenes.map(s => (
+                <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 999, padding: '0.2rem 0.3rem 0.2rem 0.6rem' }}>
+                  <button onClick={() => applyScene(s.id)} className="press" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: '0.72rem', fontFamily: 'inherit' }}>
+                    <Icon name={(s.icon as IconName) || 'sparkle'} size={13} />{s.name}
+                  </button>
+                  <button onClick={() => deleteScene(s.id)} aria-label={`Delete ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}>✕</button>
+                </span>
+              ))}
+            </div>
+          )}
+          {savingScene ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.64rem', color: 'var(--muted)' }}>Save current state as</span>
+              {SCENE_PRESETS.filter(p => !scenes.some(s => s.name.toLowerCase() === p.name.toLowerCase())).map(p => (
+                <button key={p.name} onClick={() => { saveScene(p.name, p.icon); setSavingScene(false) }} className="btn btn-ghost press" style={{ fontSize: '0.64rem', padding: '0.2rem 0.5rem' }}>{p.name}</button>
+              ))}
+              {scenes.map(s => (
+                <button key={s.id} onClick={() => { saveScene(s.name, s.icon); setSavingScene(false) }} className="btn btn-ghost press" style={{ fontSize: '0.64rem', padding: '0.2rem 0.5rem' }}>Update {s.name}</button>
+              ))}
+              <button onClick={() => setSavingScene(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.62rem' }}>cancel</button>
+            </div>
+          ) : (
+            <button onClick={() => setSavingScene(true)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.64rem', opacity: 0.85, padding: 0 }}>
+              + Save current state as a scene
+            </button>
+          )}
         </div>
       )}
 

@@ -7,6 +7,9 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
 import Icon, { type IconName } from '@/components/ui/Icon'
+import NowNext from './NowNext'
+import MusicCard from './MusicCard'
+import ScenesCard from './ScenesCard'
 
 // The shared/kiosk-mode counterpart to VillageWidgets (2026-08-25) — same
 // household data (useHousehold/useDateIdeas/usePlaces, nothing new), but
@@ -51,7 +54,7 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
   // Bumped 260->300 (2026-08-25) alongside the section restyle below — real
   // rounded cards with icons take a bit more vertical room than the old
   // plain-text list did, and 260 was starting to clip the last card.
-  const SHEET_HEIGHT = 344
+  const SHEET_HEIGHT = 420
 
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as Element).setPointerCapture(e.pointerId)
@@ -106,6 +109,11 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
             {plannedIdeas.length + choresToday.length > 0 ? `${plannedIdeas.length + choresToday.length} things today` : 'Swipe up'}
           </span>
         )}
+      </div>
+
+      {/* Now / Next — the one line worth reading from across the room. */}
+      <div style={{ padding: '0 1rem 0.5rem' }}>
+        <NowNext spaceId={spaceId} />
       </div>
 
       {/* Same warm, tinted-card language as VillageWidgets' own Section
@@ -183,6 +191,13 @@ export default function VillageHomeSheet({ userId, spaceId, ambient, onInteract 
           <QuickAdd placeholder="Add to shopping" onAdd={t => { h.addShopping(t, null, null); onInteract?.() }} />
           <QuickAdd placeholder="Leave a note" onAdd={t => { h.addNote(t); onInteract?.() }} />
         </Card>
+
+        {/* House controls + scenes, and the house playlist — the wall's
+            "do" surface beyond quick-adds (2026-09-01). Full-width. */}
+        <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <ScenesCard spaceId={spaceId} onInteract={onInteract} />
+          <MusicCard spaceId={spaceId} compact />
+        </div>
       </div>
     </div>
   )

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { applySceneToDevices, type Scene } from '@/lib/smarthome/apply'
 
 export interface SmartHomeDevice {
   id: string
@@ -22,6 +23,7 @@ export interface SmartHomeDevice {
 export function useSmartHome(spaceId: string | null) {
   const supabase = createClient()
   const [devices, setDevices] = useState<SmartHomeDevice[]>([])
+  const [scenes, setScenes] = useState<Scene[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -29,8 +31,14 @@ export function useSmartHome(spaceId: string | null) {
     const scope = spaceId
       ? supabase.from('household_smarthome_devices').select('*').eq('space_id', spaceId)
       : supabase.from('household_smarthome_devices').select('*').is('space_id', null)
-    const { data } = await scope.order('category').order('name')
+    const [{ data }, sceneRes] = await Promise.all([
+      scope.order('category').order('name'),
+      spaceId
+        ? supabase.from('shared_spaces').select('scenes').eq('id', spaceId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
     setDevices((data as SmartHomeDevice[] | null) ?? [])
+    setScenes(((sceneRes?.data as { scenes?: Scene[] } | null)?.scenes as Scene[] | undefined) ?? [])
     setLoading(false)
   }, [supabase, spaceId])
 
@@ -64,5 +72,42 @@ export function useSmartHome(spaceId: string | null) {
     setDevices(prev => prev.filter(d => d.id !== id))
   }
 
-  return { devices, loading, addDevice, toggleDevice, updateNote, removeDevice }
+  // ── Scenes ──────────────────────────────────────────────────────────────
+  async function persistScenes(next: Scene[]) {
+    if (!spaceId) return
+    setScenes(next)
+    await supabase.from('shared_spaces').update({ scenes: next }).eq('id', spaceId)
+  }
+
+  /** Save the devices' current on/off state as a named scene (or overwrite
+   *  one of the same name). */
+  async function saveScene(name: string, icon: string) {
+    const clean = name.trim()
+    if (!clean) return
+    const snapshot: Record<string, boolean> = {}
+    for (const d of devices) snapshot[d.id] = d.on_state
+    const existing = scenes.find(s => s.name.toLowerCase() === clean.toLowerCase())
+    const scene: Scene = { id: existing?.id ?? crypto.randomUUID(), name: clean, icon, devices: snapshot }
+    await persistScenes(existing ? scenes.map(s => (s.id === existing.id ? scene : s)) : [...scenes, scene])
+  }
+
+  async function deleteScene(id: string) {
+    await persistScenes(scenes.filter(s => s.id !== id))
+  }
+
+  /** Flip every device the scene names to its target state. */
+  async function applyScene(id: string): Promise<string | null> {
+    const scene = scenes.find(s => s.id === id)
+    if (!scene) return 'Scene not found'
+    // Optimistic — the board is the whole visible effect today.
+    setDevices(prev => prev.map(d => (d.id in scene.devices ? { ...d, on_state: scene.devices[d.id] } : d)))
+    const { error } = await applySceneToDevices(supabase, scene)
+    return error
+  }
+
+  return {
+    devices, scenes, loading,
+    addDevice, toggleDevice, updateNote, removeDevice,
+    saveScene, deleteScene, applyScene,
+  }
 }

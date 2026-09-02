@@ -8,6 +8,9 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
 import Icon, { type IconName } from '@/components/ui/Icon'
+import NowNext from './NowNext'
+import MusicCard from './MusicCard'
+import ScenesCard from './ScenesCard'
 
 // The dock under the village scene (2026-08-24 redesign, was a grid of
 // standalone cards) — a single panel attached to the scene above it rather
@@ -106,6 +109,10 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
         )}
       </button>
 
+      <div style={{ padding: '0 1rem 0.8rem' }}>
+        <NowNext spaceId={spaceId} />
+      </div>
+
       {open && (
         <div style={{ borderTop: '1px solid var(--border)', padding: '0.9rem 1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           {/* THIS WEEK — moved in here from the always-visible header row
@@ -189,6 +196,13 @@ export default function VillageWidgets({ userId, spaceId }: { userId: string; sp
               </div>
             </Section>
           )}
+
+          {/* House playlist + scenes — same home-panel controls as the wall
+              sheet (2026-09-01), full width under the glance cards. */}
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <MusicCard spaceId={spaceId} />
+            <ScenesCard spaceId={spaceId} />
+          </div>
           </div>
         </div>
       )}
