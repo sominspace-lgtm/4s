@@ -38,6 +38,7 @@ import { ignoreShortcut } from '@/lib/utils/shortcuts'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
+import { mergeVillagePanelBlocks } from '@/lib/utils/villagePanel'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
@@ -65,6 +66,7 @@ interface Props {
   initialTodayBlocks: TodayBlockConfig[] | null
   initialNotifyPrefs: Record<string, boolean> | null
   initialHouseholdHomeBlocks: SectionConfig[] | null
+  initialVillagePanelBlocks: SectionConfig[] | null
   initialVillageLayout: VillageLayout | null
 }
 
@@ -183,7 +185,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
 ]
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillageLayout }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -206,6 +208,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Personal sub-tab customizers are both gone — those areas are top-level
   // sections now, managed by the main Customize-layout panel.)
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
+  const [villagePanelBlocks, setVillagePanelBlocks] = useState<SectionConfig[]>(mergeVillagePanelBlocks(initialVillagePanelBlocks))
   const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
   const [notifyPrefs, setNotifyPrefs] = useState<Record<string, boolean>>(initialNotifyPrefs ?? {})
   const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
@@ -266,7 +269,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, todayBlocks, householdHomeBlocks, notifyPrefs, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
+    return { sections, todayBlocks, householdHomeBlocks, villagePanelBlocks, notifyPrefs, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
   }
 
   async function changeNotifyPrefs(next: Record<string, boolean>) {
@@ -288,6 +291,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   async function changeHouseholdHomeBlocks(next: SectionConfig[]) {
     setHouseholdHomeBlocks(next)
     await saveLayout(userId, layoutState(), { householdHomeBlocks: next })
+  }
+
+  async function changeVillagePanelBlocks(next: SectionConfig[]) {
+    setVillagePanelBlocks(next)
+    await saveLayout(userId, layoutState(), { villagePanelBlocks: next })
   }
 
   // Tab navigation from anywhere (Today's summary cards, search).
@@ -480,7 +488,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onUpdatePrep={gathering.updatePrep} onOpenDoors={gathering.openDoors} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onUpdatePrep={gathering.updatePrep} onOpenDoors={gathering.openDoors} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} />
         // Personal areas — one section id each (2026-09-01). Goals folded
         // into the Habits section the same day (see HabitsTab).
         case 'tasks':    return <MasterDashboard key="tasks" userId={userId} />

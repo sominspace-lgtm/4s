@@ -10,7 +10,7 @@ import Icon from '@/components/ui/Icon'
 // reused for the guest party screen. Paste a link, it plays; anyone in the
 // household can change it.
 
-export default function MusicCard({ spaceId, compact = false }: { spaceId: string | null; compact?: boolean }) {
+export default function MusicCard({ spaceId, compact = false, readOnly = false }: { spaceId: string | null; compact?: boolean; readOnly?: boolean }) {
   const { spaces, setMusicUrl } = useSharedSpaces('')
   const space = spaces.find(s => s.id === spaceId) ?? spaces[0] ?? null
   const url = space?.music_url ?? null
@@ -26,7 +26,7 @@ export default function MusicCard({ spaceId, compact = false }: { spaceId: strin
     setDraft('')
   }
 
-  const showForm = editing || (!url && !!space)
+  const showForm = !readOnly && (editing || (!url && !!space))
 
   return (
     <div className="organic" style={{
@@ -38,7 +38,7 @@ export default function MusicCard({ spaceId, compact = false }: { spaceId: strin
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
         <span aria-hidden style={{ display: 'inline-flex', color: 'var(--purple)' }}><Icon name="mic" size={16} /></span>
         <span style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text)', flex: 1 }}>Music</span>
-        {url && (
+        {url && !readOnly && (
           <button
             onClick={() => { setDraft(url ?? ''); setEditing(e => !e) }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.6rem', opacity: 0.7 }}

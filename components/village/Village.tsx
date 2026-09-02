@@ -32,6 +32,8 @@ import Icon from '@/components/ui/Icon'
 import { ASSET_LIBRARY, makeCustomItemId } from '@/lib/village/assetLibrary'
 import VillageWidgets from './VillageWidgets'
 import VillageHomeSheet from './VillageHomeSheet'
+import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
+import { DEFAULT_VILLAGE_PANEL_BLOCKS } from '@/lib/utils/villagePanel'
 import { goToSection } from '@/lib/utils/navigate'
 
 const ARRIVAL_KEY = '4s-village-arrival'
@@ -50,7 +52,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, panelBlocks = [], onChangePanelBlocks }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -100,6 +102,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onDeleteMemory?: (id: string) => void
   guestInfo?: GuestInfo
   onSetGuestInfo?: (info: GuestInfo) => void
+  /** The Village home panel's block config + writer — see lib/utils/villagePanel.ts. */
+  panelBlocks?: SectionConfig[]
+  onChangePanelBlocks?: (next: SectionConfig[]) => void
 }) {
   const [arranging, setArranging] = useState(false)
   // The single ⋯ control-menu on the full tab (2026-08-31) — everything the
@@ -117,6 +122,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
+  const [panelCustomizeOpen, setPanelCustomizeOpen] = useState(false)
   const [partyScreenOpen, setPartyScreenOpen] = useState(false)
   const guestUrl = useMemo(() => {
     if (!gathering) return null
@@ -536,6 +542,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     ...(memories.length > 0 && !guestActive
                       ? [{ label: 'Village keepsakes', on: () => setKeepsakesOpen(true) }]
                       : []),
+                    ...(onChangePanelBlocks && !guestActive
+                      ? [{ label: 'Customize panel', on: () => setPanelCustomizeOpen(true) }]
+                      : []),
                     // Zoom stays in the menu — the buttons repeat, so these
                     // keep it open instead of dismissing on each step.
                     { label: 'Zoom in', on: zoomIn, keepOpen: true, disabled: zoom >= 2 },
@@ -734,6 +743,23 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onStartGathering={onStartGathering}
             onUpdatePrep={onUpdatePrep}
             onOpenDoors={onOpenDoors}
+            village={v}
+            panelBlocks={panelBlocks}
+            onLockedNavigate={onLockedNavigate}
+            guestUrl={guestUrl}
+            qrDataUri={qrDataUri}
+          />
+        )}
+
+        {onChangePanelBlocks && (
+          <SectionCustomizer
+            open={panelCustomizeOpen}
+            title="Village panel"
+            intro="What shows under the village. Reorder with ↑↓ or hide with the eye toggle."
+            sections={panelBlocks}
+            defaultSections={DEFAULT_VILLAGE_PANEL_BLOCKS}
+            onChange={onChangePanelBlocks}
+            onClose={() => setPanelCustomizeOpen(false)}
           />
         )}
       </div>
@@ -769,7 +795,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           browsing. In shared/locked mode this content moves into
           VillageHomeSheet above instead (a swipe-up overlay, not a second
           copy below the scene). */}
-      {!compact && !locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} />}
+      {!compact && !locked && <VillageWidgets userId={userId} spaceId={spaces[0]?.id ?? null} village={v} panelBlocks={panelBlocks} />}
 
       {!compact && !ambient && <VillageText village={v} arrival={changes?.caption ?? null} horizonCount={horizon.length} />}
     </div>

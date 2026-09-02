@@ -31,6 +31,7 @@ export default async function DashboardPage() {
   const todayBlocks = prefs?.layout?.todayBlocks as TodayBlockConfig[] | null
   const notifyPrefs = prefs?.layout?.notifyPrefs as Record<string, boolean> | null
   const householdHomeBlocks = prefs?.layout?.householdHomeBlocks as SectionConfig[] | null
+  const villagePanelBlocks = prefs?.layout?.villagePanelBlocks as SectionConfig[] | null
   const villageLayout = prefs?.layout?.villageLayout as VillageLayout | null
 
   return (
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
       initialTodayBlocks={todayBlocks ?? null}
       initialNotifyPrefs={notifyPrefs ?? null}
       initialHouseholdHomeBlocks={householdHomeBlocks ?? null}
+      initialVillagePanelBlocks={villagePanelBlocks ?? null}
       initialVillageLayout={villageLayout ?? null}
     />
   )
