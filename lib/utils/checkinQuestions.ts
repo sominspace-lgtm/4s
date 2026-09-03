@@ -127,9 +127,14 @@ export function questionsForWeek(weekOf: Date): CheckinQuestion[] {
   ]
 }
 
-/** This week's Monday, YYYY-MM-DD — the `week_of` key every row uses. */
-export function weekOfMonday(now: Date = new Date()): string {
+/** The Sunday that starts this check-in week, YYYY-MM-DD — the `week_of`
+ *  key every row uses. Sunday-anchored (2026-09-03) to match how the check-in
+ *  reads to people: "the week of Sept 6" runs Sun Sept 6 → Sat Sept 12, and
+ *  a check-in done any day in that span counts for it. (Was Monday-anchored;
+ *  the Discord bot it replaced was always Sunday-anchored, and the migrated
+ *  history is stored on Sunday dates.) */
+export function weekOfSunday(now: Date = new Date()): string {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay())
   return d.toISOString().slice(0, 10)
 }

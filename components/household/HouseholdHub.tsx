@@ -8,7 +8,7 @@ import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
-import { weekOfMonday } from '@/lib/utils/checkinQuestions'
+import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
@@ -894,7 +894,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         const weeks = groupCheckinsByWeek(checkins)
         const isSunday = new Date().getDay() === 0
         const mineDone = !!thisWeekMine
-        const thisMonday = weekOfMonday()
+        const weekStart = weekOfSunday()
         const streak = checkinStreak(checkins, userId)
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
@@ -951,7 +951,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                   // Your partner's answers for the CURRENT week stay hidden
                   // until you've checked in — so their words can't anchor
                   // yours. Past weeks are always open.
-                  const locked = w.weekOf >= thisMonday && !mineDone
+                  const locked = w.weekOf >= weekStart && !mineDone
                   return (
                   <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -959,7 +959,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                       <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
                         {answered >= 2 ? 'both of you checked in' : answered === 1 ? 'one of you checked in' : 'no answers yet'}
                       </span>
-                      {!locked && w.weekOf >= thisMonday && answered >= 2 && (
+                      {!locked && w.weekOf >= weekStart && answered >= 2 && (
                         <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>✓ both in</span>
                       )}
                     </summary>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { weekOfMonday } from '@/lib/utils/checkinQuestions'
+import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 
 export interface CheckinAnswer {
   questionKey: string
@@ -56,7 +56,7 @@ export function useCheckins(userId: string | null = null) {
 
   const submitCheckin = useCallback(async (answers: CheckinAnswer[]): Promise<{ error: string | null }> => {
     if (!userId || !spaceId) return { error: 'No shared space yet' }
-    const week = weekOfMonday()
+    const week = weekOfSunday()
     // One submission per week, no edits after (2026-09-03). Guard on what we
     // have loaded, and rely on the (space_id, user_id, week_of) unique
     // constraint as the real backstop — this is a plain insert, not an upsert.
@@ -78,7 +78,7 @@ export function useCheckins(userId: string | null = null) {
   }, [supabase, userId, spaceId, checkins])
 
   /** This user's row for the current week, if it exists. */
-  const thisWeek = checkins.find(c => c.user_id === userId && c.week_of.slice(0, 10) >= weekOfMonday())
+  const thisWeek = checkins.find(c => c.user_id === userId && c.week_of.slice(0, 10) >= weekOfSunday())
 
   return { checkins, loading, submitCheckin, thisWeekMine: thisWeek ?? null }
 }
@@ -94,7 +94,7 @@ export interface CheckinWeek {
 export function checkinStreak(checkins: Checkin[], userId: string | null): number {
   if (!userId) return 0
   const weeks = groupCheckinsByWeek(checkins) // newest first
-  const thisWeek = weekOfMonday()
+  const thisWeek = weekOfSunday()
   let streak = 0
   for (const w of weeks) {
     const mine = userId in w.byUser

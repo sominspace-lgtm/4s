@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { questionsForWeek, weekOfMonday, isSingleEmoji, type CheckinQuestion } from '@/lib/utils/checkinQuestions'
+import { questionsForWeek, weekOfSunday, isSingleEmoji, type CheckinQuestion } from '@/lib/utils/checkinQuestions'
 import type { CheckinAnswer } from '@/lib/hooks/useCheckins'
 
 // One question per screen, then a review screen. Every question is required
@@ -21,7 +21,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
   onSubmit: (answers: CheckinAnswer[]) => Promise<{ error: string | null }>
   onClose: () => void
 }) {
-  const weekKey = useMemo(() => weekOfMonday(), [])
+  const weekKey = useMemo(() => weekOfSunday(), [])
   const questions = useMemo(() => questionsForWeek(new Date(`${weekKey}T12:00:00Z`)), [weekKey])
   const draftKey = `4s:checkin-draft:${weekKey}`
 

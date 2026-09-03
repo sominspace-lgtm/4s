@@ -16,10 +16,11 @@ import { sendPushToUser } from '@/lib/push/send'
 
 type Kind = 'overdueTasks' | 'subRenewal' | 'checkinNudge'
 
-/** Monday (ISO week start) of a date, as YYYY-MM-DD. */
-function weekMonday(d: Date): string {
+/** The Sunday that starts this check-in week, as YYYY-MM-DD — matches
+ *  weekOfSunday() in lib/utils/checkinQuestions.ts (Sunday-anchored 2026-09-03). */
+function weekSunday(d: Date): string {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-  x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7))
+  x.setUTCDate(x.getUTCDate() - x.getUTCDay())
   return x.toISOString().slice(0, 10)
 }
 
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
   const laPart = (t: Intl.DateTimeFormatPartTypes) => la.find(p => p.type === t)?.value ?? ''
   const today = `${laPart('year')}-${laPart('month')}-${laPart('day')}`
   const isSunday = laPart('weekday') === 'Sun'
-  const monday = weekMonday(new Date(`${today}T12:00:00Z`))
+  const weekStart = weekSunday(new Date(`${today}T12:00:00Z`))
 
   const { data: subscribed } = await admin.from('push_subscriptions').select('user_id')
   const userIds = [...new Set((subscribed ?? []).map(r => r.user_id as string))]
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
   // space with whom — so the reminder can say "your partner checked in,
   // your turn" instead of the generic line.
   const [{ data: weekRows }, { data: allSpaces }, { data: allMembers }] = await Promise.all([
-    admin.from('checkins').select('user_id').gte('week_of', monday),
+    admin.from('checkins').select('user_id').gte('week_of', weekStart),
     admin.from('shared_spaces').select('id, owner_id'),
     admin.from('shared_space_members').select('space_id, member_id, status'),
   ])
@@ -110,10 +111,10 @@ export async function GET(request: Request) {
     }
 
     // 3. Sunday-evening check-in nudge — if this week (LA-local) has no row for
-    //    this user yet. `isSunday` and `monday` are both reckoned in
+    //    this user yet. `isSunday` and `weekStart` are both reckoned in
     //    America/Los_Angeles above, so this fires on the 04:00-UTC run whose
     //    LA-local time is Sunday ~9pm.
-    if (isSunday && on('checkinNudge') && sent[`checkin:${monday}`] === undefined && !doneThisWeek.has(userId)) {
+    if (isSunday && on('checkinNudge') && sent[`checkin:${weekStart}`] === undefined && !doneThisWeek.has(userId)) {
       const partnerDone = spacePeople.some(people =>
         people.has(userId) && [...people].some(p => p !== userId && doneThisWeek.has(p)))
       await sendPushToUser(admin, userId, {
@@ -121,7 +122,7 @@ export async function GET(request: Request) {
         body: partnerDone ? 'Your partner checked in — your turn.' : 'Time for your weekly check-in.',
         url: '/dashboard',
       })
-      fresh[`checkin:${monday}`] = today
+      fresh[`checkin:${weekStart}`] = today
       notified++
     }
 

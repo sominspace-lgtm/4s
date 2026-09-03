@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { weekOfMonday } from '@/lib/utils/checkinQuestions'
+import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import CheckinForm from './CheckinForm'
 
 // The weekly relationship check-in prompt. Shown on check-in day (Sunday),
@@ -15,10 +15,10 @@ export default function CheckinCard({ userId }: { userId: string }) {
   const { members } = useSharedSpaces(userId)
   const [formOpen, setFormOpen] = useState(false)
 
-  const monday = weekOfMonday()
+  const weekStart = weekOfSunday()
   const isSunday = new Date().getDay() === 0
 
-  const thisWeek = groupCheckinsByWeek(checkins).find(w => w.weekOf >= monday)
+  const thisWeek = groupCheckinsByWeek(checkins).find(w => w.weekOf >= weekStart)
   const answeredIds = thisWeek ? Object.keys(thisWeek.byUser) : []
   const partnerId = members.find(m => m.member_id && m.member_id !== userId && m.status === 'accepted')?.member_id ?? null
   const partnerName = members.find(m => m.member_id === partnerId)?.member_email ?? 'your partner'
