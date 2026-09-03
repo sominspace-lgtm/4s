@@ -875,30 +875,38 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         const mineDone = !!thisWeekMine
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            {/* Complete this week's check-in, right here — the prompt leads on
-                Sunday, folds to a quiet "revise" the rest of the time. */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.9rem',
-              padding: mineDone ? 0 : '0.8rem 1rem',
-              border: mineDone ? 'none' : '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
-              background: mineDone ? 'transparent' : 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
-              borderRadius: '12px',
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: mineDone ? 400 : 500 }}>
-                  {mineDone ? 'You’re in for this week.' : isSunday ? 'Time for your weekly check-in' : 'This week’s check-in'}
-                </div>
-                {!mineDone && (
-                  <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
-                    A few minutes, just between you two.
+            {/* The prompt only appears on check-in day (Sunday) — same window
+                as the Home block and the push. Once you're in for the week it
+                stays as a quiet "revise" any day; otherwise it's just the
+                history below, with a line saying when the next one is. */}
+            {(isSunday || mineDone) ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.9rem',
+                padding: mineDone ? 0 : '0.8rem 1rem',
+                border: mineDone ? 'none' : '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
+                background: mineDone ? 'transparent' : 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
+                borderRadius: '12px',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: mineDone ? 400 : 500 }}>
+                    {mineDone ? 'You’re in for this week.' : 'Time for your weekly check-in'}
                   </div>
-                )}
+                  {!mineDone && (
+                    <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+                      A few minutes, just between you two.
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setCheckinFormOpen(true)} className={mineDone ? 'btn btn-ghost press' : 'btn btn-primary press'}
+                  style={{ fontSize: mineDone ? '0.7rem' : '0.74rem', flexShrink: 0, opacity: mineDone ? 0.7 : 1 }}>
+                  {mineDone ? 'Revise' : 'Complete check-in'}
+                </button>
               </div>
-              <button onClick={() => setCheckinFormOpen(true)} className={mineDone ? 'btn btn-ghost press' : 'btn btn-primary press'}
-                style={{ fontSize: mineDone ? '0.7rem' : '0.74rem', flexShrink: 0, opacity: mineDone ? 0.7 : 1 }}>
-                {mineDone ? 'Revise' : 'Complete check-in'}
-              </button>
-            </div>
+            ) : (
+              <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.9rem' }}>
+                Next check-in: Sunday.
+              </div>
+            )}
             {checkinFormOpen && <CheckinForm onSubmit={submitCheckin} onClose={() => setCheckinFormOpen(false)} />}
 
             <details open={isSunday && !mineDone}>
