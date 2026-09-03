@@ -5,12 +5,12 @@ import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Guest actions on the wall itself — the same contributions the /g/[token]
 // phone portal collects (leave a note, sign the guestbook, add a song, where
-// you're from, a fridge magnet), posted to the same endpoint with the
+// you're from), posted to the same endpoint with the
 // gathering token. Theme-styled for the wall (the phone portal keeps its own
 // warm cream look). This is the ONLY interactive surface in guest mode; no
 // house controls, no shortcuts.
 
-type Kind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge'
+type Kind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from'
 
 const ACTIONS: { kind: Kind; icon: IconName; label: string }[] = [
   { kind: 'thank_you', icon: 'heart',      label: 'Say thanks' },
@@ -18,10 +18,7 @@ const ACTIONS: { kind: Kind; icon: IconName; label: string }[] = [
   { kind: 'note',      icon: 'brain',      label: 'Leave a note' },
   { kind: 'song',      icon: 'mic',        label: 'Add a song' },
   { kind: 'from',      icon: 'pin',        label: "Where you're from" },
-  { kind: 'fridge',    icon: 'household',  label: 'Fridge magnet' },
 ]
-
-const FRIDGE_ICONS = ['❤️', '⭐', '🌻', '🍞', '☕', '🎈', '🐈', '🌙']
 
 export default function GuestWallActions({ token, onInteract }: { token: string; onInteract?: () => void }) {
   const [open, setOpen] = useState<Kind | null>(null)
@@ -73,7 +70,6 @@ function GuestForm({ token, kind, onBack, onDone }: { token: string; kind: Kind;
   const [songTitle, setSongTitle] = useState('')
   const [songUrl, setSongUrl] = useState('')
   const [place, setPlace] = useState('')
-  const [icon, setIcon] = useState('❤️')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -86,7 +82,6 @@ function GuestForm({ token, kind, onBack, onDone }: { token: string; kind: Kind;
     const payload: Record<string, unknown> = { kind, guest_name: name.trim() || null }
     if (kind === 'song') { payload.title = songTitle.trim(); payload.url = songUrl.trim(); payload.body = songTitle.trim() }
     else if (kind === 'from') { payload.place = place.trim(); payload.body = place.trim() }
-    else if (kind === 'fridge') { payload.icon = icon; payload.body = text.trim() }
     else payload.body = text.trim()
     try {
       const res = await fetch(`/api/g/${token}`, {
@@ -112,23 +107,11 @@ function GuestForm({ token, kind, onBack, onDone }: { token: string; kind: Kind;
       ) : kind === 'from' ? (
         <input value={place} onChange={e => setPlace(e.target.value)} placeholder="Town, or town & country" style={field} maxLength={60} />
       ) : (
-        <>
-          {kind === 'fridge' && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-              {FRIDGE_ICONS.map(i => (
-                <button key={i} onClick={() => setIcon(i)} style={{
-                  background: icon === i ? 'var(--gold)' : 'var(--surface)', border: '1px solid var(--border)',
-                  borderRadius: 999, padding: '0.2rem 0.45rem', fontSize: '1rem', cursor: 'pointer',
-                }}>{i}</button>
-              ))}
-            </div>
-          )}
-          <textarea
-            value={text} onChange={e => setText(e.target.value)} rows={3}
-            placeholder={kind === 'guestbook' ? 'A line for the book' : kind === 'thank_you' ? 'Thank you for having us…' : 'A thought, a wish, a memory'}
-            style={{ ...field, resize: 'none' }} maxLength={280}
-          />
-        </>
+        <textarea
+          value={text} onChange={e => setText(e.target.value)} rows={3}
+          placeholder={kind === 'guestbook' ? 'A line for the book' : kind === 'thank_you' ? 'Thank you for having us…' : 'A thought, a wish, a memory'}
+          style={{ ...field, resize: 'none' }} maxLength={280}
+        />
       )}
 
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name (optional)" style={field} autoComplete="name" />

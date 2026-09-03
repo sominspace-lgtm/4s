@@ -1,6 +1,6 @@
 'use client'
 
-// The mobile floating button does exactly one thing: Quick Capture.
+// The mobile floating button does exactly one thing: Quick Note.
 // Navigation lives in the bottom nav, search in the header — this button
 // never asks the user to make a second decision.
 export default function MobileNav({ onCapture }: { onCapture: () => void }) {
@@ -8,8 +8,8 @@ export default function MobileNav({ onCapture }: { onCapture: () => void }) {
     <div className="mobile-nav" style={{ position: 'fixed', bottom: '1.25rem', right: '1.25rem', zIndex: 490 }}>
       <button
         onClick={onCapture}
-        aria-label="Quick capture"
-        title="Quick capture"
+        aria-label="Quick note"
+        title="Quick note"
         style={{
           width: 52, height: 52, borderRadius: '50%',
           background: 'var(--gold)', border: 'none', color: 'var(--bg)',

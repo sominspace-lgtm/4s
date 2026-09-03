@@ -37,9 +37,9 @@ export interface LayoutState {
   // See lib/utils/villagePanel.ts. Optional for the same reason the others
   // are; every WRITE goes through layoutState() in DashboardClient.
   villagePanelBlocks?: SectionConfig[]
-  // Web-push toggles, keyed by kind (overdueTasks / subRenewal / checkinNudge
-  // / fridgeNote). A missing key means on — see app/api/cron/daily. Lives in
-  // the layout blob so the cron can read it service-side without a new table.
+  // Web-push toggles, keyed by kind (overdueTasks / subRenewal / checkinNudge).
+  // A missing key means on — see app/api/cron/daily. Lives in the layout blob
+  // so the cron can read it service-side without a new table.
   notifyPrefs?: Record<string, boolean>
   // When the Village was last opened, so it can say what changed since. Not a
   // layout setting, but it lives here for the same reason the others do: it's

@@ -6,7 +6,7 @@ import ThemeProvider from '@/components/ui/ThemeProvider'
 import type { CustomThemeSeed } from '@/lib/constants/themes'
 import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
-import QuickCapture from '@/components/ui/QuickCapture'
+import QuickNote from '@/components/ui/QuickNote'
 import ConnectPanel from '@/components/ui/ConnectPanel'
 import SearchModal from '@/components/search/SearchModal'
 import ShortcutHelp from '@/components/ui/ShortcutHelp'
@@ -134,7 +134,7 @@ function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
 }
 
 // Anchors are places inside the Today tab, not tabs of their own.
-const ANCHORS = new Set(['week-review', 'brief-inbox', 'brief-calendar'])
+const ANCHORS = new Set(['week-review', 'brief-calendar'])
 
 const SECTION_GROUPS: Record<string, string> = {
   brief:     'mine',
@@ -319,7 +319,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   }
 
   // Tab navigation from anywhere (Today's summary cards, search).
-  // 'week-review', 'brief-inbox' and 'brief-calendar' are anchors inside the
+  // 'week-review' and 'brief-calendar' are anchors inside the
   // Today tab rather than tabs of their own.
   useEffect(() => {
     function onNav(e: Event) {
@@ -357,8 +357,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('4s:set-guide', onGuide)
   }, [userId])
 
-  // Global keyboard shortcuts. ⌘/ opens Search (⌘K is Quick Capture's alone,
-  // see QuickCapture — they used to collide). Bare letters (t/h/c) and `/`
+  // Global keyboard shortcuts. ⌘/ opens Search (⌘K is Quick Note's alone,
+  // see QuickNote — they used to collide). Bare letters (t/h/c) and `/`
   // and `?` are gated by ignoreShortcut() so they never fire while you're
   // typing in a field or a dialog is open. `t`/`h` navigate first because
   // only the active tab is mounted, so MasterDashboard/HabitTracker have to
@@ -565,7 +565,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         />
       )}
 
-      <QuickCapture />
+      <QuickNote />
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />

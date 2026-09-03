@@ -107,9 +107,9 @@ export default function GuidePage() {
           The top nav is your set of tabs. <strong style={{ color: 'var(--text)' }}>Brief</strong> is home — your command center.
           The other tabs (Tasks, Habits, Notes, Money, Calendar, People) each open on their own so you only ever see full detail when you ask for it.
         </Card>
-        <Card title="Quick Add · Inbox">
-          On Brief there&rsquo;s a Quick Add box. Drop any task, thought, or reminder there and sort it later — it lands in your Inbox until you file it.
-          Tap the <Say>＋</Say> button (bottom-right on mobile) to capture from anywhere.
+        <Card title="Quick note">
+          Press <Say>⌘K</Say> (or tap the <Say>＋</Say> button, bottom-right on mobile) from anywhere to jot a thought.
+          It saves straight to Notes.
         </Card>
       </Section>
 
@@ -182,7 +182,7 @@ export default function GuidePage() {
         <Card>
           For the people you live with. <strong style={{ color: 'var(--text)' }}>Home</strong> groups Calendar, Shopping, Chores,
           and Meals — reorder or hide any of them from the ⊹ Customize button, the same as the top-level tabs.
-          <strong style={{ color: 'var(--text)' }}> Reference</strong> is the fridge door: gate codes, the vet&rsquo;s number, notes
+          <strong style={{ color: 'var(--text)' }}> Reference</strong> holds the things you look up: gate codes, the vet&rsquo;s number, notes
           with no due date and no owner. Partner pairing and Discord linking live in Settings.
         </Card>
       </Section>
@@ -220,7 +220,7 @@ export default function GuidePage() {
           <div style={{ marginTop: '0.6rem' }}>
             <Say>what needs attention</Say><Say>read my tasks</Say><Say>add a task call mom friday</Say>
             <Say>complete buy milk</Say><Say>what habits are due</Say><Say>i did meditation</Say>
-            <Say>money summary</Say><Say>i bought coffee</Say><Say>what is coming up</Say><Say>capture remember the invoice</Say>
+            <Say>money summary</Say><Say>i bought coffee</Say><Say>what is coming up</Say><Say>make a note remember the invoice</Say>
           </div>
         </Card>
       </Section>
@@ -230,7 +230,7 @@ export default function GuidePage() {
           Tap these anywhere in 4S — they work the same on phone, Mac, and Windows.
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginTop: '0.8rem' }}>
             <IconRow icon="⌕">Search — find any task, habit, note, or item</IconRow>
-            <IconRow icon="✎">Quick capture — jot anything down instantly</IconRow>
+            <IconRow icon="✎">Quick note — jot anything down instantly</IconRow>
             <IconRow icon="◐">Theme &amp; Guide — change the look and the voice</IconRow>
             <IconRow icon="⊹">Customize — reorder or hide any tab</IconRow>
             <IconRow icon="?">Guide — this page, any time</IconRow>

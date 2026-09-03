@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
-import { useCaptures } from '@/lib/hooks/useCaptures'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
 import { useGiftOccasions, usePeople, daysSinceContact } from '@/lib/hooks/usePeople'
 import { useNotes } from '@/lib/hooks/useNotes'
@@ -91,7 +90,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
   const { habits, completions } = useHabits()
-  const { captures } = useCaptures()
   const { subs, total: monthlyTotal } = useSubscriptions()
   const giftItems = useGiftOccasions()
   const { people } = usePeople()
@@ -164,7 +162,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const dueToday   = items.filter(i => dueUrgency(i.due_date) === 'today'   && i.status !== 'done').length
   const overdue    = items.filter(i => dueUrgency(i.due_date) === 'overdue' && i.status !== 'done').length
   const inProgress = items.filter(i => i.status === 'in-progress').length
-  const inboxCount = captures.length
 
   // "Due today" respects each habit's schedule (daily/weekly/every-N-days)
   // and skips paused ones, instead of counting every habit that ever existed.
@@ -192,7 +189,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
 
   const summaryParts: string[] = []
-  if (inboxCount > 0) summaryParts.push(`${inboxCount} inbox item${inboxCount > 1 ? 's' : ''}`)
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
   if (peopleQuiet.length > 0) summaryParts.push(`${peopleQuiet.length} hello${peopleQuiet.length > 1 ? 's' : ''} overdue`)
@@ -200,11 +196,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
 
   function getInsight(): string {
-    if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inboxCount, inProgress })
+    if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inProgress })
     if (overdue > 0) return `${overdue} item${overdue > 1 ? 's are' : ' is'} overdue — tackle those first.`
     if (dueToday > 0 && habitsDoneToday === 0 && habitsTotal > 0) return `${dueToday} thing${dueToday > 1 ? 's' : ''} due today and no habits checked yet.`
     if (habitsTotal > 0 && habitsDoneToday === habitsTotal) return 'All habits done. Strong day.'
-    if (inboxCount > 5) return `${inboxCount} things sitting in your inbox — worth a quick sort.`
     if (inProgress > 0) return `${inProgress} item${inProgress > 1 ? 's' : ''} in progress. Keep the thread.`
     if (dueToday === 0 && overdue === 0 && habitsTotal > 0) return 'Clear runway today. Good time to go deep.'
     return 'Start with the most important thing.'
@@ -215,9 +210,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const showOverdue = overdue > 0
   const showToday   = dueToday > 0
   const showProgress = inProgress > 0
-  const showInbox   = inboxCount > 0
 
-  const hasStats = showOverdue || showToday || showHabits || showProgress || showInbox
+  const hasStats = showOverdue || showToday || showHabits || showProgress
 
   // First-time states read as quiet setup notes, never as alarms —
   // "not reviewed yet" / "nothing tracked yet" instead of "needs review".
@@ -254,7 +248,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         : `${dormantHabits.length} habits have gone quiet — still yours, whenever.`
     }
     if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
-    if (inboxCount > 4) return 'A few notes are waiting whenever you\'re ready.'
     return null
   }
   const whisper = (whisperDismissed || lowDay) ? null : pickWhisper()
@@ -265,7 +258,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue — Executive keeps things to the essentials.' }
     const maintenance = peopleQuiet.length + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
     if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up — Friend keeps an eye on them with you.' }
-    if (overdue === 0 && dueToday === 0 && habitsDueCount === 0 && inboxCount <= 2) return { guide: 'peaceful', reason: 'Things look calm — Peaceful keeps it light.' }
+    if (overdue === 0 && dueToday === 0 && habitsDueCount === 0) return { guide: 'peaceful', reason: 'Things look calm — Peaceful keeps it light.' }
     return null
   }
   const suggestion = adaptiveDismissed ? null : suggestGuide()
@@ -400,7 +393,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
               color={habitsDoneToday === habitsTotal ? 'var(--emerald)' : undefined}
             />
           )}
-          {showInbox     && <Stat label={t('in inbox', lang)}        value={inboxCount} color="var(--muted)" />}
         </div>
 
         <div suppressHydrationWarning style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.68, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right', flexShrink: 0 }}>
@@ -427,18 +419,12 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         </div>
       )}
 
-      {/* Two quiet actions — the inbox lives one scroll below, sharing lives in Shared */}
+      {/* Two quiet actions. "+ Add task" navigates to Tasks first, then
+          dispatches once the target has had a moment to mount (2026-08-22).
+          "+ New note" opens QuickNote, which listens app-wide. */}
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-        {/* Both used to just dispatch the event directly — a no-op unless
-            you happened to already be on the tab that mounts the listener
-            (Personal > Tasks for the first, Brief's own CaptureSection for
-            the second, which IS this page, so that one worked by accident).
-            "+ Add task" never navigated anywhere first, so clicking it here
-            silently did nothing. Same fix JourneyBar's runAction() already
-            uses: navigate, then dispatch after the target has had a moment
-            to mount (2026-08-22). */}
         <button onClick={() => { goToPersonal('tasks'); setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-task')), 80) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
-        <button onClick={() => window.dispatchEvent(new CustomEvent('app:focus-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Capture thought</button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ New note</button>
       </div>
     </div>
 

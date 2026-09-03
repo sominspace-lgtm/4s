@@ -61,13 +61,6 @@ export const RESOURCES = {
     update: ['category', 'text', 'note'],
     order: 'created_at',
   },
-  notes: {
-    table: 'household_notes',
-    columns: 'id, body, pinned, created_at',
-    insert: ['body', 'pinned'],
-    update: ['body', 'pinned'],
-    order: 'created_at',
-  },
   // Not household chores, but they ride the same household link/token: a
   // couple's household is the same group either way, and a second auth model
   // for these would be pure duplication (2026-08-10).

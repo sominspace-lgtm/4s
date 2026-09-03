@@ -145,7 +145,7 @@ export async function POST(request: Request) {
 
   if (body.request.type === 'LaunchRequest') {
     const brief = await buildBrief(admin, userId)
-    return say(`${brief} What would you like to do?`, { reprompt: 'You can add a task, capture a note, or ask what needs attention.' })
+    return say(`${brief} What would you like to do?`, { reprompt: 'You can add a task, make a note, or ask what needs attention.' })
   }
 
   if (body.request.type !== 'IntentRequest') {
@@ -172,10 +172,10 @@ export async function POST(request: Request) {
 
     case 'CaptureIntent': {
       const text = slot(body, 'NoteText')
-      if (!text) return say('What should I capture?', { reprompt: 'Say, capture, then your thought.' })
-      const { error } = await admin.from('captures').insert({ user_id: userId, text, domain: null })
+      if (!text) return say('What should the note say?', { reprompt: 'Say, make a note, then your thought.' })
+      const { error } = await admin.from('notes').insert({ user_id: userId, space_id: null, title: '', body: text })
       if (error) return say('I could not save that just now.', { end: true })
-      return say('Saved to your inbox.', { end: true })
+      return say('Saved to your notes.', { end: true })
     }
 
     case 'AddRefillIntent': {
@@ -341,7 +341,7 @@ export async function POST(request: Request) {
       return say("You're already linked. Say: ask four s what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
-      return say('You can add a task, capture a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, pause or resume a habit, snooze a refill, or say you bought something. Or ask about your money or what is coming up. What would you like?', {
+      return say('You can add a task, make a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, pause or resume a habit, snooze a refill, or say you bought something. Or ask about your money or what is coming up. What would you like?', {
         reprompt: 'What would you like to do?',
       })
 
@@ -373,9 +373,6 @@ async function buildBrief(admin: ReturnType<typeof createAdminClient>, userId: s
   const overdue = open.filter(t => t.due_date && differenceInCalendarDays(parseISO(t.due_date), new Date()) < 0)
   const dueToday = open.filter(t => t.due_date === today)
 
-  const { count: inboxCount } = await admin
-    .from('captures').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('domain', null)
-
   const { data: buyItems } = await admin
     .from('buy_items').select('name, last_bought, cadence_days, status').eq('user_id', userId)
   const refillsDue = (buyItems ?? []).filter(b => {
@@ -387,7 +384,6 @@ async function buildBrief(admin: ReturnType<typeof createAdminClient>, userId: s
   if (overdue.length) parts.push(`${overdue.length} overdue task${overdue.length > 1 ? 's' : ''}`)
   if (dueToday.length) parts.push(`${dueToday.length} due today`)
   if (refillsDue.length) parts.push(`${refillsDue.length} thing${refillsDue.length > 1 ? 's' : ''} to buy again`)
-  if (inboxCount && inboxCount > 0) parts.push(`${inboxCount} inbox item${inboxCount > 1 ? 's' : ''}`)
 
   if (parts.length === 0) {
     return detailed ? 'Nothing needs your attention right now. A good time to plan ahead.' : "You're all clear."
@@ -396,7 +392,7 @@ async function buildBrief(admin: ReturnType<typeof createAdminClient>, userId: s
   const summary = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
   const lead = overdue.length ? 'Start with your overdue tasks.'
     : dueToday.length ? "Focus on what's due today."
-    : refillsDue.length ? 'Worth restocking what ran out.' : 'A quick inbox sort would help.'
+    : refillsDue.length ? 'Worth restocking what ran out.' : 'Pick the one thing that matters most.'
 
   return detailed ? `You have ${summary}. ${lead}` : `You have ${summary}.`
 }

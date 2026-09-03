@@ -34,7 +34,7 @@ export type { SectionConfig }
 // a single "Personal" tab. Goals folded into Tasks (2026-09-03, was Habits).
 // Household still nests one level down; see householdLayout.ts.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
-  // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
+  // Today — the Brief, Needs Attention, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the
   // 'brief-inbox'/'week-review' scroll anchors, and every goToSection call.
   // Renaming the id to match the label would be a migration with nothing to

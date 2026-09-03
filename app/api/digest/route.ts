@@ -24,7 +24,6 @@ import { createClient } from '@/lib/supabase/server'
 //   "You are a personal advisor reviewing a week of life data.
 //    Habits: {habit summary}
 //    Subscriptions: {spending summary}
-//    Captures: {inbox count}
 //    Write 3-4 sentences: what stood out, one risk, one win."
 // ─────────────────────────────────────────────────────────────────────────────
 

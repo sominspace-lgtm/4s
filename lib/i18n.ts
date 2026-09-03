@@ -48,18 +48,11 @@ const KO: Record<string, string> = {
   'assign': '분류',
   '+ domain': '+ 영역',
 
-  // ── Quick Capture ─────────────────────────────────────────────────────
-  'quick capture — ⌘K': '빠른 메모 — ⌘K',
+  // ── Quick Note ────────────────────────────────────────────────────────
+  'quick note — ⌘K': '빠른 메모 — ⌘K',
   "What's on your mind?": '무슨 생각을 하고 있나요?',
   'Save ↵': '저장 ↵',
-  'captured ✓': '저장됨 ✓',
-
-  // ── Capture section ───────────────────────────────────────────────────
-  'Dump a thought — assign it later': '생각을 적어보세요 — 나중에 분류하세요',
-  '↵ enter': '↵ 입력',
-  'Unsorted': '미분류',
-  '⬤ Unsorted': '⬤ 미분류',
-  'Nothing captured yet': '아직 메모가 없습니다',
+  'saved ✓': '저장됨 ✓',
   'No results': '결과 없음',
 
   // ── Habits ────────────────────────────────────────────────────────────
@@ -255,13 +248,12 @@ export function fmtDate(date: Date, lang: Lang): string {
 /** Korean insight strings (DailyBrief) */
 export function getInsightKO(params: {
   overdue: number; dueToday: number; habitsDoneToday: number; habitsTotal: number;
-  inboxCount: number; inProgress: number;
+  inProgress: number;
 }): string {
-  const { overdue, dueToday, habitsDoneToday, habitsTotal, inboxCount, inProgress } = params
+  const { overdue, dueToday, habitsDoneToday, habitsTotal, inProgress } = params
   if (overdue > 0) return `${overdue}개 업무 기한이 지났습니다 — 먼저 처리하세요.`
   if (dueToday > 0 && habitsDoneToday === 0 && habitsTotal > 0) return `오늘 마감 업무 ${dueToday}개, 아직 습관 미완료.`
   if (habitsTotal > 0 && habitsDoneToday === habitsTotal) return '오늘 습관 모두 완료. 훌륭한 하루입니다.'
-  if (inboxCount > 5) return `미분류 메모 ${inboxCount}개 — 잠깐 정리해보세요.`
   if (inProgress > 0) return `진행 중인 업무 ${inProgress}개. 계속 이어가세요.`
   if (dueToday === 0 && overdue === 0 && habitsTotal > 0) return '오늘 여유 있습니다. 깊이 집중할 좋은 시간이에요.'
   return '가장 중요한 것부터 시작하세요.'

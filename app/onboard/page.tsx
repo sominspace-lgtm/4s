@@ -9,16 +9,11 @@ import { DEFAULT_THEME } from '@/lib/constants/themes'
 // ARRIVAL, not setup.
 //
 // This used to be a five-step wizard: name → domains → theme → first habit →
-// first thought, all before anything had been shown to work. That asked
-// someone to make five decisions about a product they had not yet
-// experienced, and it's where the one blocking bug of this work lived (a
-// failed session check left the button spinning forever with no message).
-//
-// The replacement: three lines of philosophy you can skip, then ONE input.
-// Everything the wizard used to demand is now either defaulted (theme,
-// guide), asked later at the moment it's useful (name, domains), or simply
-// dropped (templates). Target is under 45 seconds from landing to having
-// something real in your village — the old flow took two to four minutes.
+// first thought, all before anything had been shown to work. The replacement:
+// three lines of philosophy you can skip, then one "who's this for?" tap.
+// Everything the wizard demanded is defaulted (theme, guide), asked later at
+// the moment it's useful (name, domains), or dropped — the first-thought
+// step went 2026-09-04 when Quick Capture folded into Notes.
 //
 // Everything here still degrades safely: every exit either lands on the
 // dashboard or says what went wrong and lets you retry.
@@ -40,16 +35,11 @@ const PANELS = [
 
 type HouseholdChoice = 'solo' | 'couple' | 'family'
 
-// One tap, not a form — same "cheap to answer" bar as Skip on the philosophy
-// panels. 'solo' (the default if this step is skipped) creates nothing, which
-// is exactly today's behavior: everyone starts in personal (space_id null)
-// mode unless they say otherwise. Couple/family create ONE shared_spaces row,
-// same shape as useSharedSpaces.createSpace({name, owner_id}) — no members
-// are added here, since that needs the other person's email, which this
-// screen doesn't have. This is deliberately NOT the same thing as
-// relationship_pairs (Household → Setup's consent-gated partner pairing):
-// this just removes the friction of creating an empty space to invite into
-// later, it doesn't claim a partner is already connected.
+// One tap, not a form. 'solo' (the default if this step is skipped) creates
+// nothing — everyone starts in personal (space_id null) mode unless they say
+// otherwise. Couple/family create ONE shared_spaces row; no members are
+// added here (that needs the other person's email). Not the same thing as
+// relationship_pairs (Household → Setup's consent-gated partner pairing).
 const HOUSEHOLD_OPTIONS: { id: HouseholdChoice; label: string; spaceName: string | null }[] = [
   { id: 'solo',   label: 'Just you',   spaceName: null },
   { id: 'couple', label: 'A couple',   spaceName: 'Couple' },
@@ -69,7 +59,6 @@ function MiniVillage({ step }: { step: number }) {
         <path d="M -19 -22 L 0 -34 L 19 -22 Z" fill="var(--gold)" fillOpacity={0.5} />
         <rect x={-4} y={-12} width={8} height={12} fill="var(--gold)" opacity={0.3} />
       </g>
-      {/* plants appear as you read */}
       {[60, 92, 210].slice(0, plants).map((x, i) => (
         <g key={x} transform={`translate(${x} 72)`} className="grew">
           <rect x={-1} y={-14 - i * 5} width={2} height={14 + i * 5} fill="var(--emerald)" opacity={0.7} />
@@ -84,39 +73,29 @@ export default function OnboardPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [step, setStep] = useState(0)     // 0..2 = philosophy, 3 = household, 4 = the one input
-  const [household, setHousehold] = useState<HouseholdChoice>('solo')
-  const [thought, setThought] = useState('')
+  const [step, setStep] = useState(0)     // 0..2 = philosophy, 3 = household
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // One write, one navigation, every failure surfaced. `finally` guarantees
-  // the button can never be left stuck — the exact bug this page used to have.
-  async function finish(withThought: boolean) {
+  // the button can never be left stuck. `choice` is passed in from the tap
+  // rather than read from state, which wouldn't be updated yet.
+  async function finish(choice: HouseholdChoice = 'solo') {
     setSaving(true)
     setError(null)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
-        setError("We couldn't confirm your session. What you typed is still here — try again.")
+        setError("We couldn't confirm your session. Try again.")
         return
       }
 
-      if (withThought && thought.trim()) {
-        const { error: capErr } = await supabase.from('captures')
-          .insert({ user_id: user.id, text: thought.trim() })
-        // A failed capture is worth logging, but it must never trap someone
-        // on the doorstep — they can always capture again inside.
-        if (capErr) console.error('First capture failed:', capErr.message)
-      }
-
-      const spaceName = HOUSEHOLD_OPTIONS.find(o => o.id === household)?.spaceName
+      const spaceName = HOUSEHOLD_OPTIONS.find(o => o.id === choice)?.spaceName
       if (spaceName) {
         const { error: spaceErr } = await supabase.from('shared_spaces')
           .insert({ name: spaceName, owner_id: user.id })
-        // Same reasoning as the capture above: worth logging, never worth
-        // blocking arrival over — a space can always be created later from
-        // People → Sharing → Spaces.
+        // Worth logging, never worth blocking arrival over — a space can
+        // always be created later from Household → Setup.
         if (spaceErr) console.error('Starter space failed:', spaceErr.message)
       }
 
@@ -140,10 +119,7 @@ export default function OnboardPage() {
   }
 
   const onPhilosophy = step < PANELS.length
-  const onHousehold = step === PANELS.length
-  // The remaining step (step === PANELS.length + 1) is the thought-capture
-  // screen — handled as the else branch below rather than its own flag.
-  const TOTAL_STEPS = PANELS.length + 2
+  const TOTAL_STEPS = PANELS.length + 1
 
   return (
     <ThemeProvider theme={DEFAULT_THEME}>
@@ -166,7 +142,7 @@ export default function OnboardPage() {
                 {PANELS[step].sub}
               </div>
             </div>
-          ) : onHousehold ? (
+          ) : (
             <div key={step} className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem, 4.5vw, 1.7rem)', fontWeight: 300, textAlign: 'center', lineHeight: 1.3 }}>
                 Who&rsquo;s this for?
@@ -175,7 +151,8 @@ export default function OnboardPage() {
                 {HOUSEHOLD_OPTIONS.map(opt => (
                   <button
                     key={opt.id}
-                    onClick={() => { setHousehold(opt.id); setStep(s => s + 1) }}
+                    onClick={() => finish(opt.id)}
+                    disabled={saving}
                     className="btn btn-secondary press"
                     style={{ flex: '1 1 auto', padding: '0.85rem 1rem', fontSize: '0.82rem' }}
                   >
@@ -185,27 +162,6 @@ export default function OnboardPage() {
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.7, textAlign: 'center' }}>
                 A couple or family gets a shared space to invite into later. You can change this any time.
-              </div>
-            </div>
-          ) : (
-            <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.3rem, 4.5vw, 1.7rem)', fontWeight: 300, textAlign: 'center', lineHeight: 1.3 }}>
-                What&rsquo;s one thing on your mind?
-              </div>
-              <input
-                autoFocus
-                value={thought}
-                onChange={e => setThought(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && thought.trim()) finish(true) }}
-                placeholder="Anything. A task, a worry, an idea."
-                style={{
-                  width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
-                  borderRadius: '10px', color: 'var(--text)', fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem', padding: '0.85rem 1rem', outline: 'none',
-                }}
-              />
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', opacity: 0.7, textAlign: 'center' }}>
-                It becomes the first thing in your world. You can change everything later.
               </div>
             </div>
           )}
@@ -223,35 +179,19 @@ export default function OnboardPage() {
           <div style={{ display: 'flex', gap: '0.6rem' }}>
             {onPhilosophy ? (
               <>
-                <button onClick={() => finish(false)} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
+                <button onClick={() => finish('solo')} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
                   Skip
                 </button>
                 <button onClick={() => setStep(s => s + 1)} className="btn btn-primary press" style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.04em' }}>
                   {step === PANELS.length - 1 ? 'Begin →' : 'Next →'}
                 </button>
               </>
-            ) : onHousehold ? (
-              // The tap buttons above are the primary action (choose + advance
-              // in one gesture) — this is just an escape hatch, same "solo"
-              // outcome as picking "Just you", for anyone who'd rather not
-              // answer at all.
-              <button onClick={() => setStep(s => s + 1)} disabled={saving} className="btn btn-ghost press" style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
-                Skip
-              </button>
             ) : (
-              <>
-                <button onClick={() => finish(false)} disabled={saving} className="btn btn-ghost press" style={{ padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
-                  {saving ? '…' : 'Skip'}
-                </button>
-                <button
-                  onClick={() => finish(true)}
-                  disabled={saving || !thought.trim()}
-                  className="btn btn-primary press"
-                  style={{ flex: 1, padding: '0.75rem', fontSize: '0.82rem', letterSpacing: '0.04em' }}
-                >
-                  {saving ? 'Opening…' : 'Enter your world →'}
-                </button>
-              </>
+              // The tap buttons above choose + finish in one gesture — this is
+              // just an escape hatch, same "solo" outcome.
+              <button onClick={() => finish('solo')} disabled={saving} className="btn btn-ghost press" style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.78rem' }}>
+                {saving ? 'Opening…' : 'Skip'}
+              </button>
             )}
           </div>
 

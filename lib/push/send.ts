@@ -2,7 +2,7 @@ import webpush from 'web-push'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // The one place that knows how to actually deliver a push — every server
-// trigger (the daily cron, the fridge-note notify route) calls THIS rather
+// trigger (the daily cron) calls THIS rather
 // than touching web-push or push_subscriptions directly, same "one function,
 // not duplicated per caller" reasoning as routineDue()/computeStatus().
 

@@ -6,7 +6,7 @@
 const SHORTCUTS: [string, string][] = [
   ['t', 'Add a task'],
   ['h', 'Add a habit'],
-  ['c', 'Quick capture'],
+  ['c', 'Quick note'],
   ['/', 'Search'],
   ['?', 'This list'],
 ]

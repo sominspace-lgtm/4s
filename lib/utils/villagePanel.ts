@@ -18,7 +18,6 @@ export type VillagePanelBlockId =
   | 'tonight'    // tonight's dinner + chores due
   | 'meals'      // this week's dinners
   | 'shopping'   // the shopping list + quick-add
-  | 'fridge'     // pinned house notes + quick-add
   | 'music'      // the house playlist (MusicCard)
   | 'dateIdeas'  // saved / planned date ideas
   | 'nearby'     // pins near the new place
@@ -33,21 +32,20 @@ export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: stri
   tonight:   { label: 'Tonight',        hint: "Dinner and what's due" },
   meals:     { label: "This week's meals", hint: "What we're eating" },
   shopping:  { label: 'Shopping list',  hint: 'What to buy, add from here' },
-  fridge:    { label: 'Fridge notes',   hint: 'Notes left for each other' },
   music:     { label: 'Music',          hint: 'The house playlist' },
   dateIdeas: { label: 'Date ideas',     hint: 'Saved and planned' },
   nearby:    { label: 'Nearby',         hint: 'Pins around the new place' },
   moveIn:    { label: 'Move-in',        hint: 'What still needs sorting' },
 }
 
-// Default order + which start hidden. Calendar / to-dos / fridge / move-in
+// Default order + which start hidden. Calendar / to-dos / move-in
 // are opt-in (the user asked for the *option* to add them, not for them on
 // by default).
 const DEFAULT_ORDER: VillagePanelBlockId[] = [
   'house', 'shortcuts', 'progress', 'calendar', 'todos',
-  'tonight', 'meals', 'shopping', 'music', 'fridge', 'dateIdeas', 'nearby', 'moveIn',
+  'tonight', 'meals', 'shopping', 'music', 'dateIdeas', 'nearby', 'moveIn',
 ]
-const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar', 'todos', 'fridge', 'moveIn'])
+const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar', 'todos', 'moveIn'])
 
 export const DEFAULT_VILLAGE_PANEL_BLOCKS: SectionConfig[] = DEFAULT_ORDER.map(id => ({
   id,

@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 // in localStorage so a guest who comes back to add a second thing doesn't
 // retype it. Photos live at the booth (Phase 3), not here.
 
-type Action = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge'
+type Action = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from'
 
 const ACTIONS: { kind: Action; icon: string; label: string; blurb: string }[] = [
   { kind: 'thank_you', icon: '💌', label: 'Say thank you', blurb: 'A little note by the well' },
@@ -16,11 +16,9 @@ const ACTIONS: { kind: Action; icon: string; label: string; blurb: string }[] = 
   { kind: 'note', icon: '💭', label: 'Leave a note', blurb: 'A thought, a wish, a memory' },
   { kind: 'song', icon: '🎵', label: 'Add a song', blurb: 'For the record player' },
   { kind: 'from', icon: '🗺️', label: 'Where you’re from', blurb: 'A pin on the map' },
-  { kind: 'fridge', icon: '🧲', label: 'Add to the fridge', blurb: 'A note for the kitchen' },
 ]
 
 const THANKS_CHIPS = ['Thank you for having us', 'What a night', 'So cozy in here', 'We’ll be back', 'This was special']
-const FRIDGE_ICONS = ['❤️', '⭐', '🌻', '🍞', '☕', '🎈', '🐈', '🌙']
 
 interface GuestInfo { wifiName?: string; wifiPassword?: string; notes?: string }
 
@@ -166,7 +164,6 @@ function ActionForm({ token, action, name, onName, onBack, onDone }: {
   const [songTitle, setSongTitle] = useState('')
   const [songUrl, setSongUrl] = useState('')
   const [place, setPlace] = useState('')
-  const [icon, setIcon] = useState('❤️')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -175,7 +172,6 @@ function ActionForm({ token, action, name, onName, onBack, onDone }: {
     const payload: Record<string, unknown> = { kind: action, guest_name: name.trim() || null }
     if (action === 'song') { payload.title = songTitle.trim(); payload.url = songUrl.trim(); payload.body = songTitle.trim() }
     else if (action === 'from') { payload.place = place.trim(); payload.body = place.trim() }
-    else if (action === 'fridge') { payload.icon = icon; payload.body = text.trim() }
     else payload.body = text.trim()
 
     try {
@@ -235,17 +231,6 @@ function ActionForm({ token, action, name, onName, onBack, onDone }: {
 
       {action === 'from' && (
         <input value={place} onChange={e => setPlace(e.target.value)} placeholder="Town, or town & country" style={S.input} maxLength={60} />
-      )}
-
-      {action === 'fridge' && (
-        <>
-          <div style={S.chips}>
-            {FRIDGE_ICONS.map(i => (
-              <button key={i} onClick={() => setIcon(i)} style={{ ...S.chip, fontSize: '1.2rem', ...(icon === i ? S.chipOn : {}) }}>{i}</button>
-            ))}
-          </div>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="A few words for the fridge" rows={2} style={S.area} maxLength={120} />
-        </>
       )}
 
       <input

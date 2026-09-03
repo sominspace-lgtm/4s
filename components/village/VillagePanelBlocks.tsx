@@ -61,7 +61,6 @@ export default function VillagePanelBlocks(props: VillagePanelProps) {
           case 'tonight':   return <TonightCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'meals':     return <MealsCard key={b.id} spaceId={spaceId} />
           case 'shopping':  return <ShoppingCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
-          case 'fridge':    return <FridgeCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'dateIdeas': return <DateIdeasCard key={b.id} spaceId={spaceId} />
           case 'nearby':    return <NearbyCard key={b.id} />
           case 'moveIn':    return <MoveInCard key={b.id} spaceId={spaceId} />
@@ -227,23 +226,6 @@ function ShoppingCard({ spaceId, onInteract }: { spaceId: string | null; onInter
       ))}
       {open.length === 0 && <Line dim italic>Nothing to buy.</Line>}
       <QuickAdd placeholder="Add to shopping" onAdd={t => { h.addShopping(t, null, null); onInteract?.() }} />
-    </Card>
-  )
-}
-
-function FridgeCard({ spaceId, onInteract }: { spaceId: string | null; onInteract?: () => void }) {
-  const h = useHousehold(spaceId)
-  const notes = [...h.notes].sort((a, b) => Number(b.pinned) - Number(a.pinned)).slice(0, 5)
-  return (
-    <Card icon="thumbtack" tint="var(--gold)" title="Fridge notes">
-      {notes.length === 0 && <Line dim italic>No notes.</Line>}
-      {notes.map(n => (
-        <div key={n.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
-          {n.pinned && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--gold)' }}>●</span>}
-          <span style={{ fontSize: '0.74rem', color: 'var(--text)' }}>{n.body}</span>
-        </div>
-      ))}
-      <QuickAdd placeholder="Leave a note" onAdd={t => { h.addNote(t); onInteract?.() }} />
     </Card>
   )
 }

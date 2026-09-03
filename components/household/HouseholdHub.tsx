@@ -76,11 +76,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   userEmail: string
   homeBlocks: SectionConfig[]
   onChangeHomeBlocks: (next: SectionConfig[]) => void
-  /** From the no-PIN "Shared" login tile. Opens straight on Reference —
-   *  "the fridge door" pinned notes are already the first thing in it
-   *  (household_notes sorts pinned-first, see useHousehold.ts) — rather than
-   *  Home, so a quick glance shows what's pinned, not the full weekly-chore
-   *  working view. */
+  /** From the no-PIN "Shared" login tile. Opens straight on Reference (the
+   *  household's shared notes / lookups) rather than the full weekly-chore
+   *  working view on Home. */
   sharedMode?: boolean
   /** Prompts the real Harry/Sylvia PIN unlock (see UnlockPanel) — used to
    *  gate genuinely personal content (Check-ins) while sharedMode is on,

@@ -50,14 +50,6 @@ export interface ShoppingItem {
   got_at: string | null
 }
 
-export interface HouseNote {
-  id: string
-  space_id: string | null
-  body: string
-  pinned: boolean
-  created_at: string
-}
-
 export interface HouseRule {
   id: string
   space_id: string | null
@@ -88,7 +80,6 @@ export function useHousehold(spaceId: string | null) {
   const [chores, setChores] = useState<Chore[]>([])
   const [meals, setMeals] = useState<Meal[]>([])
   const [shopping, setShopping] = useState<ShoppingItem[]>([])
-  const [notes, setNotes] = useState<HouseNote[]>([])
   const [rules, setRules] = useState<HouseRule[]>([])
   const [moveinItems, setMoveinItems] = useState<MoveinItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -102,23 +93,20 @@ export function useHousehold(spaceId: string | null) {
       spaceId ? q.eq('space_id', spaceId) : q.is('space_id', null)
 
     const [
-      { data: c, error: ce }, { data: m, error: me }, { data: s, error: se }, { data: n, error: ne },
+      { data: c, error: ce }, { data: m, error: me }, { data: s, error: se },
       { data: r, error: re }, { data: mv, error: mve },
     ] = await Promise.all([
       scope(supabase.from('household_chores').select('*').order('created_at')),
       scope(supabase.from('household_meals').select('*').order('meal_date')),
       scope(supabase.from('household_shopping').select('*').order('created_at')),
-      // Pinned first, then newest — a fridge door reads top-down by urgency.
-      scope(supabase.from('household_notes').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false })),
       scope(supabase.from('household_rules').select('*').order('created_at', { ascending: false })),
       scope(supabase.from('household_movein_items').select('*').order('created_at')),
     ])
-    const firstError = ce ?? me ?? se ?? ne ?? re ?? mve
+    const firstError = ce ?? me ?? se ?? re ?? mve
     setError(firstError ? firstError.message : null)
     setChores((c as Chore[] | null) ?? [])
     setMeals((m as Meal[] | null) ?? [])
     setShopping((s as ShoppingItem[] | null) ?? [])
-    setNotes((n as HouseNote[] | null) ?? [])
     setRules((r as HouseRule[] | null) ?? [])
     setMoveinItems((mv as MoveinItem[] | null) ?? [])
     setLoading(false)
@@ -243,34 +231,6 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  async function addNote(body: string) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Not signed in' }
-    const { error } = await supabase.from('household_notes')
-      .insert({ user_id: user.id, space_id: spaceId, body })
-    if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify()
-    // Let the other partner know a fridge note went up (they can mute it —
-    // notifyPrefs.fridgeNote). Fire-and-forget; a failed push never blocks.
-    fetch('/api/notify/space', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'fridge-note', preview: body.slice(0, 80) }),
-    }).catch(() => {})
-    return { error: null }
-  }
-
-  async function toggleNotePin(id: string, pinned: boolean) {
-    const { error } = await supabase.from('household_notes').update({ pinned }).eq('id', id)
-    if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify(); return { error: null }
-  }
-
-  async function removeNote(id: string) {
-    const { error } = await supabase.from('household_notes').delete().eq('id', id)
-    if (error) { setError(error.message); return { error: error.message } }
-    await load(); notify(); return { error: null }
-  }
-
   // Rules is a resource Discord already writes to (`/rule`, `/save`, `/task`...
   // land here too, but into chores) that had no UI at all until now — same
   // shape as everything above, just newer.
@@ -323,11 +283,10 @@ export function useHousehold(spaceId: string | null) {
   }
 
   return {
-    chores, meals, shopping, notes, rules, moveinItems, loading, error,
+    chores, meals, shopping, rules, moveinItems, loading, error,
     addChore, markChoreDone, removeChore, setChoreFolder,
     addMeal, removeMeal, updateMeal,
     addShopping, toggleGot, clearGot, removeShopping,
-    addNote, toggleNotePin, removeNote,
     addRule, toggleRuleActive, removeRule,
     addMoveinItem, toggleMoveinGot, removeMoveinItem,
   }

@@ -6,14 +6,11 @@ import { redirect } from 'next/navigation'
 // your phone's native share sheet, the way you'd share to Notes or Mail.
 // Registered via manifest.json's share_target, GET method: title/text/url
 // come back as query params, not a POST body, because a GET-based target is
-// the one form every mobile browser actually honors for text/link shares —
-// the file-upload form needs a POST and a different capture path entirely,
-// not something 4S's captures table has a shape for yet.
+// the one form every mobile browser actually honors for text/link shares.
 //
-// No UI of its own — it folds whatever was shared into one capture and
-// sends you straight to the Brief, where it's just another unfiled thought
-// waiting in the inbox. Nothing about a shared link deserves a special
-// unfiling flow the ones you type yourself don't get.
+// No UI of its own — it folds whatever was shared into one personal note
+// and sends you straight to the dashboard (2026-09-04: was a `captures`
+// row; Quick Capture folded into Notes).
 export default async function ShareTargetPage({
   searchParams,
 }: {
@@ -37,7 +34,7 @@ export default async function ShareTargetPage({
   const combined = [...new Set(parts)].join(' — ').slice(0, 2000)
 
   if (combined) {
-    await supabase.from('captures').insert({ user_id: user.id, text: combined, domain: null })
+    await supabase.from('notes').insert({ user_id: user.id, space_id: null, title: '', body: combined })
   }
 
   redirect('/dashboard')

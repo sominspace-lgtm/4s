@@ -4,14 +4,13 @@ import { useState } from 'react'
 import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 
 // What 4S is allowed to push, and whether pushes are on at all. The daily
-// cron (app/api/cron/daily) and the fridge-note route read notifyPrefs;
+// cron (app/api/cron/daily) reads notifyPrefs;
 // a missing key means on.
 
 const KINDS: { key: string; label: string; hint: string }[] = [
   { key: 'overdueTasks', label: 'Overdue tasks', hint: 'Once a day, if something is past due' },
   { key: 'subRenewal', label: 'Subscription renewals', hint: 'The day before one renews' },
   { key: 'checkinNudge', label: 'Weekly check-in', hint: 'Sunday, if you haven’t done it yet' },
-  { key: 'fridgeNote', label: 'Fridge notes', hint: 'When your partner leaves one' },
 ]
 
 export default function NotificationsPanel({ open, prefs, onChange, onClose }: {

@@ -7,14 +7,12 @@ import { t } from '@/lib/i18n'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 
 const TYPE_ICON: Record<string, string> = {
-  capture:  '○',
   work:     '◈',
   wishlist: '✦',
   habit:    '◉',
   note:     '□',
 }
 const TYPE_COLOR: Record<string, string> = {
-  capture:  'var(--muted)',
   work:     'var(--gold)',
   wishlist: 'var(--amber)',
   habit:    'var(--emerald)',
@@ -55,7 +53,7 @@ function goTo(sectionId: string) {
 // the fallback, kept pointing at the real section ids so it stays correct
 // if that ever changes.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
-  capture: 'brief', work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes',
+  work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes',
 }
 
 interface Props {
@@ -87,7 +85,7 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goToPersonal('people') },
     { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goToPersonal('tasks'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
     { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToPersonal('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
-    { id: 'capture-thought', label: 'Capture a thought', hint: 'Brief', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'inbox', 'quick add'], run: () => { goTo('brief'); window.dispatchEvent(new CustomEvent('app:focus-capture')) } },
+    { id: 'new-note', label: 'New note', hint: 'Notes', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'quick add'], run: () => window.dispatchEvent(new CustomEvent('app:open-quick-capture')) },
     { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
     { id: 'switch-mode',  label: 'Switch mode',      icon: '◐', keywords: ['mode', 'personality', 'tone', 'guide', 'voice'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
   ]

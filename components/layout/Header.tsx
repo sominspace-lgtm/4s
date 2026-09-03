@@ -237,10 +237,10 @@ export default function Header({ email, userId, initialName, sharedMode = false,
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
-        {/* Desktop's only visible entry to Quick Capture used to be ⌘K —
+        {/* Desktop's only visible entry to Quick Note used to be ⌘K —
             real, but undiscoverable. This is the same trigger MobileNav's
             FAB already uses one level down. */}
-        <button onClick={onCapture} title="Quick capture" aria-label="Quick capture" style={{
+        <button onClick={onCapture} title="Quick note" aria-label="Quick note" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',

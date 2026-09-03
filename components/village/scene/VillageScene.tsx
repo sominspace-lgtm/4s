@@ -781,7 +781,6 @@ export default function VillageScene({
       { id: 'demo-s1', kind: 'song', guest_name: 'Jules', body: 'Landslide', meta: { title: 'Landslide — Fleetwood Mac' }, status: 'visible' },
       { id: 'demo-s2', kind: 'song', guest_name: 'Theo', body: 'Dreams', meta: { title: 'Dreams' }, status: 'visible' },
       { id: 'demo-n1', kind: 'note', guest_name: 'Alex', body: 'wishing you both the best year', meta: {}, status: 'visible' },
-      { id: 'demo-f1', kind: 'fridge', guest_name: 'Sam', body: 'good soup', meta: { icon: '🍜' }, status: 'visible' },
       { id: 'demo-fr1', kind: 'from', guest_name: 'Lin', body: 'Taipei', meta: { place: 'Taipei' }, status: 'visible' },
       { id: 'demo-fr2', kind: 'from', guest_name: 'Ben', body: 'Lisbon', meta: { place: 'Lisbon' }, status: 'visible' },
     ]
@@ -1124,8 +1123,8 @@ export default function VillageScene({
   // Wishing well (round 57; round 60 "make cuter hover for thankful well")
   // — tapping it opens a small styled card with a real text field (a
   // <foreignObject> in the scene, same place the Somi card lives) instead
-  // of a browser prompt. What's dropped in is saved as a `gratitude`-tagged
-  // capture, the same table Quick Add / Daily Reflection write to.
+  // of a browser prompt. What's dropped in is saved as a personal note,
+  // prefixed "Grateful for:" (2026-09-04 — was a gratitude-tagged capture).
   const [wellOpen, setWellOpen] = useState(false)
   const [wellGlow, setWellGlow] = useState(false)
   const [wellText, setWellText] = useState('')
@@ -1137,8 +1136,8 @@ export default function VillageScene({
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) await supabase.from('captures').insert({ text, user_id: user.id, domain: 'gratitude' })
-      window.dispatchEvent(new CustomEvent('4s:captures-changed'))
+      if (user) await supabase.from('notes').insert({ user_id: user.id, space_id: null, title: '', body: `Grateful for: ${text}` })
+      window.dispatchEvent(new CustomEvent('4s:notes-changed'))
     } catch { /* ignore — the well is a gesture, not a form */ }
     setWellGlow(true)
     setTimeout(() => setWellGlow(false), 1600)
@@ -2277,9 +2276,8 @@ export default function VillageScene({
           so layering Draggable's onPointerDown underneath is safe. */}
       {(() => { const p = decorPos('mailbox'); return (
         <Draggable x={p.x} y={p.y} id="mailbox" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('mailbox')} r={14}>
-          <MailboxShape x={0} y={0} onClick={nav('Capture', () => {
-            goToSection('brief')
-            setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture')), 80)
+          <MailboxShape x={0} y={0} onClick={nav('Note', () => {
+            window.dispatchEvent(new CustomEvent('app:open-quick-capture'))
           })} />
         </Draggable>
       ) })()}
