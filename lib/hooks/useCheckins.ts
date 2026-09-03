@@ -56,18 +56,26 @@ export function useCheckins(userId: string | null = null) {
 
   const submitCheckin = useCallback(async (answers: CheckinAnswer[]): Promise<{ error: string | null }> => {
     if (!userId || !spaceId) return { error: 'No shared space yet' }
+    const week = weekOfMonday()
+    // One submission per week, no edits after (2026-09-03). Guard on what we
+    // have loaded, and rely on the (space_id, user_id, week_of) unique
+    // constraint as the real backstop — this is a plain insert, not an upsert.
+    if (checkins.some(c => c.user_id === userId && c.week_of.slice(0, 10) >= week)) {
+      return { error: 'You’ve already checked in this week.' }
+    }
     const clean = answers
       .filter(a => typeof a.questionKey === 'string' && typeof a.answer === 'string' && a.answer.trim())
       .map(a => ({ questionKey: a.questionKey, questionText: a.questionText ?? null, answer: a.answer.slice(0, 2000) }))
     if (clean.length === 0) return { error: 'Nothing to save' }
-    const { error } = await supabase.from('checkins').upsert(
-      { user_id: userId, space_id: spaceId, week_of: weekOfMonday(), answers: clean, completed_at: new Date().toISOString() },
-      { onConflict: 'space_id,user_id,week_of' },
+    const { error } = await supabase.from('checkins').insert(
+      { user_id: userId, space_id: spaceId, week_of: week, answers: clean, completed_at: new Date().toISOString() },
     )
-    if (error) return { error: error.message }
+    if (error) {
+      return { error: error.code === '23505' ? 'You’ve already checked in this week.' : error.message }
+    }
     window.dispatchEvent(new CustomEvent('4s:checkins-changed'))
     return { error: null }
-  }, [supabase, userId, spaceId])
+  }, [supabase, userId, spaceId, checkins])
 
   /** This user's row for the current week, if it exists. */
   const thisWeek = checkins.find(c => c.user_id === userId && c.week_of.slice(0, 10) >= weekOfMonday())

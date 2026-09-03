@@ -47,14 +47,10 @@ type HouseholdTab = HouseholdTabId
 // Calendar (what's coming), Reference (what you look up). What's INSIDE
 // Home is reorderable and hideable — `homeBlocks` is owned by
 // DashboardClient, same relationship Today has with its own blocks.
-// The emoji vibe check (2026-08-26) — a Discord DM reaction the companion
-// bot now mirrors to 4S as a 'vibe' answer (see checkinStore.VIBE_QUESTION_KEY
-// in the companion repo). The four it pre-seeds map to a word + color, same
-// language the due-date coloring elsewhere in this file already uses; "react
-// with anything else" is explicitly allowed there, so anything outside those
-// four falls back to a neutral badge rather than rendering the raw emoji
-// (this app's whole point in dropping emoji is to not have Discord's font
-// choices leaking into 4S's own look).
+// The emoji vibe check — the first check-in question. The four quick picks
+// map to a word + color, same language the due-date coloring elsewhere in
+// this file uses; any other emoji the person typed is shown as-is with a
+// neutral dot (2026-09-03 — "put any emoji" is now supported in the form).
 const VIBE_MAP: Record<string, { label: string; color: string }> = {
   '🥱': { label: 'Tired', color: 'var(--muted)' },
   '😐': { label: 'Meh', color: 'var(--amber)' },
@@ -62,11 +58,12 @@ const VIBE_MAP: Record<string, { label: string; color: string }> = {
   '🥰': { label: 'Great', color: 'var(--gold)' },
 }
 function VibeBadge({ emoji }: { emoji: string }) {
-  const v = VIBE_MAP[emoji] ?? { label: 'Vibe noted', color: 'var(--muted)' }
+  const known = VIBE_MAP[emoji]
+  const color = known?.color ?? 'var(--muted)'
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.62rem', color: v.color, opacity: 0.9 }}>
-      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: v.color, flexShrink: 0 }} />
-      {v.label}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.62rem', color, opacity: 0.9 }}>
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      {known ? known.label : <span style={{ fontSize: '0.85rem' }}>{emoji}</span>}
     </span>
   )
 }
@@ -225,10 +222,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
 
-    // The weekly check-in prompt, above the shopping list — renders only on
-    // Sunday (check-in day), a no-op every other day. Same component and
-    // form as Today's CheckinCard (2026-09-03).
-    checkin: () => <CheckinCard userId={userId} sundayOnly />,
+    // The weekly check-in prompt, above the shopping list — shows on Sunday,
+    // or any day this week's check-in still isn't done, else a no-op. Same
+    // component as Today's CheckinCard (2026-09-03).
+    checkin: () => <CheckinCard userId={userId} />,
 
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
@@ -875,36 +872,33 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         const mineDone = !!thisWeekMine
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            {/* The prompt only appears on check-in day (Sunday) — same window
-                as the Home block and the push. Once you're in for the week it
-                stays as a quiet "revise" any day; otherwise it's just the
-                history below, with a line saying when the next one is. */}
-            {(isSunday || mineDone) ? (
+            {/* Take-it prompt shows whenever this week isn't done yet (Sunday
+                or catch-up). Once submitted there's no button — answers can't
+                be revised — just a quiet confirmation and the history. */}
+            {!mineDone ? (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.9rem',
-                padding: mineDone ? 0 : '0.8rem 1rem',
-                border: mineDone ? 'none' : '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
-                background: mineDone ? 'transparent' : 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
+                padding: '0.8rem 1rem',
+                border: '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
+                background: 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
                 borderRadius: '12px',
               }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: mineDone ? 400 : 500 }}>
-                    {mineDone ? 'You’re in for this week.' : 'Time for your weekly check-in'}
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 500 }}>
+                    {isSunday ? 'Time for your weekly check-in' : 'This week’s check-in isn’t done'}
                   </div>
-                  {!mineDone && (
-                    <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
-                      A few minutes, just between you two.
-                    </div>
-                  )}
+                  <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+                    A few minutes, just between you two. You can’t change answers once submitted.
+                  </div>
                 </div>
-                <button onClick={() => setCheckinFormOpen(true)} className={mineDone ? 'btn btn-ghost press' : 'btn btn-primary press'}
-                  style={{ fontSize: mineDone ? '0.7rem' : '0.74rem', flexShrink: 0, opacity: mineDone ? 0.7 : 1 }}>
-                  {mineDone ? 'Revise' : 'Complete check-in'}
+                <button onClick={() => setCheckinFormOpen(true)} className="btn btn-primary press"
+                  style={{ fontSize: '0.74rem', flexShrink: 0 }}>
+                  Complete check-in
                 </button>
               </div>
             ) : (
               <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.9rem' }}>
-                Next check-in: Sunday.
+                You’re in for this week. Next check-in: Sunday.
               </div>
             )}
             {checkinFormOpen && <CheckinForm onSubmit={submitCheckin} onClose={() => setCheckinFormOpen(false)} />}

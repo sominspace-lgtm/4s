@@ -26,9 +26,9 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   calendar: { label: 'Calendar',          hint: 'The month — chores, meals, trips, shared events' },
   // The week in review (2026-08-18) — same computation the bot posts on Sundays.
   thisWeek: { label: 'This week',          hint: 'What got done, in one glance' },
-  // The weekly relationship check-in prompt — only renders on check-in day
-  // (Sunday); a no-op the rest of the week (2026-09-03).
-  checkin:  { label: 'Check-in',           hint: 'Sunday — complete this week’s check-in' },
+  // The weekly relationship check-in prompt — renders on Sunday, or any day
+  // this week's check-in still isn't done; a no-op otherwise (2026-09-03).
+  checkin:  { label: 'Check-in',           hint: 'Complete this week’s check-in' },
   shopping: { label: 'Shopping list',      hint: 'What to buy' },
   meals:    { label: 'This week’s meals',  hint: 'What we’re eating' },
   // House rules — standing conventions ("no shoes inside"). Moved here from

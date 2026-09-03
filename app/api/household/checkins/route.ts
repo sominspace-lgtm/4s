@@ -2,13 +2,10 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveHouseholdToken } from '@/lib/household/resources'
 
-// Bespoke, not RESOURCES-driven: the generic /api/household/[resource] route
-// is insert-only, but a check-in genuinely needs upsert — a partner can revise
-// an answer before the week's "both done" recap fires, and the bot always
-// re-sends the full answer set on completion rather than tracking a diff.
-// The (space_id, user_id, week_of) unique constraint in checkins.sql is what
-// makes that safe: it can only ever overwrite YOUR OWN prior answers for that
-// same week, never someone else's or a different week's.
+// Bespoke, not RESOURCES-driven. Insert-only since 2026-09-03: a check-in is
+// one submission per person per week with no edits after (the Discord bot
+// that used to re-send full answer sets is gone). The
+// (space_id, user_id, week_of) unique constraint rejects a second attempt.
 
 interface AnswerIn { questionKey?: unknown; questionText?: unknown; answer?: unknown }
 
@@ -34,13 +31,13 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('checkins')
-    .upsert(
-      { user_id: caller.userId, space_id: caller.spaceId, week_of: weekOf, answers, completed_at: new Date().toISOString() },
-      { onConflict: 'space_id,user_id,week_of' },
-    )
+    .insert({ user_id: caller.userId, space_id: caller.spaceId, week_of: weekOf, answers, completed_at: new Date().toISOString() })
     .select('id, week_of, completed_at')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '23505') return NextResponse.json({ error: 'Already checked in for this week' }, { status: 409 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ item: data }, { status: 201 })
 }
