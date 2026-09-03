@@ -285,11 +285,9 @@ select, option {
   .domain-grid { grid-template-columns: 1fr !important; }
   h1, .display { font-size: clamp(1.6rem, 8vw, 2.5rem) !important; }
 
-  /* Bigger tap targets and readable text for forms/buttons on small screens */
-  input, select, textarea {
-    font-size: max(0.85rem, 1em) !important;
-    min-height: 42px;
-  }
+  /* Bigger tap targets on small screens (font-size for inputs is handled by
+     the pointer:coarse rule below so it covers tablets too). */
+  input, select, textarea { min-height: 42px; }
   textarea { min-height: 72px; }
   .btn { min-height: 40px; font-size: max(0.75rem, 1em) !important; }
   .card-interactive { padding: 1rem !important; }
@@ -300,6 +298,15 @@ select, option {
   .page-pad { padding-left: 1rem !important; padding-right: 1rem !important; }
   .controls-row { justify-content: flex-start !important; }
   .section-label { margin-top: 1.6rem !important; }
+}
+
+/* iOS/iPadOS Safari zooms the whole page in whenever a focused input's
+   computed font-size is under 16px. `pointer: coarse` targets touch devices
+   (phones AND tablets — the <600px block missed the wall iPad); `!important`
+   is needed because many inputs set their font-size inline. `max(16px, 1em)`
+   keeps a deliberately-larger input larger. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: max(16px, 1em) !important; }
 }
 
 /* Motion — entrances breathe in; nothing jumps */
