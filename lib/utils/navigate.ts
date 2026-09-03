@@ -40,12 +40,14 @@ export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'pe
 
 // Tasks/Habits/Notes/Money/People are their own top-level sections now
 // (2026-09-01), so this is mostly just goToSection with a narrower type.
-// Goals folded into the Habits tab (2026-09-01) — a 'goals' target lands
-// there and asks it to open the Goals section (see HabitsTab).
+// Goals folded into the Tasks section (2026-09-03, was Habits) — a 'goals'
+// target lands there and asks it to open the Goals section (see TasksTab).
 export function goToPersonal(tab: PersonalTab) {
   if (tab === 'goals') {
-    goToSection('habits')
-    window.dispatchEvent(new CustomEvent('4s:open-goals'))
+    goToSection('tasks')
+    // Let the Tasks section mount before its listener is expected to catch
+    // this — same 60ms beat the keyboard shortcuts use for open-form events.
+    setTimeout(() => window.dispatchEvent(new CustomEvent('4s:open-goals')), 60)
     return
   }
   goToSection(tab)

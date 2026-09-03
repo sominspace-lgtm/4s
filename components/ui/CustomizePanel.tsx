@@ -31,8 +31,8 @@ export type { SectionConfig }
 // twice. It's a panel inside Today now.
 // The personal areas (Tasks/Habits/Notes/Money/People) are their own
 // top-level sections as of 2026-09-01 — they used to live one click behind
-// a single "Personal" tab. Goals folded into Habits the same day. Household
-// still nests one level down; see householdLayout.ts.
+// a single "Personal" tab. Goals folded into Tasks (2026-09-03, was Habits).
+// Household still nests one level down; see householdLayout.ts.
 export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Today — the Brief, Needs Attention, Quick Add/Inbox, and the calendar.
   // Section id stays 'brief': it's referenced by saved layouts, the

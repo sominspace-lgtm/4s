@@ -22,7 +22,7 @@ import { useGathering } from '@/lib/hooks/useGathering'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
-import MasterDashboard from '@/components/work/MasterDashboard'
+import TasksTab from '@/components/work/TasksTab'
 import HabitsTab from '@/components/habits/HabitsTab'
 import NotesHub from '@/components/notes/NotesHub'
 import MoneyHub from '@/components/money/MoneyHub'
@@ -80,7 +80,7 @@ const DEPRECATED_SECTION_IDS = new Set([
   'relationship', 'shared',                          // → people
   'domains', 'growth',                              // → habits / notes
   'council',                                         // removed entirely (2026-09-01)
-  'goals',                                          // folded into the Habits tab (2026-09-01)
+  'goals',                                          // folded into the Tasks section (2026-09-03, was Habits 2026-09-01)
   'work',                                            // → 'tasks' (2026-08-20)
   // 'personal' dissolved 2026-09-01 — Tasks/Goals/Habits/Notes/Money/People
   // are top-level sections again. mergeLayout strips the dangling 'personal'
@@ -485,8 +485,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onUpdatePrep={gathering.updatePrep} onOpenDoors={gathering.openDoors} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} />
         // Personal areas — one section id each (2026-09-01). Goals folded
-        // into the Habits section the same day (see HabitsTab).
-        case 'tasks':    return <MasterDashboard key="tasks" userId={userId} />
+        // into the Tasks section 2026-09-03 (see TasksTab).
+        case 'tasks':    return <TasksTab key="tasks" userId={userId} />
         case 'habits':   return <HabitsTab key="habits" userId={userId} />
         case 'notes':    return <NotesHub key="notes" userId={userId} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
