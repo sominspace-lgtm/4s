@@ -55,6 +55,11 @@ export interface LayoutState {
   // (not individual plants/buildings) get this. Optional for the same
   // reason villageLastSeen is: old saved rows predate it.
   villageLayout?: VillageLayout
+  // Village milestone ids already shown (habit→tree, monthly/yearly
+  // anniversary — see lib/village/milestones.ts). A derived moment fires
+  // once, then its id lands here so it never fires again. Optional for the
+  // same reason the others are.
+  milestonesSeen?: string[]
 }
 
 export async function saveLayout(

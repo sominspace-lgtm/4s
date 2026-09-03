@@ -57,6 +57,7 @@ interface Props {
   accountCreatedAt: string | null
   /** ISO string of the last Village visit, from user_prefs.layout. */
   initialVillageLastSeen: string | null
+  initialMilestonesSeen: string[] | null
   initialName: string | null
   initialTheme: string
   /** From user_prefs.custom_theme — only meaningful when initialTheme === 'custom'. */
@@ -205,7 +206,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-pins', 'places-trips'] },
 ]
 
-export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
+export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialMilestonesSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
@@ -284,12 +285,23 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
+  const [milestonesSeen, setMilestonesSeen] = useState<string[]>(initialMilestonesSeen ?? [])
+  const ackMilestone = useCallback((id: string) => {
+    setMilestonesSeen(prev => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      saveLayout(userId, { ...layoutState(), milestonesSeen: prev }, { milestonesSeen: next })
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
   // All layout writes go through saveLayout(). See lib/persistence/saveLayout.ts:
   // the layout column is one JSON blob, so a hand-built object that omits a key
   // silently wipes that setting. Built fresh in each handler so every value is
   // current at write time.
   function layoutState(): LayoutState {
-    return { sections, todayBlocks, householdHomeBlocks, villagePanelBlocks, notifyPrefs, villageLastSeen: villageLastSeen ?? undefined, villageLayout }
+    return { sections, todayBlocks, householdHomeBlocks, villagePanelBlocks, notifyPrefs, villageLastSeen: villageLastSeen ?? undefined, villageLayout, milestonesSeen }
   }
 
   async function changeNotifyPrefs(next: Record<string, boolean>) {
@@ -503,7 +515,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onUpdatePrep={gathering.updatePrep} onOpenDoors={gathering.openDoors} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onUpdatePrep={gathering.updatePrep} onOpenDoors={gathering.openDoors} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} />
         // Personal areas — one section id each (2026-09-01). Goals folded
         // into the Tasks section 2026-09-03 (see TasksTab).
         case 'tasks':    return <TasksTab key="tasks" userId={userId} />

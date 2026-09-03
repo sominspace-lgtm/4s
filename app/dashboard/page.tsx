@@ -33,6 +33,7 @@ export default async function DashboardPage() {
   const householdHomeBlocks = prefs?.layout?.householdHomeBlocks as SectionConfig[] | null
   const villagePanelBlocks = prefs?.layout?.villagePanelBlocks as SectionConfig[] | null
   const villageLayout = prefs?.layout?.villageLayout as VillageLayout | null
+  const milestonesSeen = prefs?.layout?.milestonesSeen as string[] | null
 
   return (
     <DashboardClient
@@ -63,6 +64,7 @@ export default async function DashboardPage() {
       initialHouseholdHomeBlocks={householdHomeBlocks ?? null}
       initialVillagePanelBlocks={villagePanelBlocks ?? null}
       initialVillageLayout={villageLayout ?? null}
+      initialMilestonesSeen={milestonesSeen ?? null}
     />
   )
 }

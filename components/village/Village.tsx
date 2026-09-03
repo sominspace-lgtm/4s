@@ -28,6 +28,8 @@ import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
+import MilestoneMoment from './MilestoneMoment'
+import { detectMilestones } from '@/lib/village/milestones'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import Icon from '@/components/ui/Icon'
@@ -54,7 +56,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, panelBlocks = [], onChangePanelBlocks }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -107,6 +109,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   /** The Village home panel's block config + writer — see lib/utils/villagePanel.ts. */
   panelBlocks?: SectionConfig[]
   onChangePanelBlocks?: (next: SectionConfig[]) => void
+  /** Milestone ids already shown, and the ack writer — see lib/village/milestones.ts. */
+  milestonesSeen?: string[]
+  onAckMilestone?: (id: string) => void
 }) {
   const [arranging, setArranging] = useState(false)
   // The single ⋯ control-menu on the full tab (2026-08-31) — everything the
@@ -276,6 +281,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }),
     [habits, completions, allWork, reflectionDays, accountCreated, clock]
   )
+
+  // First unacknowledged milestone, if any — one at a time, never in shared
+  // mode (a milestone is personal), never in compact/arrange/guest.
+  const pendingMilestone = useMemo(() => {
+    if (locked || compact) return null
+    const seen = new Set(milestonesSeen)
+    return detectMilestones(v.plants, clock ?? undefined).find(m => !seen.has(m.id)) ?? null
+  }, [v.plants, milestonesSeen, clock, locked, compact])
 
   // The arrival line, computed once per visit.
   //
@@ -454,6 +467,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {ambient && !compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather} />
+        )}
+
+        {pendingMilestone && !arranging && !guestActive && onAckMilestone && (
+          <MilestoneMoment milestone={pendingMilestone} onAck={onAckMilestone} />
         )}
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the
