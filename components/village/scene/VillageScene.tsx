@@ -891,7 +891,12 @@ export default function VillageScene({
   // seen") — 330 kept the top edge around y=78 while the sun/moon arc peaks
   // at y=60, clipping the disc every midday. 380 + the top-edge cap in
   // skyThirdCY opens the sky back up without giving up the foreground.
-  let baseH = 380
+  // 404 (2026-09-04, "image being cut") — 380 left the visible window at
+  // y 18..398, so the nearest foreground band (y ~366-376) and any dragged-
+  // low prop sat jammed against the card's bottom edge / rounded corner. The
+  // extra 24 units is pure ground clearance; skyThirdCY still caps the top
+  // edge at y=18 so the sun/moon disc stays fully in frame either way.
+  let baseH = 404
   let BASE_VB_CX = 400
   // Horizon ~40% down the frame (round 69) — ground-weighted, top of window
   // = GROUND_Y - 0.4·h. But the sun/moon arc runs y 60..120 (lib/village/

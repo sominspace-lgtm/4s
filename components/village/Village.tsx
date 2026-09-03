@@ -408,7 +408,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // sky. aspect-ratio scales height to the card's actual width, so
           // the full scene always renders, never cropped — and at a normal
           // Today-card width that's naturally much bigger than 150px too.
-          ...(compact ? { aspectRatio: '800 / 440', cursor: 'pointer' } : {}),
+          ...(compact ? { aspectRatio: '800 / 404', cursor: 'pointer' } : {}),
           // In fullscreen the card fills the whole viewport; VillageScene
           // re-shapes its own viewBox to that exact ratio (see
           // containerAspect below), so the SVG covers it edge to edge with
