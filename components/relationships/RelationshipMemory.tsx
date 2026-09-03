@@ -55,18 +55,24 @@ function Row({ person, onSave, onRemove, onContacted }: {
         className="press"
         style={{
           width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.6rem 0', fontFamily: 'var(--font-body)',
+          display: 'flex', flexDirection: 'column', gap: '0.2rem', padding: '0.65rem 0', fontFamily: 'var(--font-body)',
         }}
       >
-        <span style={{ fontSize: '0.82rem', color: 'var(--text)', fontWeight: 500, flexShrink: 0 }}>{person.name}</span>
-        {person.relationship && (
-          <span style={{ fontSize: '0.56rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', background: 'var(--hover-bg)', padding: '0.1em 0.5em', borderRadius: '20px', flexShrink: 0 }}>{person.relationship}</span>
-        )}
-        {bday && <span style={{ fontSize: '0.62rem', color: 'var(--amber)', flexShrink: 0 }}>{bday}</span>}
-        <span style={{ flex: 1, minWidth: 0, fontSize: '0.68rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {person.notes || ''}
+        {/* Name + chips on one line (wraps), the note preview under it — reads
+            at any width without squeezing anything to nothing. */}
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', width: '100%' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)', fontWeight: 500 }}>{person.name}</span>
+          {person.relationship && (
+            <span style={{ fontSize: '0.56rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', background: 'var(--hover-bg)', padding: '0.1em 0.5em', borderRadius: '20px' }}>{person.relationship}</span>
+          )}
+          {bday && <span style={{ fontSize: '0.62rem', color: 'var(--amber)' }}>{bday}</span>}
+          <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: contact.nudge ? 'var(--gold)' : 'var(--muted)', opacity: contact.nudge ? 1 : 0.7 }}>{contact.text}</span>
         </span>
-        <span style={{ fontSize: '0.62rem', color: contact.nudge ? 'var(--gold)' : 'var(--muted)', opacity: contact.nudge ? 1 : 0.7, flexShrink: 0 }}>{contact.text}</span>
+        {person.notes && (
+          <span style={{ fontSize: '0.68rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+            {person.notes}
+          </span>
+        )}
       </button>
 
       {open && (

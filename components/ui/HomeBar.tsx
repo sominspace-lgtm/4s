@@ -66,10 +66,11 @@ export default function HomeBar({ groups, activeId, onSelect }: {
             const isActive = m === activeId
             return (
               <button key={m} onClick={() => onSelect(m)} className="press" style={{
-                padding: '0.3rem 0.75rem', borderRadius: '999px', border: 'none', cursor: 'pointer', flexShrink: 0,
+                padding: '0.3rem 0.7rem', borderRadius: '999px', border: 'none', cursor: 'pointer', flexShrink: 0,
+                whiteSpace: 'nowrap',
                 background: isActive ? 'color-mix(in srgb, var(--gold) 16%, transparent)' : 'none',
                 color: isActive ? 'var(--gold)' : 'var(--muted)',
-                fontFamily: 'var(--font-body)', fontSize: '0.66rem', letterSpacing: '0.03em',
+                fontFamily: 'var(--font-body)', fontSize: '0.66rem', letterSpacing: '0.02em',
                 opacity: isActive ? 1 : 0.75,
               }}>{MEMBER_LABELS[m] ?? m}</button>
             )

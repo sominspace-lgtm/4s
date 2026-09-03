@@ -157,7 +157,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
         <div className="t-card">{view === 'agenda' ? 'The next two weeks' : format(month, 'MMMM yyyy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-          <div className="t-meta" style={{ display: 'flex', gap: '0.7rem' }}>
+          <div className="t-meta" style={{ display: 'flex', gap: '0.5rem 0.7rem', flexWrap: 'wrap' }}>
             {(['chore', 'meal', 'routine', 'trip', 'task', 'event', 'checkin'] as const).map(k => (
               <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                 <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: KIND_COLOR[k], display: 'inline-block' }} />
