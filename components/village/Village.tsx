@@ -27,6 +27,7 @@ import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
+import AmbientInfo from './scene/AmbientInfo'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import Icon from '@/components/ui/Icon'
@@ -426,6 +427,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           <VillageScene village={v} live={clock !== null} palette={palette}
             celestial={mood.forceNight ? null : celestial}
             sceneMood={mood}
+            frozen={ambient}
             containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
@@ -446,6 +448,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
             homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
+
+        {/* Ambient readout — only on the idle wall view, and not during a
+            live gathering (the party screen owns the overlay then). */}
+        {ambient && !compact && !guestLive && (
+          <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
+            timeLabel={timeLabel} dateLabel={dateLabel} weather={weather} />
+        )}
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the
             whole scene — the preview should open the real Village on any

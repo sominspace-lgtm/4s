@@ -793,6 +793,33 @@ select, option {
   .nav-tab::after { transition: none !important; }
 }
 
+/* Wall-iPad idle mode — same freeze as reduced-motion, but runtime-toggled
+   (VillageScene gets `.village-idle-frozen` while the `ambient` prop is true).
+   A still frame is a nicer picture and doesn't drive the panel all night;
+   any touch clears ambient and motion resumes. */
+.village-idle-frozen .village-drift,
+.village-idle-frozen .village-glow,
+.village-idle-frozen .village-flower-sway,
+.village-idle-frozen .village-sway-soft,
+.village-idle-frozen .village-fade,
+.village-idle-frozen .village-smoke circle,
+.village-idle-frozen .village-birds,
+.village-idle-frozen .village-firefly,
+.village-idle-frozen .village-butterfly-0,
+.village-idle-frozen .village-butterfly-1,
+.village-idle-frozen .village-petal,
+.village-idle-frozen .village-leaf,
+.village-idle-frozen .village-snow,
+.village-idle-frozen .village-rain,
+.village-idle-frozen .village-cloud,
+.village-idle-frozen .village-twinkle,
+.village-idle-frozen .village-bob,
+.village-idle-frozen .settle,
+.village-idle-frozen .grew { animation: none !important; }
+.village-idle-frozen .village-cycle-frame { animation: none !important; opacity: 0 !important; }
+.village-idle-frozen .village-cycle-frame:first-child { opacity: 1 !important; }
+.village-idle-frozen .village-sky-stop { transition: none !important; }
+
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

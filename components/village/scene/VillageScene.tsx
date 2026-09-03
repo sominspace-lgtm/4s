@@ -596,9 +596,13 @@ export default function VillageScene({
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
+  frozen = false,
 }: {
   village: VillageState
   live: boolean
+  /** Wall-iPad ambient/idle mode — freeze all scene motion (CSS + SMIL) so
+   *  it reads as a still picture and doesn't drive the panel 24/7. */
+  frozen?: boolean
   palette: SeasonPalette
   celestial: CelestialData | null
   /** How the scene reads for the applied smart-home scene — see lib/smarthome/sceneMood.ts. */
@@ -768,9 +772,16 @@ export default function VillageScene({
   // `?gathering=1` forces Guest Mode on (with a couple of fake contributions)
   // so the whole guest layer can be seen in /village-preview. Dev-only param.
   const [gatheringPreview, setGatheringPreview] = useState(false)
+  // `?frozen=1` previews the wall-iPad idle freeze.
+  const [frozenPreview, setFrozenPreview] = useState(false)
   useEffect(() => {
-    try { if (new URLSearchParams(window.location.search).get('gathering') === '1') setGatheringPreview(true) } catch { /* ignore */ }
+    try {
+      const q = new URLSearchParams(window.location.search)
+      if (q.get('gathering') === '1') setGatheringPreview(true)
+      if (q.get('frozen') === '1' || q.get('ambient') === '1') setFrozenPreview(true)
+    } catch { /* ignore */ }
   }, [])
+  const isFrozen = frozen || frozenPreview
   if (gatheringPreview) {
     gathering = true
     if (contributions.length === 0) contributions = [
@@ -1030,6 +1041,15 @@ export default function VillageScene({
   }
 
   const svgRef = useRef<SVGSVGElement>(null)
+
+  // Idle freeze — CSS handles the keyframe animations (.village-idle-frozen in
+  // globals.css); this stops the scene's SMIL <animate> too, which CSS can't.
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    try { isFrozen ? svg.pauseAnimations() : svg.unpauseAnimations() } catch { /* SMIL unsupported */ }
+  }, [isFrozen])
+
   const [draggingId, setDraggingId] = useState<string | null>(null)
   // Resize-in-arrange (round 48, 2026-08-28, "make all elements resizable
   // in arrange") — a tap (pointer down then up with no real movement) on a
@@ -1291,7 +1311,7 @@ export default function VillageScene({
   // personal data — a habit's title in someone's tooltip — so a click there
   // routes through the same unlock prompt as the district labels rather than
   // revealing it; see the `locked` branch below.
-  const [selected, setSelected] = useState<{ type: 'plant' | 'building'; id: string } | null>(null)
+  const [selected, setSelected] = useState<{ type: 'plant' | 'building' | 'grove'; id: string } | null>(null)
 
   // Click-to-care (2026-08-24) — a tap already opened the name/stage
   // callout; this is the tactile half. careFor() bounces the tapped shape
@@ -1325,6 +1345,34 @@ export default function VillageScene({
   }
   const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
+
+  // Tap callout text. No date-fns here — the scene is deliberately hookless
+  // and dateless; a YYYY-MM-DD string is formatted by hand. Forward-looking
+  // on purpose (see lib/village/state.ts) — "3 waterings to grow", never
+  // "3 short".
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  function fmtMonthDay(iso: string): string {
+    const [, m, d] = iso.slice(0, 10).split('-').map(Number)
+    return m >= 1 && m <= 12 ? `${MON[m - 1]} ${d}` : iso.slice(0, 10)
+  }
+  function plantSubtitle(p: VillageState['plants'][number]): string {
+    if (p.dormant) return `${p.stage} · resting`
+    if (p.toNextStage == null) return `${p.stage} · fully grown`
+    return `${p.stage} · ${p.toNextStage} watering${p.toNextStage === 1 ? '' : 's'} to grow`
+  }
+  const BUILDING_PHASE: Record<VillageState['buildings'][number]['phase'], string> = {
+    blueprint: 'blueprint', foundation: 'breaking ground', construction: 'under construction',
+    complete: 'finished', landmark: 'a landmark',
+  }
+  function buildingSubtitle(b: VillageState['buildings'][number]): string {
+    const base = BUILDING_PHASE[b.phase]
+    return b.dueDate && b.phase !== 'complete' && b.phase !== 'landmark'
+      ? `${base} · due ${fmtMonthDay(b.dueDate)}`
+      : base
+  }
+  const groveSubtitle = v.treeRings > 0
+    ? `${v.treeRings} year${v.treeRings === 1 ? '' : 's'} kept`
+    : `${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} in`
   // Zoom is a viewBox computation, not a transform on the content — every
   // coordinate in this file stays exactly as authored, at a fixed 800:440
   // pixel aspect no matter what's on screen (no stretching). Centered on
@@ -1447,6 +1495,7 @@ export default function VillageScene({
       viewBox={viewBox}
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
+      className={isFrozen ? 'village-idle-frozen' : undefined}
       preserveAspectRatio="xMidYMid meet"
       style={{
         width: '100%', height: containerAspect ? '100%' : 'auto', display: 'block',
@@ -2395,7 +2444,14 @@ export default function VillageScene({
           overgrown grove rather than a clearing where something was felled.
           The account-age still lives in the district badge count and in
           VillageText; the <title> keeps it for screen readers. */}
-      <g transform={`translate(725 ${GROUND_Y + 2})`}>
+      <g transform={`translate(725 ${GROUND_Y + 2})`}
+        className={!arranging ? 'village-entity' : undefined}
+        style={{ cursor: !arranging ? 'pointer' : undefined }}
+        onClick={arranging ? undefined : e => {
+          e.stopPropagation()
+          if (locked) { onLockedNavigate?.('Archive'); return }
+          setSelected(s => (s?.type === 'grove' ? null : { type: 'grove', id: 'grove' }))
+        }}>
         <title>{
           v.treeRings > 0
             ? `Archive Grove, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'} of growth`
@@ -3043,12 +3099,15 @@ export default function VillageScene({
       {selectedPlant && (
         <EntityCallout x={selectedPlant.x} y={selectedPlant.y}
           title={selectedPlant.plant.name}
-          subtitle={`${selectedPlant.plant.stage}${selectedPlant.plant.dormant ? ' · resting' : ''}`} />
+          subtitle={plantSubtitle(selectedPlant.plant)} />
       )}
       {selectedBuilding && (
         <EntityCallout x={selectedBuilding.x} y={selectedBuilding.y}
           title={selectedBuilding.building.title}
-          subtitle={selectedBuilding.building.phase === 'complete' || selectedBuilding.building.phase === 'landmark' ? 'finished' : 'in progress'} />
+          subtitle={buildingSubtitle(selectedBuilding.building)} />
+      )}
+      {selected?.type === 'grove' && (
+        <EntityCallout x={725} y={GROUND_Y - 6} title="Archive Grove" subtitle={groveSubtitle} />
       )}
 
       {/* The time/season/weather readout card was removed (2026-08-29, "remove

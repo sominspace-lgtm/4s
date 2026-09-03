@@ -24,11 +24,14 @@ function fakeVillage(
     stage: PLANT_STAGES[i % PLANT_STAGES.length],
     dormant: i === 4 || i === 7,
     category: null,
+    waterings: i * 3,
+    toNextStage: i % 3 === 0 ? null : (i % 3) + 1,
   }))
   const buildings: Building[] = [...Array(nBuildings)].map((_, i) => ({
     id: `b${i}`,
     title: `Project ${i}`,
     phase: PHASES[i % PHASES.length],
+    dueDate: i % 2 === 0 ? '2026-10-15' : null,
   }))
   return {
     plants, buildings, flowers: [],

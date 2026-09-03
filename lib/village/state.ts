@@ -23,12 +23,17 @@ export interface Plant {
   /** True when untended ~14d. A filter over `stage`, not a demotion. */
   dormant: boolean
   category: string | null
+  /** All-time completions (waterings) — drives the tap callout. */
+  waterings: number
+  /** Waterings until the next stage, or null once fully grown. */
+  toNextStage: number | null
 }
 
 export interface Building {
   id: string
   title: string
   phase: 'blueprint' | 'foundation' | 'construction' | 'complete' | 'landmark'
+  dueDate: string | null
 }
 
 export interface VillageState {
@@ -105,6 +110,8 @@ export function plantFor(habit: Habit, completions: string[]): Plant {
     // something you actually started.
     dormant: habit.paused || (completions.length > 0 && daysSince > 14),
     category: habit.category,
+    waterings: completions.length,
+    toNextStage: completionsToNextStage(completions),
   }
 }
 
@@ -156,7 +163,7 @@ export function buildVillage(input: {
   const plants = input.habits.map(h => plantFor(h, input.completions[h.id] ?? []))
   const buildings = input.workItems
     .filter(isBuildingWorthy)
-    .map(i => ({ id: i.id, title: i.title, phase: phaseFor(i) }))
+    .map(i => ({ id: i.id, title: i.title, phase: phaseFor(i), dueDate: i.due_date ?? null }))
 
   const years = input.accountCreated
     ? Math.max(0, Math.floor(differenceInCalendarDays(now, input.accountCreated) / 365))
