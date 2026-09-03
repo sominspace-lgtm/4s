@@ -848,6 +848,25 @@ const COUPLE_OUTFIT_POSE: Partial<Record<Outfit, { src: string; aspect: number }
 
 const wrap = (i: number, n: number) => ((i % n) + n) % n
 
+// Context poses (2026-09-04) — the two of them doing the thing you've been
+// doing most this week (see lib/village/figureActivity.ts). Composited from
+// the solo context-actions sheet; scripts/village-crops.mjs.
+export const COUPLE_CONTEXT_POSE = {
+  garden: { src: '/village-assets/couple-garden.png', aspect: 320 / 160 },
+  read:   { src: '/village-assets/couple-read.png',   aspect: 276 / 148 },
+} as const
+export type ContextActivity = keyof typeof COUPLE_CONTEXT_POSE
+
+export function CoupleContext({ x, y, activity }: { x: number; y: number; activity: ContextActivity }) {
+  const f = COUPLE_CONTEXT_POSE[activity]
+  const h = 30 // seated poses read a touch shorter than the standing couple
+  const w = h * f.aspect
+  return (
+    <image href={f.src} x={x - w / 2} y={y - h} width={w} height={h}
+      style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+  )
+}
+
 export function CoupleInteraction({ x, y, poseIndex = 0, outfit = 'default' }: { x: number; y: number; poseIndex?: number; outfit?: Outfit }) {
   const list = outfit !== 'default' ? COUPLE_OUTFIT_POSE[outfit] : undefined
   const f = list && list.length

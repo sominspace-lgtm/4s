@@ -12,7 +12,16 @@ const SOMI  = 'character/somi/somi-ambient-reactive-behaviors-corrected-alpha.pn
 const STAR  = 'village/village-stargazing-workshop-props-alpha.png'
 const AMBI  = 'village/village-animation-ambient-flowers-lights.png'
 
+const CONTEXT = 'character/animation/sylvia-harry-context-actions-alpha.png'
+
 export const CROPS = [
+  // ── Solo context poses (2026-09-04) — composited into couple poses below
+  //    for the "what you're doing this week" idle rotation in the village. ──
+  { sheet: CONTEXT, out: 'ctx-sylvia-garden', left: 1289, top: 34,  width: 162, height: 150 },
+  { sheet: CONTEXT, out: 'ctx-harry-garden',  left: 1281, top: 556, width: 168, height: 160 },
+  { sheet: CONTEXT, out: 'ctx-sylvia-read',   left: 185,  top: 223, width: 138, height: 148 },
+  { sheet: CONTEXT, out: 'ctx-harry-read',    left: 190,  top: 767, width: 150, height: 108 },
+
   // ── Movie-night couple (facing the screen, under a blanket) ─────────────
   {
     sheet: 'character/animation/interaction/sylvia-harry-movie-night-interactions-elements-alpha.png',
@@ -78,4 +87,7 @@ export const COMPOSITES = [
     out: 'couple-party', overlap: 24,
     parts: ['sylvia-party.png', 'harry-party.png'],
   },
+  // Context poses — the two of them doing the same thing, side by side.
+  { out: 'couple-garden', overlap: 10, parts: ['ctx-sylvia-garden.png', 'ctx-harry-garden.png'] },
+  { out: 'couple-read',   overlap: 12, parts: ['ctx-sylvia-read.png', 'ctx-harry-read.png'] },
 ]

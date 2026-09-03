@@ -30,6 +30,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
+import { figureActivity } from '@/lib/village/figureActivity'
 import VillageText from './VillageText'
 import VillageArrival from './VillageArrival'
 import Icon from '@/components/ui/Icon'
@@ -290,6 +291,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return detectMilestones(v.plants, clock ?? undefined).find(m => !seen.has(m.id)) ?? null
   }, [v.plants, milestonesSeen, clock, locked, compact])
 
+  const contextActivity = useMemo(
+    () => figureActivity(habits, completions, clock ?? undefined),
+    [habits, completions, clock],
+  )
+
   // The arrival line, computed once per visit.
   //
   // Guarded through sessionStorage because DashboardClient only renders the
@@ -441,6 +447,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             celestial={mood.forceNight ? null : celestial}
             sceneMood={mood}
             frozen={ambient}
+            contextActivity={contextActivity}
             containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}

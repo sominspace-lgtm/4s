@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -596,13 +596,16 @@ export default function VillageScene({
   placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
-  frozen = false,
+  frozen = false, contextActivity = null,
 }: {
   village: VillageState
   live: boolean
   /** Wall-iPad ambient/idle mode — freeze all scene motion (CSS + SMIL) so
    *  it reads as a still picture and doesn't drive the panel 24/7. */
   frozen?: boolean
+  /** The activity you've done most this week — swaps a context pose into the
+   *  couple's idle rotation. See lib/village/figureActivity.ts. */
+  contextActivity?: ContextActivity | null
   palette: SeasonPalette
   celestial: CelestialData | null
   /** How the scene reads for the applied smart-home scene — see lib/smarthome/sceneMood.ts. */
@@ -772,16 +775,21 @@ export default function VillageScene({
   // `?gathering=1` forces Guest Mode on (with a couple of fake contributions)
   // so the whole guest layer can be seen in /village-preview. Dev-only param.
   const [gatheringPreview, setGatheringPreview] = useState(false)
-  // `?frozen=1` previews the wall-iPad idle freeze.
+  // `?frozen=1` previews the wall-iPad idle freeze; `?context=garden|read`
+  // forces a context pose.
   const [frozenPreview, setFrozenPreview] = useState(false)
+  const [contextPreview, setContextPreview] = useState<ContextActivity | null>(null)
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search)
       if (q.get('gathering') === '1') setGatheringPreview(true)
       if (q.get('frozen') === '1' || q.get('ambient') === '1') setFrozenPreview(true)
+      const c = q.get('context')
+      if (c === 'garden' || c === 'read') setContextPreview(c)
     } catch { /* ignore */ }
   }, [])
   const isFrozen = frozen || frozenPreview
+  const activeContext = contextPreview ?? contextActivity
   if (gatheringPreview) {
     gathering = true
     if (contributions.length === 0) contributions = [
@@ -2775,7 +2783,13 @@ export default function VillageScene({
       <g>
         {!arranging && !settledNight && !sceneHidesFigures && (
           <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
-            <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} outfit={outfit} />
+            {/* One idle vignette in three is the week's context pose (gardening
+                / reading) when there is one — no new timer, it rides the
+                existing interactPose cycle. Never during a gathering or a
+                smart-home scene (those own the figures). */}
+            {activeContext && !gathering && !moodActive && (contextPreview != null || interactPose % 3 === 0)
+              ? <CoupleContext x={life.interactAt.x} y={life.interactAt.y} activity={activeContext} />
+              : <CoupleInteraction x={life.interactAt.x} y={life.interactAt.y} poseIndex={interactPose} outfit={outfit} />}
           </g>
         )}
         <g style={{ visibility: coupleTogether ? 'hidden' : undefined }}>
