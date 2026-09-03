@@ -3,7 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
 import { sendPushToUser } from '@/lib/push/send'
 
-// The one scheduled server nudge (Vercel Cron, once a day — see vercel.json).
+// The one scheduled server nudge (Vercel Cron, daily at 04:00 UTC — which is
+// ~8-9pm the evening before in America/Los_Angeles, so the weekly check-in
+// nudge lands Sunday evening. See vercel.json).
 // Was `waiting-notice`, overdue tasks only; now a few kinds, each gated by
 // the user's own notifyPrefs (user_prefs.layout.notifyPrefs, missing = on)
 // and deduped per-kind via push_notify_state.last_sent so a kind fires at
@@ -29,9 +31,19 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient()
   const now = new Date()
-  const today = now.toISOString().slice(0, 10)
-  const isSunday = now.getUTCDay() === 0
-  const monday = weekMonday(now)
+  // Reckoned in the household's timezone (America/Los_Angeles, matching the old
+  // Discord check-in bot), not UTC — so "Sunday" and "this week" mean the same
+  // thing to the person reading the push as they do here. The cron runs daily
+  // at 04:00 UTC (see vercel.json), which is ~8-9pm the previous day in LA, so
+  // the check-in nudge lands Sunday evening.
+  const la = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles', weekday: 'short',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now)
+  const laPart = (t: Intl.DateTimeFormatPartTypes) => la.find(p => p.type === t)?.value ?? ''
+  const today = `${laPart('year')}-${laPart('month')}-${laPart('day')}`
+  const isSunday = laPart('weekday') === 'Sun'
+  const monday = weekMonday(new Date(`${today}T12:00:00Z`))
 
   const { data: subscribed } = await admin.from('push_subscriptions').select('user_id')
   const userIds = [...new Set((subscribed ?? []).map(r => r.user_id as string))]
@@ -80,7 +92,10 @@ export async function GET(request: Request) {
       }
     }
 
-    // 3. Sunday check-in nudge — if this week has no row for this user.
+    // 3. Sunday-evening check-in nudge — if this week (LA-local) has no row for
+    //    this user yet. `isSunday` and `monday` are both reckoned in
+    //    America/Los_Angeles above, so this fires on the 04:00-UTC run whose
+    //    LA-local time is Sunday ~9pm.
     if (isSunday && on('checkinNudge') && sent[`checkin:${monday}`] === undefined) {
       const { data: mine } = await admin.from('checkins').select('id').eq('user_id', userId).gte('week_of', monday).limit(1)
       if (!mine || mine.length === 0) {
