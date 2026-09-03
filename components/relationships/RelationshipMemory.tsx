@@ -2,46 +2,41 @@
 
 import { useState } from 'react'
 import { usePeople, daysUntilBirthday, daysSinceContact, type Person } from '@/lib/hooks/usePeople'
-import { usePersonPreferences, PERSON_CATEGORY_LABEL, PERSON_CATEGORY_ICON, type PersonPreferenceCategory } from '@/lib/hooks/usePersonPreferences'
-import Icon from '@/components/ui/Icon'
 
-const PREF_CATEGORIES: PersonPreferenceCategory[] = ['preference', 'like', 'dislike', 'idea', 'general']
-
+// A flat contact sheet (2026-09-03): one compact row per person — name,
+// relationship, a birthday chip when it's close, last hello, and a note
+// preview. Tap a row to expand an inline editor. The per-person
+// "preferences" list was dropped in the same pass (data kept, just not
+// shown); gift ideas stay, folded into the expanded editor.
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px',
-  padding: '0.6rem 0.75rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.85rem', outline: 'none',
+  width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '9px',
+  padding: '0.5rem 0.65rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.8rem', outline: 'none',
 }
 
-function contactLine(p: Person): { text: string; nudge: boolean } {
+function contactText(p: Person): { text: string; nudge: boolean } {
   const since = daysSinceContact(p.last_contact)
-  if (since === null) return { text: 'No hello logged yet', nudge: false }
-  if (since === 0) return { text: 'Reached out today', nudge: false }
-  if (since === 1) return { text: 'Last hello yesterday', nudge: false }
-  return { text: `Last hello ${since} days ago`, nudge: since >= 30 }
+  if (since === null) return { text: 'no hello logged', nudge: false }
+  if (since === 0) return { text: 'said hello today', nudge: false }
+  if (since === 1) return { text: 'hello yesterday', nudge: false }
+  return { text: `hello ${since}d ago`, nudge: since >= 30 }
 }
 
-function birthdayLine(p: Person): string | null {
+function birthdayChip(p: Person): string | null {
   const d = daysUntilBirthday(p.birthday)
-  if (d === null) return null
-  if (d === 0) return 'Birthday today'
-  if (d <= 30) return `Birthday in ${d}d`
-  return null
+  if (d === null || d > 30) return null
+  return d === 0 ? '🎂 today' : `🎂 ${d}d`
 }
 
-function PersonCard({ person, onSave, onRemove, onContacted, innerRef }: {
+function Row({ person, onSave, onRemove, onContacted }: {
   person: Person
   onSave: (patch: Partial<Person>) => void
   onRemove: () => void
   onContacted: () => void
-  innerRef?: (el: HTMLDivElement | null) => void
 }) {
-  const [editing, setEditing] = useState(false)
+  const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Person>(person)
-  const contact = contactLine(person)
-  const bday = birthdayLine(person)
-  const prefs = usePersonPreferences(person.id)
-  const [prefText, setPrefText] = useState('')
-  const [prefCategory, setPrefCategory] = useState<PersonPreferenceCategory>('like')
+  const contact = contactText(person)
+  const bday = birthdayChip(person)
 
   function save() {
     onSave({
@@ -50,96 +45,48 @@ function PersonCard({ person, onSave, onRemove, onContacted, innerRef }: {
       notes: draft.notes || null,
       gift_ideas: draft.gift_ideas || null,
     })
-    setEditing(false)
+    setOpen(false)
   }
 
   return (
-    <div ref={innerRef} style={{
-      border: '1px solid var(--border)', borderRadius: '12px', padding: '0.9rem 1rem',
-      background: contact.nudge ? 'color-mix(in srgb, var(--gold) 5%, var(--surface))' : 'var(--surface)',
-      display: 'flex', flexDirection: 'column', gap: '0.4rem',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 500 }}>{person.name}</span>
+    <div style={{ borderBottom: '1px solid var(--faint)' }}>
+      <button
+        onClick={() => { setDraft(person); setOpen(o => !o) }}
+        className="press"
+        style={{
+          width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.6rem 0', fontFamily: 'var(--font-body)',
+        }}
+      >
+        <span style={{ fontSize: '0.82rem', color: 'var(--text)', fontWeight: 500, flexShrink: 0 }}>{person.name}</span>
         {person.relationship && (
-          <span style={{ fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', background: 'var(--hover-bg)', padding: '0.1em 0.5em', borderRadius: '20px' }}>{person.relationship}</span>
+          <span style={{ fontSize: '0.56rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', background: 'var(--hover-bg)', padding: '0.1em 0.5em', borderRadius: '20px', flexShrink: 0 }}>{person.relationship}</span>
         )}
-        {bday && <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--amber)' }}>{bday}</span>}
-      </div>
+        {bday && <span style={{ fontSize: '0.62rem', color: 'var(--amber)', flexShrink: 0 }}>{bday}</span>}
+        <span style={{ flex: 1, minWidth: 0, fontSize: '0.68rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {person.notes || ''}
+        </span>
+        <span style={{ fontSize: '0.62rem', color: contact.nudge ? 'var(--gold)' : 'var(--muted)', opacity: contact.nudge ? 1 : 0.7, flexShrink: 0 }}>{contact.text}</span>
+      </button>
 
-      <div style={{ fontSize: '0.7rem', color: contact.nudge ? 'var(--gold)' : 'var(--muted)', opacity: contact.nudge ? 0.95 : 0.78 }}>
-        {contact.nudge ? `${contact.text} — a hello might be nice.` : contact.text}
-      </div>
-
-      {!editing && person.notes && (
-        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>{person.notes}</div>
-      )}
-      {!editing && person.gift_ideas && (
-        <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.85 }}><span style={{ opacity: 0.7 }}>Gift ideas · </span>{person.gift_ideas}</div>
-      )}
-
-      {!editing && prefs.items.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {prefs.items.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--muted)' }}>
-              <span style={{ flexShrink: 0, opacity: 0.85, display: 'inline-flex' }} title={PERSON_CATEGORY_LABEL[p.category]}>
-                <Icon name={PERSON_CATEGORY_ICON[p.category]} size={11} />
-              </span>
-              <span style={{ flex: 1 }}>{p.text}</span>
-              <button onClick={() => prefs.remove(p.id)} aria-label={`Remove ${p.text}`} className="press"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!editing && (
-        <form
-          onSubmit={async e => {
-            e.preventDefault()
-            if (!prefText.trim()) return
-            await prefs.add(prefCategory, prefText.trim())
-            setPrefText('')
-          }}
-          style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}
-        >
-          <select value={prefCategory} onChange={e => setPrefCategory(e.target.value as PersonPreferenceCategory)} style={{ ...inputStyle, width: 'auto', padding: '0.4em 0.5em', fontSize: '0.68rem' }}>
-            {PREF_CATEGORIES.map(c => <option key={c} value={c}>{PERSON_CATEGORY_LABEL[c]}</option>)}
-          </select>
-          <input value={prefText} onChange={e => setPrefText(e.target.value)} placeholder="e.g. loves lilies, hates surprises"
-            style={{ ...inputStyle, flex: 1, minWidth: '140px', padding: '0.4em 0.6em', fontSize: '0.7rem' }} />
-          <button type="submit" className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Add</button>
-        </form>
-      )}
-
-      {editing && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.2rem' }}>
+      {open && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', padding: '0.2rem 0 0.8rem' }}>
           <input style={inputStyle} placeholder="Relationship (friend, family…)" value={draft.relationship ?? ''} onChange={e => setDraft({ ...draft, relationship: e.target.value })} />
           <input style={inputStyle} type="date" value={draft.birthday ?? ''} onChange={e => setDraft({ ...draft, birthday: e.target.value })} />
-          <textarea style={{ ...inputStyle, resize: 'none' }} rows={2} placeholder="Things to remember…" value={draft.notes ?? ''} onChange={e => setDraft({ ...draft, notes: e.target.value })} />
+          <textarea style={{ ...inputStyle, resize: 'vertical' }} rows={2} placeholder="Things to remember…" value={draft.notes ?? ''} onChange={e => setDraft({ ...draft, notes: e.target.value })} />
           <input style={inputStyle} placeholder="Gift ideas" value={draft.gift_ideas ?? ''} onChange={e => setDraft({ ...draft, gift_ideas: e.target.value })} />
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button onClick={save} className="btn btn-primary press" style={{ fontSize: '0.68rem' }}>Save</button>
+            <button onClick={() => { onContacted(); setOpen(false) }} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Said hello</button>
+            <button onClick={onRemove} className="btn btn-ghost press" style={{ fontSize: '0.68rem', marginLeft: 'auto', opacity: 0.6 }}>Remove</button>
+          </div>
         </div>
       )}
-
-      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-        {editing ? (
-          <>
-            <button onClick={save} className="btn btn-primary" style={{ fontSize: '0.68rem' }}>Save</button>
-            <button onClick={() => { setDraft(person); setEditing(false) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Cancel</button>
-          </>
-        ) : (
-          <>
-            <button onClick={onContacted} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Reached out</button>
-            <button onClick={() => setEditing(true)} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Edit</button>
-            <button onClick={onRemove} className="btn btn-ghost" style={{ fontSize: '0.68rem', marginLeft: 'auto', opacity: 0.6 }}>Remove</button>
-          </>
-        )}
-      </div>
     </div>
   )
 }
 
-export default function RelationshipMemory({ cardRef }: { cardRef?: (id: string, el: HTMLDivElement | null) => void }) {
+export default function RelationshipMemory() {
   const { people, loading, add, update, remove, markContacted } = usePeople()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -151,29 +98,32 @@ export default function RelationshipMemory({ cardRef }: { cardRef?: (id: string,
     setName(''); setRelationship(''); setAdding(false)
   }
 
-  // Surface people who may deserve a hello (longest since contact, then birthdays soon).
   const sorted = [...people].sort((a, b) => {
     const ba = daysUntilBirthday(a.birthday); const bb = daysUntilBirthday(b.birthday)
     const aBday = ba !== null && ba <= 14; const bBday = bb !== null && bb <= 14
     if (aBday !== bBday) return aBday ? -1 : 1
-    return (daysSinceContact(b.last_contact) ?? -1) - (daysSinceContact(a.last_contact) ?? -1)
+    const na = (daysSinceContact(a.last_contact) ?? -1) >= 30
+    const nb = (daysSinceContact(b.last_contact) ?? -1) >= 30
+    if (na !== nb) return na ? -1 : 1
+    return a.name.localeCompare(b.name)
   })
 
   return (
-    <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', gap: '0.6rem', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400 }}>People</div>
-        <button onClick={() => setAdding(a => !a)} className="btn btn-secondary" style={{ fontSize: '0.72rem' }}>{adding ? 'Close' : '+ Add someone'}</button>
-      </div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
-        Keep the people who matter close — birthdays, last hellos, and what you want to remember.
+    <div className="card-interactive organic specimen" style={{
+      background: 'var(--surface2)', border: '1px solid var(--border)',
+      borderTop: '2px solid color-mix(in srgb, var(--blush) 45%, var(--border))',
+      padding: '1.3rem 1.5rem', boxShadow: 'var(--elev-2)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)', fontWeight: 400 }}>People</div>
+        <button onClick={() => setAdding(a => !a)} className="btn btn-secondary press" style={{ fontSize: '0.72rem' }}>{adding ? 'Close' : '+ Add someone'}</button>
       </div>
 
       {adding && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem', padding: '0.9rem', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--hover-bg)' }}>
           <input style={inputStyle} placeholder="Name" value={name} autoFocus onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addPerson() }} />
           <input style={inputStyle} placeholder="Relationship (optional)" value={relationship} onChange={e => setRelationship(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addPerson() }} />
-          <button onClick={addPerson} disabled={!name.trim()} className="btn btn-primary" style={{ fontSize: '0.72rem', alignSelf: 'flex-start' }}>Add</button>
+          <button onClick={addPerson} disabled={!name.trim()} className="btn btn-primary press" style={{ fontSize: '0.72rem', alignSelf: 'flex-start' }}>Add</button>
         </div>
       )}
 
@@ -182,15 +132,14 @@ export default function RelationshipMemory({ cardRef }: { cardRef?: (id: string,
           No one here yet. Add the people you want to stay close to.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.6rem' }}>
+        <div>
           {sorted.map(p => (
-            <PersonCard
+            <Row
               key={p.id}
               person={p}
               onSave={patch => update(p.id, patch)}
               onRemove={() => remove(p.id)}
               onContacted={() => markContacted(p.id)}
-              innerRef={el => cardRef?.(p.id, el)}
             />
           ))}
         </div>

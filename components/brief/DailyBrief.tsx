@@ -186,7 +186,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     return since !== null && since > 30
   })
   const refillsDue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
-  const moneyDueSoon = subs.filter(s => subUrgency(s.renewal_date) === 'soon').length
+  const moneyDueSoon = subs.filter(s => subUrgency(s) === 'soon').length
     + giftItems.filter(g => g.days <= 7).length
     + refillsDue
   const habitsDueCount = habitsTotal > habitsDoneToday ? habitsTotal - habitsDoneToday : 0
