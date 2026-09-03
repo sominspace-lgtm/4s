@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 
 // What 4S is allowed to push, and whether pushes are on at all. The daily
@@ -20,10 +21,24 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
   onClose: () => void
 }) {
   const push = usePushNotifications()
+  const [test, setTest] = useState<{ state: 'idle' | 'sending' | 'sent' | 'error'; msg?: string }>({ state: 'idle' })
   if (!open) return null
 
   const on = (k: string) => prefs[k] !== false
   const toggle = (k: string) => onChange({ ...prefs, [k]: !on(k) })
+
+  async function sendTest() {
+    setTest({ state: 'sending' })
+    try {
+      const r = await fetch('/api/notify/test', { method: 'POST' })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok && j.sent > 0) setTest({ state: 'sent' })
+      else if (r.ok) setTest({ state: 'error', msg: 'Nothing delivered — the subscription may be stale. Turn off and back on.' })
+      else setTest({ state: 'error', msg: j.error === 'VAPID keys are not configured' ? 'Server is missing its push keys — tell an admin.' : (j.error ?? 'Send failed.') })
+    } catch {
+      setTest({ state: 'error', msg: 'Send failed.' })
+    }
+  }
 
   return (
     <div
@@ -73,9 +88,17 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
                 </label>
               ))}
             </div>
-            <button onClick={push.unsubscribe} className="btn btn-ghost press" style={{ fontSize: '0.68rem', marginTop: '1rem', opacity: 0.7 }}>
-              Turn off on this device
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+              <button onClick={sendTest} disabled={test.state === 'sending'} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>
+                {test.state === 'sending' ? 'Sending…' : test.state === 'sent' ? 'Sent — check your device ✓' : 'Send a test'}
+              </button>
+              <button onClick={push.unsubscribe} className="btn btn-ghost press" style={{ fontSize: '0.68rem', opacity: 0.7 }}>
+                Turn off on this device
+              </button>
+            </div>
+            {test.state === 'error' && test.msg && (
+              <div role="alert" style={{ fontSize: '0.66rem', color: 'var(--rose)', marginTop: '0.5rem', lineHeight: 1.5 }}>{test.msg}</div>
+            )}
           </>
         )}
       </div>

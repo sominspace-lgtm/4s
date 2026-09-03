@@ -114,10 +114,23 @@ const DEPRECATED_SECTION_IDS = new Set([
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_SECTIONS
-  const cleaned = saved.filter(s => !DEPRECATED_SECTION_IDS.has(s.id))
-  const savedIds = new Set(cleaned.map(s => s.id))
-  const missing = DEFAULT_SECTIONS.filter(s => !savedIds.has(s.id))
-  return [...cleaned, ...missing]
+  const order = DEFAULT_SECTIONS.map(s => s.id)
+  const out = saved.filter(s => !DEPRECATED_SECTION_IDS.has(s.id))
+  const have = new Set(out.map(s => s.id))
+  // A section added to DEFAULT_SECTIONS after this layout was saved is
+  // spliced in next to its default neighbour, not appended — so e.g. a new
+  // 'Household today' lands with the other Household sections, not at the
+  // very bottom. Same approach mergeHomeBlocks uses.
+  for (const def of DEFAULT_SECTIONS) {
+    if (have.has(def.id)) continue
+    const defIdx = order.indexOf(def.id)
+    let at = out.length
+    for (let i = 0; i < out.length; i++) {
+      if (order.indexOf(out[i].id) > defIdx) { at = i; break }
+    }
+    out.splice(at, 0, def)
+  }
+  return out
 }
 
 // Anchors are places inside the Today tab, not tabs of their own.

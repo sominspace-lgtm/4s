@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dueUrgency } from '@/lib/hooks/useWorkItems'
-import { sendPushToUser } from '@/lib/push/send'
+import { sendPushToUser, type PushPayload } from '@/lib/push/send'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+// One bad subscription or a missing VAPID key shouldn't 500 the whole run
+// and skip everyone after it — log and move on.
+async function safePush(admin: SupabaseClient, userId: string, payload: PushPayload): Promise<number> {
+  try { return await sendPushToUser(admin, userId, payload) }
+  catch (e) { console.error('[cron/daily] push failed', { userId, err: e instanceof Error ? e.message : e }); return 0 }
+}
 
 // The one scheduled server nudge (Vercel Cron, daily at 04:00 UTC — which is
 // ~8-9pm the evening before in America/Los_Angeles, so the weekly check-in
@@ -82,7 +90,7 @@ export async function GET(request: Request) {
       const { data: items } = await admin.from('work_items').select('title, due_date, status').eq('user_id', userId).neq('status', 'done')
       const waiting = (items ?? []).filter(i => dueUrgency(i.due_date as string | null) === 'overdue')
       if (waiting.length > 0) {
-        await sendPushToUser(admin, userId, {
+        await safePush(admin, userId, {
           title: '4S',
           body: waiting.length === 1
             ? `"${waiting[0].title}" is still waiting for you.`
@@ -103,7 +111,7 @@ export async function GET(request: Request) {
         const days = Math.round((Date.parse(`${rd}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000)
         const key = `sub:${s.id}:${rd}`
         if (days >= 0 && days <= 1 && sent[key] === undefined) {
-          await sendPushToUser(admin, userId, { title: '4S', body: `${s.name} renews ${days === 0 ? 'today' : 'tomorrow'}.`, url: '/dashboard' })
+          await safePush(admin, userId, { title: '4S', body: `${s.name} renews ${days === 0 ? 'today' : 'tomorrow'}.`, url: '/dashboard' })
           fresh[key] = today
           notified++
         }
@@ -117,13 +125,13 @@ export async function GET(request: Request) {
     if (isSunday && on('checkinNudge') && sent[`checkin:${weekStart}`] === undefined && !doneThisWeek.has(userId)) {
       const partnerDone = spacePeople.some(people =>
         people.has(userId) && [...people].some(p => p !== userId && doneThisWeek.has(p)))
-      await sendPushToUser(admin, userId, {
+      const n = await safePush(admin, userId, {
         title: '4S',
         body: partnerDone ? 'Your partner checked in — your turn.' : 'Time for your weekly check-in.',
         url: '/dashboard',
       })
       fresh[`checkin:${weekStart}`] = today
-      notified++
+      if (n > 0) notified++
     }
 
     if (Object.keys(fresh).length > 0) {
