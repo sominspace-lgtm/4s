@@ -18,7 +18,7 @@ export type HouseholdTabId = 'home' | 'smarthome' | 'reference'
 // the same day; `chores`/`routines` moved to Reference 2026-08-25.
 // mergeHomeBlocks drops unknown saved ids, so a layout that still names any
 // of these is cleaned up automatically.
-export type HomeBlockId = 'calendar' | 'thisWeek' | 'shopping' | 'meals' | 'rules' | 'moveIn'
+export type HomeBlockId = 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'meals' | 'rules' | 'moveIn'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // The household calendar — its own section until 2026-09-02, a Home block
@@ -26,6 +26,9 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   calendar: { label: 'Calendar',          hint: 'The month — chores, meals, trips, shared events' },
   // The week in review (2026-08-18) — same computation the bot posts on Sundays.
   thisWeek: { label: 'This week',          hint: 'What got done, in one glance' },
+  // The weekly relationship check-in prompt — only renders on check-in day
+  // (Sunday); a no-op the rest of the week (2026-09-03).
+  checkin:  { label: 'Check-in',           hint: 'Sunday — complete this week’s check-in' },
   shopping: { label: 'Shopping list',      hint: 'What to buy' },
   meals:    { label: 'This week’s meals',  hint: 'What we’re eating' },
   // House rules — standing conventions ("no shoes inside"). Moved here from
@@ -36,14 +39,26 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   moveIn:   { label: 'Move-in',            hint: 'The Millton — what’s around it, and the buy-list sheet' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'thisWeek', 'shopping', 'meals', 'rules', 'moveIn'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'thisWeek', 'checkin', 'shopping', 'meals', 'rules', 'moveIn'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_HOME_BLOCKS
-  const known = new Set(DEFAULT_HOME_BLOCKS.map(s => s.id))
-  const cleaned = saved.filter(s => known.has(s.id))
-  const have = new Set(cleaned.map(s => s.id))
-  const missing = DEFAULT_HOME_BLOCKS.filter(s => !have.has(s.id))
-  return [...cleaned, ...missing]
+  const order = DEFAULT_HOME_BLOCKS.map(s => s.id)
+  const known = new Set(order)
+  const out = saved.filter(s => known.has(s.id))
+  const have = new Set(out.map(s => s.id))
+  // A block added to DEFAULT_HOME_BLOCKS after this layout was saved is
+  // spliced in next to its default neighbour, not just appended — so e.g.
+  // `checkin` lands above `shopping` for people who already had a layout.
+  for (const def of DEFAULT_HOME_BLOCKS) {
+    if (have.has(def.id)) continue
+    const defIdx = order.indexOf(def.id)
+    let at = out.length
+    for (let i = 0; i < out.length; i++) {
+      if (order.indexOf(out[i].id) > defIdx) { at = i; break }
+    }
+    out.splice(at, 0, def)
+  }
+  return out
 }

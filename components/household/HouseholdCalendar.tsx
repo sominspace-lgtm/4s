@@ -7,6 +7,7 @@ import {
 } from 'date-fns'
 import { choreDue, type Chore, type Meal } from '@/lib/hooks/useHousehold'
 import { routineDue, type Routine } from '@/lib/hooks/useRoutines'
+import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { useSharedWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useSharedEvents, useEvents } from '@/lib/hooks/useEvents'
@@ -26,7 +27,7 @@ import { useSharedEvents, useEvents } from '@/lib/hooks/useEvents'
 // in MonthView below, which shares on creation). id is only ever set on
 // 'event' entries — the only kind this calendar can delete directly; every
 // other kind is derived from its own hub and edited there.
-type Entry = { kind: 'chore' | 'meal' | 'routine' | 'trip' | 'task' | 'event'; label: string; sub?: string; overdue?: boolean; id?: string }
+type Entry = { kind: 'chore' | 'meal' | 'routine' | 'trip' | 'task' | 'event' | 'checkin'; label: string; sub?: string; overdue?: boolean; id?: string }
 
 const KIND_COLOR: Record<Entry['kind'], string> = {
   chore: 'var(--amber)',
@@ -38,6 +39,8 @@ const KIND_COLOR: Record<Entry['kind'], string> = {
   trip:  'var(--purple)',
   task:  'var(--gold)',
   event: 'var(--rose)',
+  // The weekly relationship check-in — every Sunday.
+  checkin: 'var(--pink, var(--rose))',
 }
 
 const AGENDA_DAYS = 14
@@ -63,6 +66,8 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
   const { items: sharedTasks } = useSharedWorkItems(spaceId)
   const { items: sharedEvents } = useSharedEvents(spaceId)
   const { remove: removeEvent, addShared: addSharedEvent } = useEvents()
+  const { checkins } = useCheckins()
+  const checkinWeeks = groupCheckinsByWeek(checkins)
 
   const today = new Date()
 
@@ -122,6 +127,18 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
       }
     }
 
+    // The weekly relationship check-in lands every Sunday. Past and current
+    // Sundays show whether that week's check-in is done; future ones read as
+    // a plain recurring marker.
+    if (day.getDay() === 0) {
+      const wk = checkinWeeks.find(w => Math.abs(parseISO(w.weekOf).getTime() - day.getTime()) < 6 * 24 * 60 * 60 * 1000)
+      const n = wk ? Object.keys(wk.byUser).length : 0
+      out.push({
+        kind: 'checkin', label: 'Weekly check-in',
+        sub: n >= 2 ? 'both in' : n === 1 ? 'one in' : day.getTime() <= today.getTime() ? 'not yet' : undefined,
+      })
+    }
+
     return out
   }
 
@@ -138,10 +155,10 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
         <div className="t-card">{view === 'agenda' ? 'The next two weeks' : format(month, 'MMMM yyyy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
           <div className="t-meta" style={{ display: 'flex', gap: '0.7rem' }}>
-            {(['chore', 'meal', 'routine', 'trip', 'task', 'event'] as const).map(k => (
+            {(['chore', 'meal', 'routine', 'trip', 'task', 'event', 'checkin'] as const).map(k => (
               <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                 <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', background: KIND_COLOR[k], display: 'inline-block' }} />
-                {k}s
+                {k === 'checkin' ? 'check-in' : `${k}s`}
               </span>
             ))}
           </div>

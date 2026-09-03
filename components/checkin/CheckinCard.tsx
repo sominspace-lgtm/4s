@@ -10,14 +10,16 @@ import CheckinForm from './CheckinForm'
 // weekend if you haven't done it; once you have, shows who's in. Returns
 // null the rest of the time, so as a default-on block it only appears when
 // it has something to say.
-export default function CheckinCard({ userId }: { userId: string }) {
+export default function CheckinCard({ userId, sundayOnly = false }: { userId: string; sundayOnly?: boolean }) {
   const { checkins, submitCheckin, thisWeekMine } = useCheckins(userId)
   const { members } = useSharedSpaces(userId)
   const [formOpen, setFormOpen] = useState(false)
 
   const monday = weekOfMonday()
   const day = new Date().getDay() // 0 Sun .. 6 Sat
-  const nearWeekend = day === 0 || day >= 4 // Thu–Sun
+  // `sundayOnly` (the Household Home block) shows it on check-in day only,
+  // done or not; the default (Today) opens the window Thu–Sun.
+  const nearWeekend = sundayOnly ? day === 0 : day === 0 || day >= 4
 
   const thisWeek = groupCheckinsByWeek(checkins).find(w => w.weekOf >= monday)
   const answeredIds = thisWeek ? Object.keys(thisWeek.byUser) : []
@@ -26,6 +28,8 @@ export default function CheckinCard({ userId }: { userId: string }) {
   const partnerDone = !!partnerId && answeredIds.includes(partnerId)
 
   const mineDone = !!thisWeekMine
+  // sundayOnly: never show off check-in day, even the "done" status.
+  if (sundayOnly && day !== 0) return null
   // Show when: not done and it's near the weekend, OR not done but the
   // partner already answered (prompt regardless of day), OR done (status).
   if (!mineDone && !nearWeekend && !partnerDone) return null

@@ -17,6 +17,8 @@ import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
 import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
+import CheckinCard from '@/components/checkin/CheckinCard'
+import CheckinForm from '@/components/checkin/CheckinForm'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
@@ -111,7 +113,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // The weekly check-in lives entirely in 4S OS now (2026-09-02) — answered
   // on the Today page (CheckinCard), read back here from the `checkins`
   // table. The Discord bot no longer runs it; its history was backfilled in.
-  const { checkins, loading: checkinsLoading } = useCheckins()
+  const { checkins, loading: checkinsLoading, submitCheckin, thisWeekMine } = useCheckins(userId)
+  const [checkinFormOpen, setCheckinFormOpen] = useState(false)
   // Which sub-tab shows is driven entirely by the top-level nav now
   // (2026-08-25) — DashboardClient renders one <HouseholdHub forcedTab={id}>
   // per Home/Calendar/Reference section. The `?? 'home'` only matters if a
@@ -221,6 +224,11 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     ),
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
+
+    // The weekly check-in prompt, above the shopping list — renders only on
+    // Sunday (check-in day), a no-op every other day. Same component and
+    // form as Today's CheckinCard (2026-09-03).
+    checkin: () => <CheckinCard userId={userId} sundayOnly />,
 
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
@@ -863,16 +871,44 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       )}
       {tab === 'reference' && !sharedMode && (() => {
         const weeks = groupCheckinsByWeek(checkins)
+        const isSunday = new Date().getDay() === 0
+        const mineDone = !!thisWeekMine
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            <details>
+            {/* Complete this week's check-in, right here — the prompt leads on
+                Sunday, folds to a quiet "revise" the rest of the time. */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.9rem',
+              padding: mineDone ? 0 : '0.8rem 1rem',
+              border: mineDone ? 'none' : '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
+              background: mineDone ? 'transparent' : 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
+              borderRadius: '12px',
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: mineDone ? 400 : 500 }}>
+                  {mineDone ? 'You’re in for this week.' : isSunday ? 'Time for your weekly check-in' : 'This week’s check-in'}
+                </div>
+                {!mineDone && (
+                  <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
+                    A few minutes, just between you two.
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setCheckinFormOpen(true)} className={mineDone ? 'btn btn-ghost press' : 'btn btn-primary press'}
+                style={{ fontSize: mineDone ? '0.7rem' : '0.74rem', flexShrink: 0, opacity: mineDone ? 0.7 : 1 }}>
+                {mineDone ? 'Revise' : 'Complete check-in'}
+              </button>
+            </div>
+            {checkinFormOpen && <CheckinForm onSubmit={submitCheckin} onClose={() => setCheckinFormOpen(false)} />}
+
+            <details open={isSunday && !mineDone}>
               <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                 <span className="t-card">Check-ins</span>
                 <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{weeks.length}</span>
               </summary>
               <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
-                  Your weekly check-in, kept here. Answer it on the Today page.
+                  Your weekly check-in, kept here.
                 </div>
 
                 {weeks.length === 0 && !checkinsLoading && (
