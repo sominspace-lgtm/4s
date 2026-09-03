@@ -7,7 +7,7 @@ import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 // + mergeHouseholdTabs lived here until 2026-09-01, when the internal
 // tab-switcher they fed was removed — the sections customize through the
 // main Customize-layout panel now.)
-export type HouseholdTabId = 'home' | 'smarthome' | 'reference'
+export type HouseholdTabId = 'today' | 'home' | 'smarthome' | 'reference'
 
 // What's INSIDE Household's Home tab — the concrete "customizable like an
 // iPhone home screen" layer. These used to be four scattered, non-contiguous

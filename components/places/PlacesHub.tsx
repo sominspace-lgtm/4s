@@ -42,7 +42,7 @@ const TABS: { id: SubTab; label: string }[] = [
 // Deliberately its own top-level tab rather than a Household sub-tab: a
 // full-bleed map needs the room, and burying it three levels down would mean
 // nobody opens it casually.
-export default function PlacesHub({ userId, theme, sharedOnly = false }: {
+export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab }: {
   userId: string
   theme: string
   /** Shared-device mode: show only pins and trips actually shared with the
@@ -51,6 +51,10 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
    *  surface on a screen anyone in the house can see. Same boundary the
    *  Household calendar already draws for trips. */
   sharedOnly?: boolean
+  /** Map / Pins / Trips are Home-Bar pills now (2026-09-03) — DashboardClient
+   *  renders one instance per section with this set, so the internal tab bar
+   *  is hidden and this decides the view. */
+  forcedTab?: SubTab
 }) {
   const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
@@ -64,7 +68,8 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
 
   const { filters: savedFilters, addFilter, removeFilter } = usePlaceFilters(spaceId)
 
-  const [tab, setTab] = useState<SubTab>('map')
+  const [tabState, setTab] = useState<SubTab>('map')
+  const tab = forcedTab ?? tabState
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
   // An id, not a Place object — a stored object snapshot would go stale the
   // moment something (a photo upload, a note edit) changes the place while
@@ -103,15 +108,17 @@ export default function PlacesHub({ userId, theme, sharedOnly = false }: {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
-          {TABS.map(tb => (
-            <button key={tb.id} onClick={() => setTab(tb.id)} className="btn press" style={{
-              fontSize: '0.72rem', padding: '0.4em 0.9em',
-              background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
-              color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
-            }}>{tb.label}</button>
-          ))}
-        </div>
+        {forcedTab ? <div /> : (
+          <div className="tabs-wrap" style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap', background: 'var(--hover-bg)', borderRadius: '9px', padding: '0.25rem' }}>
+            {TABS.map(tb => (
+              <button key={tb.id} onClick={() => setTab(tb.id)} className="btn press" style={{
+                fontSize: '0.72rem', padding: '0.4em 0.9em',
+                background: tab === tb.id ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'transparent',
+                color: tab === tb.id ? 'var(--gold)' : 'var(--muted)', border: 'none',
+              }}>{tb.label}</button>
+            ))}
+          </div>
+        )}
         {tab !== 'trips' && (
           <button onClick={() => setAdding(true)} className="btn btn-primary press" style={{ fontSize: '0.72rem' }}>
             + Save a place

@@ -33,8 +33,9 @@ export interface HomeBarGroup {
 const MEMBER_LABELS: Record<string, string> = {
   brief: 'Today',
   tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People',
-  village: 'Village', home: 'Home',
-  smarthome: 'Controls', reference: 'Reference', places: 'Places',
+  village: 'Village', hhtoday: 'Today', home: 'Home', reference: 'Reference',
+  places: 'Map', 'places-pins': 'Pins', 'places-trips': 'Trips',
+  smarthome: 'Controls',
 }
 
 export default function HomeBar({ groups, activeId, onSelect }: {

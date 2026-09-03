@@ -55,10 +55,11 @@ export function goToPersonal(tab: PersonalTab) {
 
 // Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two
 // must not drift, or a deep link can land on a tab that no longer renders.
-export type HouseholdTab = 'home' | 'calendar' | 'smarthome' | 'reference'
+export type HouseholdTab = 'today' | 'home' | 'calendar' | 'smarthome' | 'reference'
 // `calendar` is no longer its own section (2026-09-02, folded back into a Home
 // block) — a 'calendar' deep link now lands on Home. Kept in the union so
-// existing callers keep type-checking.
+// existing callers keep type-checking. `today` is the section id `hhtoday`
+// (2026-09-03).
 
 // Smart Home gets its own overlay/transition (2026-08-25), not a tab switch
 // — tapping Home in the Village should feel like the house opening up, with
@@ -75,5 +76,6 @@ export function openSmartHome() {
 export function goToHousehold(tab: HouseholdTab) {
   if (tab === 'smarthome') { openSmartHome(); return }
   if (tab === 'calendar') { goToSection('home'); return }
+  if (tab === 'today') { goToSection('hhtoday'); return }
   goToSection(tab)
 }

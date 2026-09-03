@@ -45,9 +45,12 @@ const KIND_COLOR: Record<Entry['kind'], string> = {
 
 const AGENDA_DAYS = 14
 
-export default function HouseholdCalendar({ chores, meals, routines = [], trips = [], spaceId = null }: {
+export default function HouseholdCalendar({ chores, meals, routines = [], trips = [], spaceId = null, defaultView = 'month' }: {
   chores: Chore[]
   meals: Meal[]
+  /** The Household Today tab opens on the agenda (a week glance); the
+   *  standalone Home block opens on the month. */
+  defaultView?: 'agenda' | 'month'
   /** Routines AND maintenance — both live in household_routines, this
    *  calendar didn't know about either until now. */
   routines?: Routine[]
@@ -60,7 +63,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
 }) {
   // Month by default (2026-08-25) — same as CalendarEmbed, so every
   // calendar in the app opens on the same view.
-  const [view, setView] = useState<'agenda' | 'month'>('month')
+  const [view, setView] = useState<'agenda' | 'month'>(defaultView)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const { items: sharedTasks } = useSharedWorkItems(spaceId)

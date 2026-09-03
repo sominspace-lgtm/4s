@@ -132,6 +132,9 @@ const SECTION_GROUPS: Record<string, string> = {
   people:    'mine',
   village:   'your world',
   places:    'ours',
+  'places-pins':  'ours',
+  'places-trips': 'ours',
+  hhtoday:   'ours',
   // Household's own sub-tabs — real top-level sections for both personal
   // and shared use as of 2026-08-25 (used to nest one click behind a single
   // "Household" tab; still grouped visually in shared mode's Home Bar, see
@@ -183,8 +186,10 @@ const SECTION_GROUPS: Record<string, string> = {
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'reference', 'smarthome'] },
-  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places'] },
+  // Controls (smarthome) left the pill row 2026-09-03 — reached from the
+  // Village Home cottage and a link on the Household Home tab instead.
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['hhtoday', 'home', 'reference'] },
+  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-pins', 'places-trips'] },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
@@ -371,7 +376,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'reference', 'village', 'places'])
+  const SHARED_MODE_IDS = new Set(['hhtoday', 'home', 'reference', 'village', 'places', 'places-pins', 'places-trips'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -455,6 +460,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang), places: t('Places', lang),
+      'places-pins': t('Pins', lang), 'places-trips': t('Trips', lang),
+      hhtoday: t('Today', lang),
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
@@ -491,12 +498,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'notes':    return <NotesHub key="notes" userId={userId} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
-        case 'places':   return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} />
-        // Home / Reference — one <HouseholdHub forcedTab={id}> per section
-        // (2026-08-25). Calendar folded back into a Home block 2026-09-02;
-        // Smart Home only renders inside SmartHomeOverlay.
-        case 'home': case 'reference':
-          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
+        // Places — Map / Pins / Trips are Home-Bar pills now (2026-09-03),
+        // one <PlacesHub forcedTab> per section, same pattern as Household.
+        case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />
+        case 'places-pins':  return <PlacesHub key="places-pins" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="pins" />
+        case 'places-trips': return <PlacesHub key="places-trips" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="trips" />
+        // Household today / Home / Reference — one <HouseholdHub forcedTab>
+        // per section. 'hhtoday' is the section id; HouseholdHub reads it as
+        // forcedTab="today" (2026-09-03). Smart Home only renders inside
+        // SmartHomeOverlay.
+        case 'hhtoday': case 'home': case 'reference':
+          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id === 'hhtoday' ? 'today' : id as HouseholdTabId} />
         default: return null
       }
     })()

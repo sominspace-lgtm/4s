@@ -20,6 +20,8 @@ import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CheckinForm from '@/components/checkin/CheckinForm'
+import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
+import { openSmartHome } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
@@ -787,6 +789,20 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </div>
       )}
 
+      {/* Household Today (2026-09-03) — the "what does the house need right
+          now, and how was the week" view, mirroring Personal's Today. Every
+          piece already exists; this tab just composes them. */}
+      {tab === 'today' && (
+        <>
+          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines.filter(r => r.kind === 'routine')} />
+          <CheckinCard userId={userId} />
+          <TodayHouseholdNeeds userId={userId} />
+          <WeeklyRecapBlock spaceId={spaceId} />
+          <HouseholdCalendar chores={h.chores} meals={h.meals}
+            routines={routinesHook.routines.filter(r => r.kind === 'routine')} trips={trips} spaceId={spaceId} defaultView="agenda" />
+        </>
+      )}
+
       {tab === 'home' && (
         <>
           {/* Fixed, not part of homeBlocks — this is the one section meant
@@ -802,6 +818,13 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {homeBlocks.filter(b => !b.hidden).map(b => (
             <div key={b.id}>{homeBlockRenderers[b.id as HomeBlockId]()}</div>
           ))}
+          {/* Smart Home lost its Home-Bar pill 2026-09-03 — keep a way in
+              here for a phone-only user who never taps the Village cottage. */}
+          <button onClick={openSmartHome} className="press" style={{
+            alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--muted)', opacity: 0.6, fontSize: '0.7rem', padding: '0.3rem 0',
+            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+          }}><Icon name="gear" size={11} /> Smart Home</button>
         </>
       )}
 
