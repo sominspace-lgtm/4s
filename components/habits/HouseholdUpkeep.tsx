@@ -21,7 +21,7 @@ export default function HouseholdUpkeep({ userId }: { userId: string }) {
 
   const { chores, markChoreDone } = useHousehold(spaceId)
   const { routines, markRoutineDone } = useRoutines(spaceId)
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   if (!spaceId) return null
 

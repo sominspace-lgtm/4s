@@ -88,6 +88,23 @@ export interface CheckinWeek {
   byUser: Record<string, Checkin>
 }
 
+/** Consecutive most-recent weeks this user has a check-in for. The current
+ *  week is skipped if it isn't done yet, so a streak doesn't read as broken
+ *  mid-week — it just doesn't tick up until you check in. */
+export function checkinStreak(checkins: Checkin[], userId: string | null): number {
+  if (!userId) return 0
+  const weeks = groupCheckinsByWeek(checkins) // newest first
+  const thisWeek = weekOfMonday()
+  let streak = 0
+  for (const w of weeks) {
+    const mine = userId in w.byUser
+    if (w.weekOf >= thisWeek && !mine) continue // current week, not yet done
+    if (!mine) break
+    streak++
+  }
+  return streak
+}
+
 /** Midnight-UTC epoch ms for a YYYY-MM-DD(...) date string. */
 export function dayMs(dateStr: string): number {
   return Date.parse(`${dateStr.slice(0, 10)}T00:00:00Z`)

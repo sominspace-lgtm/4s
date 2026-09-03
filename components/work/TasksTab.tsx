@@ -9,7 +9,7 @@ import GoalsSection from '@/components/goals/GoalsSection'
 // commitment with a next action, closer to Tasks than to the habit grid.
 // goToPersonal('goals') lands here and fires 4s:open-goals to expand it.
 export default function TasksTab({ userId }: { userId: string }) {
-  const [goalsOpen, setGoalsOpen] = useState(false)
+  const [goalsOpen, setGoalsOpen] = useState(true)
   const ref = useRef<HTMLDetailsElement>(null)
 
   useEffect(() => {

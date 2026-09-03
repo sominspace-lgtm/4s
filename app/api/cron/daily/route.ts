@@ -48,6 +48,23 @@ export async function GET(request: Request) {
   const { data: subscribed } = await admin.from('push_subscriptions').select('user_id')
   const userIds = [...new Set((subscribed ?? []).map(r => r.user_id as string))]
 
+  // For the check-in nudge: who's checked in this week, and who shares a
+  // space with whom — so the reminder can say "your partner checked in,
+  // your turn" instead of the generic line.
+  const [{ data: weekRows }, { data: allSpaces }, { data: allMembers }] = await Promise.all([
+    admin.from('checkins').select('user_id').gte('week_of', monday),
+    admin.from('shared_spaces').select('id, owner_id'),
+    admin.from('shared_space_members').select('space_id, member_id, status'),
+  ])
+  const doneThisWeek = new Set((weekRows ?? []).map(r => r.user_id as string))
+  const spacePeople: Set<string>[] = (allSpaces ?? []).map(s => {
+    const people = new Set<string>([s.owner_id as string])
+    for (const m of allMembers ?? []) {
+      if (m.space_id === s.id && m.status === 'accepted' && m.member_id) people.add(m.member_id as string)
+    }
+    return people
+  })
+
   let notified = 0
   for (const userId of userIds) {
     const [{ data: prefsRow }, { data: stateRow }] = await Promise.all([
@@ -96,13 +113,16 @@ export async function GET(request: Request) {
     //    this user yet. `isSunday` and `monday` are both reckoned in
     //    America/Los_Angeles above, so this fires on the 04:00-UTC run whose
     //    LA-local time is Sunday ~9pm.
-    if (isSunday && on('checkinNudge') && sent[`checkin:${monday}`] === undefined) {
-      const { data: mine } = await admin.from('checkins').select('id').eq('user_id', userId).gte('week_of', monday).limit(1)
-      if (!mine || mine.length === 0) {
-        await sendPushToUser(admin, userId, { title: '4S', body: 'Time for your weekly check-in.', url: '/dashboard' })
-        fresh[`checkin:${monday}`] = today
-        notified++
-      }
+    if (isSunday && on('checkinNudge') && sent[`checkin:${monday}`] === undefined && !doneThisWeek.has(userId)) {
+      const partnerDone = spacePeople.some(people =>
+        people.has(userId) && [...people].some(p => p !== userId && doneThisWeek.has(p)))
+      await sendPushToUser(admin, userId, {
+        title: '4S',
+        body: partnerDone ? 'Your partner checked in — your turn.' : 'Time for your weekly check-in.',
+        url: '/dashboard',
+      })
+      fresh[`checkin:${monday}`] = today
+      notified++
     }
 
     if (Object.keys(fresh).length > 0) {

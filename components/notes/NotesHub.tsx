@@ -35,16 +35,27 @@ function updatedLabel(iso: string): string {
 // on a note moves it from personal (space_id null) into the household space
 // — same mechanism, not a parallel one.
 export default function NotesHub({ userId }: { userId: string }) {
-  const { spaces } = useSharedSpaces(userId)
-  const spaceId = spaces[0]?.id ?? null
+  const { spaces, members } = useSharedSpaces(userId)
+  // The space the household actually uses, not spaces[0] (which can be an
+  // empty solo space) — same rule useCheckins / HouseholdHub apply.
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? null
 
   const personal = useNotes(null)
   const shared = useNotes(spaceId)
-  const notes = [...personal.notes, ...shared.notes].sort((a, b) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
-    return b.updated_at.localeCompare(a.updated_at)
-  })
-  const loading = personal.loading || shared.loading
+  // Only merge the shared query once there's a real space — until spaceId
+  // resolves, `shared` runs the SAME personal query as `personal` and every
+  // note would render twice. Dedupe by id as a further guard.
+  const notes = (() => {
+    const merged = [...personal.notes, ...(spaceId ? shared.notes : [])]
+    const seen = new Set<string>()
+    return merged
+      .filter(n => (seen.has(n.id) ? false : (seen.add(n.id), true)))
+      .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+        return b.updated_at.localeCompare(a.updated_at)
+      })
+  })()
+  const loading = personal.loading || (!!spaceId && shared.loading)
 
   const [openId, setOpenId] = useState<string | null>(null)
   const [draftTitle, setDraftTitle] = useState('')

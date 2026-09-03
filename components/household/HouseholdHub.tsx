@@ -7,7 +7,8 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
-import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
+import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
+import { weekOfMonday } from '@/lib/utils/checkinQuestions'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
@@ -870,6 +871,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         const weeks = groupCheckinsByWeek(checkins)
         const isSunday = new Date().getDay() === 0
         const mineDone = !!thisWeekMine
+        const thisMonday = weekOfMonday()
+        const streak = checkinStreak(checkins, userId)
         return (
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
             {/* Take-it prompt shows whenever this week isn't done yet (Sunday
@@ -907,6 +910,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
               <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                 <span className="t-card">Check-ins</span>
                 <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{weeks.length}</span>
+                {streak > 1 && <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>{streak} weeks running</span>}
               </summary>
               <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
@@ -921,6 +925,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
                 {weeks.map(w => {
                   const answered = Object.keys(w.byUser).length
+                  // Your partner's answers for the CURRENT week stay hidden
+                  // until you've checked in — so their words can't anchor
+                  // yours. Past weeks are always open.
+                  const locked = w.weekOf >= thisMonday && !mineDone
                   return (
                   <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -928,7 +936,15 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                       <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
                         {answered >= 2 ? 'both of you checked in' : answered === 1 ? 'one of you checked in' : 'no answers yet'}
                       </span>
+                      {!locked && w.weekOf >= thisMonday && answered >= 2 && (
+                        <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>✓ both in</span>
+                      )}
                     </summary>
+                    {locked ? (
+                      <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
+                        Your partner’s answers unlock once you’ve checked in this week.
+                      </div>
+                    ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                       {Object.entries(w.byUser).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
@@ -951,6 +967,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                         )
                       })}
                     </div>
+                    )}
                   </details>
                   )
                 })}

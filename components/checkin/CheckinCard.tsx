@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
+import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { weekOfMonday } from '@/lib/utils/checkinQuestions'
 import CheckinForm from './CheckinForm'
@@ -24,6 +24,7 @@ export default function CheckinCard({ userId }: { userId: string }) {
   const partnerName = members.find(m => m.member_id === partnerId)?.member_email ?? 'your partner'
   const partnerDone = !!partnerId && answeredIds.includes(partnerId)
   const mineDone = !!thisWeekMine
+  const streak = checkinStreak(checkins, userId)
 
   // Only surface it on check-in day, or whenever it's still not done.
   if (mineDone && !isSunday) return null
@@ -43,6 +44,9 @@ export default function CheckinCard({ userId }: { userId: string }) {
           {mineDone
             ? (partnerDone ? 'You’re both in for this week.' : `Done — waiting on ${partnerName}.`)
             : (partnerDone ? `${partnerName} has answered this week.` : 'A few minutes, just between you two.')}
+          {mineDone && streak > 1 && (
+            <span style={{ color: 'var(--gold)' }}> · {streak} weeks running</span>
+          )}
         </div>
       </div>
       {!mineDone && (
