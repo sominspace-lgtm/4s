@@ -1353,8 +1353,11 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
   }
 }
 
-export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false }: {
+export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false, quiet = false }: {
   x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
+  /** Hosting a gathering — drop the name + count so the couple's life isn't
+   *  narrated to a room of guests; the building stays as scenery. */
+  quiet?: boolean
   /** Arrange mode — see VillageScene's startDrag/onMoveLandmark. */
   draggable?: boolean
   dragging?: boolean
@@ -1441,10 +1444,14 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
           own tap-triggered `selected` (openPanel) rather than a real
           :hover it can't produce. An inline style always wins over the
           stylesheet rule here. */}
-      <text className="village-district-name" style={draggable || selected ? { opacity: 0.85 } : undefined}
-        textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
-      <text className="village-district-count" style={draggable || selected ? { opacity: 0.85 } : undefined}
-        textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
+      {!quiet && (
+        <text className="village-district-name" style={draggable || selected ? { opacity: 0.85 } : undefined}
+          textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
+      )}
+      {!quiet && (
+        <text className="village-district-count" style={draggable || selected ? { opacity: 0.85 } : undefined}
+          textAnchor="middle" fontSize={7} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2} paintOrder="stroke" strokeLinejoin="round" y={23}>{count}</text>
+      )}
     </g>
   )
 }

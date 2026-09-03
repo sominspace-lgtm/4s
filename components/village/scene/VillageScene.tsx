@@ -25,6 +25,7 @@ import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
 import { useCoupleLife } from './useCoupleLife'
 import { useWanderer } from './useWanderer'
 import { DEFAULT_SCENE_MOOD, type SceneMood } from '@/lib/smarthome/sceneMood'
+import HouseInfo from './HouseInfo'
 import {
   GRASS_TUFTS, STONES, DISTANT_TREES, POLLEN, FOREGROUND, MIDGROUND_BUSHES, EXTRA_TREES,
   PATH_D, NATURE_DETAILS, PATH_PAVERS, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
@@ -48,9 +49,16 @@ export default function VillageScene({
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
+  hosting = false, guestInfo = {}, soloFigure = false,
 }: {
   village: VillageState
   live: boolean
+  /** Prep OR live gathering — quiet the districts, show the house-info card. */
+  hosting?: boolean
+  /** Wifi + house notes, shown on the scene only while hosting. */
+  guestInfo?: { wifiName?: string; wifiPassword?: string; notes?: string }
+  /** The other partner is out — render one figure near home, not the couple. */
+  soloFigure?: boolean
   /** Wall-iPad ambient/idle mode — freeze all scene motion (CSS + SMIL) so
    *  it reads as a still picture and doesn't drive the panel 24/7. */
   frozen?: boolean
@@ -584,7 +592,9 @@ export default function VillageScene({
     restSpots,
     hold: holdTarget,
   })
-  const coupleTogether = life.together
+  // soloFigure (a partner is out) — Sylvia holds the village on her own: no
+  // "together" interaction, Harry's group hidden below.
+  const coupleTogether = life.together && !soloFigure
   const interactPose = life.interactPose
 
   // Somi roams too now (round 65, "allow somi to wander") — her own small
@@ -779,6 +789,25 @@ export default function VillageScene({
   // right now" flag rather than something that needs manual reset.
   const [caredId, setCaredId] = useState<string | null>(null)
   const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number }[]>([])
+
+  // A guest's contribution just landed — pulse it in (2026-09-04). First
+  // population isn't "new"; only ids that appear after the scene already had
+  // some.
+  const seenContribRef = useRef<Set<string>>(new Set())
+  const [freshContribs, setFreshContribs] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    const cur = new Set(contributions.map(c => c.id))
+    const hadSome = seenContribRef.current.size > 0
+    const fresh = [...cur].filter(id => !seenContribRef.current.has(id))
+    seenContribRef.current = cur
+    if (!hadSome || fresh.length === 0) return
+    setFreshContribs(prev => new Set([...prev, ...fresh]))
+    const t = setTimeout(() => setFreshContribs(prev => {
+      const n = new Set(prev); fresh.forEach(id => n.delete(id)); return n
+    }), 1500)
+    return () => clearTimeout(t)
+  }, [contributions])
+  const contribPulse = (id: string) => (freshContribs.has(id) ? ' village-changed' : '')
   function careFor(id: string, x: number, y: number) {
     setCaredId(id)
     setTimeout(() => setCaredId(c => (c === id ? null : c)), 480)
@@ -1996,7 +2025,7 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} {...hoverPreview('forest')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} {...hoverPreview('forest')} dark={dark} scale={1.12}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
@@ -2016,12 +2045,15 @@ export default function VillageScene({
           neighbors rather than merely equal to them, without either extreme
           shrinking to illegible or ballooning back into dominating the
           scene. */}
-      <DistrictLabel {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
+      <DistrictLabel quiet={hosting} {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
-      <DistrictLabel {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12}
+      {hosting && !arranging && (
+        <HouseInfo x={pos('home').x + 46} y={pos('home').y + 6} info={guestInfo} />
+      )}
+      <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
-      <DistrictLabel {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark} scale={1.12}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
@@ -2029,10 +2061,10 @@ export default function VillageScene({
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}
-      <DistrictLabel {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      <DistrictLabel {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
         count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
@@ -2141,7 +2173,7 @@ export default function VillageScene({
             {near('song').map((c, i) => {
               const p = scatter(c.id, juke.x + 14, juke.y - 1, 16, 8)
               return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'} added: ${(c.meta.title as string) || c.body || 'a song'}`}</title>
                   <image href={`/village-assets/record-${(i % 3) + 1}.png`} x={-3} y={-6} width={6} height={6}
                     style={{ imageRendering: 'pixelated' }} />
@@ -2153,7 +2185,7 @@ export default function VillageScene({
             {near('thank_you').map(c => {
               const p = scatter(c.id, well.x, well.y + 6, 34, 10)
               return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'}: ${c.body || 'thank you'}`}</title>
                   <image href="/village-assets/thankyou-vase.png" x={-3.5} y={-13} width={7} height={13}
                     style={{ imageRendering: 'pixelated' }} />
@@ -2165,7 +2197,7 @@ export default function VillageScene({
             {near('note').map(c => {
               const p = scatter(c.id, home.x + 40, GROUND_Y + 44, 60, 22)
               return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-glow">
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-glow' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'}: ${c.body || ''}`}</title>
                   <rect x={-3} y={-4} width={6} height={5} rx={0.6} fill="#fbf3df" stroke="var(--border)" strokeWidth={0.3}
                     transform={`rotate(${(hashPos(c.id + 'r') - 0.5) * 24})`} />
@@ -2177,7 +2209,7 @@ export default function VillageScene({
             {near('fridge').map(c => {
               const p = scatter(c.id, home.x - 34, GROUND_Y + 12, 22, 16)
               return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`}>
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={contribPulse(c.id).trim() || undefined}>
                   <title>{`${c.guest_name || 'A guest'} put up: ${c.body || ''}`}</title>
                   <rect x={-3.4} y={-4.2} width={6.8} height={5.6} rx={0.6} fill="#fdf6e6" stroke="var(--border)" strokeWidth={0.3} />
                   <text x={0} y={0.6} textAnchor="middle" fontSize={3.4}>{(c.meta.icon as string) || '❤️'}</text>
@@ -2189,7 +2221,7 @@ export default function VillageScene({
             {near('from').map(c => {
               const p = scatter(c.id, 400, GROUND_Y - 2, 520, 8)
               return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className="village-entity">
+                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'} — from ${(c.meta.place as string) || c.body || 'somewhere'}`}</title>
                   <path d="M 0 0 C -2.4 -4 -2.4 -6.4 0 -8 C 2.4 -6.4 2.4 -4 0 0 Z" fill="var(--blush)" stroke="var(--surface)" strokeWidth={0.4} />
                   <circle cy={-5} r={1} fill="var(--surface)" />
@@ -2263,7 +2295,7 @@ export default function VillageScene({
         ) })()}
         {(() => { const p = decorPos('harry'); const active = !arranging && !settledNight && !sceneHidesFigures; return (
           <Draggable x={p.x} y={p.y} id="harry" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('harry')} r={17}>
-            {!(settledNight && !arranging) && !sceneHidesFigures && (
+            {!(settledNight && !arranging) && !sceneHidesFigures && !(soloFigure && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
                   onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}

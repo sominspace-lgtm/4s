@@ -8,6 +8,7 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useSmartHome } from '@/lib/hooks/useSmartHome'
 import { sceneMood } from '@/lib/smarthome/sceneMood'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
@@ -126,6 +127,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // the doors are open. During 'prep' the village stays its calm self while
   // the hosts get ready — see the prep panel in VillageHomeSheet.
   const guestLive = !!gathering && gathering.phase !== 'prep'
+  // "Hosting" is prep OR live (2026-09-04) — a guest arriving early shouldn't
+  // see the couple's control panel or their life narrated with counts. It
+  // quiets the districts and shows the house-info card; the party *look*
+  // (lanterns/outfits) still waits for `guestLive`.
+  const hosting = guestActive
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
@@ -233,6 +239,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const reflectionDays = useReflectionDays()
   const clock = useVillageClock()
   const { spaces } = useSharedSpaces(userId)
+  // Is the other partner around? Empty (no rows / no space) = assume yes and
+  // show the couple. When they're out, the scene drops to a single figure.
+  const partnerPresence = usePartnerPresence(userId, spaces[0]?.id ?? null)
+  const bothHome = partnerPresence.length === 0 || partnerPresence.every(p => p.online)
   const horizon = useSharedHorizon(spaces.length > 0)
   // Real occupancy signal (round 16, 2026-08-27) — "Home → house lights ON,
   // Away → house lights OFF... structure it so additional Smart Home states
@@ -448,6 +458,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             sceneMood={mood}
             frozen={ambient}
             contextActivity={contextActivity}
+            hosting={hosting}
+            guestInfo={guestInfo}
+            soloFigure={!bothHome && !guestActive}
             containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
