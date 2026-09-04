@@ -75,6 +75,13 @@ export function choreDue(c: Chore): number {
   return c.cadence_days - differenceInCalendarDays(new Date(), parseISO(c.last_done_at))
 }
 
+/** The dinner planned for `date` (default today), or null. This filter was
+ *  copy-pasted in TonightCard / MealsCard / AmbientInfo — one home now. */
+export function dinnerFor(meals: Meal[], date: Date = new Date()): Meal | null {
+  const key = format(date, 'yyyy-MM-dd')
+  return meals.find(m => m.slot === 'dinner' && m.meal_date.slice(0, 10) === key) ?? null
+}
+
 export function useHousehold(spaceId: string | null) {
   const supabase = createClient()
   const [chores, setChores] = useState<Chore[]>([])

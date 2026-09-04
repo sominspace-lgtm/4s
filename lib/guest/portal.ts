@@ -50,6 +50,8 @@ export interface ResolvedGathering {
   pinnedMessage: PinnedMessage | null
   /** Host display names, for the "find a host" picker. `full` only. */
   hosts: { name: string }[]
+  /** The name of the recurring series this space runs, if any. `full` only. */
+  seriesName: string | null
 }
 
 /**
@@ -80,7 +82,17 @@ export async function resolveGathering(
 
   let pinnedMessage: PinnedMessage | null = null
   let hosts: { name: string }[] = []
+  let seriesName: string | null = null
   if (opts?.full) {
+    const { data: mem } = await admin
+      .from('gathering_memories')
+      .select('series')
+      .eq('space_id', data.space_id)
+      .not('series', 'is', null)
+      .order('happened_on', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    seriesName = ((mem?.series as string | null) ?? '').trim() || null
     if (data.pinned_contribution_id) {
       const { data: pin } = await admin
         .from('guest_contributions')
@@ -108,6 +120,7 @@ export async function resolveGathering(
     pinnedContributionId: (data.pinned_contribution_id as string | null) ?? null,
     pinnedMessage,
     hosts,
+    seriesName,
   }
 }
 

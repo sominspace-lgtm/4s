@@ -17,7 +17,7 @@ const input: React.CSSProperties = {
 }
 
 export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null }) {
-  const { devices, scenes, activeScene, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyPreset } = useSmartHome(spaceId)
+  const { devices, scenes, activeScene, binDays, loading, addDevice, toggleDevice, updateNote, removeDevice, saveScene, deleteScene, applyPreset, saveBinDays } = useSmartHome(spaceId)
   const [savingScene, setSavingScene] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -99,6 +99,32 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
               + Save current state as a scene
             </button>
           )}
+        </div>
+      )}
+
+      {spaceId && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div className="t-label">Bin day</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+            {(['trash', 'recycling'] as const).map(k => (
+              <label key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text)' }}>
+                <span style={{ color: 'var(--muted)', textTransform: 'capitalize' }}>{k}</span>
+                <select
+                  value={binDays[k] ?? ''}
+                  onChange={e => saveBinDays({ ...binDays, [k]: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  style={{ fontSize: '0.72rem', fontFamily: 'inherit', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.2rem 0.4rem', color: 'var(--text)' }}
+                >
+                  <option value="">not set</option>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                    <option key={d} value={i}>{d}</option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>
+            The village puts a bin by the gate the evening before and the morning of.
+          </div>
         </div>
       )}
 

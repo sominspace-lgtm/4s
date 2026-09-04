@@ -1,7 +1,6 @@
 'use client'
 
-import { format } from 'date-fns'
-import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
+import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useCheckins } from '@/lib/hooks/useCheckins'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
@@ -10,31 +9,51 @@ import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 // a glance from across the room: the time, the date + weather, and the one
 // thing the house has on today. Only mounts while `ambient` is true, so its
 // hooks don't run on the interactive dashboard (2026-09-04).
-export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather }: {
+export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null }: {
   spaceId: string | null
   userId: string
   timeLabel: string | null
   dateLabel: string | null
   weather: { tempF: number; condition: WeatherCondition } | null
+  /** From Village.tsx's clock — reorders which single line leads. */
+  partOfDay?: 'morning' | 'day' | 'evening' | 'night'
+  /** "Bins out this morning" / "Bins out tonight", or null. */
+  binLine?: string | null
 }) {
   const { chores, meals } = useHousehold(spaceId)
   const { routines } = useRoutines(spaceId)
   const { thisWeekMine } = useCheckins(userId)
 
-  const today = format(new Date(), 'yyyy-MM-dd')
   const isSunday = new Date().getDay() === 0
 
-  // One line, in priority order — dinner, then anything overdue, then the
-  // Sunday check-in, then nothing.
+  // One line, priority reordered by time of day. Morning leads with what
+  // you act on before leaving (bins, an overdue task); evening leads with
+  // dinner and the check-in.
   const line = (() => {
-    const dinner = meals.find(m => m.meal_date === today && m.slot === 'dinner')
-    if (dinner) return `Tonight — ${dinner.title}`
+    const dinner = dinnerFor(meals)
     const chore = chores.find(c => choreDue(c) <= 0)
-    if (chore) return `${chore.name} is due`
     const routine = routines.filter(r => r.kind === 'routine').find(r => routineDue(r) <= 0)
-    if (routine) return `${routine.name} is due`
-    if (isSunday && !thisWeekMine) return 'Weekly check-in tonight'
-    return null
+    const dueName = chore?.name ?? routine?.name ?? null
+    const checkin = isSunday && !thisWeekMine ? 'Weekly check-in tonight' : null
+
+    if (partOfDay === 'morning') {
+      if (binLine) return binLine
+      if (dueName) return `${dueName} is due`
+      if (dinner) return `Tonight — ${dinner.title}`
+      return checkin
+    }
+    if (partOfDay === 'evening') {
+      if (dinner) return `${dinner.title} for dinner`
+      if (checkin) return checkin
+      if (binLine) return binLine
+      if (dueName) return `${dueName} is due`
+      return null
+    }
+    // day / night — the original order
+    if (dinner) return `Tonight — ${dinner.title}`
+    if (binLine) return binLine
+    if (dueName) return `${dueName} is due`
+    return checkin
   })()
 
   const weatherStr = weather ? `${Math.round(weather.tempF)}° · ${weatherMeta(weather.condition).label}` : null

@@ -10,6 +10,8 @@ import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useSmartHome } from '@/lib/hooks/useSmartHome'
+import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
+import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { sceneMood } from '@/lib/smarthome/sceneMood'
 import { useSharedHorizon } from '@/lib/hooks/useSharedHorizon'
 import { usePlaces } from '@/lib/hooks/usePlaces'
@@ -32,6 +34,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import GatheringMarquee from './GatheringMarquee'
 import WallHostBar from './WallHostBar'
+import KitchenMode from './KitchenMode'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
 import { figureActivity } from '@/lib/village/figureActivity'
@@ -154,6 +157,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
   const [panelCustomizeOpen, setPanelCustomizeOpen] = useState(false)
   const [partyScreenOpen, setPartyScreenOpen] = useState(false)
+  const [kitchenOpen, setKitchenOpen] = useState(false)
+  useEffect(() => {
+    try { if (new URLSearchParams(window.location.search).get('kitchen') === '1') setKitchenOpen(true) } catch { /* ignore */ }
+  }, [])
   const guestUrl = useMemo(() => {
     if (!gathering) return null
     const base = process.env.NEXT_PUBLIC_APP_URL
@@ -279,7 +286,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // (not false) while devices are still loading or there's no household
   // space at all — VillageScene falls back to its own day/night glow in
   // that case rather than reading "no data yet" as "definitely away."
-  const { devices: smartHomeDevices, loading: smartHomeLoading, activeScene } = useSmartHome(spaces[0]?.id ?? null)
+  const { devices: smartHomeDevices, loading: smartHomeLoading, activeScene, binDays } = useSmartHome(spaces[0]?.id ?? null)
   const homeOccupied = smartHomeLoading || smartHomeDevices.length === 0 ? null : smartHomeDevices.some(d => d.on_state)
   // How the scene should read for the applied smart-home scene (Goodnight →
   // asleep, Movie → still, We're out → gone…). Memoised so the couple's
@@ -390,6 +397,45 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // hookless scene.
   const dateKey = clock ? format(clock, 'yyyy-MM-dd') : null
 
+  // Time-of-day bucket — reorders the ambient line and gates the bin prop.
+  const partOfDay: 'morning' | 'day' | 'evening' | 'night' = (() => {
+    const hr = clock ? clock.getHours() : 12
+    if (hr < 6) return 'night'
+    if (hr < 11) return 'morning'
+    if (hr < 17) return 'day'
+    if (hr < 22) return 'evening'
+    return 'night'
+  })()
+
+  // "Bins out tonight" / "Bins out this morning" — the evening before a
+  // collection day, or the morning of. binDays: 0 = Sunday.
+  const binLine: string | null = (() => {
+    if (!clock) return null
+    const days = [binDays?.trash, binDays?.recycling].filter((d): d is number => typeof d === 'number')
+    if (!days.length) return null
+    const dow = clock.getDay()
+    const tomorrow = (dow + 1) % 7
+    if (partOfDay === 'morning' && days.includes(dow)) return 'Bins out this morning'
+    if ((partOfDay === 'evening' || partOfDay === 'night') && days.includes(tomorrow)) return 'Bins out tonight'
+    return null
+  })()
+
+  // The Home cottage glance-card (tonight's dinner, next home task, bins,
+  // active scene). Threaded to the hookless scene as one object.
+  const household = useHousehold(spaces[0]?.id ?? null)
+  const routinesHook = useRoutines(spaces[0]?.id ?? null)
+  const homeCard = useMemo(() => {
+    const dinner = dinnerFor(household.meals)?.title ?? null
+    const chore = household.chores.find(c => choreDue(c) <= 0)?.name ?? null
+    const routine = routinesHook.routines.filter(r => r.kind === 'routine').find(r => routineDue(r) <= 0)?.name ?? null
+    return {
+      dinner,
+      nextTask: chore ?? routine,
+      binLine,
+      sceneName: activeScene?.name ?? null,
+    }
+  }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
+
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
   // Round 33 (2026-08-27, "we can only grow them using habits and can move
@@ -498,6 +544,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
             somi={somi}
             hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
+            onOpenKitchen={() => setKitchenOpen(true)}
+            homeCard={homeCard} binLine={binLine} partOfDay={partOfDay}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -517,7 +565,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             live gathering (the party screen owns the overlay then). */}
         {ambient && !compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
-            timeLabel={timeLabel} dateLabel={dateLabel} weather={weather} />
+            timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
+            partOfDay={partOfDay} binLine={binLine} />
         )}
 
         {/* What's-on strip — the live-gathering counterpart of AmbientInfo,
@@ -629,6 +678,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 }}>
                   {([
                     ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
+                    ...(!guestActive ? [{ label: 'Kitchen', on: () => setKitchenOpen(true) }] : []),
                     ...(guestActive
                       ? [
                           ...(gathering?.phase === 'prep' && onOpenDoors
@@ -784,6 +834,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               </button>
             ))}
           </div>
+        )}
+
+        {kitchenOpen && (
+          <KitchenMode spaceId={spaces[0]?.id ?? null} onClose={() => setKitchenOpen(false)} />
         )}
 
         {/* Host panel — music playlist, photo album, guest moderation, and

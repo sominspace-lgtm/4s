@@ -1,6 +1,7 @@
 'use client'
 
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
+import { KITCHEN_URL, HOME_URL } from '@/lib/utils/cheatSheets'
 import Icon, { type IconName } from '@/components/ui/Icon'
 
 // Jump tiles for the Village home panel — every tab one tap away, plus the
@@ -21,8 +22,8 @@ const TILES: Tile[] = [
   { kind: 'section', label: 'Household', icon: 'household', go: () => goToHousehold('home') },
   { kind: 'section', label: 'Calendar',  icon: 'calendar',  go: () => goToHousehold('calendar') },
   { kind: 'section', label: 'Places',    icon: 'places',    go: () => goToSection('places') },
-  { kind: 'external', label: 'Kitchen',  icon: 'plate', href: 'https://kitchencheatsheet.vercel.app' },
-  { kind: 'external', label: 'Home',     icon: 'household', href: 'https://home-cheat-sheet-deploy.vercel.app/' },
+  { kind: 'external', label: 'Kitchen',  icon: 'plate', href: KITCHEN_URL },
+  { kind: 'external', label: 'Home',     icon: 'household', href: HOME_URL },
 ]
 
 export default function ShortcutsCard({ locked = false, onLockedNavigate, onInteract }: {

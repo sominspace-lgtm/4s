@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
-import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
+import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
+import { kitchenLookup, openExternal } from '@/lib/utils/cheatSheets'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
@@ -168,14 +169,28 @@ function QuickAdd({ placeholder, onAdd }: { placeholder: string; onAdd: (t: stri
   )
 }
 
+const mealLink: React.CSSProperties = {
+  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+  color: 'var(--gold)', fontSize: '0.68rem', fontFamily: 'inherit',
+}
+
 function TonightCard({ spaceId, onInteract }: { spaceId: string | null; onInteract?: () => void }) {
   const h = useHousehold(spaceId)
-  const today = new Date()
-  const tonight = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), today))
+  const tonight = dinnerFor(h.meals)
   const choresToday = h.chores.filter(c => choreDue(c) <= 0)
   return (
     <Card icon="plate" tint="var(--amber)" title="Tonight">
-      {tonight ? <Line>{tonight.title}</Line> : <Line dim italic>No dinner planned yet.</Line>}
+      {tonight ? (
+        <>
+          <Line>{tonight.title}</Line>
+          <div style={{ display: 'flex', gap: '0.5rem', margin: '0.1rem 0 0.3rem' }}>
+            {tonight.recipe_url && (
+              <button onClick={() => openExternal(tonight.recipe_url!)} style={mealLink}>Recipe ↗</button>
+            )}
+            <button onClick={() => openExternal(kitchenLookup(tonight.title))} style={mealLink}>Look it up ↗</button>
+          </div>
+        </>
+      ) : <Line dim italic>No dinner planned yet.</Line>}
       {choresToday.slice(0, 4).map(c => (
         <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <button onClick={() => { h.markChoreDone(c.id); onInteract?.() }} aria-label={`Mark ${c.name} done`} className="press" style={{
@@ -197,12 +212,16 @@ function MealsCard({ spaceId }: { spaceId: string | null }) {
     <Card icon="calendar" tint="var(--blush)" title="This week's meals" onOpen={() => goToHousehold('home')}>
       {!any && <Line dim italic>Nothing planned.</Line>}
       {week.map(day => {
-        const dinner = h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), day))
+        const dinner = dinnerFor(h.meals, day)
         if (!dinner) return null
+        const isToday = isSameDay(day, new Date())
         return (
           <div key={+day} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>{format(day, 'EEE')}</span>
             <span style={{ fontSize: '0.74rem', color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)' }}>{dinner.title}</span>
+            {isToday && (
+              <button onClick={e => { e.stopPropagation(); openExternal(dinner.recipe_url || kitchenLookup(dinner.title)) }} style={mealLink}>↗</button>
+            )}
           </div>
         )
       })}

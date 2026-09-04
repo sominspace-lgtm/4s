@@ -42,6 +42,7 @@ export default async function GuestPortalPage({ params }: { params: Promise<{ to
       menu={g.menu}
       agenda={g.agenda}
       hosts={g.hosts}
+      seriesName={g.seriesName}
     />
   )
 }

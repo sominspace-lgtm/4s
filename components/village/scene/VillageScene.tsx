@@ -7,6 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
+import { KITCHEN_URL, HOME_URL } from '@/lib/utils/cheatSheets'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
@@ -40,6 +41,12 @@ export { GROUND_Y }
  * `village`, so this file can be read top to bottom as a draw order.
  */
 
+const REF_BTN: React.CSSProperties = {
+  fontSize: 8, fontFamily: 'inherit', cursor: 'pointer',
+  padding: '2px 6px', borderRadius: 999,
+  background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
+}
+
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
@@ -51,6 +58,7 @@ export default function VillageScene({
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null,
+  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day',
 }: {
   village: VillageState
   live: boolean
@@ -146,6 +154,15 @@ export default function VillageScene({
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
+  /** Opens the Kitchen overlay (from the reference nook in the scene). */
+  onOpenKitchen?: () => void
+  /** Live lines for the Home cottage tap-card: tonight's dinner, the next
+   *  home task, a bins line, the active smart-home scene. */
+  homeCard?: { dinner: string | null; nextTask: string | null; binLine: string | null; sceneName: string | null } | null
+  /** "Bins out tonight" / "Bins out this morning", or null — draws the bin prop. */
+  binLine?: string | null
+  /** From Village.tsx's clock — the bin prop only shows evening/morning. */
+  partOfDay?: 'morning' | 'day' | 'evening' | 'night'
   /** Dragged positions for the five landmark labels — only the pins move,
    *  not the scenery underneath them (see Village.tsx's own header comment
    *  on why: labels already float above their district as independent map
@@ -439,6 +456,7 @@ export default function VillageScene({
   // tracked the same way every other recurring household task is (see
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
+  const [openRefNook, setOpenRefNook] = useState(false)
   // Which host a guest tapped to call over (null = card closed). Only live
   // during a gathering, driven by hostPing.
   const [pingOpen, setPingOpen] = useState<'sylvia' | 'harry' | null>(null)
@@ -461,8 +479,11 @@ export default function VillageScene({
   const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
     if (arranging) return
     recordVisit(id)
+    if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
+    // Home opens its glance-card first (dinner, next task, bins) — the card's
+    // button goes on to Smart Home. Everything else navigates on tap.
+    if (id === 'home') { setOpenPanel(openPanel === 'home' ? null : 'home'); return }
     setOpenPanel(null)
-    if (districtLocked(id)) { onLockedNavigate?.(label); return }
     panelContent[id].go()
   }
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -502,7 +523,14 @@ export default function VillageScene({
       // the primary entry to the shared household devices, not a personal
       // surface; Today stays reachable via the swipe-up sheet (shared mode)
       // or the Today tab (personal mode), just not through this tap.
-      lines: ['Lights, temperature, and more'],
+      lines: homeCard && (homeCard.dinner || homeCard.nextTask || homeCard.binLine || homeCard.sceneName)
+        ? [
+            homeCard.dinner ? `Tonight · ${homeCard.dinner}` : null,
+            homeCard.binLine,
+            homeCard.nextTask ? `${homeCard.nextTask} due` : null,
+            homeCard.sceneName ? `Scene · ${homeCard.sceneName}` : null,
+          ].filter(Boolean).slice(0, 3) as string[]
+        : ['Lights, scenes, and more'],
       actionLabel: 'Open Smart Home', go: openSmartHome,
     },
     projects: {
@@ -1854,6 +1882,38 @@ export default function VillageScene({
         </Draggable>
       ) })()}
 
+      {/* Reference nook — a little recipe box + book by the porch. Tap for
+          the Kitchen and Home cheat sheets, or a quick look-up. Home mode
+          only (hidden while a gathering is on). */}
+      {!gathering && !arranging && (() => {
+        const p = pos('home')
+        const nx = Math.max(30, Math.min(770, p.x - 52))
+        return (
+          <g transform={`translate(${nx} ${p.y + 4})`} className="village-entity"
+            onClick={() => setOpenRefNook(o => !o)} style={{ cursor: 'pointer' }}>
+            <title>Kitchen &amp; Home cheat sheets</title>
+            <ellipse cx={0} cy={2} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
+            <rect x={-6} y={-7} width={12} height={9} rx={1.4} fill="#c9803f" stroke="#8a5a2c" strokeWidth={0.6} />
+            <rect x={-6} y={-7} width={12} height={2.4} fill="#e0a066" />
+            <rect x={-3.5} y={-13} width={7} height={6.4} rx={0.6} fill="#7a8f6e" stroke="#5c6e52" strokeWidth={0.5} />
+          </g>
+        )
+      })()}
+
+      {/* Bin by the gate — the evening before / morning of collection. */}
+      {(binLine && (partOfDay === 'evening' || partOfDay === 'morning')) && (() => {
+        const p = pos('home')
+        const bx = Math.max(30, Math.min(770, p.x + 54))
+        return (
+          <g transform={`translate(${bx} ${p.y + 3})`} pointerEvents="none">
+            <title>{binLine}</title>
+            <ellipse cx={0} cy={2} rx={6} ry={1.5} fill="var(--text)" opacity={0.12} />
+            <rect x={-5} y={-12} width={10} height={14} rx={1.6} fill="#4e5b45" stroke="#3a4535" strokeWidth={0.6} />
+            <rect x={-6} y={-13} width={12} height={2.6} rx={1} fill="#6b7a5e" />
+          </g>
+        )
+      })()}
+
       {/* Home's own personal objects — the bike, flower pot, laundry basket,
           and bread basket (rounds 9-10) are gone (round 23, 2026-08-27,
           "update only using these elements. delete all old ones") — none of
@@ -2597,6 +2657,40 @@ export default function VillageScene({
                       border: '1px solid var(--gold)', color: 'var(--gold)',
                     }}
                   >Her care →</button>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        )
+      })()}
+
+      {openRefNook && (() => {
+        const p = pos('home')
+        const width = 150
+        const height = 74
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x - 52))
+        const top = Math.max(10, p.y - 40 - height)
+        const close = () => setOpenRefNook(false)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={close} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={width} height={height} style={{ overflow: 'visible' }}>
+                <div style={{
+                  boxSizing: 'border-box', width: '100%', height: '100%',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+                  padding: '8px 10px', fontFamily: 'var(--font-body)', color: 'var(--text)',
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 600 }}>Cheat sheets</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    <button onClick={() => { window.open(KITCHEN_URL, '_blank', 'noopener'); close() }} style={REF_BTN}>Kitchen ↗</button>
+                    <button onClick={() => { window.open(HOME_URL, '_blank', 'noopener'); close() }} style={REF_BTN}>Home ↗</button>
+                    {onOpenKitchen && (
+                      <button onClick={() => { onOpenKitchen(); close() }} style={{ ...REF_BTN, borderColor: 'var(--gold)', color: 'var(--gold)' }}>Look something up</button>
+                    )}
+                  </div>
                 </div>
               </foreignObject>
             </g>

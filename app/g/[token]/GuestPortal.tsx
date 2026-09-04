@@ -18,7 +18,7 @@ interface GuestInfo { wifiName?: string; wifiPassword?: string; notes?: string }
 interface MenuItem { id: string; name: string; note: string }
 interface AgendaItem { id: string; time: string; label: string; done: boolean }
 
-export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, guestInfo, menu = [], agenda = [], hosts = [] }: {
+export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, guestInfo, menu = [], agenda = [], hosts = [], seriesName = null }: {
   token: string
   title: string
   photoAlbumUrl?: string | null
@@ -27,12 +27,14 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
   menu?: MenuItem[]
   agenda?: AgendaItem[]
   hosts?: { name: string }[]
+  seriesName?: string | null
 }) {
   const [open, setOpen] = useState<Action | null>(null)
   const [done, setDone] = useState<Action | null>(null)
   const [showQueue, setShowQueue] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [showOn, setShowOn] = useState(false)
+  const [showBye, setShowBye] = useState(false)
   const [name, rememberName] = useGuestName()
   const hasInfo = !!(guestInfo && (guestInfo.notes || guestInfo.wifiName))
   const hasOn = menu.length > 0 || agenda.length > 0
@@ -48,7 +50,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
           </p>
         </header>
 
-        {!open && !done && !showQueue && !showInfo && !showOn && (
+        {!open && !done && !showQueue && !showInfo && !showOn && !showBye && (
           <>
             <label style={S.nameField}>
               <span style={S.nameLabel}>Your name</span>
@@ -94,6 +96,11 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
                   <span style={S.tileBlurb}>Wifi &amp; where things are</span>
                 </button>
               )}
+              <button onClick={() => setShowBye(true)} style={S.tile}>
+                <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>👋</span>
+                <span style={S.tileLabel}>Heading home</span>
+                <span style={S.tileBlurb}>Say goodnight</span>
+              </button>
             </div>
             {!photoAlbumUrl && <p style={S.footnote}>📸 Ask your host to open up the photo album.</p>}
           </>
@@ -101,6 +108,27 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
 
         {showQueue && !open && !done && (
           <SongQueue token={token} musicUrl={musicUrl} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
+        )}
+
+        {showBye && !open && !done && (
+          <div style={S.card}>
+            <button onClick={() => setShowBye(false)} style={S.back}>← back</button>
+            <div style={{ fontSize: '2.4rem' }}>👋</div>
+            <h2 style={S.h2}>Thanks for coming</h2>
+            <p style={{ fontSize: '0.9rem', color: '#8a7d6f', lineHeight: 1.6, margin: '0.4rem 0 1rem' }}>
+              Get home safe. The village will remember that you were here.
+            </p>
+            {photoAlbumUrl && (
+              <a href={photoAlbumUrl} target="_blank" rel="noopener noreferrer" style={{ ...S.primary, display: 'block', textDecoration: 'none', marginBottom: '0.7rem' }}>
+                Add your photos to the album ↗
+              </a>
+            )}
+            {seriesName && (
+              <p style={{ fontSize: '0.82rem', color: '#a8987f', lineHeight: 1.6, margin: 0 }}>
+                This is part of <b style={{ color: '#6a5f52' }}>{seriesName}</b>. Ask your host to add you to the list.
+              </p>
+            )}
+          </div>
         )}
 
         {showOn && !open && !done && (

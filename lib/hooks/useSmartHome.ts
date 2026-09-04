@@ -19,6 +19,9 @@ export interface SmartHomeDevice {
 // shared_spaces.active_scene so the Village reacts and both partners agree.
 export interface ActiveScene { id: string; name: string; appliedAt: string }
 
+// Which weekday the bins go out. 0 = Sunday. Either can be unset.
+export interface BinDays { trash?: number; recycling?: number }
+
 // Smart Home (2026-08-25) — a manual device/status list. No real IoT
 // integration yet; applying a scene flips the shared board (and, once a hub
 // is linked, real bulbs — see lib/smarthome/apply.ts). Scenes + the active
@@ -28,6 +31,7 @@ export function useSmartHome(spaceId: string | null) {
   const [devices, setDevices] = useState<SmartHomeDevice[]>([])
   const [scenes, setScenes] = useState<Scene[]>([])
   const [activeScene, setActiveScene] = useState<ActiveScene | null>(null)
+  const [binDays, setBinDays] = useState<BinDays>({})
   const [loading, setLoading] = useState(true)
 
   // Serialised copy of what we last wrote to active_scene, so the realtime
@@ -47,13 +51,14 @@ export function useSmartHome(spaceId: string | null) {
     const [{ data }, spaceRes] = await Promise.all([
       scope.order('category').order('name'),
       spaceId
-        ? supabase.from('shared_spaces').select('scenes, active_scene').eq('id', spaceId).maybeSingle()
+        ? supabase.from('shared_spaces').select('scenes, active_scene, bin_days').eq('id', spaceId).maybeSingle()
         : Promise.resolve({ data: null }),
     ])
     setDevices((data as SmartHomeDevice[] | null) ?? [])
-    const row = spaceRes?.data as { scenes?: Scene[]; active_scene?: ActiveScene | null } | null
+    const row = spaceRes?.data as { scenes?: Scene[]; active_scene?: ActiveScene | null; bin_days?: BinDays } | null
     setScenes((row?.scenes as Scene[] | undefined) ?? [])
     setActiveScene(row?.active_scene ?? null)
+    setBinDays((row?.bin_days as BinDays | undefined) ?? {})
     setLoading(false)
   }, [supabase, spaceId])
 
@@ -70,9 +75,10 @@ export function useSmartHome(spaceId: string | null) {
         { event: '*', schema: 'public', table: 'shared_spaces', filter: `id=eq.${spaceId}` },
         payload => {
           if (!alive) return
-          const n = payload.new as { scenes?: Scene[]; active_scene?: ActiveScene | null } | null
+          const n = payload.new as { scenes?: Scene[]; active_scene?: ActiveScene | null; bin_days?: BinDays } | null
           if (!n) return
           if (Array.isArray(n.scenes)) setScenes(n.scenes)
+          if (n.bin_days && typeof n.bin_days === 'object') setBinDays(n.bin_days)
           const nextActive = n.active_scene ?? null
           if (JSON.stringify(nextActive) !== lastSceneWriteRef.current) setActiveScene(nextActive)
         },
@@ -145,6 +151,12 @@ export function useSmartHome(spaceId: string | null) {
     await supabase.from('shared_spaces').update({ scenes: next }).eq('id', spaceId)
   }
 
+  async function saveBinDays(next: BinDays) {
+    if (!spaceId) return
+    setBinDays(next)
+    await supabase.from('shared_spaces').update({ bin_days: next }).eq('id', spaceId)
+  }
+
   /** Save the devices' current on/off state as a named scene (or overwrite
    *  one of the same name). */
   async function saveScene(name: string, icon: string) {
@@ -198,8 +210,8 @@ export function useSmartHome(spaceId: string | null) {
   }
 
   return {
-    devices, scenes, activeScene, loading,
+    devices, scenes, activeScene, binDays, loading,
     addDevice, toggleDevice, updateNote, removeDevice,
-    saveScene, deleteScene, applyScene, applyPreset,
+    saveScene, deleteScene, applyScene, applyPreset, saveBinDays,
   }
 }
