@@ -1,24 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import GuestActionForm, { GUEST_ACTIONS, useGuestName, type GuestActionKind } from '@/components/guest/GuestActionForm'
 
 // The guest's one-thumb portal. Landing screen = a row of big warm tap
 // targets; each opens a single-screen form; every submit ends on a "left in
 // the village ✨" confirmation. No account — an optional name is remembered
 // in localStorage so a guest who comes back to add a second thing doesn't
 // retype it. Photos live at the booth (Phase 3), not here.
+//
+// The per-kind form body lives in components/guest/GuestActionForm.tsx,
+// shared with the wall.
 
-type Action = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from'
-
-const ACTIONS: { kind: Action; icon: string; label: string; blurb: string }[] = [
-  { kind: 'thank_you', icon: '💌', label: 'Say thank you', blurb: 'A little note by the well' },
-  { kind: 'guestbook', icon: '📖', label: 'Sign the guestbook', blurb: 'Your name in the book' },
-  { kind: 'note', icon: '💭', label: 'Leave a note', blurb: 'A thought, a wish, a memory' },
-  { kind: 'song', icon: '🎵', label: 'Add a song', blurb: 'For the record player' },
-  { kind: 'from', icon: '🗺️', label: 'Where you’re from', blurb: 'A pin on the map' },
-]
-
-const THANKS_CHIPS = ['Thank you for having us', 'What a night', 'So cozy in here', 'We’ll be back', 'This was special']
+type Action = GuestActionKind
 
 interface GuestInfo { wifiName?: string; wifiPassword?: string; notes?: string }
 
@@ -33,16 +27,8 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
   const [done, setDone] = useState<Action | null>(null)
   const [showQueue, setShowQueue] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
-  const [name, setName] = useState('')
+  const [name, rememberName] = useGuestName()
   const hasInfo = !!(guestInfo && (guestInfo.notes || guestInfo.wifiName))
-
-  useEffect(() => {
-    try { setName(localStorage.getItem('4s-guest-name') ?? '') } catch { /* ignore */ }
-  }, [])
-  const rememberName = (v: string) => {
-    setName(v)
-    try { v.trim() ? localStorage.setItem('4s-guest-name', v.trim()) : localStorage.removeItem('4s-guest-name') } catch { /* ignore */ }
-  }
 
   return (
     <main style={S.shell}>
@@ -68,9 +54,9 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
               />
             </label>
             <div style={S.grid}>
-              {ACTIONS.map(a => (
+              {GUEST_ACTIONS.map(a => (
                 <button key={a.kind} onClick={() => setOpen(a.kind)} style={S.tile}>
-                  <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>{a.icon}</span>
+                  <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>{a.emoji}</span>
                   <span style={S.tileLabel}>{a.label}</span>
                   <span style={S.tileBlurb}>{a.blurb}</span>
                 </button>
@@ -126,11 +112,12 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
         )}
 
         {open && !done && (
-          <ActionForm
+          <GuestActionForm
             token={token}
-            action={open}
-            name={name}
-            onName={rememberName}
+            surface="phone"
+            kind={open}
+            guestName={name}
+            onGuestName={rememberName}
             onBack={() => setOpen(null)}
             onDone={() => { setDone(open); setOpen(null) }}
           />
@@ -148,105 +135,6 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
         )}
       </div>
     </main>
-  )
-}
-
-function ActionForm({ token, action, name, onName, onBack, onDone }: {
-  token: string
-  action: Action
-  name: string
-  onName: (v: string) => void
-  onBack: () => void
-  onDone: () => void
-}) {
-  const meta = ACTIONS.find(a => a.kind === action)!
-  const [text, setText] = useState('')
-  const [songTitle, setSongTitle] = useState('')
-  const [songUrl, setSongUrl] = useState('')
-  const [place, setPlace] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const submit = async () => {
-    setBusy(true); setErr(null)
-    const payload: Record<string, unknown> = { kind: action, guest_name: name.trim() || null }
-    if (action === 'song') { payload.title = songTitle.trim(); payload.url = songUrl.trim(); payload.body = songTitle.trim() }
-    else if (action === 'from') { payload.place = place.trim(); payload.body = place.trim() }
-    else payload.body = text.trim()
-
-    try {
-      const res = await fetch(`/api/g/${token}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (!res.ok) { setErr(data.error ?? 'Something went wrong.'); setBusy(false); return }
-      onDone()
-    } catch {
-      setErr('No connection — try again.')
-      setBusy(false)
-    }
-  }
-
-  const canSubmit =
-    action === 'song' ? songTitle.trim().length > 0
-    : action === 'from' ? place.trim().length > 1
-    : text.trim().length > 0
-
-  return (
-    <div style={S.card}>
-      <button onClick={onBack} style={S.back}>← back</button>
-      <div style={{ fontSize: '1.9rem' }}>{meta.icon}</div>
-      <h2 style={S.h2}>{meta.label}</h2>
-
-      {action === 'thank_you' && (
-        <>
-          <div style={S.chips}>
-            {THANKS_CHIPS.map(c => (
-              <button key={c} onClick={() => setText(c)} style={{ ...S.chip, ...(text === c ? S.chipOn : {}) }}>{c}</button>
-            ))}
-          </div>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="…or write your own" rows={3} style={S.area} maxLength={280} />
-        </>
-      )}
-
-      {(action === 'guestbook' || action === 'note') && (
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder={action === 'guestbook' ? 'A line for the book' : 'A thought, a wish, a memory'}
-          rows={4}
-          style={S.area}
-          maxLength={280}
-        />
-      )}
-
-      {action === 'song' && (
-        <>
-          <input value={songTitle} onChange={e => setSongTitle(e.target.value)} placeholder="Song & artist" style={S.input} maxLength={120} />
-          <input value={songUrl} onChange={e => setSongUrl(e.target.value)} placeholder="Link (optional)" style={{ ...S.input, marginTop: '0.5rem' }} maxLength={400} inputMode="url" />
-        </>
-      )}
-
-      {action === 'from' && (
-        <input value={place} onChange={e => setPlace(e.target.value)} placeholder="Town, or town & country" style={S.input} maxLength={60} />
-      )}
-
-      <input
-        value={name}
-        onChange={e => onName(e.target.value)}
-        placeholder="Your name (optional)"
-        style={{ ...S.input, marginTop: '0.7rem' }}
-        autoComplete="name"
-      />
-
-      {err && <p style={{ color: '#b4553f', fontSize: '0.8rem', margin: '0.6rem 0 0' }}>{err}</p>}
-
-      <button onClick={submit} disabled={!canSubmit || busy} style={{ ...S.primary, marginTop: '0.9rem', opacity: !canSubmit || busy ? 0.5 : 1 }}>
-        {busy ? 'Leaving it…' : 'Leave it in the village'}
-      </button>
-    </div>
   )
 }
 
