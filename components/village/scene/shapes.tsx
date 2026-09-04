@@ -935,10 +935,11 @@ export function VillagerShape({ x, y, name, scale = 1, onClick, wander = true, p
       className={onClick ? 'village-entity' : undefined}
       style={{ cursor: onClick ? 'pointer' : undefined }}>
       <title>{name}</title>
-      {/* Hit box hugs the figure (round 72) — was a 41-wide circle on a
-          ~18-wide sprite, which stole taps from whoever was standing
-          next to them. A bit of side pad for the wave arm. */}
-      {onClick && <rect x={-w / 2 - 4} y={-h - 3} width={w + 8} height={h + 7} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      {/* Hit box hugs the figure (round 72 shrank a 41-wide circle that stole
+          taps from whoever was standing next to them; round 80, 2026-09-04,
+          widened it back out a bit — "appropriate" landed too tight in
+          practice — short of that original circle). */}
+      {onClick && <rect x={-w / 2 - 7} y={-h - 6} width={w + 14} height={h + 12} fill="transparent" style={{ pointerEvents: 'all' }} />}
       {/* Facing via the standalone CSS `scale` property (composes with the
           outer `transform` rather than replacing it — see this file's round
           47 note) — flipped the instant a walk starts (round 55, "always
@@ -1044,10 +1045,11 @@ export function CatShape({ x, y, name = 'Somi', scale = 1, onClick, wander = tru
         className={[onClick && 'village-entity', reacting && 'village-tapped'].filter(Boolean).join(' ') || undefined}
         style={{ cursor: onClick ? 'pointer' : undefined }}>
         <title>{name}</title>
-        {/* Hit box matches Somi's widest pose (the stretch) + a hair
-            (round 72) — was a circle wide enough to also catch Sylvia
-            standing beside her. */}
-        {onClick && <rect x={-14} y={-h - 2} width={28} height={h + 5} fill="transparent" style={{ pointerEvents: 'all' }} />}
+        {/* Hit box (round 72 shrank a circle that also caught Sylvia
+            standing beside her; round 80, 2026-09-04, widened back out a
+            bit — small tap targets like Somi's are exactly what "make
+            hitboxes big and appropriate" was aimed at). */}
+        {onClick && <rect x={-18} y={-h - 6} width={36} height={h + 12} fill="transparent" style={{ pointerEvents: 'all' }} />}
         {/* Facing composes with the caller's translate() via the standalone
             `scale` property, same trick VillagerShape uses. */}
         <g style={wander ? { scale: `${face} 1` } : undefined}>
@@ -1097,7 +1099,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1238,6 +1240,7 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   book: { w: 46, h: 41 },   // greenhouse.png
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
+  shelf: { w: 24, h: 22 },  // hand-drawn recipe-box + book, no source art
 }
 
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
@@ -1350,11 +1353,23 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
+    case 'shelf': // References (round 80, 2026-09-04) — a small recipe box + book,
+      // hand-drawn like the nook prop it replaces rather than a cropped asset (no
+      // dedicated "reference library" building exists in the master folder yet).
+      return (
+        <g>
+          <ellipse cx={0} cy={2} rx={11} ry={2.2} fill="var(--text)" opacity={0.16} />
+          <rect x={-9} y={-11} width={18} height={13.5} rx={2} fill="#c9803f" stroke="#8a5a2c" strokeWidth={0.9} />
+          <rect x={-9} y={-11} width={18} height={3.6} fill="#e0a066" />
+          <rect x={-5.5} y={-20} width={11} height={10} rx={0.9} fill="#7a8f6e" stroke="#5c6e52" strokeWidth={0.7} />
+          {dark && <circle cy={-8} r={9} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
+        </g>
+      )
   }
 }
 
-export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false, quiet = false }: {
-  x: number; y: number; icon: DistrictIconKind; label: string; count: string; onClick: () => void
+export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false, quiet = false }: {
+  x: number; y: number; icon: DistrictIconKind; label: string; count?: string; onClick: () => void
   /** Hosting a gathering — drop the name + count so the couple's life isn't
    *  narrated to a room of guests; the building stays as scenery. */
   quiet?: boolean
@@ -1383,18 +1398,20 @@ export function DistrictLabel({ x, y, icon, label, count, onClick, draggable = f
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={onClick} onPointerDown={onPointerDown}
       onMouseEnter={draggable ? undefined : onHoverIn} onMouseLeave={draggable ? undefined : onHoverOut}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
-      <title>{draggable ? `${label} — drag to move` : `${label} — ${count}. Tap to open.`}</title>
+      <title>{draggable ? `${label} — drag to move` : count ? `${label} — ${count}. Tap to open.` : `${label}. Tap to open.`}</title>
       {/* Invisible hit area, sized from the actual DistrictArt footprint
-          (×1.3, the scale it's drawn at) plus the label/count text stack
-          below (round 72). For `home`/`building` the art is empty, so this
-          falls back to a small rect covering the glow + label — the real
-          cottage/cabin carry their own bigger hit areas in VillageScene. */}
+          plus the label/count text stack below (round 72; enlarged round
+          80, 2026-09-04 — "make sure the hit boxes are big and
+          appropriate" — the art-sized box read as fiddly to actually
+          land a tap on). For `home`/`building` the art is empty, so this
+          falls back to a generous minimum rect — the real cottage/cabin
+          carry their own bigger hit areas in VillageScene. */}
       {(() => {
         const box = DISTRICT_ART_BOX[icon]
-        const artW = box.w * 1.3, artH = box.h * 1.3
-        const halfW = Math.max(19, artW / 2 + 2)
-        const top = Math.min(-18, -artH - 2)
-        const bottom = 27 // covers the label (y 13) and count (y 23) lines
+        const artW = box.w * 1.5, artH = box.h * 1.5
+        const halfW = Math.max(28, artW / 2 + 6)
+        const top = Math.min(-26, -artH - 6)
+        const bottom = 31 // covers the label (y 13) and count (y 23) lines, plus slack
         return <rect x={-halfW} y={top} width={2 * halfW} height={bottom - top} fill="transparent" style={{ pointerEvents: 'all' }} />
       })()}
       {/* A dashed ring while arranging — floats free of whichever silhouette

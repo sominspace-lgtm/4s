@@ -21,7 +21,7 @@ import { hashPos } from './state'
 // of data, so a saved position is actually meaningful and stable. See
 // VillageLayout below and VillageScene's arrange mode.
 
-export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people'] as const
+export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people', 'references'] as const
 export type LandmarkId = typeof LANDMARK_IDS[number]
 /** Custom x/y per landmark (or, since round 12, per decorative prop — see
  *  VillageScene's own DECOR_DEFAULTS/DecorProp), only for the ones a user

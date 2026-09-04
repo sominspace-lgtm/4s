@@ -7,7 +7,7 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { KITCHEN_URL, HOME_URL } from '@/lib/utils/cheatSheets'
+import { HOME_URL } from '@/lib/utils/cheatSheets'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
@@ -41,11 +41,6 @@ export { GROUND_Y }
  * `village`, so this file can be read top to bottom as a draw order.
  */
 
-const REF_BTN: React.CSSProperties = {
-  fontSize: 8, fontFamily: 'inherit', cursor: 'pointer',
-  padding: '2px 6px', borderRadius: 999,
-  background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
-}
 
 export default function VillageScene({
   village: v, live, palette, celestial, plantSlots, buildingSlots,
@@ -195,7 +190,7 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home'
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -400,20 +395,13 @@ export default function VillageScene({
   // (round 53) — walkTo, wired at the call sites below. The round-50
   // localStorage "nudge / attention" indirection is retired.
 
-  const navLandmark = (id: LandmarkId, label: string, go: () => void) => () => {
-    if (arranging) return
-    recordVisit(id)
-    if (districtLocked(id)) onLockedNavigate?.(label)
-    else go()
-  }
-
   // A small hover-board instead of leaving straight away (2026-08-25) —
   // same idea as Archive already opening its own panel rather than
   // navigating off the Village on the first click. Forest/Home/Projects/
   // Places/People now open a compact summary card near the icon; a second
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
-  const [openPanel, setOpenPanel] = useState<Exclude<LandmarkId, 'archive'> | null>(null)
+  const [openPanel, setOpenPanel] = useState<LandmarkId | null>(null)
 
   // Tap-your-own-figure personal entry (2026-08-25) — same hover-card idea
   // as openPanel above, for Sylvia/Harry's cast figures. Only wired up in
@@ -456,7 +444,6 @@ export default function VillageScene({
   // tracked the same way every other recurring household task is (see
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
-  const [openRefNook, setOpenRefNook] = useState(false)
   // Which host a guest tapped to call over (null = card closed). Only live
   // during a gathering, driven by hostPing.
   const [pingOpen, setPingOpen] = useState<'sylvia' | 'harry' | null>(null)
@@ -472,23 +459,23 @@ export default function VillageScene({
     setOpenSomiCard(o => !o)
   }
 
-  // One tap opens the district (round 71 — the old "tap a card, then tap a
-  // button" two-step read as broken). The compact summary card is now a
-  // hover-only preview on real pointer devices (see DistrictLabel's
-  // onMouseEnter/Leave); a tap goes straight where you'd expect.
-  const openOrToggle = (id: Exclude<LandmarkId, 'archive'>, label: string) => () => {
+  // Every unlocked district opens its glance-card first (2026-09-04) —
+  // round 71's "one tap navigates" read as too eager once the card started
+  // carrying real live info (Home's dinner/next-task/bins line was the
+  // first case; the rest follow the same rule now for consistency). The
+  // card's own action button is what actually navigates. Locked districts
+  // are unchanged: straight to the PIN prompt, no card (its content is
+  // only ever safe to render once a district ISN'T locked, same guard as
+  // panelContent.forest's real-plant-names comment below).
+  const openOrToggle = (id: LandmarkId, label: string) => () => {
     if (arranging) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
-    // Home opens its glance-card first (dinner, next task, bins) — the card's
-    // button goes on to Smart Home. Everything else navigates on tap.
-    if (id === 'home') { setOpenPanel(openPanel === 'home' ? null : 'home'); return }
-    setOpenPanel(null)
-    panelContent[id].go()
+    setOpenPanel(prev => (prev === id ? null : id))
   }
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelHoverClose = () => { if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null } }
-  const hoverPreview = (id: Exclude<LandmarkId, 'archive'>) => ({
+  const hoverPreview = (id: LandmarkId) => ({
     onHoverIn: () => { if (!arranging) { cancelHoverClose(); setOpenPanel(id) } },
     // A short grace period so moving the pointer up into the card itself
     // (there's a gap above the district) doesn't dismiss it.
@@ -500,7 +487,7 @@ export default function VillageScene({
   const restingCount = v.plants.length - growingCount
   const standingCount = v.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length
   const underwayCount = v.buildings.length - standingCount
-  const panelContent: Record<Exclude<LandmarkId, 'archive'>, { title: string; lines: string[]; actionLabel: string; go: () => void }> = {
+  const panelContent: Record<LandmarkId, { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void } }> = {
     forest: {
       title: 'Growth Garden',
       lines: [
@@ -562,6 +549,26 @@ export default function VillageScene({
         ...(soonestBirthdayDays != null ? [soonestBirthdayDays === 0 ? 'Birthday today' : `Birthday in ${soonestBirthdayDays}d`] : []),
       ],
       actionLabel: 'Open People', go: () => goToPersonal('people'),
+    },
+    archive: {
+      title: 'Archive',
+      lines: [
+        v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'Its first year',
+      ],
+      actionLabel: 'Open Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
+    },
+    // References (2026-09-04) — a proper district instead of a nook prop
+    // floating near the cottage; brought the same shortcut it replaced
+    // (Kitchen + Home cheat sheets) into the normal card pattern every
+    // other district uses. One action button (Kitchen — the more frequent
+    // ask); Home Cheat Sheet rides along as a low-key secondary link,
+    // same as the well/postcard cards' secondary actions, rather than
+    // reworking this card renderer for one district.
+    references: {
+      title: 'References',
+      lines: ['Kitchen & home know-how'],
+      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
+      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
   }
 
@@ -1890,23 +1897,8 @@ export default function VillageScene({
         </Draggable>
       ) })()}
 
-      {/* Reference nook — a little recipe box + book by the porch. Tap for
-          the Kitchen and Home cheat sheets, or a quick look-up. Home mode
-          only (hidden while a gathering is on). */}
-      {!gathering && !arranging && (() => {
-        const p = pos('home')
-        const nx = Math.max(30, Math.min(770, p.x - 52))
-        return (
-          <g transform={`translate(${nx} ${p.y + 4})`} className="village-entity"
-            onClick={() => setOpenRefNook(o => !o)} style={{ cursor: 'pointer' }}>
-            <title>Kitchen &amp; Home cheat sheets</title>
-            <ellipse cx={0} cy={2} rx={7} ry={1.6} fill="var(--text)" opacity={0.12} />
-            <rect x={-6} y={-7} width={12} height={9} rx={1.4} fill="#c9803f" stroke="#8a5a2c" strokeWidth={0.6} />
-            <rect x={-6} y={-7} width={12} height={2.4} fill="#e0a066" />
-            <rect x={-3.5} y={-13} width={7} height={6.4} rx={0.6} fill="#7a8f6e" stroke="#5c6e52" strokeWidth={0.5} />
-          </g>
-        )
-      })()}
+      {/* The nook prop is gone — References is a proper district now
+          (see the DistrictLabel + panelContent.references above). */}
 
       {/* Bin by the gate — the evening before / morning of collection. */}
       {(binLine && (partOfDay === 'evening' || partOfDay === 'morning')) && (() => {
@@ -2159,9 +2151,11 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
-      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={navLandmark('archive', 'Archive', () => window.dispatchEvent(new CustomEvent('app:open-archive')))} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
-        draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} />
+        draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
+      <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="References" onClick={openOrToggle('references', 'References')} {...hoverPreview('references')} dark={dark} scale={1.12}
+        draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already
           tracks that had no presence in the village at all: your saved pins
@@ -2587,7 +2581,8 @@ export default function VillageScene({
         const p = pos(openPanel)
         const info = panelContent[openPanel]
         const width = 150
-        const height = 34 + info.lines.length * 13 + 22
+        const secondaryH = info.secondary ? 12 : 0
+        const height = 34 + info.lines.length * 13 + 22 + secondaryH
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
         const top = Math.max(10, p.y - 40 - height)
         return (
@@ -2601,11 +2596,17 @@ export default function VillageScene({
               {info.lines.map((line, i) => (
                 <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
               ))}
-              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { info.go(); setOpenPanel(null) }}
+              <g transform={`translate(${width / 2} ${height - 15 - secondaryH})`} onClick={() => { info.go(); setOpenPanel(null) }}
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
               </g>
+              {info.secondary && (
+                <text x={width / 2} y={height - 5} textAnchor="middle" fontSize={6.5} fill="var(--muted)" fontFamily="var(--font-body)"
+                  onClick={() => { info.secondary!.go(); setOpenPanel(null) }} style={{ cursor: 'pointer', pointerEvents: 'all', textDecoration: 'underline' }}>
+                  {info.secondary.label}
+                </text>
+              )}
             </g>
           </g>
         )
@@ -2688,40 +2689,6 @@ export default function VillageScene({
                       border: '1px solid var(--gold)', color: 'var(--gold)',
                     }}
                   >Her care →</button>
-                </div>
-              </foreignObject>
-            </g>
-          </g>
-        )
-      })()}
-
-      {openRefNook && (() => {
-        const p = pos('home')
-        const width = 150
-        const height = 74
-        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x - 52))
-        const top = Math.max(10, p.y - 40 - height)
-        const close = () => setOpenRefNook(false)
-        return (
-          <g className="village-fade">
-            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={close} />
-            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
-              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
-              <foreignObject width={width} height={height} style={{ overflow: 'visible' }}>
-                <div style={{
-                  boxSizing: 'border-box', width: '100%', height: '100%',
-                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-                  padding: '8px 10px', fontFamily: 'var(--font-body)', color: 'var(--text)',
-                  display: 'flex', flexDirection: 'column', gap: 4,
-                }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 600 }}>Cheat sheets</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    <button onClick={() => { window.open(KITCHEN_URL, '_blank', 'noopener'); close() }} style={REF_BTN}>Kitchen ↗</button>
-                    <button onClick={() => { window.open(HOME_URL, '_blank', 'noopener'); close() }} style={REF_BTN}>Home ↗</button>
-                    {onOpenKitchen && (
-                      <button onClick={() => { onOpenKitchen(); close() }} style={{ ...REF_BTN, borderColor: 'var(--gold)', color: 'var(--gold)' }}>Look something up</button>
-                    )}
-                  </div>
                 </div>
               </foreignObject>
             </g>

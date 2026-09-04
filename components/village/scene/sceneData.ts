@@ -466,6 +466,9 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   archive: { x: 725, y: 204 },
   people: { x: 627, y: 317 },
   places: { x: 512, y: 209 },
+  // Upper-right, between Archive and People — clear of the ambient
+  // corner widget (top-left) and every other district (2026-09-04).
+  references: { x: 690, y: 245 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
