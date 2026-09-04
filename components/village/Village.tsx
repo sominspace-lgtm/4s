@@ -561,12 +561,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
 
-        {/* Ambient readout — only on the idle wall view, and not during a
-            live gathering (the party screen owns the overlay then). */}
-        {ambient && !compact && !guestLive && (
+        {/* The corner readout (2026-09-04) — up whenever you're looking at
+            the village in home mode, not just once idle; grows + the scene
+            dims once the wall actually goes idle (`ambient`). Not during a
+            live gathering (the sky box owns the overlay then). */}
+        {!compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
-            partOfDay={partOfDay} binLine={binLine} />
+            partOfDay={partOfDay} binLine={binLine} ambient={ambient} />
         )}
 
         {/* The gathering board — a frosted-glass panel in the sky with the

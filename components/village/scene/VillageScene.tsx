@@ -2084,6 +2084,15 @@ export default function VillageScene({
           pointerEvents="none" style={{ transition: 'opacity 1200ms ease' }} />
       )}
 
+      {/* Idle/ambient dimmer (round 80, 2026-09-04) — the corner readout
+          grows and the rest of the picture recedes once the wall's gone
+          idle, so attention lands on the one thing worth glancing at
+          across the room. */}
+      {isFrozen && !gathering && (
+        <rect x={0} y={0} width={800} height={440} fill="#0b1024" opacity={0.22}
+          pointerEvents="none" style={{ transition: 'opacity 1200ms ease' }} />
+      )}
+
       {/* Click-to-care sparkles — see careFor() above. Self-removing via its
           own setTimeout, so this array is only ever non-empty for ~650ms. */}
       {sparkles.map((s, i) => {

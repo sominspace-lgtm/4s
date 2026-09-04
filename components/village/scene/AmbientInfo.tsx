@@ -5,11 +5,13 @@ import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { useCheckins } from '@/lib/hooks/useCheckins'
 import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 
-// The quiet readout on the wall iPad when the scene has gone ambient/idle —
-// a glance from across the room: the time, the date + weather, and the one
-// thing the house has on today. Only mounts while `ambient` is true, so its
-// hooks don't run on the interactive dashboard (2026-09-04).
-export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null }: {
+// A persistent glass readout in the sky's top-left corner (2026-09-04,
+// was idle-only and centered) — the time, date, weather, and the one
+// thing the house has on, visible whenever you're looking at the village
+// in home mode. Grows and the scene dims around it once the wall goes
+// idle (`ambient`), so the same small habit of glancing at the corner
+// becomes the whole point of the picture from across the room.
+export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null, ambient = false }: {
   spaceId: string | null
   userId: string
   timeLabel: string | null
@@ -19,6 +21,8 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
   partOfDay?: 'morning' | 'day' | 'evening' | 'night'
   /** "Bins out this morning" / "Bins out tonight", or null. */
   binLine?: string | null
+  /** The wall has gone idle — grow the card, same content. */
+  ambient?: boolean
 }) {
   const { chores, meals } = useHousehold(spaceId)
   const { routines } = useRoutines(spaceId)
@@ -62,25 +66,32 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
     <div
       aria-hidden
       style={{
-        position: 'absolute', top: '7%', left: 0, right: 0, zIndex: 3,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
-        pointerEvents: 'none', textAlign: 'center', padding: '0 1rem',
+        position: 'absolute', top: ambient ? '6%' : '4%', left: ambient ? '6%' : '4%', zIndex: 3,
+        display: 'flex', flexDirection: 'column', gap: 2,
+        pointerEvents: 'none', textAlign: 'left',
+        padding: ambient ? '1rem 1.3rem' : '0.5rem 0.8rem',
+        borderRadius: ambient ? 18 : 14,
+        background: 'rgba(255,255,255,0.10)',
+        border: '1px solid rgba(255,255,255,0.20)',
+        backdropFilter: 'blur(12px) saturate(1.15)', WebkitBackdropFilter: 'blur(12px) saturate(1.15)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.2)',
         color: '#fff', fontFamily: 'var(--font-body)',
-        textShadow: '0 1px 12px rgba(0,0,0,0.45), 0 0 2px rgba(0,0,0,0.3)',
+        textShadow: '0 1px 8px rgba(0,0,0,0.4)',
+        transition: 'all 600ms ease',
       }}
     >
       {timeLabel && (
-        <div style={{ fontSize: 'clamp(2.2rem, 7vw, 4rem)', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1 }}>
+        <div style={{ fontSize: ambient ? 'clamp(2.4rem, 7vw, 4rem)' : 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1 }}>
           {timeLabel}
         </div>
       )}
       {(dateLabel || weatherStr) && (
-        <div style={{ fontSize: 'clamp(0.8rem, 2.2vw, 1.05rem)', opacity: 0.9, marginTop: '0.3rem' }}>
+        <div style={{ fontSize: ambient ? 'clamp(0.85rem, 2.2vw, 1.05rem)' : '0.68rem', opacity: 0.9 }}>
           {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
         </div>
       )}
       {line && (
-        <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.95rem)', opacity: 0.85, marginTop: '0.55rem' }}>
+        <div style={{ fontSize: ambient ? 'clamp(0.78rem, 2vw, 0.92rem)' : '0.64rem', opacity: 0.85, marginTop: ambient ? '0.3rem' : 0 }}>
           {line}
         </div>
       )}
