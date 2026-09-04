@@ -546,6 +546,15 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 330, y: 237 },
+  // Guest-layer props (2026-09-04) — promoted from fixed offsets-off-Home
+  // to real arrangeable decor ("everything should be able to be arranged
+  // except the scene itself"). Defaults match where the old inline-offset
+  // math used to put them so nothing jumps for anyone with a saved layout.
+  bins: { x: 454, y: 211 },
+  dinnerTable: { x: 404, y: 268 },
+  menuBoard: { x: 434, y: 264 },
+  balloonsA: { x: 354, y: 244 },
+  balloonsB: { x: 438, y: 264 },
   // Round 27's seven community-props items (well, clothesline, an
   // alternate mailbox, bird bath, bench-and-arbor, bike+flower pot, a veg
   // crate) are gone (round 32, 2026-08-27, "delete any elements that are

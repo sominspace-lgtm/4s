@@ -1900,17 +1900,18 @@ export default function VillageScene({
       {/* The nook prop is gone — References is a proper district now
           (see the DistrictLabel + panelContent.references above). */}
 
-      {/* Bin by the gate — the evening before / morning of collection. */}
+      {/* Bin by the gate — the evening before / morning of collection.
+          Arrangeable now (round 80) — decorPos('bins') instead of a fixed
+          offset off Home. */}
       {(binLine && (partOfDay === 'evening' || partOfDay === 'morning')) && (() => {
-        const p = pos('home')
-        const bx = Math.max(30, Math.min(770, p.x + 54))
+        const p = decorPos('bins')
         return (
-          <g transform={`translate(${bx} ${p.y + 3})`} pointerEvents="none">
+          <Draggable x={p.x} y={p.y} id="bins" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('bins')} r={10}>
             <title>{binLine}</title>
             <ellipse cx={0} cy={2} rx={6} ry={1.5} fill="var(--text)" opacity={0.12} />
             <rect x={-5} y={-12} width={10} height={14} rx={1.6} fill="#4e5b45" stroke="#3a4535" strokeWidth={0.6} />
             <rect x={-6} y={-13} width={12} height={2.6} rx={1} fill="#6b7a5e" />
-          </g>
+          </Draggable>
         )
       })()}
 
@@ -2191,7 +2192,7 @@ export default function VillageScene({
         const bookX = clampX(well.x + 30), bookY = well.y + 2
         const juke = { x: clampX(gaz.x - 34), y: gaz.y + 8 }
         const booth = { x: clampX(gaz.x + 24), y: gaz.y - 4 }
-        const table = { x: clampX(home.x + 4), y: GROUND_Y + 58 }
+        const table = decorPos('dinnerTable')
         const openAlbum = guestAlbumUrl && !arranging ? () => window.open(guestAlbumUrl, '_blank', 'noopener') : undefined
         const visible = contributions.filter(c => c.status === 'visible')
         const near = (k: string) => visible.filter(c => c.kind === k)
@@ -2201,23 +2202,26 @@ export default function VillageScene({
         })
         return (
           <g>
-            {/* Dinner table — the gathering's centre, set with a cake + mugs */}
-            <g transform={`translate(${table.x} ${table.y})`}>
+            {/* Dinner table — the gathering's centre, set with a cake + mugs.
+                Arrangeable (round 80) via decorPos('dinnerTable'). */}
+            <Draggable x={table.x} y={table.y} id="dinnerTable" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('dinnerTable')} r={16}>
               <title>The table is set</title>
               <ellipse cx={0} cy={2} rx={16} ry={3.4} fill="var(--text)" opacity={0.16} />
               <image href="/village-assets/cake-table.png" x={-15} y={-21.5} width={30} height={21.2}
                 style={{ imageRendering: 'pixelated' }} />
-            </g>
+            </Draggable>
 
             {/* Menu board — a little standing chalkboard by the table when
-                the hosts have set a menu (2026-09-03). Passive, no tap. */}
+                the hosts have set a menu (2026-09-03). Passive, no tap.
+                Own arrangeable position (round 80) rather than derived from
+                the table, so the whole cluster can be spread out. */}
             {menu.length > 0 && (() => {
               const items = menu.filter(m => m.name.trim()).slice(0, 4)
               if (!items.length) return null
-              const bx = clampX(table.x + 30)
+              const mb = decorPos('menuBoard')
               const h = 12 + items.length * 6
               return (
-                <g transform={`translate(${bx} ${table.y - 4})`} pointerEvents="none">
+                <Draggable x={mb.x} y={mb.y} id="menuBoard" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('menuBoard')} r={14}>
                   <title>{`On the menu: ${items.map(m => m.name).join(', ')}`}</title>
                   <rect x={-1} y={0} width={2} height={16} rx={0.8} fill="#8a6f52" />
                   <rect x={-15} y={-h} width={30} height={h} rx={2} fill="#3a4038" stroke="var(--border)" strokeWidth={0.6} />
@@ -2227,7 +2231,7 @@ export default function VillageScene({
                       {m.name.length > 16 ? m.name.slice(0, 15) + '…' : m.name}
                     </text>
                   ))}
-                </g>
+                </Draggable>
               )
             })()}
 
@@ -2261,14 +2265,18 @@ export default function VillageScene({
                 </g>
               )
             })()}
-            <g transform={`translate(${clampX(signX + 20)} ${signY})`} pointerEvents="none">
-              <image href="/village-assets/balloons.png" x={-10} y={-42} width={20} height={20 * (175 / 128)}
-                style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-2" />
-            </g>
-            <g transform={`translate(${clampX(table.x + 34)} ${table.y - 4})`} pointerEvents="none">
-              <image href="/village-assets/balloons.png" x={-8} y={-34} width={16} height={16 * (175 / 128)}
-                style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-4" />
-            </g>
+            {(() => { const p = decorPos('balloonsA'); return (
+              <Draggable x={p.x} y={p.y} id="balloonsA" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('balloonsA')} r={12}>
+                <image href="/village-assets/balloons.png" x={-10} y={-42} width={20} height={20 * (175 / 128)}
+                  style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-2" />
+              </Draggable>
+            ) })()}
+            {(() => { const p = decorPos('balloonsB'); return (
+              <Draggable x={p.x} y={p.y} id="balloonsB" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('balloonsB')} r={10}>
+                <image href="/village-assets/balloons.png" x={-8} y={-34} width={16} height={16 * (175 / 128)}
+                  style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-4" />
+              </Draggable>
+            ) })()}
             {[[home.x - 26, GROUND_Y + 40], [home.x + 32, GROUND_Y + 46]].map(([gx, gy], i) => (
               <g key={i} transform={`translate(${clampX(gx)} ${gy})`} pointerEvents="none">
                 <image href="/village-assets/gift-box.png" x={-5.5} y={-11} width={11} height={11}
