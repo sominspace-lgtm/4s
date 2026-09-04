@@ -30,6 +30,7 @@ import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
+import GatheringMarquee from './GatheringMarquee'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
 import { figureActivity } from '@/lib/village/figureActivity'
@@ -518,6 +519,26 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather} />
         )}
 
+        {/* What's-on strip — the live-gathering counterpart of AmbientInfo,
+            up whenever the doors are open (not just idle). The party screen
+            owns the overlay when it's showing. */}
+        {guestLive && !compact && !partyScreenOpen && (
+          <GatheringMarquee
+            musicUrl={gathering?.music_url ?? null}
+            nextAgenda={(() => {
+              const a = (gathering?.agenda ?? []).find(x => !x.done)
+              return a ? { time: a.time, label: a.label } : null
+            })()}
+            topVotedSong={(() => {
+              const songs = contributions.filter(c => c.kind === 'song' && c.status === 'visible')
+              if (!songs.length) return null
+              const top = songs.reduce((a, b) => (b.upvotes > a.upvotes ? b : a))
+              return (top.meta?.title as string) || top.body || null
+            })()}
+            pinnedMessage={pinnedMessage}
+          />
+        )}
+
         {pendingMilestone && !arranging && !guestActive && onAckMilestone && (
           <MilestoneMoment milestone={pendingMilestone} onAck={onAckMilestone} />
         )}
@@ -597,7 +618,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     ...(guestActive
                       ? [
                           ...(gathering?.phase === 'prep' && onOpenDoors
-                            ? [{ label: 'Open the doors', on: () => onOpenDoors?.() }]
+                            ? [
+                                { label: 'Preview as a guest', on: () => { if (guestUrl) window.open(guestUrl, '_blank', 'noopener') } },
+                                { label: 'Open the doors', on: () => onOpenDoors?.() },
+                              ]
                             : []),
                           { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
                           ...(gathering?.phase !== 'prep'

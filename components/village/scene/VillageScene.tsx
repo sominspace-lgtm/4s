@@ -439,7 +439,9 @@ export default function VillageScene({
   // tracked the same way every other recurring household task is (see
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
-  const somiInfo = { title: 'Somi', lines: ['Her chores, routines, and maintenance'] }
+  // Somi's card, tapped from the cat. Falls back to sensible defaults when
+  // the hosts haven't filled anything in (see lib/village/somi.ts).
+  const somiCard = somi ?? { name: 'Somi', ageText: null, snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
 
   // Postcard rack (round 66) — tap it to flip through your trip postcards.
   const [postcardsOpen, setPostcardsOpen] = useState(false)
@@ -2197,6 +2199,23 @@ export default function VillageScene({
               {guestQrUri && <image href={guestQrUri} x={-7.2} y={-20.5} width={14.4} height={14.4} preserveAspectRatio="none" />}
             </g>
 
+            {/* Big join-QR on a stand — sized to scan from across the room
+                (2026-09-03). The welcome-sign QR above is scenery; this is
+                the one people actually use. */}
+            {guestQrUri && (() => {
+              const qx = clampX(signX + 40)
+              return (
+                <g transform={`translate(${qx} ${signY})`}>
+                  <title>Scan to join the gathering</title>
+                  <ellipse cx={0} cy={1} rx={13} ry={2.6} fill="var(--text)" opacity={0.15} />
+                  <rect x={-1.5} y={-30} width={3} height={30} rx={1} fill="#8a6f52" />
+                  <rect x={-25} y={-58} width={50} height={50} rx={3} fill="#fff" stroke="var(--border)" strokeWidth={1} />
+                  <image href={guestQrUri} x={-22} y={-55} width={44} height={44} preserveAspectRatio="none" />
+                  <text x={0} y={-3} textAnchor="middle" fontSize={5} fill="var(--text)" fontFamily="var(--font-body)">Scan to join</text>
+                </g>
+              )
+            })()}
+
             {/* Guestbook — a page or two thicker for every signature */}
             <g transform={`translate(${bookX} ${bookY})`}>
               <title>{`The guestbook — ${spellCount(near('guestbook').length)} ${near('guestbook').length === 1 ? 'signature' : 'signatures'}`}</title>
@@ -2531,27 +2550,48 @@ export default function VillageScene({
           onLockedNavigate). */}
       {openSomiCard && (() => {
         const somiPos = decorPos('somi')
-        const somiX = somiPos.x
-        const somiY = somiPos.y
-        const width = 150
-        const height = 34 + somiInfo.lines.length * 13 + 22
-        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiX))
-        const top = Math.max(10, somiY - 40 - height)
+        const width = 176
+        const height = 120
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiPos.x))
+        const top = Math.max(10, somiPos.y - 40 - height)
         return (
           <g className="village-fade">
             <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenSomiCard(false)} />
             <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
               <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
-              <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
-              <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{somiInfo.title}</text>
-              {somiInfo.lines.map((line, i) => (
-                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
-              ))}
-              <g transform={`translate(${width / 2} ${height - 15})`} onClick={() => { goToHousehold('reference'); setOpenSomiCard(false) }}
-                style={{ cursor: 'pointer', pointerEvents: 'all' }}>
-                <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
-                <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">Open →</text>
-              </g>
+              <foreignObject width={width} height={height} style={{ overflow: 'visible' }}>
+                <div style={{
+                  boxSizing: 'border-box', width: '100%', height: '100%',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+                  padding: '8px 10px', fontFamily: 'var(--font-body)', color: 'var(--text)',
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600 }}>{somiCard.name}</div>
+                  {somiCard.ageText && <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>{somiCard.ageText}</div>}
+                  <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>Favourite snack: {somiCard.snack}</div>
+                  {somiCard.tricks.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 1 }}>
+                      {somiCard.tricks.slice(0, 6).map(t => (
+                        <span key={t} style={{
+                          fontSize: 7.5, padding: '1px 5px', borderRadius: 999,
+                          background: 'color-mix(in srgb, var(--gold) 12%, transparent)', color: 'var(--text)',
+                          border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
+                        }}>{t}</span>
+                      ))}
+                    </div>
+                  )}
+                  {somiCard.notes && <div style={{ fontSize: 8, color: 'var(--muted)', lineHeight: 1.4 }}>{somiCard.notes}</div>}
+                  <button
+                    onClick={() => { goToHousehold('reference'); setOpenSomiCard(false) }}
+                    style={{
+                      marginTop: 'auto', alignSelf: 'flex-start', cursor: 'pointer',
+                      fontSize: 8, fontFamily: 'inherit', padding: '2px 8px', borderRadius: 999,
+                      background: 'color-mix(in srgb, var(--gold) 14%, transparent)',
+                      border: '1px solid var(--gold)', color: 'var(--gold)',
+                    }}
+                  >Her care →</button>
+                </div>
+              </foreignObject>
             </g>
           </g>
         )

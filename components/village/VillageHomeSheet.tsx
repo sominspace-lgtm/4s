@@ -219,8 +219,20 @@ function PrepPanel({ gathering, onUpdate, onOpenDoors, onInteract }: {
         <span>{gathering.photo_album_url ? '▦ album ready' : '▦ no album'}</span>
       </div>
 
+      <button
+        onClick={() => {
+          try { window.open(`${window.location.origin}/g/${gathering.token}`, '_blank', 'noopener') } catch { /* ignore */ }
+          onInteract?.()
+        }}
+        className="press"
+        style={{
+          marginTop: '0.15rem', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)',
+          borderRadius: 10, padding: '0.5rem', fontSize: '0.74rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+        }}
+      >Preview as a guest ↗</button>
+
       <button onClick={() => { onOpenDoors?.(); onInteract?.() }} className="press" style={{
-        marginTop: '0.15rem', background: 'var(--rose)', color: 'var(--bg)', border: 'none',
+        background: 'var(--rose)', color: 'var(--bg)', border: 'none',
         borderRadius: 10, padding: '0.55rem', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
       }}>Open the doors</button>
     </div>

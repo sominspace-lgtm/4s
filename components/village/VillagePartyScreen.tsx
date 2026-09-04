@@ -84,8 +84,8 @@ export default function VillagePartyScreen({
 
           {qrDataUri && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-              <img src={qrDataUri} alt="Scan to join" style={{ width: 132, height: 132, borderRadius: 10, background: '#fff', padding: 6 }} />
-              <span style={{ fontSize: '0.66rem', color: 'var(--muted)', textAlign: 'center', maxWidth: 132 }}>
+              <img src={qrDataUri} alt="Scan to join" style={{ width: 184, height: 184, borderRadius: 10, background: '#fff', padding: 8 }} />
+              <span style={{ fontSize: '0.66rem', color: 'var(--muted)', textAlign: 'center', maxWidth: 184 }}>
                 Scan to add a song or a photo
               </span>
               {guestUrl && <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>{guestUrl.replace(/^https?:\/\//, '')}</span>}
