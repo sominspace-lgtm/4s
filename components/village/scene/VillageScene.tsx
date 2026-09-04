@@ -8,6 +8,7 @@ import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { HOME_URL } from '@/lib/utils/cheatSheets'
+import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
@@ -145,7 +146,7 @@ export default function VillageScene({
   /** The evening's plan — feeds the what's-on strip, not drawn in-scene. */
   agenda?: { id: string; time: string; label: string; done: boolean }[]
   /** Somi's resolved card (age / snack / tricks), shown when the cat is tapped. */
-  somi?: { name: string; ageText: string | null; snack: string; tricks: string[]; notes: string | null } | null
+  somi?: { name: string; ageText: string; birthdayLabel: string; snack: string; tricks: string[]; notes: string | null } | null
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
@@ -450,7 +451,7 @@ export default function VillageScene({
   const [pingDone, setPingDone] = useState(false)
   // Somi's card, tapped from the cat. Falls back to sensible defaults when
   // the hosts haven't filled anything in (see lib/village/somi.ts).
-  const somiCard = somi ?? { name: 'Somi', ageText: null, snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
+  const somiCard = somi ?? { name: 'Somi', ageText: somiAgeText(), birthdayLabel: somiBirthdayLabel(), snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
 
   // Postcard rack (round 66) — tap it to flip through your trip postcards.
   const [postcardsOpen, setPostcardsOpen] = useState(false)
@@ -2514,7 +2515,11 @@ export default function VillageScene({
         return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
-            <CatShape x={0} y={0} scale={0.75 * itemScale('somi')} name="Somi"
+            {/* A quiet, constant glow so she reads as "the thing you can
+                tap" without competing with the lanterns/windows for
+                attention after dark (round 80, 2026-09-04). */}
+            {!catSleeps && <circle cy={-8} r={11} fill="var(--amber)" opacity={0.16} filter="url(#vglow)" />}
+            <CatShape x={0} y={0} scale={0.88 * itemScale('somi')} name="Somi"
               onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
               wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={catSleeps} />
           </g>
@@ -2658,7 +2663,7 @@ export default function VillageScene({
       {openSomiCard && (() => {
         const somiPos = decorPos('somi')
         const width = 176
-        const height = 120
+        const height = 132
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiPos.x))
         const top = Math.max(10, somiPos.y - 40 - height)
         return (
@@ -2674,6 +2679,7 @@ export default function VillageScene({
                   display: 'flex', flexDirection: 'column', gap: 3,
                 }}>
                   <div style={{ fontSize: 11, fontWeight: 600 }}>{somiCard.name}</div>
+                  <div style={{ fontSize: 8, color: 'var(--muted)', opacity: 0.8 }}>{somiCard.birthdayLabel}</div>
                   {somiCard.ageText && <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>{somiCard.ageText}</div>}
                   <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>Favourite snack: {somiCard.snack}</div>
                   {somiCard.tricks.length > 0 && (
