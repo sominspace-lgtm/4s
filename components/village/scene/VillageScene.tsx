@@ -2408,17 +2408,24 @@ export default function VillageScene({
               )
             })}
 
-            {/* Thank-yous — a little vase of flowers gathering by the well */}
-            {near('thank_you').slice(0, 10).map(c => {
-              const p = scatter(c.id, well.x, well.y + 8, 28, 8)
-              return (
-                <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
-                  <title>{`${c.guest_name || 'A guest'}: ${c.body || 'thank you'}`}</title>
-                  <image href="/village-assets/thankyou-vase.png" x={-3.5} y={-13} width={7} height={13}
-                    style={{ imageRendering: 'pixelated' }} />
-                </g>
-              )
-            })}
+            {/* Thank-yous — a little vase of flowers gathering by the well.
+                Sized/rotated/depth-sorted per vase (round 80, 2026-09-04)
+                so a full well reads as flowers gathering, not one icon
+                stamped out ten times. */}
+            {near('thank_you').slice(0, 10)
+              .map(c => ({ c, p: scatter(c.id, well.x, well.y + 8, 30, 9) }))
+              .sort((a, b) => a.p.y - b.p.y)
+              .map(({ c, p }) => {
+                const scale = 0.82 + hashPos(c.id + 'sc') * 0.4
+                const rot = (hashPos(c.id + 'rot') - 0.5) * 16
+                return (
+                  <g key={c.id} transform={`translate(${p.x} ${p.y}) rotate(${rot}) scale(${scale})`} className={'village-entity' + contribPulse(c.id)}>
+                    <title>{`${c.guest_name || 'A guest'}: ${c.body || 'thank you'}`}</title>
+                    <image href="/village-assets/thankyou-vase.png" x={-3.5} y={-13} width={7} height={13}
+                      style={{ imageRendering: 'pixelated' }} />
+                  </g>
+                )
+              })}
 
             {/* Notes — folded papers drifting in Home's yard */}
             {near('note').slice(0, 8).map(c => {

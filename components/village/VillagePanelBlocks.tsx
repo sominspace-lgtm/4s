@@ -71,7 +71,7 @@ function GuestSet({ village, gathering, guestUrl, qrDataUri, spaceId, onInteract
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       <ProgressCard village={village} guest />
-      {gathering && <GuestWallActions token={gathering.token} onInteract={onInteract} />}
+      {gathering && <GuestWallActions token={gathering.token} photoAlbumUrl={gathering.photo_album_url} onInteract={onInteract} />}
       <MusicCard spaceId={spaceId} compact readOnly />
       {(qrDataUri || gathering?.photo_album_url) && (
         <div className="organic" style={{
