@@ -574,6 +574,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             owns the overlay when it's showing. */}
         {guestLive && !compact && !partyScreenOpen && (
           <GatheringMarquee
+            title={gathering?.title ?? null}
             musicUrl={gathering?.music_url ?? null}
             nextAgenda={(() => {
               const a = (gathering?.agenda ?? []).find(x => !x.done)

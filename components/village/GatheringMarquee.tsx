@@ -16,9 +16,11 @@ export interface MarqueeProps {
   topVotedSong?: string | null
   /** A guest message the hosts pinned, if any. */
   pinnedMessage?: { name: string | null; body: string } | null
+  /** The gathering's title — the fallback line so the top band is never empty. */
+  title?: string | null
 }
 
-export default function GatheringMarquee({ musicUrl, nextAgenda, topVotedSong, pinnedMessage }: MarqueeProps) {
+export default function GatheringMarquee({ musicUrl, nextAgenda, topVotedSong, pinnedMessage, title }: MarqueeProps) {
   const lines: string[] = []
   if (pinnedMessage) {
     lines.push(pinnedMessage.name ? `“${pinnedMessage.body}” — ${pinnedMessage.name}` : `“${pinnedMessage.body}”`)
@@ -28,6 +30,8 @@ export default function GatheringMarquee({ musicUrl, nextAgenda, topVotedSong, p
   }
   if (topVotedSong) lines.push(`Up next · ${topVotedSong}`)
   else if (musicUrl) lines.push('Playlist is on')
+  // The doors are open — never leave the top band blank during a party.
+  if (!lines.length) lines.push(title?.trim() || 'The doors are open')
 
   const [i, setI] = useState(0)
   useEffect(() => {

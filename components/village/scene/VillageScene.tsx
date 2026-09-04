@@ -1082,6 +1082,14 @@ export default function VillageScene({
           <stop offset="68%" stopColor="#000" stopOpacity="0" />
           <stop offset="100%" stopColor="#000" stopOpacity="0.22" />
         </radialGradient>
+        {/* Party glow — a warm wash centred on the cottage while a gathering
+            is on, so the wall reads as "a party is happening" and not just
+            "night with the porch light on". */}
+        <radialGradient id="vparty" cx="50%" cy="52%" r="70%">
+          <stop offset="0%" stopColor="#ffb060" stopOpacity="0.9" />
+          <stop offset="55%" stopColor="#ff9b52" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#ff9b52" stopOpacity="0" />
+        </radialGradient>
         {/* Depth pass (2026-08-21) — the ground and every rounded shape were
             flat single-color fills, which is what read as sparse/flat rather
             than "not enough is drawn". vground gives the field a top-to-
@@ -2065,6 +2073,14 @@ export default function VillageScene({
           front of the house, below the labels so it never fights the text. */}
       {live && <Ambient village={v} palette={palette} groundY={GROUND_Y} weatherCondition={weather?.condition} warm={gathering} />}
 
+      {/* Party warmth — a warm wash over the whole scene while hosting after
+          dark, so it reads as a lit-up evening, not a cold night with one
+          window on. Soft-light keeps it a tint, not a fog. */}
+      {gathering && (dark || v.timeOfDay === 'dusk') && (
+        <rect x={0} y={0} width={800} height={440} fill="url(#vparty)" opacity={0.55}
+          pointerEvents="none" style={{ mixBlendMode: 'soft-light', transition: 'opacity 1200ms ease' }} />
+      )}
+
       {/* Scene-mood dimmer — a cool wash for Movie / We're out / a custom
           scene, eased in over ~1.2s so it never snaps. Below the labels so
           navigation stays readable. Goodnight leans on the real night sky
@@ -2221,20 +2237,47 @@ export default function VillageScene({
               )
             })()}
 
-            {/* Party decor (round 75) — a flower garland strung over the
-                table, balloons by the welcome sign, a gift or two by Home.
-                Static; part of the "people are here" read, not interactive. */}
-            <g transform={`translate(${table.x} ${table.y - 30})`} opacity={0.95} pointerEvents="none">
-              <image href="/village-assets/flower-garland.png" x={-19} y={0} width={38} height={38 * (107 / 272)}
+            {/* Party decor (round 75; round 80 2026-09-03 — bolder, and a
+                string of warm lights over the path so the "people are here"
+                read carries at a glance). Static, not interactive. */}
+            <g transform={`translate(${table.x} ${table.y - 32})`} opacity={0.95} pointerEvents="none">
+              <image href="/village-assets/flower-garland.png" x={-24} y={0} width={48} height={48 * (107 / 272)}
                 style={{ imageRendering: 'pixelated' }} />
             </g>
-            <g transform={`translate(${signX + 17} ${signY})`} pointerEvents="none">
-              <image href="/village-assets/balloons.png" x={-7} y={-30} width={14} height={14 * (175 / 128)}
+            {/* String lights — a drooping swag between the welcome sign and
+                the cottage, warm bulbs that glow after dark. */}
+            {(() => {
+              const x0 = signX + 6, x1 = home.x - 20, y0 = signY - 30, y1 = pos('home').y - 22
+              const bulbs = 7
+              return (
+                <g pointerEvents="none">
+                  <path d={`M ${x0} ${y0} Q ${(x0 + x1) / 2} ${Math.max(y0, y1) + 14} ${x1} ${y1}`}
+                    fill="none" stroke="#6b5a44" strokeWidth={0.8} />
+                  {Array.from({ length: bulbs }).map((_, i) => {
+                    const t = (i + 1) / (bulbs + 1)
+                    const bx = x0 + (x1 - x0) * t
+                    const by = y0 + (y1 - y0) * t + Math.sin(Math.PI * t) * 14
+                    return (
+                      <circle key={i} cx={bx} cy={by + 2} r={warm ? 1.7 : 1.2}
+                        fill="var(--amber)" opacity={warm ? 0.95 : 0.5}
+                        filter={warm ? 'url(#vglow)' : undefined}
+                        className={warm ? 'village-glow' : undefined} />
+                    )
+                  })}
+                </g>
+              )
+            })()}
+            <g transform={`translate(${clampX(signX + 20)} ${signY})`} pointerEvents="none">
+              <image href="/village-assets/balloons.png" x={-10} y={-42} width={20} height={20 * (175 / 128)}
                 style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-2" />
             </g>
-            {[[home.x - 24, GROUND_Y + 40], [home.x + 30, GROUND_Y + 46]].map(([gx, gy], i) => (
+            <g transform={`translate(${clampX(table.x + 34)} ${table.y - 4})`} pointerEvents="none">
+              <image href="/village-assets/balloons.png" x={-8} y={-34} width={16} height={16 * (175 / 128)}
+                style={{ imageRendering: 'pixelated' }} className="village-mote village-mote-4" />
+            </g>
+            {[[home.x - 26, GROUND_Y + 40], [home.x + 32, GROUND_Y + 46]].map(([gx, gy], i) => (
               <g key={i} transform={`translate(${clampX(gx)} ${gy})`} pointerEvents="none">
-                <image href="/village-assets/gift-box.png" x={-4} y={-8} width={8} height={8}
+                <image href="/village-assets/gift-box.png" x={-5.5} y={-11} width={11} height={11}
                   style={{ imageRendering: 'pixelated' }} />
               </g>
             ))}
@@ -2254,28 +2297,31 @@ export default function VillageScene({
               )}
             </g>
 
-            {/* Welcome sign + QR */}
+            {/* Welcome sign — just the sign now; the QR lives on its own
+                easel to the left (2026-09-03, was a tiny unreadable overlay
+                here plus a huge floating one that collided with everything). */}
             <g transform={`translate(${signX} ${signY})`}>
-              <title>Welcome — scan to leave something</title>
+              <title>Welcome</title>
               <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.15} />
               <image href="/village-assets/welcome-sign.png" x={-13} y={-26} width={26} height={26.6}
                 style={{ imageRendering: 'pixelated' }} />
-              {guestQrUri && <image href={guestQrUri} x={-7.2} y={-20.5} width={14.4} height={14.4} preserveAspectRatio="none" />}
             </g>
 
-            {/* Big join-QR on a stand — sized to scan from across the room
-                (2026-09-03). The welcome-sign QR above is scenery; this is
-                the one people actually use. */}
+            {/* Join QR — a single A-frame easel just inside the entrance,
+                left of the welcome sign and well clear of the table / menu
+                board. Sized to scan from a few steps away, not from across
+                the room (the party screen enlarges it for that). */}
             {guestQrUri && (() => {
-              const qx = clampX(signX + 40)
+              const qx = clampX(signX - 30)
               return (
                 <g transform={`translate(${qx} ${signY})`}>
                   <title>Scan to join the gathering</title>
-                  <ellipse cx={0} cy={1} rx={13} ry={2.6} fill="var(--text)" opacity={0.15} />
-                  <rect x={-1.5} y={-30} width={3} height={30} rx={1} fill="#8a6f52" />
-                  <rect x={-25} y={-58} width={50} height={50} rx={3} fill="#fff" stroke="var(--border)" strokeWidth={1} />
-                  <image href={guestQrUri} x={-22} y={-55} width={44} height={44} preserveAspectRatio="none" />
-                  <text x={0} y={-3} textAnchor="middle" fontSize={5} fill="var(--text)" fontFamily="var(--font-body)">Scan to join</text>
+                  <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.16} />
+                  {/* easel legs */}
+                  <path d="M -8 0 L -3 -22 M 8 0 L 3 -22" stroke="#8a6f52" strokeWidth={1.6} strokeLinecap="round" />
+                  <rect x={-13} y={-40} width={26} height={26} rx={2} fill="#fffdf7" stroke="#8a6f52" strokeWidth={1} />
+                  <image href={guestQrUri} x={-11} y={-38} width={22} height={22} preserveAspectRatio="none" />
+                  <text x={0} y={-8} textAnchor="middle" fontSize={3.6} fill="#5c4a34" fontFamily="var(--font-body)">Scan to join</text>
                 </g>
               )
             })()}
@@ -2299,8 +2345,8 @@ export default function VillageScene({
               <image href="/village-assets/jukebox.png" x={-10.5} y={-20} width={21} height={19.8}
                 style={{ imageRendering: 'pixelated' }} />
             </g>
-            {near('song').map((c, i) => {
-              const p = scatter(c.id, juke.x + 14, juke.y - 1, 16, 8)
+            {near('song').slice(0, 8).map((c, i) => {
+              const p = scatter(c.id, juke.x + 14, juke.y - 1, 16, 7)
               return (
                 <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'} added: ${(c.meta.title as string) || c.body || 'a song'}`}</title>
@@ -2311,8 +2357,8 @@ export default function VillageScene({
             })}
 
             {/* Thank-yous — a little vase of flowers gathering by the well */}
-            {near('thank_you').map(c => {
-              const p = scatter(c.id, well.x, well.y + 6, 34, 10)
+            {near('thank_you').slice(0, 10).map(c => {
+              const p = scatter(c.id, well.x, well.y + 8, 28, 8)
               return (
                 <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'}: ${c.body || 'thank you'}`}</title>
@@ -2323,8 +2369,8 @@ export default function VillageScene({
             })}
 
             {/* Notes — folded papers drifting in Home's yard */}
-            {near('note').map(c => {
-              const p = scatter(c.id, home.x + 40, GROUND_Y + 44, 60, 22)
+            {near('note').slice(0, 8).map(c => {
+              const p = scatter(c.id, home.x + 44, GROUND_Y + 46, 40, 14)
               return (
                 <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-glow' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'}: ${c.body || ''}`}</title>
@@ -2346,9 +2392,10 @@ export default function VillageScene({
               )
             })}
 
-            {/* Where guests are from — pins along the memory-map row */}
-            {near('from').map(c => {
-              const p = scatter(c.id, 400, GROUND_Y - 2, 520, 8)
+            {/* Where guests are from — a tight cluster of pins just below the
+                horizon behind the cottage (was a 520-wide smear edge to edge). */}
+            {near('from').slice(0, 10).map(c => {
+              const p = scatter(c.id, home.x, GROUND_Y - 6, 150, 7)
               return (
                 <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
                   <title>{`${c.guest_name || 'A guest'} — from ${(c.meta.place as string) || c.body || 'somewhere'}`}</title>
