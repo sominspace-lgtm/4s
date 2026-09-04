@@ -1,0 +1,56 @@
+// Somi's little card (2026-09-03). Tapping the cat in the village shows
+// this — her age, her snack, the tricks she knows. Guests love it and it
+// saves the hosts explaining "yes you can pet her, no don't feed her
+// from the table" ten times a night.
+//
+// DEFAULT_SOMI is the baseline; a household can override any field via
+// `shared_spaces.pet_info` (edited from the gathering panel). An empty
+// override falls back to the default — clearing the tricks box doesn't
+// wipe her tricks, it just restores the known four.
+
+export interface SomiInfo {
+  name?: string
+  /** Free text, e.g. "3 years old" or "turns 4 in spring". */
+  ageText?: string
+  snack?: string
+  tricks?: string[]
+  notes?: string
+}
+
+export const DEFAULT_SOMI: Required<Omit<SomiInfo, 'ageText' | 'notes'>> & Pick<SomiInfo, 'ageText' | 'notes'> = {
+  name: 'Somi',
+  ageText: undefined,
+  snack: 'Churu',
+  tricks: ['sit', 'high five', 'spin', 'stand'],
+  notes: 'Please don’t feed her from the table.',
+}
+
+export interface ResolvedSomi {
+  name: string
+  ageText: string | null
+  snack: string
+  tricks: string[]
+  notes: string | null
+}
+
+/** Merge a stored override onto DEFAULT_SOMI. Empty strings / empty
+ *  arrays count as "not set" so a blank field never erases a default. */
+export function resolveSomi(info: SomiInfo | null | undefined): ResolvedSomi {
+  const o = info ?? {}
+  const str = (v: string | undefined, fallback: string) => {
+    const t = (v ?? '').trim()
+    return t || fallback
+  }
+  const optStr = (v: string | undefined, fallback: string | null) => {
+    const t = (v ?? '').trim()
+    return t || fallback
+  }
+  const tricks = Array.isArray(o.tricks) ? o.tricks.map(t => t.trim()).filter(Boolean) : []
+  return {
+    name: str(o.name, DEFAULT_SOMI.name),
+    ageText: optStr(o.ageText, DEFAULT_SOMI.ageText ?? null),
+    snack: str(o.snack, DEFAULT_SOMI.snack),
+    tricks: tricks.length ? tricks : DEFAULT_SOMI.tricks,
+    notes: optStr(o.notes, DEFAULT_SOMI.notes ?? null),
+  }
+}

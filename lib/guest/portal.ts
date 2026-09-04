@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
 
 // THE boundary for the Guest Layer (see supabase/migrations/guest_gatherings.sql).
 //
@@ -31,6 +32,8 @@ export interface GuestInfo {
   notes?: string
 }
 
+export interface PinnedMessage { name: string | null; body: string }
+
 export interface ResolvedGathering {
   id: string
   spaceId: string
@@ -39,15 +42,31 @@ export interface ResolvedGathering {
   photoAlbumUrl: string | null
   active: boolean
   guestInfo: GuestInfo
+  menu: MenuItem[]
+  agenda: AgendaItem[]
+  petInfo: PetInfo
+  pinnedContributionId: string | null
+  /** Only populated when resolveGathering(token, { full: true }). */
+  pinnedMessage: PinnedMessage | null
+  /** Host display names, for the "find a host" picker. `full` only. */
+  hosts: { name: string }[]
 }
 
-/** Resolve a gathering by its public token. null = no such token. */
-export async function resolveGathering(token: string): Promise<ResolvedGathering | null> {
+/**
+ * Resolve a gathering by its public token. null = no such token.
+ *
+ * `full` adds two extra queries (the pinned message + host names) — pass
+ * it from the page loader, not from the hot /api/g POST path.
+ */
+export async function resolveGathering(
+  token: string,
+  opts?: { full?: boolean },
+): Promise<ResolvedGathering | null> {
   if (!token || token.length < 8 || token.length > 64) return null
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('gatherings')
-    .select('id, space_id, title, music_url, photo_album_url, active, closes_at')
+    .select('id, space_id, title, music_url, photo_album_url, active, closes_at, menu, agenda, pinned_contribution_id')
     .eq('token', token)
     .maybeSingle()
   if (error || !data) return null
@@ -55,9 +74,25 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
 
   const { data: space } = await admin
     .from('shared_spaces')
-    .select('guest_info')
+    .select('guest_info, pet_info, owner_id')
     .eq('id', data.space_id)
     .maybeSingle()
+
+  let pinnedMessage: PinnedMessage | null = null
+  let hosts: { name: string }[] = []
+  if (opts?.full) {
+    if (data.pinned_contribution_id) {
+      const { data: pin } = await admin
+        .from('guest_contributions')
+        .select('guest_name, body, status')
+        .eq('id', data.pinned_contribution_id)
+        .maybeSingle()
+      if (pin && pin.status === 'visible' && pin.body) {
+        pinnedMessage = { name: pin.guest_name ?? null, body: pin.body }
+      }
+    }
+    hosts = await resolveHostNames(admin, data.space_id, (space?.owner_id as string | null) ?? null)
+  }
 
   return {
     id: data.id,
@@ -67,7 +102,56 @@ export async function resolveGathering(token: string): Promise<ResolvedGathering
     photoAlbumUrl: data.photo_album_url ?? null,
     active: data.active && !closed,
     guestInfo: (space?.guest_info as GuestInfo | null) ?? {},
+    menu: (data.menu as MenuItem[] | null) ?? [],
+    agenda: (data.agenda as AgendaItem[] | null) ?? [],
+    petInfo: (space?.pet_info as PetInfo | null) ?? {},
+    pinnedContributionId: (data.pinned_contribution_id as string | null) ?? null,
+    pinnedMessage,
+    hosts,
   }
+}
+
+/** Owner + accepted members → display names, in a stable order (owner first). */
+async function resolveHostNames(
+  admin: ReturnType<typeof createAdminClient>,
+  spaceId: string,
+  ownerId: string | null,
+): Promise<{ name: string }[]> {
+  const { data: members } = await admin
+    .from('shared_space_members')
+    .select('member_id, status')
+    .eq('space_id', spaceId)
+  const ids: string[] = []
+  if (ownerId) ids.push(ownerId)
+  for (const m of (members ?? []) as { member_id: string | null; status: string }[]) {
+    if (m.member_id && m.status === 'accepted' && !ids.includes(m.member_id)) ids.push(m.member_id)
+  }
+  if (!ids.length) return []
+  const { data: prefs } = await admin
+    .from('user_prefs')
+    .select('user_id, display_name')
+    .in('user_id', ids)
+  const byId = new Map((prefs ?? []).map(p => [p.user_id as string, (p.display_name as string | null) ?? '']))
+  return ids
+    .map(id => ({ name: (byId.get(id) ?? '').trim() }))
+    .filter(h => h.name.length > 0)
+}
+
+/** Server-side recipient ids for a ping (never sent to the client). */
+export async function resolveHostRecipients(spaceId: string): Promise<string[]> {
+  const admin = createAdminClient()
+  const { data: space } = await admin.from('shared_spaces').select('owner_id').eq('id', spaceId).maybeSingle()
+  const { data: members } = await admin
+    .from('shared_space_members')
+    .select('member_id, status')
+    .eq('space_id', spaceId)
+  const ids: string[] = []
+  const ownerId = (space?.owner_id as string | null) ?? null
+  if (ownerId) ids.push(ownerId)
+  for (const m of (members ?? []) as { member_id: string | null; status: string }[]) {
+    if (m.member_id && m.status === 'accepted' && !ids.includes(m.member_id)) ids.push(m.member_id)
+  }
+  return ids
 }
 
 export function pick<T extends Record<string, unknown>>(src: T, keys: string[]): Record<string, unknown> {

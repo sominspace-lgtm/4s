@@ -50,6 +50,7 @@ export default function VillageScene({
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false,
+  menu = [], agenda = [], somi = null, hostPing = null,
 }: {
   village: VillageState
   live: boolean
@@ -136,6 +137,15 @@ export default function VillageScene({
   guestQrUri?: string | null
   /** The gathering's shared photo album — the in-scene photo booth opens it. */
   guestAlbumUrl?: string | null
+  /** What's on the menu tonight — a small board near the dinner table. */
+  menu?: { id: string; name: string; note: string }[]
+  /** The evening's plan — feeds the what's-on strip, not drawn in-scene. */
+  agenda?: { id: string; time: string; label: string; done: boolean }[]
+  /** Somi's resolved card (age / snack / tricks), shown when the cat is tapped. */
+  somi?: { name: string; ageText: string | null; snack: string; tricks: string[]; notes: string | null } | null
+  /** Tapping a couple figure during a live gathering pings that host.
+   *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
+  hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
   /** Dragged positions for the five landmark labels — only the pins move,
    *  not the scenery underneath them (see Village.tsx's own header comment
    *  on why: labels already float above their district as independent map

@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import type { SomiInfo } from '@/lib/village/somi'
+
+export type PetInfo = SomiInfo
+
+/** One line on the guest-facing menu. `note` holds "veg" / "has nuts". */
+export interface MenuItem { id: string; name: string; note: string }
+
+/** One beat of the evening. `time` is free text ("7:00", "later"). */
+export interface AgendaItem { id: string; time: string; label: string; done: boolean }
 
 // Guest Mode (2026-08-29, "4S VILLAGE — GUEST MODE"). One row in `gatherings`
 // with active=true, per shared space, IS "the village is open to guests".
@@ -32,6 +41,12 @@ export interface Gathering {
   prep: PrepItem[]
   started_at: string
   closes_at: string | null
+  /** What's on the menu, shown to guests once the doors open. */
+  menu: MenuItem[]
+  /** The evening's plan ("7:00 · Dinner"). Feeds the wall's what's-on strip. */
+  agenda: AgendaItem[]
+  /** A guest message the hosts pinned to the wall, or null. */
+  pinned_contribution_id: string | null
 }
 
 const DEFAULT_PREP: Omit<PrepItem, 'id'>[] = [
@@ -110,6 +125,10 @@ export interface UseGathering {
   closeGathering: () => Promise<GatheringMemory | null>
   setMusicUrl: (url: string) => Promise<void>
   setPhotoAlbumUrl: (url: string) => Promise<void>
+  setMenu: (items: MenuItem[]) => Promise<void>
+  setAgenda: (items: AgendaItem[]) => Promise<void>
+  /** Pin a guest message to the wall, or pass null to clear it. */
+  setPinnedContribution: (id: string | null) => Promise<void>
   moderate: (id: string, status: 'visible' | 'hidden') => Promise<void>
   removeContribution: (id: string) => Promise<void>
   updateMemory: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status' | 'series'>>) => Promise<void>
@@ -117,6 +136,9 @@ export interface UseGathering {
   /** Set-once info shown to guests in the portal (wifi, house notes). */
   guestInfo: GuestInfo
   setGuestInfo: (info: GuestInfo) => Promise<void>
+  /** Somi's card (age / snack / tricks). Space-level, persists across gatherings. */
+  petInfo: PetInfo
+  setPetInfo: (info: PetInfo) => Promise<void>
 }
 
 export function useGathering(userId: string): UseGathering {
@@ -128,6 +150,7 @@ export function useGathering(userId: string): UseGathering {
   const [contributions, setContributions] = useState<GuestContribution[]>([])
   const [memories, setMemories] = useState<GatheringMemory[]>([])
   const [guestInfo, setGuestInfoState] = useState<GuestInfo>({})
+  const [petInfo, setPetInfoState] = useState<PetInfo>({})
   const [ready, setReady] = useState(false)
   const contribRef = useRef<GuestContribution[]>([])
   contribRef.current = contributions
@@ -146,7 +169,7 @@ export function useGathering(userId: string): UseGathering {
 
   useEffect(() => {
     spaceRef.current = spaceId
-    if (!spaceId) { setGathering(null); setContributions([]); setMemories([]); setReady(true); return }
+    if (!spaceId) { setGathering(null); setContributions([]); setMemories([]); setPetInfoState({}); setReady(true); return }
     let alive = true
 
     ;(async () => {
@@ -169,8 +192,12 @@ export function useGathering(userId: string): UseGathering {
         .eq('space_id', spaceId)
         .order('happened_on', { ascending: false })
       if (alive) setMemories((mem as GatheringMemory[] | null) ?? [])
-      const { data: sp } = await supabase.from('shared_spaces').select('guest_info').eq('id', spaceId).maybeSingle()
-      if (alive) setGuestInfoState(((sp as { guest_info?: GuestInfo } | null)?.guest_info as GuestInfo | undefined) ?? {})
+      const { data: sp } = await supabase.from('shared_spaces').select('guest_info, pet_info').eq('id', spaceId).maybeSingle()
+      if (alive) {
+        const row = sp as { guest_info?: GuestInfo; pet_info?: PetInfo } | null
+        setGuestInfoState((row?.guest_info as GuestInfo | undefined) ?? {})
+        setPetInfoState((row?.pet_info as PetInfo | undefined) ?? {})
+      }
       setReady(true)
     })()
 
@@ -197,6 +224,10 @@ export function useGathering(userId: string): UseGathering {
           const old = payload.old as { id?: string } | null
           if (payload.eventType === 'DELETE') {
             setContributions(prev => prev.filter(c => c.id !== old?.id))
+            // The DB nulls a matching pinned_contribution_id via the FK, but
+            // the in-memory gathering row won't refresh until the next
+            // `gatherings` event — clear it locally so the wall strip drops it.
+            setGathering(prev => (prev && prev.pinned_contribution_id === old?.id ? { ...prev, pinned_contribution_id: null } : prev))
             return
           }
           if (!row || row.gathering_id !== g.id) return
@@ -300,6 +331,30 @@ export function useGathering(userId: string): UseGathering {
     if (!error) setGathering(prev => (prev ? { ...prev, photo_album_url: clean } : prev))
   }, [supabase])
 
+  const setMenu = useCallback(async (items: MenuItem[]) => {
+    const g = gatheringRef.current
+    if (!g) return
+    setGathering(prev => (prev ? { ...prev, menu: items } : prev))
+    const { error } = await supabase.from('gatherings').update({ menu: items }).eq('id', g.id)
+    if (error) console.error('[4s] setMenu failed:', error.message)
+  }, [supabase])
+
+  const setAgenda = useCallback(async (items: AgendaItem[]) => {
+    const g = gatheringRef.current
+    if (!g) return
+    setGathering(prev => (prev ? { ...prev, agenda: items } : prev))
+    const { error } = await supabase.from('gatherings').update({ agenda: items }).eq('id', g.id)
+    if (error) console.error('[4s] setAgenda failed:', error.message)
+  }, [supabase])
+
+  const setPinnedContribution = useCallback(async (id: string | null) => {
+    const g = gatheringRef.current
+    if (!g) return
+    setGathering(prev => (prev ? { ...prev, pinned_contribution_id: id } : prev))
+    const { error } = await supabase.from('gatherings').update({ pinned_contribution_id: id }).eq('id', g.id)
+    if (error) console.error('[4s] setPinnedContribution failed:', error.message)
+  }, [supabase])
+
   const moderate = useCallback(async (id: string, status: 'visible' | 'hidden') => {
     const { error } = await supabase.from('guest_contributions').update({ status }).eq('id', id)
     if (!error) setContributions(prev => prev.map(c => (c.id === id ? { ...c, status } : c)))
@@ -328,10 +383,20 @@ export function useGathering(userId: string): UseGathering {
     if (!error) setMemories(prev => prev.filter(m => m.id !== id))
   }, [supabase])
 
+  const setPetInfo = useCallback(async (info: PetInfo) => {
+    const sid = spaceRef.current
+    if (!sid) return
+    setPetInfoState(info)
+    const { error } = await supabase.from('shared_spaces').update({ pet_info: info }).eq('id', sid)
+    if (error) console.error('[4s] setPetInfo failed:', error.message)
+  }, [supabase])
+
   return {
     gathering, contributions, memories, ready,
     startGathering, updatePrep, openDoors, closeGathering, setMusicUrl, setPhotoAlbumUrl,
+    setMenu, setAgenda, setPinnedContribution,
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,
+    petInfo, setPetInfo,
   }
 }
