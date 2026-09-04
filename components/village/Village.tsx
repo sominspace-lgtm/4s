@@ -23,7 +23,8 @@ import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
 import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
-import type { Gathering, GuestContribution, GatheringMemory, PrepItem, GuestInfo } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory, PrepItem, GuestInfo, MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
+import { resolveSomi } from '@/lib/village/somi'
 import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
@@ -58,7 +59,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -108,6 +109,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onDeleteMemory?: (id: string) => void
   guestInfo?: GuestInfo
   onSetGuestInfo?: (info: GuestInfo) => void
+  onSetMenu?: (items: MenuItem[]) => void
+  onSetAgenda?: (items: AgendaItem[]) => void
+  onSetPinnedContribution?: (id: string | null) => void
+  /** Somi's card (age / snack / tricks), space-level. */
+  petInfo?: PetInfo
+  onSetPetInfo?: (info: PetInfo) => void
   /** The Village home panel's block config + writer — see lib/utils/villagePanel.ts. */
   panelBlocks?: SectionConfig[]
   onChangePanelBlocks?: (next: SectionConfig[]) => void
@@ -132,6 +139,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // quiets the districts and shows the house-info card; the party *look*
   // (lanterns/outfits) still waits for `guestLive`.
   const hosting = guestActive
+  const somi = useMemo(() => resolveSomi(petInfo), [petInfo])
+  const pinnedMessage = useMemo(() => {
+    const id = gathering?.pinned_contribution_id
+    if (!id) return null
+    const c = contributions.find(x => x.id === id && x.status === 'visible')
+    return c && c.body ? { name: c.guest_name, body: c.body } : null
+  }, [gathering?.pinned_contribution_id, contributions])
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
@@ -152,6 +166,18 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       .catch(() => { if (alive) setQrDataUri(null) })
     return () => { alive = false }
   }, [guestUrl])
+  // Tapping Sylvia or Harry during a live gathering pings that host's
+  // phone (web push). The scene renders the little "who / why" card; this
+  // just fires the request. 'sylvia' = the owner, 'harry' = the partner.
+  const pingHost = (who: 'sylvia' | 'harry', reason: string) => {
+    const token = gathering?.token
+    if (!token) return
+    void fetch(`/api/g/${token}/ping`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ who: who === 'sylvia' ? 'host1' : 'host2', reason, from: userId }),
+    }).catch(() => { /* the card still says "on their way" — a miss is better than a scary error at a party */ })
+  }
   // The Inventory (round 31, 2026-08-27, "make a inventory tab in arrange
   // where we can place anything from asset library") — a small picker
   // panel, only reachable from inside arrange mode, that drops a new real
@@ -467,6 +493,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             locked={locked} onLockedNavigate={onLockedNavigate}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
+            menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
+            somi={somi}
+            hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -731,9 +760,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             memories={memories}
             onClose={() => setGuestPanelOpen(false)}
             guestInfo={guestInfo}
+            petInfo={petInfo}
             onSetGuestInfo={onSetGuestInfo}
             onSetMusicUrl={onSetMusicUrl}
             onSetPhotoAlbumUrl={onSetPhotoAlbumUrl}
+            onSetMenu={onSetMenu}
+            onSetAgenda={onSetAgenda}
+            onSetPetInfo={onSetPetInfo}
             onModerate={onModerate}
             onRemoveContribution={onRemoveContribution}
             onCloseGathering={onCloseGathering}

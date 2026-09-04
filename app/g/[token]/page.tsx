@@ -12,7 +12,7 @@ export const metadata = {
 // redirect to /login.
 export default async function GuestPortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const g = await resolveGathering(token)
+  const g = await resolveGathering(token, { full: true })
 
   if (!g || !g.active) {
     return (
@@ -32,7 +32,18 @@ export default async function GuestPortalPage({ params }: { params: Promise<{ to
     )
   }
 
-  return <GuestPortal token={token} title={g.title} photoAlbumUrl={g.photoAlbumUrl} musicUrl={g.musicUrl} guestInfo={g.guestInfo} />
+  return (
+    <GuestPortal
+      token={token}
+      title={g.title}
+      photoAlbumUrl={g.photoAlbumUrl}
+      musicUrl={g.musicUrl}
+      guestInfo={g.guestInfo}
+      menu={g.menu}
+      agenda={g.agenda}
+      hosts={g.hosts}
+    />
+  )
 }
 
 const SHELL: React.CSSProperties = {

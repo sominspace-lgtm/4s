@@ -15,20 +15,28 @@ import GuestActionForm, { GUEST_ACTIONS, useGuestName, type GuestActionKind } fr
 type Action = GuestActionKind
 
 interface GuestInfo { wifiName?: string; wifiPassword?: string; notes?: string }
+interface MenuItem { id: string; name: string; note: string }
+interface AgendaItem { id: string; time: string; label: string; done: boolean }
 
-export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, guestInfo }: {
+export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, guestInfo, menu = [], agenda = [], hosts = [] }: {
   token: string
   title: string
   photoAlbumUrl?: string | null
   musicUrl?: string | null
   guestInfo?: GuestInfo
+  menu?: MenuItem[]
+  agenda?: AgendaItem[]
+  hosts?: { name: string }[]
 }) {
   const [open, setOpen] = useState<Action | null>(null)
   const [done, setDone] = useState<Action | null>(null)
   const [showQueue, setShowQueue] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [showOn, setShowOn] = useState(false)
   const [name, rememberName] = useGuestName()
   const hasInfo = !!(guestInfo && (guestInfo.notes || guestInfo.wifiName))
+  const hasOn = menu.length > 0 || agenda.length > 0
+  void hosts
 
   return (
     <main style={S.shell}>
@@ -41,7 +49,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
           </p>
         </header>
 
-        {!open && !done && !showQueue && !showInfo && (
+        {!open && !done && !showQueue && !showInfo && !showOn && (
           <>
             <label style={S.nameField}>
               <span style={S.nameLabel}>Your name</span>
@@ -73,6 +81,13 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
                 <span style={S.tileLabel}>What’s playing</span>
                 <span style={S.tileBlurb}>See the queue &amp; vote</span>
               </button>
+              {hasOn && (
+                <button onClick={() => setShowOn(true)} style={S.tile}>
+                  <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>🍽️</span>
+                  <span style={S.tileLabel}>What’s on</span>
+                  <span style={S.tileBlurb}>The menu &amp; the evening</span>
+                </button>
+              )}
               {hasInfo && (
                 <button onClick={() => setShowInfo(true)} style={S.tile}>
                   <span style={{ fontSize: '1.7rem', lineHeight: 1 }}>🏠</span>
@@ -87,6 +102,35 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
 
         {showQueue && !open && !done && (
           <SongQueue token={token} musicUrl={musicUrl} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
+        )}
+
+        {showOn && !open && !done && (
+          <div style={S.card}>
+            <button onClick={() => setShowOn(false)} style={S.back}>← back</button>
+            <div style={{ fontSize: '1.9rem' }}>🍽️</div>
+            <h2 style={S.h2}>What’s on</h2>
+            {menu.length > 0 && (
+              <div style={{ textAlign: 'left', margin: '0.6rem 0' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8987f', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.3rem' }}>Menu</div>
+                {menu.map(m => (
+                  <div key={m.id} style={{ padding: '0.35rem 0', borderBottom: '1px solid #efe3c8' }}>
+                    <span style={{ fontSize: '0.92rem', color: '#463b30' }}>{m.name}</span>
+                    {m.note && <span style={{ fontSize: '0.76rem', color: '#a8987f' }}> · {m.note}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {agenda.length > 0 && (
+              <div style={{ textAlign: 'left', margin: '0.6rem 0 0' }}>
+                <div style={{ fontSize: '0.7rem', color: '#a8987f', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.3rem' }}>The evening</div>
+                {agenda.map(a => (
+                  <div key={a.id} style={{ padding: '0.3rem 0', fontSize: '0.9rem', color: a.done ? '#b7ab98' : '#463b30', textDecoration: a.done ? 'line-through' : 'none' }}>
+                    {a.time && <span style={{ color: '#a8987f' }}>{a.time} · </span>}{a.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {showInfo && !open && !done && guestInfo && (

@@ -244,6 +244,7 @@ export default function VillageScene({
   // `?gathering=1` forces Guest Mode on (with a couple of fake contributions)
   // so the whole guest layer can be seen in /village-preview. Dev-only param.
   const [gatheringPreview, setGatheringPreview] = useState(false)
+  const [menuPreview, setMenuPreview] = useState(false)
   // `?frozen=1` previews the wall-iPad idle freeze; `?context=garden|read`
   // forces a context pose.
   const [frozenPreview, setFrozenPreview] = useState(false)
@@ -252,6 +253,7 @@ export default function VillageScene({
     try {
       const q = new URLSearchParams(window.location.search)
       if (q.get('gathering') === '1') setGatheringPreview(true)
+      if (q.get('menu') === '1') { setGatheringPreview(true); setMenuPreview(true) }
       if (q.get('frozen') === '1' || q.get('ambient') === '1') setFrozenPreview(true)
       const c = q.get('context')
       if (c === 'garden' || c === 'read') setContextPreview(c)
@@ -271,6 +273,18 @@ export default function VillageScene({
       { id: 'demo-n1', kind: 'note', guest_name: 'Alex', body: 'wishing you both the best year', meta: {}, status: 'visible' },
       { id: 'demo-fr1', kind: 'from', guest_name: 'Lin', body: 'Taipei', meta: { place: 'Taipei' }, status: 'visible' },
       { id: 'demo-fr2', kind: 'from', guest_name: 'Ben', body: 'Lisbon', meta: { place: 'Lisbon' }, status: 'visible' },
+    ]
+  }
+  if (menuPreview && menu.length === 0) {
+    menu = [
+      { id: 'dm1', name: 'Roast chicken', note: '' },
+      { id: 'dm2', name: 'Charred greens', note: 'veg' },
+      { id: 'dm3', name: 'Pear tart', note: 'has nuts' },
+    ]
+    agenda = [
+      { id: 'da1', time: '7:00', label: 'Dinner', done: true },
+      { id: 'da2', time: '8:00', label: 'Cake', done: false },
+      { id: 'da3', time: 'later', label: 'Records & cards', done: false },
     ]
   }
 
@@ -2118,6 +2132,28 @@ export default function VillageScene({
               <image href="/village-assets/cake-table.png" x={-15} y={-21.5} width={30} height={21.2}
                 style={{ imageRendering: 'pixelated' }} />
             </g>
+
+            {/* Menu board — a little standing chalkboard by the table when
+                the hosts have set a menu (2026-09-03). Passive, no tap. */}
+            {menu.length > 0 && (() => {
+              const items = menu.filter(m => m.name.trim()).slice(0, 4)
+              if (!items.length) return null
+              const bx = clampX(table.x + 30)
+              const h = 12 + items.length * 6
+              return (
+                <g transform={`translate(${bx} ${table.y - 4})`} pointerEvents="none">
+                  <title>{`On the menu: ${items.map(m => m.name).join(', ')}`}</title>
+                  <rect x={-1} y={0} width={2} height={16} rx={0.8} fill="#8a6f52" />
+                  <rect x={-15} y={-h} width={30} height={h} rx={2} fill="#3a4038" stroke="var(--border)" strokeWidth={0.6} />
+                  <text x={0} y={-h + 6} textAnchor="middle" fontSize={4} fill="#e8e0cf" fontFamily="var(--font-body)">Tonight</text>
+                  {items.map((m, i) => (
+                    <text key={m.id} x={0} y={-h + 12 + i * 6} textAnchor="middle" fontSize={3.6} fill="#cfc7b4" fontFamily="var(--font-body)">
+                      {m.name.length > 16 ? m.name.slice(0, 15) + '…' : m.name}
+                    </text>
+                  ))}
+                </g>
+              )
+            })()}
 
             {/* Party decor (round 75) — a flower garland strung over the
                 table, balloons by the welcome sign, a gift or two by Home.

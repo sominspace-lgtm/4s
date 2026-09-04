@@ -1,7 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import type { Gathering, GuestContribution, GatheringMemory, GuestInfo } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestContribution, GatheringMemory, GuestInfo, MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
+
+let idSeq = 0
+const newId = () => {
+  try { return crypto.randomUUID() } catch { return `id-${Date.now()}-${idSeq++}` }
+}
 
 function keepsakeLink(token: string | null): string | null {
   if (!token || typeof window === 'undefined') return null
@@ -21,8 +26,9 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 export default function VillageGuestPanel({
-  gathering, contributions, guestUrl, qrDataUri, memories, guestInfo,
-  onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution,
+  gathering, contributions, guestUrl, qrDataUri, memories, guestInfo, petInfo,
+  onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onSetMenu, onSetAgenda, onSetPetInfo,
+  onModerate, onRemoveContribution,
   onCloseGathering, onUpdateMemory, onDeleteMemory,
 }: {
   gathering: Gathering
@@ -31,10 +37,14 @@ export default function VillageGuestPanel({
   qrDataUri: string | null
   memories: GatheringMemory[]
   guestInfo?: GuestInfo
+  petInfo?: PetInfo
   onClose: () => void
   onSetGuestInfo?: (info: GuestInfo) => void
   onSetMusicUrl?: (url: string) => void
   onSetPhotoAlbumUrl?: (url: string) => void
+  onSetMenu?: (items: MenuItem[]) => void
+  onSetAgenda?: (items: AgendaItem[]) => void
+  onSetPetInfo?: (info: PetInfo) => void
   onModerate?: (id: string, status: 'visible' | 'hidden') => void
   onRemoveContribution?: (id: string) => void
   onCloseGathering?: () => void | Promise<GatheringMemory | null>
@@ -48,6 +58,7 @@ export default function VillageGuestPanel({
   const [wifiName, setWifiName] = useState(guestInfo?.wifiName ?? '')
   const [wifiPassword, setWifiPassword] = useState(guestInfo?.wifiPassword ?? '')
   const [houseNotes, setHouseNotes] = useState(guestInfo?.notes ?? '')
+  const prep = gathering.phase === 'prep'
 
   const endGathering = async () => {
     if (!onCloseGathering) return
@@ -104,6 +115,24 @@ export default function VillageGuestPanel({
             onClick={() => onSetGuestInfo({ wifiName: wifiName.trim(), wifiPassword: wifiPassword.trim(), notes: houseNotes.trim() })}
             style={{ ...S.save, marginTop: '0.35rem', padding: '0.4rem 0.9rem' }}
           >Save house info</button>
+        </Field>
+      )}
+
+      {onSetMenu && (
+        <Field label="Menu" hint={prep ? 'Guests see this when the doors open. Note holds "veg" / "has nuts".' : 'What’s on the menu tonight.'}>
+          <MenuEditor items={gathering.menu ?? []} onChange={onSetMenu} />
+        </Field>
+      )}
+
+      {onSetAgenda && (
+        <Field label="The evening" hint="The plan for the night. Feeds the wall's what's-on line. Tick a beat once it's done.">
+          <AgendaEditor items={gathering.agenda ?? []} onChange={onSetAgenda} />
+        </Field>
+      )}
+
+      {onSetPetInfo && (
+        <Field label="Somi's card" hint="Shown when a guest taps the cat. Blank fields fall back to the defaults.">
+          <SomiEditor info={petInfo ?? {}} onSave={onSetPetInfo} />
         </Field>
       )}
 
@@ -307,6 +336,78 @@ function RecapEditor({ memory, onSave, onClose }: {
 
       <button onClick={save} style={S.endBtn}>Save the keepsake</button>
     </Shell>
+  )
+}
+
+function MenuEditor({ items, onChange }: { items: MenuItem[]; onChange: (items: MenuItem[]) => void }) {
+  const set = (i: number, patch: Partial<MenuItem>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)))
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+      {items.map((it, i) => (
+        <div key={it.id} style={{ display: 'flex', gap: '0.3rem' }}>
+          <input value={it.name} onChange={e => set(i, { name: e.target.value })} placeholder="Dish" style={{ ...S.input, flex: 2 }} />
+          <input value={it.note} onChange={e => set(i, { note: e.target.value })} placeholder="veg / has nuts" style={{ ...S.input, flex: 1 }} />
+          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
+        </div>
+      ))}
+      <button
+        onClick={() => onChange([...items, { id: newId(), name: '', note: '' }])}
+        style={{ ...S.link, alignSelf: 'flex-start', textDecoration: 'none' }}
+      >+ add a dish</button>
+    </div>
+  )
+}
+
+function AgendaEditor({ items, onChange }: { items: AgendaItem[]; onChange: (items: AgendaItem[]) => void }) {
+  const set = (i: number, patch: Partial<AgendaItem>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)))
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+      {items.map((it, i) => (
+        <div key={it.id} style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+          <input
+            type="checkbox" checked={it.done}
+            onChange={e => set(i, { done: e.target.checked })}
+            title="Done"
+          />
+          <input value={it.time} onChange={e => set(i, { time: e.target.value })} placeholder="7:00" style={{ ...S.input, flex: 1, textDecoration: it.done ? 'line-through' : 'none' }} />
+          <input value={it.label} onChange={e => set(i, { label: e.target.value })} placeholder="Dinner" style={{ ...S.input, flex: 2, textDecoration: it.done ? 'line-through' : 'none' }} />
+          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
+        </div>
+      ))}
+      <button
+        onClick={() => onChange([...items, { id: newId(), time: '', label: '', done: false }])}
+        style={{ ...S.link, alignSelf: 'flex-start', textDecoration: 'none' }}
+      >+ add a beat</button>
+    </div>
+  )
+}
+
+function SomiEditor({ info, onSave }: { info: PetInfo; onSave: (info: PetInfo) => void }) {
+  const [name, setName] = useState(info.name ?? '')
+  const [ageText, setAgeText] = useState(info.ageText ?? '')
+  const [snack, setSnack] = useState(info.snack ?? '')
+  const [tricks, setTricks] = useState((info.tricks ?? []).join(', '))
+  const [notes, setNotes] = useState(info.notes ?? '')
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+      <div style={{ display: 'flex', gap: '0.3rem' }}>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Somi" style={S.input} />
+        <input value={ageText} onChange={e => setAgeText(e.target.value)} placeholder="3 years old" style={S.input} />
+      </div>
+      <input value={snack} onChange={e => setSnack(e.target.value)} placeholder="Churu" style={S.input} />
+      <input value={tricks} onChange={e => setTricks(e.target.value)} placeholder="sit, high five, spin, stand" style={S.input} />
+      <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Please don’t feed her from the table." rows={2} style={{ ...S.input, resize: 'vertical', lineHeight: 1.5 }} />
+      <button
+        onClick={() => onSave({
+          name: name.trim(),
+          ageText: ageText.trim(),
+          snack: snack.trim(),
+          tricks: tricks.split(',').map(t => t.trim()).filter(Boolean),
+          notes: notes.trim(),
+        })}
+        style={{ ...S.save, alignSelf: 'flex-start', padding: '0.4rem 0.9rem' }}
+      >Save Somi's card</button>
+    </div>
   )
 }
 
