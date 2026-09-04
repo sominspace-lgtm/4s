@@ -36,6 +36,51 @@ import {
 
 export { GROUND_Y }
 
+// The ping card's body — chips plus, for the partner variant, a free-text
+// field ("pick up flour" isn't a preset chip). Its own tiny component so
+// the free-text input's state doesn't have to live on VillageScene itself.
+function PingForm({ title, reasons, showNote, onSend }: {
+  title: string
+  reasons: string[]
+  showNote: boolean
+  onSend: (reason: string) => void
+}) {
+  const [note, setNote] = useState('')
+  const chip: React.CSSProperties = {
+    fontSize: 8, fontFamily: 'inherit', cursor: 'pointer',
+    padding: '2px 6px', borderRadius: 999,
+    background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
+  }
+  return (
+    <>
+      <div style={{ fontSize: 9.5, fontWeight: 600 }}>{title}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {reasons.map(r => (
+          <button key={r} onClick={() => onSend(r)} style={chip}>{r}</button>
+        ))}
+      </div>
+      {showNote && (
+        <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>
+          <input
+            value={note} onChange={e => setNote(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && note.trim()) onSend(note.trim()) }}
+            placeholder="pick up flour…" maxLength={140}
+            style={{
+              flex: 1, minWidth: 0, fontSize: 8, fontFamily: 'inherit', padding: '3px 6px',
+              borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => note.trim() && onSend(note.trim())}
+            disabled={!note.trim()}
+            style={{ ...chip, opacity: note.trim() ? 1 : 0.5, background: 'var(--gold)', borderColor: 'var(--gold)', color: 'var(--bg)' }}
+          >Send</button>
+        </div>
+      )}
+    </>
+  )
+}
+
 /**
  * The scene itself: pure presentation, no hooks and no dates. Everything
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
@@ -53,7 +98,7 @@ export default function VillageScene({
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false,
-  menu = [], agenda = [], somi = null, hostPing = null,
+  menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day',
 }: {
   village: VillageState
@@ -150,6 +195,10 @@ export default function VillageScene({
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
+  /** Partners ping each other in home mode, same card as hostPing above —
+   *  tap the OTHER figure (not your own) any time you're not hosting.
+   *  `selfIsOwner` says which figure is "you" so the self-tap is excluded. */
+  partnerPing?: { selfIsOwner: boolean; onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
   /** Opens the Kitchen overlay (from the reference nook in the scene). */
   onOpenKitchen?: () => void
   /** Live lines for the Home cottage tap-card: tonight's dinner, the next
@@ -445,10 +494,17 @@ export default function VillageScene({
   // tracked the same way every other recurring household task is (see
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
-  // Which host a guest tapped to call over (null = card closed). Only live
-  // during a gathering, driven by hostPing.
+  // Which figure was tapped to call/ping (null = card closed). During a
+  // gathering it's a guest calling a host (hostPing); otherwise it's one
+  // partner pinging the other (partnerPing) — same card, different copy
+  // and reasons, see the render below.
   const [pingOpen, setPingOpen] = useState<'sylvia' | 'harry' | null>(null)
   const [pingDone, setPingDone] = useState(false)
+  const activePing = gathering ? hostPing : partnerPing
+  // Tapping your OWN figure never opens the partner-ping card — only the
+  // other person's. Guest mode has no "self", every figure is a host.
+  const isSelfFigure = (who: 'sylvia' | 'harry') =>
+    !gathering && !!partnerPing && (who === 'sylvia') === partnerPing.selfIsOwner
   // Somi's card, tapped from the cat. Falls back to sensible defaults when
   // the hosts haven't filled anything in (see lib/village/somi.ts).
   const somiCard = somi ?? { name: 'Somi', ageText: somiAgeText(), birthdayLabel: somiBirthdayLabel(), snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
@@ -2443,8 +2499,8 @@ export default function VillageScene({
       <g>
         {!arranging && !settledNight && !sceneHidesFigures && (
           <g
-            style={{ visibility: coupleTogether ? undefined : 'hidden', cursor: hostPing && gathering ? 'pointer' : undefined }}
-            onClick={hostPing && gathering ? () => setPingOpen('sylvia') : undefined}
+            style={{ visibility: coupleTogether ? undefined : 'hidden', cursor: activePing ? 'pointer' : undefined }}
+            onClick={activePing ? () => setPingOpen(partnerPing && !gathering && partnerPing.selfIsOwner ? 'harry' : 'sylvia') : undefined}
           >
             {/* One idle vignette in three is the week's context pose (gardening
                 / reading) when there is one — no new timer, it rides the
@@ -2461,7 +2517,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
-                  onClick={() => { if (arranging) return; if (hostPing && gathering) { setPingOpen('sylvia'); return } life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
+                  onClick={() => { if (arranging) return; if (activePing && !isSelfFigure('sylvia')) { setPingOpen('sylvia'); return } life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
                   wander={active} pose={life.sylvia.pose} face={life.sylvia.face} outfit={outfit} scale={itemScale('sylvia')} />
               </g>
             )}
@@ -2473,7 +2529,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && !(soloFigure && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
-                  onClick={() => { if (arranging) return; if (hostPing && gathering) { setPingOpen('harry'); return } life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
+                  onClick={() => { if (arranging) return; if (activePing && !isSelfFigure('harry')) { setPingOpen('harry'); return } life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
                   wander={active} pose={life.harry.pose} face={life.harry.face} outfit={outfit} scale={itemScale('harry')} />
               </g>
             )}
@@ -2719,14 +2775,18 @@ export default function VillageScene({
         )
       })()}
 
-      {pingOpen && hostPing && (() => {
+      {pingOpen && activePing && (() => {
         const p = decorPos(pingOpen)
+        const isPartner = !gathering && !!partnerPing
         const width = 168
-        const height = pingDone ? 52 : 96
+        const height = pingDone ? 52 : (isPartner ? 128 : 96)
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
         const top = Math.max(10, p.y - 40 - height)
         const close = () => { setPingOpen(null); setPingDone(false) }
-        const reasons = ['At the door', 'Need a hand', 'Phone', 'Come say hi']
+        // Guests get situational chips ("at the door") — a partner ping is
+        // usually a specific errand ("pick up flour"), so that variant
+        // trades two of the four chips for a free-text field instead.
+        const reasons = isPartner ? ['Come here', 'Running late'] : ['At the door', 'Need a hand', 'Phone', 'Come say hi']
         return (
           <g className="village-fade">
             <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={close} />
@@ -2742,28 +2802,16 @@ export default function VillageScene({
                   {pingDone ? (
                     <div style={{ fontSize: 10, textAlign: 'center', margin: 'auto' }}>On their way.</div>
                   ) : (
-                    <>
-                      <div style={{ fontSize: 9.5, fontWeight: 600 }}>
-                        Call {pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'} over
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                        {reasons.map(r => (
-                          <button
-                            key={r}
-                            onClick={() => {
-                              hostPing.onPing(pingOpen, r)
-                              setPingDone(true)
-                              setTimeout(close, 1600)
-                            }}
-                            style={{
-                              fontSize: 8, fontFamily: 'inherit', cursor: 'pointer',
-                              padding: '2px 6px', borderRadius: 999,
-                              background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
-                            }}
-                          >{r}</button>
-                        ))}
-                      </div>
-                    </>
+                    <PingForm
+                      title={isPartner ? `Ping ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'}` : `Call ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'} over`}
+                      reasons={reasons}
+                      showNote={isPartner}
+                      onSend={reason => {
+                        activePing.onPing(pingOpen, reason)
+                        setPingDone(true)
+                        setTimeout(close, 1600)
+                      }}
+                    />
                   )}
                 </div>
               </foreignObject>

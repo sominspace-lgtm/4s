@@ -187,6 +187,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       body: JSON.stringify({ who: who === 'sylvia' ? 'host1' : 'host2', reason, from: userId }),
     }).catch(() => { /* the card still says "on their way" — a miss is better than a scary error at a party */ })
   }
+  // Partners ping each other in home mode — see the useSharedSpaces()
+  // call below for selfIsOwner/pingPartner (needs `spaces`, declared there).
   // The Inventory (round 31, 2026-08-27, "make a inventory tab in arrange
   // where we can place anything from asset library") — a small picker
   // panel, only reachable from inside arrange mode, that drops a new real
@@ -274,6 +276,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const reflectionDays = useReflectionDays()
   const clock = useVillageClock()
   const { spaces } = useSharedSpaces(userId)
+  // Partners ping each other in home mode (2026-09-04) — same idea as
+  // guest ping, a session-authed route instead of the guest token one.
+  // 'sylvia' = the space owner, 'harry' = the other accepted member.
+  const selfIsOwner = spaces[0]?.owner_id === userId
+  const pingPartner = (_who: 'sylvia' | 'harry', reason: string) => {
+    void fetch('/api/village/ping', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }).catch(() => { /* the card still says "on their way" */ })
+  }
   // Is the other partner around? Empty (no rows / no space) = assume yes and
   // show the couple. When they're out, the scene drops to a single figure.
   const partnerPresence = usePartnerPresence(userId, spaces[0]?.id ?? null)
@@ -544,6 +557,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
             somi={somi}
             hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
+            partnerPing={!guestActive ? { selfIsOwner, onPing: pingPartner } : null}
             onOpenKitchen={() => setKitchenOpen(true)}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay}
             layout={layout} arranging={arranging}
