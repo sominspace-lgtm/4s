@@ -6,17 +6,18 @@ import type { VillageState } from '@/lib/village/state'
 import Icon from '@/components/ui/Icon'
 import NowNext from './NowNext'
 import VillagePanelBlocks from './VillagePanelBlocks'
-import type { Gathering, PrepItem } from '@/lib/hooks/useGathering'
+import type { Gathering } from '@/lib/hooks/useGathering'
 
 // The wall / kiosk counterpart to VillageWidgets — a swipe-up sheet over the
 // Village scene. Content comes from VillagePanelBlocks:
-//   - a prep gathering → the getting-ready checklist above the panel
 //   - a live gathering → the guest set (visuals + guest actions + QR, no
 //     house controls)
 //   - otherwise → the customizable personal home panel (variant "wall")
+// No prep phase any more (round 80, 2026-09-04) — starting a gathering
+// opens the doors immediately.
 // Only mounted when `locked` (shared mode) — see Village.tsx.
 export default function VillageHomeSheet({
-  userId, spaceId, ambient, onInteract, gathering, onStartGathering, onUpdatePrep, onOpenDoors,
+  userId, spaceId, ambient, onInteract, gathering, onStartGathering,
   village, panelBlocks = [], onLockedNavigate, guestUrl = null, qrDataUri = null,
 }: {
   userId: string
@@ -24,9 +25,7 @@ export default function VillageHomeSheet({
   ambient: boolean
   onInteract?: () => void
   gathering?: Gathering | null
-  onStartGathering?: (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => void
-  onUpdatePrep?: (items: PrepItem[]) => void
-  onOpenDoors?: () => void
+  onStartGathering?: (title: string, opts?: { startsAt?: string | null }) => void
   village?: VillageState | null
   panelBlocks?: SectionConfig[]
   onLockedNavigate?: (label: string) => void
@@ -108,16 +107,16 @@ export default function VillageHomeSheet({
         <NowNext spaceId={spaceId} />
       </div>
 
-      {gathering?.phase === 'prep' ? (
-        <div style={{ padding: '0 1rem 0.6rem' }}>
-          <PrepPanel gathering={gathering} onUpdate={onUpdatePrep} onOpenDoors={onOpenDoors} onInteract={onInteract} />
-        </div>
-      ) : !gathering && onStartGathering ? (
+      {/* No prep phase any more (round 80, 2026-09-04) — starting a
+          gathering opens the doors immediately; the getting-ready
+          checklist is a one-time popup now (GatheringChecklistPopup, in
+          Village.tsx), not a separate scene state gating this sheet. */}
+      {!gathering && onStartGathering ? (
         <div style={{ padding: '0 1rem 0.6rem' }}>
           <button
             onClick={() => {
               const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
-              if (title !== null) { onStartGathering(title, { phase: 'prep' }); onInteract?.() }
+              if (title !== null) { onStartGathering(title); onInteract?.() }
             }}
             className="press"
             style={{
@@ -128,7 +127,7 @@ export default function VillageHomeSheet({
               fontFamily: 'inherit', fontSize: '0.78rem',
             }}
           >
-            <Icon name="sparkle" size={15} /> Hosting tonight
+            <Icon name="sparkle" size={15} /> Start hosting
           </button>
         </div>
       ) : null}
@@ -148,101 +147,6 @@ export default function VillageHomeSheet({
           qrDataUri={qrDataUri}
         />
       </div>
-    </div>
-  )
-}
-
-function PrepPanel({ gathering, onUpdate, onOpenDoors, onInteract }: {
-  gathering: Gathering
-  onUpdate?: (items: PrepItem[]) => void
-  onOpenDoors?: () => void
-  onInteract?: () => void
-}) {
-  const [adding, setAdding] = useState('')
-  const items = gathering.prep ?? []
-  const doneCount = items.filter(i => i.done).length
-
-  const toggle = (id: string) => { onUpdate?.(items.map(i => (i.id === id ? { ...i, done: !i.done } : i))); onInteract?.() }
-  const add = () => {
-    const t = adding.trim()
-    if (!t) return
-    onUpdate?.([...items, { id: crypto.randomUUID(), text: t, done: false }])
-    setAdding('')
-    onInteract?.()
-  }
-
-  return (
-    <div className="organic" style={{
-      background: 'color-mix(in srgb, var(--rose) 9%, var(--surface2))',
-      border: '1px solid color-mix(in srgb, var(--rose) 24%, var(--border))',
-      borderRadius: 14, padding: '0.7rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.45rem',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        <Icon name="sparkle" size={15} style={{ color: 'var(--rose)' }} />
-        <span style={{ fontSize: '0.76rem', fontWeight: 500, color: 'var(--text)', flex: 1 }}>
-          Getting ready · {gathering.title}
-        </span>
-        {items.length > 0 && (
-          <span style={{ fontSize: '0.62rem', color: 'var(--muted)' }}>{doneCount}/{items.length}</span>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        {items.map(i => (
-          <button key={i.id} onClick={() => toggle(i.id)} className="press" style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none',
-            cursor: 'pointer', textAlign: 'left', padding: '0.15rem 0', fontFamily: 'inherit',
-          }}>
-            <span style={{
-              width: 17, height: 17, flexShrink: 0, borderRadius: 5, border: '1.5px solid var(--border)',
-              background: i.done ? 'var(--emerald)' : 'none', color: 'var(--bg)', fontSize: '0.7rem',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-            }}>{i.done ? '✓' : ''}</span>
-            <span style={{ fontSize: '0.74rem', color: i.done ? 'var(--muted)' : 'var(--text)', textDecoration: i.done ? 'line-through' : 'none' }}>
-              {i.text}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: '0.3rem' }}>
-        <input
-          value={adding}
-          onChange={e => setAdding(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') add() }}
-          placeholder="Add to the list"
-          style={{
-            flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 8, padding: '0.3rem 0.5rem', fontSize: '0.7rem', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
-          }}
-        />
-        <button onClick={add} className="press" aria-label="Add" style={{
-          background: 'var(--rose)', color: 'var(--bg)', border: 'none', borderRadius: 8,
-          padding: '0 0.5rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600, lineHeight: 1,
-        }}>+</button>
-      </div>
-
-      <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.64rem', color: 'var(--muted)' }}>
-        <span>{gathering.music_url ? '♪ playlist ready' : '♪ no playlist'}</span>
-        <span>{gathering.photo_album_url ? '▦ album ready' : '▦ no album'}</span>
-      </div>
-
-      <button
-        onClick={() => {
-          try { window.open(`${window.location.origin}/g/${gathering.token}`, '_blank', 'noopener') } catch { /* ignore */ }
-          onInteract?.()
-        }}
-        className="press"
-        style={{
-          marginTop: '0.15rem', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)',
-          borderRadius: 10, padding: '0.5rem', fontSize: '0.74rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-        }}
-      >Preview as a guest ↗</button>
-
-      <button onClick={() => { onOpenDoors?.(); onInteract?.() }} className="press" style={{
-        background: 'var(--rose)', color: 'var(--bg)', border: 'none',
-        borderRadius: 10, padding: '0.55rem', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-      }}>Open the doors</button>
     </div>
   )
 }

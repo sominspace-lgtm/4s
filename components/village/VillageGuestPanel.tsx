@@ -28,7 +28,7 @@ const KIND_LABEL: Record<string, string> = {
 export default function VillageGuestPanel({
   gathering, contributions, guestUrl, qrDataUri, memories, guestInfo, petInfo,
   onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onSetMenu, onSetAgenda, onSetPetInfo,
-  onModerate, onRemoveContribution,
+  onModerate, onRemoveContribution, onSetPinnedContribution,
   onCloseGathering, onUpdateMemory, onDeleteMemory,
 }: {
   gathering: Gathering
@@ -47,6 +47,11 @@ export default function VillageGuestPanel({
   onSetPetInfo?: (info: PetInfo) => void
   onModerate?: (id: string, status: 'visible' | 'hidden') => void
   onRemoveContribution?: (id: string) => void
+  /** Pin one message so it shows on the wall (moved here from the old wall
+   *  host bar, round 80, 2026-09-04 — the manage panel is host controls'
+   *  one home now, on the wall same as on your own phone). Pass null id
+   *  to unpin. */
+  onSetPinnedContribution?: (id: string | null) => void
   onCloseGathering?: () => void | Promise<GatheringMemory | null>
   onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
   onDeleteMemory?: (id: string) => void
@@ -148,6 +153,13 @@ export default function VillageGuestPanel({
                 {(c.meta.title as string) || (c.meta.place as string) || c.body || '—'}
                 {c.guest_name && <span style={{ color: 'var(--muted)' }}> · {c.guest_name}</span>}
               </span>
+              {onSetPinnedContribution && (c.kind === 'thank_you' || c.kind === 'guestbook' || c.kind === 'note') && c.body && (
+                <button
+                  onClick={() => onSetPinnedContribution(gathering.pinned_contribution_id === c.id ? null : c.id)}
+                  title={gathering.pinned_contribution_id === c.id ? 'Unpin from the wall' : 'Pin to the wall'}
+                  style={{ ...S.iconBtn, opacity: gathering.pinned_contribution_id === c.id ? 1 : 0.5 }}
+                >📌</button>
+              )}
               <button
                 onClick={() => onModerate?.(c.id, c.status === 'visible' ? 'hidden' : 'visible')}
                 title={c.status === 'visible' ? 'Hide from the village' : 'Show again'}

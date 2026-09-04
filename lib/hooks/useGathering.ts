@@ -115,11 +115,10 @@ export interface UseGathering {
   /** "Tonight at the Village" keepsakes from gatherings that have ended. */
   memories: GatheringMemory[]
   ready: boolean
-  startGathering: (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => Promise<void>
-  /** Replace the prep checklist. */
+  startGathering: (title: string, opts?: { startsAt?: string | null }) => Promise<void>
+  /** Replace the getting-started checklist (shown as a one-time popup now,
+   *  not a separate scene phase — see GatheringChecklistPopup). */
   updatePrep: (items: PrepItem[]) => Promise<void>
-  /** Move a prep gathering to 'live' — the doors are open. */
-  openDoors: () => Promise<void>
   /** Ends the gathering AND writes a keepsake snapshot. Returns the memory
    *  so the host can open it straight into an editor. */
   closeGathering: () => Promise<GatheringMemory | null>
@@ -248,16 +247,20 @@ export function useGathering(userId: string): UseGathering {
     return () => { alive = false; supabase.removeChannel(ch) }
   }, [supabase, spaceId, loadContributions])
 
-  const startGathering = useCallback(async (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => {
+  // No more prep phase (round 80, 2026-09-04) — starting a gathering opens
+  // the doors immediately; the checklist that used to gate a separate
+  // "prep" scene state is now a one-time popup (GatheringChecklistPopup)
+  // that rides along on the same `prep`/`updatePrep` data, just presented
+  // differently. `phase`/`starts_at` columns stay in the DB, unused.
+  const startGathering = useCallback(async (title: string, opts?: { startsAt?: string | null }) => {
     const sid = spaceRef.current
     if (!sid) return
-    const phase = opts?.phase ?? 'live'
     const { data, error } = await supabase
       .from('gatherings')
       .insert({
         space_id: sid, created_by: userId, title: title.trim() || 'Our gathering', token: makeToken(),
-        phase, starts_at: opts?.startsAt ?? null,
-        prep: phase === 'prep' ? DEFAULT_PREP.map(p => ({ ...p, id: crypto.randomUUID() })) : [],
+        phase: 'live', starts_at: opts?.startsAt ?? null,
+        prep: DEFAULT_PREP.map(p => ({ ...p, id: crypto.randomUUID() })),
       })
       .select('*')
       .single()
@@ -272,14 +275,6 @@ export function useGathering(userId: string): UseGathering {
     setGathering(prev => (prev ? { ...prev, prep: items } : prev))
     const { error } = await supabase.from('gatherings').update({ prep: items }).eq('id', g.id)
     if (error) console.error('[4s] updatePrep failed:', error.message)
-  }, [supabase])
-
-  const openDoors = useCallback(async () => {
-    const g = gatheringRef.current
-    if (!g || g.phase === 'live') return
-    setGathering(prev => (prev ? { ...prev, phase: 'live' } : prev))
-    const { error } = await supabase.from('gatherings').update({ phase: 'live' }).eq('id', g.id)
-    if (error) console.error('[4s] openDoors failed:', error.message)
   }, [supabase])
 
   const closeGathering = useCallback(async (): Promise<GatheringMemory | null> => {
@@ -393,7 +388,7 @@ export function useGathering(userId: string): UseGathering {
 
   return {
     gathering, contributions, memories, ready,
-    startGathering, updatePrep, openDoors, closeGathering, setMusicUrl, setPhotoAlbumUrl,
+    startGathering, updatePrep, closeGathering, setMusicUrl, setPhotoAlbumUrl,
     setMenu, setAgenda, setPinnedContribution,
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,

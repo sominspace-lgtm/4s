@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { format, parseISO } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
@@ -28,13 +28,11 @@ import QRCode from 'qrcode'
 import type { Gathering, GuestContribution, GatheringMemory, PrepItem, GuestInfo, MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
 import { resolveSomi } from '@/lib/village/somi'
 import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
-import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
-import GatheringSkyBox from './GatheringSkyBox'
-import WallHostBar from './WallHostBar'
 import KitchenMode from './KitchenMode'
+import GatheringChecklistPopup from './GatheringChecklistPopup'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
 import { figureActivity } from '@/lib/village/figureActivity'
@@ -64,7 +62,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onOpenDoors, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -95,9 +93,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  scene warms up (lanterns, bunting, livelier cast) and a host strip
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
   gathering?: Gathering | null
-  onStartGathering?: (title: string, opts?: { startsAt?: string | null; phase?: 'prep' | 'live' }) => void
+  onStartGathering?: (title: string, opts?: { startsAt?: string | null }) => void
+  /** The getting-started checklist — shown once as a popup right after
+   *  starting, reopenable from the ⋯ menu. No separate prep scene phase. */
   onUpdatePrep?: (items: PrepItem[]) => void
-  onOpenDoors?: () => void
   onCloseGathering?: () => void | Promise<GatheringMemory | null>
   /** Visible guest contributions so far — shown as a quiet count, never a
    *  "N guests online" readout. */
@@ -152,12 +151,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return c && c.body ? { name: c.guest_name, body: c.body } : null
   }, [gathering?.pinned_contribution_id, contributions])
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
-  const [qrBig, setQrBig] = useState(false)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
   const [panelCustomizeOpen, setPanelCustomizeOpen] = useState(false)
-  const [partyScreenOpen, setPartyScreenOpen] = useState(false)
   const [kitchenOpen, setKitchenOpen] = useState(false)
+  // The getting-started checklist popup — up once right after starting a
+  // gathering, reopenable any time from the ⋯ menu (round 80, 2026-09-04,
+  // replaces the old separate "prep" scene phase).
+  const [checklistOpen, setChecklistOpen] = useState(false)
+  const prevGatheringId = useRef<string | null>(null)
+  useEffect(() => {
+    if (gathering && gathering.id !== prevGatheringId.current) setChecklistOpen(true)
+    prevGatheringId.current = gathering?.id ?? null
+  }, [gathering])
   useEffect(() => {
     try { if (new URLSearchParams(window.location.search).get('kitchen') === '1') setKitchenOpen(true) } catch { /* ignore */ }
   }, [])
@@ -168,7 +174,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return `${base.replace(/\/$/, '')}/g/${gathering.token}`
   }, [gathering])
   useEffect(() => {
-    if (!guestUrl) { setQrDataUri(null); setQrBig(false); return }
+    if (!guestUrl) { setQrDataUri(null); return }
     let alive = true
     QRCode.toDataURL(guestUrl, { margin: 1, width: 320 })
       .then(uri => { if (alive) setQrDataUri(uri) })
@@ -585,46 +591,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             partOfDay={partOfDay} binLine={binLine} ambient={ambient} />
         )}
 
-        {/* The gathering board — a frosted-glass panel in the sky with the
-            join QR, now-playing, the next beat, the wifi. Up whenever the
-            doors are open; the party screen owns the overlay when showing. */}
-        {guestLive && !compact && !partyScreenOpen && (
-          <GatheringSkyBox
-            qrDataUri={qrDataUri}
-            guestUrl={guestUrl}
-            title={gathering?.title ?? null}
-            musicUrl={gathering?.music_url ?? null}
-            wifi={{ name: guestInfo?.wifiName, password: guestInfo?.wifiPassword }}
-            nextAgenda={(() => {
-              const a = (gathering?.agenda ?? []).find(x => !x.done)
-              return a ? { time: a.time, label: a.label } : null
-            })()}
-            topVotedSong={(() => {
-              const songs = contributions.filter(c => c.kind === 'song' && c.status === 'visible')
-              if (!songs.length) return null
-              const top = songs.reduce((a, b) => (b.upvotes > a.upvotes ? b : a))
-              return (top.meta?.title as string) || top.body || null
-            })()}
-            pinnedMessage={pinnedMessage}
-          />
-        )}
+        {/* No sky box (removed 2026-09-04) — no QR needed for guests to
+            join, they use the wall screen directly. */}
 
         {pendingMilestone && !arranging && !guestActive && onAckMilestone && (
           <MilestoneMoment milestone={pendingMilestone} onAck={onAckMilestone} />
         )}
 
-        {/* Hidden host controls on the wall — long-press the bottom-left
-            corner. A host on their own phone gets the ⋯ menu instead. */}
-        {guestLive && locked && !compact && !arranging && gathering && (
-          <WallHostBar
-            contributions={contributions}
-            agenda={gathering.agenda ?? []}
-            pinnedId={gathering.pinned_contribution_id}
-            onSetPinned={onSetPinnedContribution}
-            onSetAgenda={onSetAgenda}
-            onCloseGathering={onCloseGathering}
-          />
-        )}
+        {/* No hidden wall host bar any more (removed 2026-09-04) — pin a
+            message / mark the next beat done live in the manage panel now
+            (⋯ → Manage the gathering), same place on the wall as on a
+            host's own phone. */}
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the
             whole scene — the preview should open the real Village on any
@@ -701,34 +678,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     ...(!guestActive ? [{ label: 'Kitchen', on: () => setKitchenOpen(true) }] : []),
                     ...(guestActive
                       ? [
-                          ...(gathering?.phase === 'prep' && onOpenDoors
-                            ? [
-                                { label: 'Preview as a guest', on: () => { if (guestUrl) window.open(guestUrl, '_blank', 'noopener') } },
-                                { label: 'Open the doors', on: () => onOpenDoors?.() },
-                              ]
-                            : []),
                           { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
-                          ...(gathering?.phase !== 'prep'
-                            ? [
-                                { label: 'Show the party screen', on: () => setPartyScreenOpen(true) },
-                                { label: 'Show the guest QR', on: () => setQrBig(true) },
-                              ]
-                            : []),
+                          { label: 'Checklist', on: () => setChecklistOpen(true) },
                         ]
                       : onStartGathering
                         ? [
                             {
-                              label: 'Plan a gathering',
+                              label: 'Start hosting',
                               on: () => {
                                 const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
-                                if (title !== null) onStartGathering?.(title, { phase: 'prep' })
-                              },
-                            },
-                            {
-                              label: 'Open to guests now',
-                              on: () => {
-                                const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
-                                if (title !== null) onStartGathering?.(title, { phase: 'live' })
+                                if (title !== null) onStartGathering?.(title)
                               },
                             },
                           ]
@@ -881,6 +840,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onSetPetInfo={onSetPetInfo}
             onModerate={onModerate}
             onRemoveContribution={onRemoveContribution}
+            onSetPinnedContribution={onSetPinnedContribution}
             onCloseGathering={onCloseGathering}
             onUpdateMemory={onUpdateMemory}
             onDeleteMemory={onDeleteMemory}
@@ -897,40 +857,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           />
         )}
 
-        {/* Party screen — the room's shared display during a live gathering.
-            Opened from the ⋯ menu, and shown automatically once the wall
-            goes idle mid-party (2026-09-02). */}
-        {(partyScreenOpen || (guestLive && ambient)) && gathering && (
-          <VillagePartyScreen
-            title={gathering.title}
-            musicUrl={gathering.music_url ?? spaces[0]?.music_url ?? null}
-            contributions={contributions}
-            guestUrl={guestUrl}
-            qrDataUri={qrDataUri}
-            onClose={() => { setPartyScreenOpen(false); resetIdleTimer?.() }}
-          />
-        )}
+        {/* No party screen, no big QR overlay (removed 2026-09-04) — guests
+            use the wall screen directly, no join link needed. */}
 
-        {/* Enlarged QR overlay — fills the scene card so a guest can scan it
-            from across the room. Any tap dismisses. */}
-        {qrBig && qrDataUri && (
-          <div
-            onClick={() => setQrBig(false)}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer',
-              background: 'color-mix(in srgb, var(--bg) 92%, transparent)', backdropFilter: 'blur(3px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem',
-            }}
-          >
-            <span style={{ fontSize: '0.9rem', color: 'var(--text)', fontFamily: 'var(--font-display, var(--font-body))', letterSpacing: '0.04em' }}>
-              WELCOME TO OUR VILLAGE
-            </span>
-            <img src={qrDataUri} alt="Guest QR code"
-              style={{ width: 'min(60vw, 20rem)', height: 'auto', borderRadius: '10px', background: '#fff', padding: '0.75rem' }} />
-            <span style={{ fontSize: '0.65rem', color: 'var(--muted)', fontFamily: 'var(--font-body)' }}>
-              Scan with your phone camera — no app needed
-            </span>
-          </div>
+        {checklistOpen && gathering && (
+          <GatheringChecklistPopup
+            gathering={gathering}
+            onUpdate={onUpdatePrep}
+            onClose={() => setChecklistOpen(false)}
+          />
         )}
 
         {/* The shared/kiosk-mode swipe-up sheet (2026-08-25) — an overlay
@@ -943,8 +878,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             userId={userId} spaceId={spaces[0]?.id ?? null} ambient={ambient} onInteract={resetIdleTimer}
             gathering={gathering}
             onStartGathering={onStartGathering}
-            onUpdatePrep={onUpdatePrep}
-            onOpenDoors={onOpenDoors}
             village={v}
             panelBlocks={panelBlocks}
             onLockedNavigate={onLockedNavigate}
