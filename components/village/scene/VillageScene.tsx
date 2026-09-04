@@ -2307,24 +2307,8 @@ export default function VillageScene({
                 style={{ imageRendering: 'pixelated' }} />
             </g>
 
-            {/* Join QR — a single A-frame easel just inside the entrance,
-                left of the welcome sign and well clear of the table / menu
-                board. Sized to scan from a few steps away, not from across
-                the room (the party screen enlarges it for that). */}
-            {guestQrUri && (() => {
-              const qx = clampX(signX - 30)
-              return (
-                <g transform={`translate(${qx} ${signY})`}>
-                  <title>Scan to join the gathering</title>
-                  <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.16} />
-                  {/* easel legs */}
-                  <path d="M -8 0 L -3 -22 M 8 0 L 3 -22" stroke="#8a6f52" strokeWidth={1.6} strokeLinecap="round" />
-                  <rect x={-13} y={-40} width={26} height={26} rx={2} fill="#fffdf7" stroke="#8a6f52" strokeWidth={1} />
-                  <image href={guestQrUri} x={-11} y={-38} width={22} height={22} preserveAspectRatio="none" />
-                  <text x={0} y={-8} textAnchor="middle" fontSize={3.6} fill="#5c4a34" fontFamily="var(--font-body)">Scan to join</text>
-                </g>
-              )
-            })()}
+            {/* The join QR lives in the sky panel now (GatheringSkyBox),
+                not on a sign in the scene. */}
 
             {/* Guestbook — a page or two thicker for every signature */}
             <g transform={`translate(${bookX} ${bookY})`}>

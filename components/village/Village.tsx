@@ -32,7 +32,7 @@ import VillagePartyScreen from './VillagePartyScreen'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
-import GatheringMarquee from './GatheringMarquee'
+import GatheringSkyBox from './GatheringSkyBox'
 import WallHostBar from './WallHostBar'
 import KitchenMode from './KitchenMode'
 import MilestoneMoment from './MilestoneMoment'
@@ -569,13 +569,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             partOfDay={partOfDay} binLine={binLine} />
         )}
 
-        {/* What's-on strip — the live-gathering counterpart of AmbientInfo,
-            up whenever the doors are open (not just idle). The party screen
-            owns the overlay when it's showing. */}
+        {/* The gathering board — a frosted-glass panel in the sky with the
+            join QR, now-playing, the next beat, the wifi. Up whenever the
+            doors are open; the party screen owns the overlay when showing. */}
         {guestLive && !compact && !partyScreenOpen && (
-          <GatheringMarquee
+          <GatheringSkyBox
+            qrDataUri={qrDataUri}
+            guestUrl={guestUrl}
             title={gathering?.title ?? null}
             musicUrl={gathering?.music_url ?? null}
+            wifi={{ name: guestInfo?.wifiName, password: guestInfo?.wifiPassword }}
             nextAgenda={(() => {
               const a = (gathering?.agenda ?? []).find(x => !x.done)
               return a ? { time: a.time, label: a.label } : null
