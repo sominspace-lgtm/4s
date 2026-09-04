@@ -5,8 +5,13 @@
 // Kitchen Cheat Sheet reads ?q= (jump straight to a search) and ?view=
 // (open a view) as of 2026-09-03. Home Cheat Sheet is one static page —
 // the base URL is all there is.
+//
+// NOTE: pointing at the `ksc` Vercel project's URL, not the old
+// `kitchencheatsheet.vercel.app` — that project got stuck in a corrupted
+// build state and was replaced. Rename the `ksc` project to
+// `kitchencheatsheet` on Vercel and this can go back to the clean URL.
 
-export const KITCHEN_URL = 'https://kitchencheatsheet.vercel.app'
+export const KITCHEN_URL = 'https://ksc-jade.vercel.app'
 export const HOME_URL = 'https://home-cheat-sheet-deploy.vercel.app/'
 
 /** Kitchen Cheat Sheet, optionally pre-searched for a dish or a question. */
