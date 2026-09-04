@@ -41,6 +41,7 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
   return (
     <div onClick={onClose} style={S.scrim}>
       <div onClick={e => e.stopPropagation()} style={S.card}>
+        <div style={S.grabber} />
         <div style={S.head}>
           <span style={S.kicker}>The kitchen</span>
           <button onClick={onClose} style={S.x}>✕</button>
@@ -130,18 +131,24 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
 const ACCENT = '#b0392c'
 const S: Record<string, React.CSSProperties> & { accent: React.CSSProperties } = {
   accent: { color: ACCENT },
+  // Half-screen glass sheet, not a centered modal (round 80, 2026-09-04)
+  // — the village stays visible (just dimmed) above it, same "function
+  // overlay floats over the picture, doesn't replace it" idea the Kitchen
+  // and Smart Home overlays now share.
   scrim: {
-    position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-    padding: '1.2rem', overflowY: 'auto',
-    background: 'color-mix(in srgb, #2b2320 45%, transparent)', backdropFilter: 'blur(4px)',
+    position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    background: 'color-mix(in srgb, #2b2320 30%, transparent)',
   },
   card: {
-    width: 'min(30rem, 100%)', marginTop: '2vh',
-    background: '#fffdf8', border: '1px solid #e6d8bd', borderRadius: 18,
-    padding: '1.3rem 1.4rem 1.5rem', boxShadow: '0 24px 60px rgba(74,33,28,0.28)',
+    width: '100%', maxWidth: '36rem', height: '50vh', minHeight: '20rem', maxHeight: '34rem',
+    background: 'rgba(255, 253, 248, 0.78)',
+    borderTop: '1px solid rgba(230, 216, 189, 0.9)', borderRadius: '20px 20px 0 0',
+    backdropFilter: 'blur(20px) saturate(1.3)', WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
+    padding: '0.6rem 1.4rem 1.2rem', boxShadow: '0 -12px 50px rgba(74,33,28,0.35)',
     fontFamily: '"Manrope", system-ui, sans-serif', color: '#2b2320',
-    display: 'flex', flexDirection: 'column', gap: '1.1rem',
+    display: 'flex', flexDirection: 'column', gap: '0.85rem', overflowY: 'auto',
   },
+  grabber: { width: 36, height: 4, borderRadius: 2, background: 'rgba(138,90,44,0.35)', alignSelf: 'center', flexShrink: 0 },
   head: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   kicker: { fontFamily: '"DM Mono", ui-monospace, monospace', fontSize: '0.66rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: ACCENT },
   x: { background: 'none', border: 'none', cursor: 'pointer', color: '#a8987f', fontSize: '0.95rem', lineHeight: 1 },

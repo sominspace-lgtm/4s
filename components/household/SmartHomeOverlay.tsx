@@ -31,30 +31,36 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, hom
         aria-hidden
         style={{
           position: 'fixed', inset: 0, zIndex: 480,
-          background: 'color-mix(in srgb, var(--bg) 55%, transparent)',
-          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          background: 'color-mix(in srgb, var(--bg) 30%, transparent)',
           opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity 260ms ease',
         }}
       />
+      {/* Half-screen glass sheet (round 80, 2026-09-04) — matches Kitchen
+          mode's chrome now, so the two "function overlay" surfaces read
+          as one family: the village stays visible (dimmed) above it
+          instead of a near-fullscreen opaque panel replacing it. */}
       <div
         role="dialog"
         aria-label="Smart Home"
         style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, top: '8vh',
-          maxWidth: '900px', margin: '0 auto',
-          background: 'var(--bg)', borderRadius: '20px 20px 0 0',
-          border: '1px solid var(--border)', borderBottom: 'none',
-          boxShadow: '0 -8px 40px color-mix(in srgb, var(--text) 18%, transparent)',
+          position: 'fixed', left: 0, right: 0, bottom: 0, height: '50vh', minHeight: '20rem', maxHeight: '34rem',
+          maxWidth: '36rem', margin: '0 auto',
+          background: 'color-mix(in srgb, var(--surface) 78%, transparent)',
+          borderRadius: '20px 20px 0 0',
+          border: '1px solid color-mix(in srgb, var(--border) 90%, transparent)', borderBottom: 'none',
+          backdropFilter: 'blur(20px) saturate(1.2)', WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
+          boxShadow: '0 -12px 50px color-mix(in srgb, var(--text) 25%, transparent)',
           zIndex: 481, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           transform: open ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 320ms cubic-bezier(.2,.8,.3,1)',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', alignSelf: 'center', margin: '0.5rem 0 0', flexShrink: 0 }} />
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', flexShrink: 0,
+          padding: '0.6rem 1.2rem 0.7rem', flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span aria-hidden style={{ display: 'inline-flex' }}><Icon name="controls" size={16} /></span>
