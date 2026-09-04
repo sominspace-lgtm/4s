@@ -31,6 +31,7 @@ import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import GatheringMarquee from './GatheringMarquee'
+import WallHostBar from './WallHostBar'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
 import { figureActivity } from '@/lib/village/figureActivity'
@@ -541,6 +542,19 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
         {pendingMilestone && !arranging && !guestActive && onAckMilestone && (
           <MilestoneMoment milestone={pendingMilestone} onAck={onAckMilestone} />
+        )}
+
+        {/* Hidden host controls on the wall — long-press the bottom-left
+            corner. A host on their own phone gets the ⋯ menu instead. */}
+        {guestLive && locked && !compact && !arranging && gathering && (
+          <WallHostBar
+            contributions={contributions}
+            agenda={gathering.agenda ?? []}
+            pinnedId={gathering.pinned_contribution_id}
+            onSetPinned={onSetPinnedContribution}
+            onSetAgenda={onSetAgenda}
+            onCloseGathering={onCloseGathering}
+          />
         )}
 
         {/* Compact mode (2026-08-25): a transparent click-catcher over the

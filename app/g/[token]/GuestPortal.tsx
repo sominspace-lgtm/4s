@@ -36,7 +36,6 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
   const [name, rememberName] = useGuestName()
   const hasInfo = !!(guestInfo && (guestInfo.notes || guestInfo.wifiName))
   const hasOn = menu.length > 0 || agenda.length > 0
-  void hosts
 
   return (
     <main style={S.shell}>
@@ -162,6 +161,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
             kind={open}
             guestName={name}
             onGuestName={rememberName}
+            hosts={hosts}
             onBack={() => setOpen(null)}
             onDone={() => { setDone(open); setOpen(null) }}
           />

@@ -439,6 +439,10 @@ export default function VillageScene({
   // tracked the same way every other recurring household task is (see
   // useHousehold.ts/useRoutines.ts) — not a separate pet-specific model.
   const [openSomiCard, setOpenSomiCard] = useState(false)
+  // Which host a guest tapped to call over (null = card closed). Only live
+  // during a gathering, driven by hostPing.
+  const [pingOpen, setPingOpen] = useState<'sylvia' | 'harry' | null>(null)
+  const [pingDone, setPingDone] = useState(false)
   // Somi's card, tapped from the cat. Falls back to sensible defaults when
   // the hosts haven't filled anything in (see lib/village/somi.ts).
   const somiCard = somi ?? { name: 'Somi', ageText: null, snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
@@ -2335,7 +2339,10 @@ export default function VillageScene({
           and quiet/night (the bench / sleepwear block below takes over). */}
       <g>
         {!arranging && !settledNight && !sceneHidesFigures && (
-          <g style={{ visibility: coupleTogether ? undefined : 'hidden' }}>
+          <g
+            style={{ visibility: coupleTogether ? undefined : 'hidden', cursor: hostPing && gathering ? 'pointer' : undefined }}
+            onClick={hostPing && gathering ? () => setPingOpen('sylvia') : undefined}
+          >
             {/* One idle vignette in three is the week's context pose (gardening
                 / reading) when there is one — no new timer, it rides the
                 existing interactPose cycle. Never during a gathering or a
@@ -2351,7 +2358,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
-                  onClick={() => { if (arranging) return; life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
+                  onClick={() => { if (arranging) return; if (hostPing && gathering) { setPingOpen('sylvia'); return } life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
                   wander={active} pose={life.sylvia.pose} face={life.sylvia.face} outfit={outfit} scale={itemScale('sylvia')} />
               </g>
             )}
@@ -2363,7 +2370,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && !(soloFigure && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
-                  onClick={() => { if (arranging) return; life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
+                  onClick={() => { if (arranging) return; if (hostPing && gathering) { setPingOpen('harry'); return } life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
                   wander={active} pose={life.harry.pose} face={life.harry.face} outfit={outfit} scale={itemScale('harry')} />
               </g>
             )}
@@ -2590,6 +2597,59 @@ export default function VillageScene({
                       border: '1px solid var(--gold)', color: 'var(--gold)',
                     }}
                   >Her care →</button>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        )
+      })()}
+
+      {pingOpen && hostPing && (() => {
+        const p = decorPos(pingOpen)
+        const width = 168
+        const height = pingDone ? 52 : 96
+        const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
+        const top = Math.max(10, p.y - 40 - height)
+        const close = () => { setPingOpen(null); setPingDone(false) }
+        const reasons = ['At the door', 'Need a hand', 'Phone', 'Come say hi']
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={close} />
+            <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={width} height={height} style={{ overflow: 'visible' }}>
+                <div style={{
+                  boxSizing: 'border-box', width: '100%', height: '100%',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+                  padding: '8px 10px', fontFamily: 'var(--font-body)', color: 'var(--text)',
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                }}>
+                  {pingDone ? (
+                    <div style={{ fontSize: 10, textAlign: 'center', margin: 'auto' }}>On their way.</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 9.5, fontWeight: 600 }}>
+                        Call {pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'} over
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                        {reasons.map(r => (
+                          <button
+                            key={r}
+                            onClick={() => {
+                              hostPing.onPing(pingOpen, r)
+                              setPingDone(true)
+                              setTimeout(close, 1600)
+                            }}
+                            style={{
+                              fontSize: 8, fontFamily: 'inherit', cursor: 'pointer',
+                              padding: '2px 6px', borderRadius: 999,
+                              background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)',
+                            }}
+                          >{r}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </foreignObject>
             </g>

@@ -14,7 +14,9 @@ import type { IconName } from '@/components/ui/Icon'
 // Payload shapes are byte-identical to what both files sent before — the
 // /api/g/[token] route and its KIND_FIELDS allowlist are unchanged.
 
-export type GuestActionKind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from'
+export type GuestActionKind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'find'
+
+const PING_REASONS = ['At the door', 'Need a hand', 'Phone call', 'Come say hi']
 
 export interface GuestActionDef {
   kind: GuestActionKind
@@ -34,6 +36,7 @@ export const GUEST_ACTIONS: GuestActionDef[] = [
   { kind: 'note', icon: 'brain', emoji: '💭', label: 'Leave a note', blurb: 'A thought, a wish, a memory' },
   { kind: 'song', icon: 'mic', emoji: '🎵', label: 'Add a song', blurb: 'For the record player' },
   { kind: 'from', icon: 'pin', emoji: '🗺️', label: 'Where you’re from', blurb: 'A pin on the map' },
+  { kind: 'find', icon: 'bell', emoji: '🔔', label: 'Find a host', blurb: 'Call Sylvia or Harry over' },
 ]
 
 export const THANKS_CHIPS = ['Thank you for having us', 'What a night', 'So cozy in here', 'We’ll be back', 'This was special']
@@ -62,24 +65,49 @@ export interface GuestActionFormProps {
   onGuestName: (v: string) => void
   onBack: () => void
   onDone: () => void
+  /** Host display names, for the 'find a host' picker. */
+  hosts?: { name: string }[]
 }
 
-export default function GuestActionForm({ token, surface, kind, guestName, onGuestName, onBack, onDone }: GuestActionFormProps) {
+export default function GuestActionForm({ token, surface, kind, guestName, onGuestName, onBack, onDone, hosts = [] }: GuestActionFormProps) {
   const s = surface === 'phone' ? PHONE : WALL
   const def = GUEST_ACTIONS.find(a => a.kind === kind)!
   const [text, setText] = useState('')
   const [songTitle, setSongTitle] = useState('')
   const [songUrl, setSongUrl] = useState('')
   const [place, setPlace] = useState('')
+  const [reason, setReason] = useState('')
+  const [who, setWho] = useState<'both' | 'host1' | 'host2'>('both')
+  const [pingSent, setPingSent] = useState<null | { sent: number }>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const canSubmit =
     kind === 'song' ? songTitle.trim().length > 0
       : kind === 'from' ? place.trim().length > 1
-        : text.trim().length > 0
+        : kind === 'find' ? reason.trim().length > 0
+          : text.trim().length > 0
+
+  const submitPing = async () => {
+    setBusy(true); setErr(null)
+    try {
+      const res = await fetch(`/api/g/${token}/ping`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ who, reason: reason.trim(), note: text.trim() || null, guest_name: guestName.trim() || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(data.error ?? 'Something went wrong.'); setBusy(false); return }
+      setPingSent({ sent: data.sent ?? 0 })
+      setBusy(false)
+    } catch {
+      setErr('No connection — try again.')
+      setBusy(false)
+    }
+  }
 
   const submit = async () => {
+    if (kind === 'find') return submitPing()
     setBusy(true); setErr(null)
     const payload: Record<string, unknown> = { kind, guest_name: guestName.trim() || null }
     if (kind === 'song') { payload.title = songTitle.trim(); payload.url = songUrl.trim(); payload.body = songTitle.trim() }
@@ -101,6 +129,18 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
     }
   }
 
+  if (kind === 'find' && pingSent) {
+    return (
+      <div style={s.wrap}>
+        <div style={{ fontSize: surface === 'phone' ? '2rem' : '1.2rem', textAlign: 'center' }}>🔔</div>
+        <p style={{ ...s.err, color: surface === 'phone' ? '#6a5f52' : 'var(--text)', textAlign: 'center', fontSize: surface === 'phone' ? '0.9rem' : '0.78rem' }}>
+          {pingSent.sent > 0 ? 'They’re on their way.' : 'We’ll let them know.'}
+        </p>
+        <button onClick={onBack} className={surface === 'wall' ? 'press' : undefined} style={s.primary}>Done</button>
+      </div>
+    )
+  }
+
   return (
     <div style={s.wrap}>
       <button onClick={onBack} style={s.back}>← back</button>
@@ -108,6 +148,24 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
         <>
           <div style={{ fontSize: '1.9rem' }}>{def.emoji}</div>
           <h2 style={PHONE.h2}>{def.label}</h2>
+        </>
+      )}
+
+      {kind === 'find' && (
+        <>
+          {hosts.length > 1 && (
+            <div style={s.chips}>
+              <button onClick={() => setWho('both')} style={{ ...s.chip, ...(who === 'both' ? s.chipOn : {}) }}>Anyone</button>
+              <button onClick={() => setWho('host1')} style={{ ...s.chip, ...(who === 'host1' ? s.chipOn : {}) }}>{hosts[0].name}</button>
+              <button onClick={() => setWho('host2')} style={{ ...s.chip, ...(who === 'host2' ? s.chipOn : {}) }}>{hosts[1].name}</button>
+            </div>
+          )}
+          <div style={{ ...s.chips, marginTop: hosts.length > 1 ? '0.4rem' : 0 }}>
+            {PING_REASONS.map(r => (
+              <button key={r} onClick={() => setReason(r)} style={{ ...s.chip, ...(reason === r ? s.chipOn : {}) }}>{r}</button>
+            ))}
+          </div>
+          <input value={text} onChange={e => setText(e.target.value)} placeholder="Anything to add (optional)" style={{ ...s.input, marginTop: '0.5rem' }} maxLength={140} />
         </>
       )}
 
@@ -160,7 +218,7 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
         className={surface === 'wall' ? 'press' : undefined}
         style={{ ...s.primary, opacity: !canSubmit || busy ? 0.5 : 1 }}
       >
-        {busy ? 'Leaving it…' : 'Leave it in the village'}
+        {busy ? (kind === 'find' ? 'Letting them know…' : 'Leaving it…') : (kind === 'find' ? 'Let them know' : 'Leave it in the village')}
       </button>
     </div>
   )

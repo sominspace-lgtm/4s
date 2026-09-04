@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Icon from '@/components/ui/Icon'
 import GuestActionForm, { GUEST_ACTIONS, useGuestName, type GuestActionKind } from '@/components/guest/GuestActionForm'
 
@@ -16,6 +16,15 @@ export default function GuestWallActions({ token, onInteract }: { token: string;
   const [open, setOpen] = useState<Kind | null>(null)
   const [justLeft, setJustLeft] = useState(false)
   const [name, rememberName] = useGuestName()
+  const [hosts, setHosts] = useState<{ name: string }[]>([])
+
+  useEffect(() => {
+    let alive = true
+    fetch(`/api/g/${token}/ping`).then(r => r.json()).then(d => {
+      if (alive && Array.isArray(d.hosts)) setHosts(d.hosts)
+    }).catch(() => { /* the picker just won't show names */ })
+    return () => { alive = false }
+  }, [token])
 
   if (justLeft) {
     return (
@@ -35,6 +44,7 @@ export default function GuestWallActions({ token, onInteract }: { token: string;
           kind={open}
           guestName={name}
           onGuestName={rememberName}
+          hosts={hosts}
           onBack={() => setOpen(null)}
           onDone={() => { setOpen(null); setJustLeft(true); onInteract?.() }}
         />
