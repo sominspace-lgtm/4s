@@ -90,8 +90,16 @@ export default function VillageHomeSheet({
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
         {!ambient && !effectiveOpen && (
-          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.8 }}>
-            {guestLive ? 'Leave something' : 'Swipe up'}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.8 }}>
+            {/* Tap is the primary affordance now (round 80, 2026-09-04) —
+                the swipe still works underneath, this is just the hint
+                copy + a small caret instead of "Swipe up". */}
+            {guestLive ? 'Leave something' : 'Tap for more'}
+            {!guestLive && (
+              <svg width="9" height="6" viewBox="0 0 9 6" aria-hidden style={{ opacity: 0.9 }}>
+                <path d="M1 5 L4.5 1.5 L8 5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
           </span>
         )}
       </div>

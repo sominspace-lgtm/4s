@@ -18,10 +18,6 @@ export type VillagePanelBlockId =
   | 'tonight'    // tonight's dinner + chores due
   | 'meals'      // this week's dinners
   | 'shopping'   // the shopping list + quick-add
-  | 'music'      // the house playlist (MusicCard)
-  | 'dateIdeas'  // saved / planned date ideas
-  | 'nearby'     // pins near the new place
-  | 'moveIn'     // move-in progress (auto-hides when nothing's tracked)
 
 export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: string; hint: string }> = {
   house:     { label: 'House controls', hint: 'Scenes and every light, lock, plug' },
@@ -32,20 +28,19 @@ export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: stri
   tonight:   { label: 'Tonight',        hint: "Dinner and what's due" },
   meals:     { label: "This week's meals", hint: "What we're eating" },
   shopping:  { label: 'Shopping list',  hint: 'What to buy, add from here' },
-  music:     { label: 'Music',          hint: 'The house playlist' },
-  dateIdeas: { label: 'Date ideas',     hint: 'Saved and planned' },
-  nearby:    { label: 'Nearby',         hint: 'Pins around the new place' },
-  moveIn:    { label: 'Move-in',        hint: 'What still needs sorting' },
 }
 
-// Default order + which start hidden. Calendar / to-dos / move-in
-// are opt-in (the user asked for the *option* to add them, not for them on
-// by default).
+// Trimmed from 12 to 8 blocks (round 80, 2026-09-04, "make it concise") —
+// dropped music/dateIdeas/nearby/moveIn. mergeVillagePanelBlocks below
+// already filters unknown saved ids, so anyone with a saved layout that
+// still names one of the four self-heals on next load, no migration.
+// Calendar / to-dos stay opt-in (the option to add them, not on by
+// default).
 const DEFAULT_ORDER: VillagePanelBlockId[] = [
   'house', 'shortcuts', 'progress', 'calendar', 'todos',
-  'tonight', 'meals', 'shopping', 'music', 'dateIdeas', 'nearby', 'moveIn',
+  'tonight', 'meals', 'shopping',
 ]
-const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar', 'todos', 'moveIn'])
+const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar', 'todos'])
 
 export const DEFAULT_VILLAGE_PANEL_BLOCKS: SectionConfig[] = DEFAULT_ORDER.map(id => ({
   id,

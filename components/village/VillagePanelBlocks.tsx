@@ -5,20 +5,17 @@ import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { kitchenLookup, openExternal } from '@/lib/utils/cheatSheets'
-import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
-import { usePlaces } from '@/lib/hooks/usePlaces'
-import { NEARBY_TAG, NEW_HOME } from '@/components/household/NearbyPlaces'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import type { VillageState } from '@/lib/village/state'
 import type { Gathering } from '@/lib/hooks/useGathering'
 import Icon, { type IconName } from '@/components/ui/Icon'
-import MusicCard from './MusicCard'
 import ScenesCard from './ScenesCard'
 import ShortcutsCard from './ShortcutsCard'
 import ProgressCard from './ProgressCard'
 import MiniCalendarCard from './MiniCalendarCard'
 import TodosCard from './TodosCard'
 import GuestWallActions from './GuestWallActions'
+import MusicCard from './MusicCard'
 
 // The Village home panel's content, block by block. The two shells
 // (VillageHomeSheet on the wall, VillageWidgets on the personal dock) own the
@@ -48,7 +45,7 @@ export interface VillagePanelProps {
 export default function VillagePanelBlocks(props: VillagePanelProps) {
   if (props.variant === 'guest') return <GuestSet {...props} />
 
-  const { blocks, variant, spaceId, locked, onLockedNavigate, onInteract, village } = props
+  const { blocks, spaceId, locked, onLockedNavigate, onInteract, village } = props
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       {blocks.filter(b => !b.hidden).map(b => {
@@ -58,13 +55,9 @@ export default function VillagePanelBlocks(props: VillagePanelProps) {
           case 'progress':  return <ProgressCard key={b.id} village={village} />
           case 'calendar':  return <MiniCalendarCard key={b.id} spaceId={spaceId} locked={locked} onLockedNavigate={onLockedNavigate} />
           case 'todos':     return <TodosCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
-          case 'music':     return <MusicCard key={b.id} spaceId={spaceId} compact={variant === 'wall'} />
           case 'tonight':   return <TonightCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'meals':     return <MealsCard key={b.id} spaceId={spaceId} />
           case 'shopping':  return <ShoppingCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
-          case 'dateIdeas': return <DateIdeasCard key={b.id} spaceId={spaceId} />
-          case 'nearby':    return <NearbyCard key={b.id} />
-          case 'moveIn':    return <MoveInCard key={b.id} spaceId={spaceId} />
           default:          return null
         }
       })}
@@ -249,48 +242,3 @@ function ShoppingCard({ spaceId, onInteract }: { spaceId: string | null; onInter
   )
 }
 
-function DateIdeasCard({ spaceId }: { spaceId: string | null }) {
-  const { ideas } = useDateIdeas(spaceId)
-  const shown = [...ideas]
-    .filter(i => i.status !== 'done')
-    .sort((a, b) => (a.status === 'planned' ? -1 : 0) - (b.status === 'planned' ? -1 : 0))
-    .slice(0, 4)
-  return (
-    <Card icon="heart" tint="var(--rose)" title="Date ideas" count={ideas.filter(i => i.status !== 'done').length} onOpen={() => goToHousehold('reference')}>
-      {shown.length === 0 && <Line dim italic>Nothing saved yet.</Line>}
-      {shown.map(i => (
-        <div key={i.id} style={{ display: 'flex', gap: '0.35rem', alignItems: 'baseline' }}>
-          {i.status === 'planned' && <span aria-hidden style={{ fontSize: '0.55rem', color: 'var(--emerald)' }}>●</span>}
-          <span style={{ fontSize: '0.74rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
-        </div>
-      ))}
-    </Card>
-  )
-}
-
-function NearbyCard() {
-  const { places } = usePlaces()
-  const nearby = places.filter(p => p.tags?.includes(NEARBY_TAG)).length
-  return (
-    <Card icon="places" tint="var(--emerald)" title={`Near ${NEW_HOME.label}`} count={nearby} onOpen={() => goToSection('places')}>
-      {nearby === 0
-        ? <Line dim italic>No pins tagged nearby yet.</Line>
-        : <Line dim>{nearby} place{nearby > 1 ? 's' : ''} saved around {NEW_HOME.city}</Line>}
-    </Card>
-  )
-}
-
-function MoveInCard({ spaceId }: { spaceId: string | null }) {
-  const h = useHousehold(spaceId)
-  if (h.moveinItems.length === 0) return null
-  const left = h.moveinItems.filter(i => !i.got).length
-  const done = h.moveinItems.length - left
-  return (
-    <Card icon="box" tint="var(--purple)" title="Move-in" onOpen={() => goToHousehold('home')}>
-      <Line>{left} still to get · {done} sorted</Line>
-      <div style={{ height: 5, borderRadius: 3, background: 'var(--surface2)', overflow: 'hidden', marginTop: '0.2rem' }}>
-        <div style={{ height: '100%', borderRadius: 3, background: 'var(--emerald)', width: `${(done / h.moveinItems.length) * 100}%` }} />
-      </div>
-    </Card>
-  )
-}
