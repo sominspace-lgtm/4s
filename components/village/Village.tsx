@@ -18,6 +18,9 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
+import { useSubscriptions, urgency } from '@/lib/hooks/useSubscriptions'
+import { useNotes } from '@/lib/hooks/useNotes'
+import { useEvents } from '@/lib/hooks/useEvents'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -455,6 +458,40 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
   }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
 
+  // Data-domain structures (2026-09-06) — the money / notes / calendar
+  // buildings' glance-cards. Village is already a heavy component; these
+  // three hooks are small (one select each) and only their derived text
+  // reaches the hookless scene.
+  const { subs, total: subsTotal } = useSubscriptions()
+  const { notes: personalNotes } = useNotes(null)
+  const { items: calendarEvents } = useEvents()
+  const structures = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    const money: string[] = []
+    if (subs.length) money.push(`$${Math.round(subsTotal)}/mo · ${subs.length} renewal${subs.length === 1 ? '' : 's'}`)
+    const nextRenewal = subs
+      .filter(s => s.renewal_date && s.renewal_date >= today && urgency(s) !== 'paid')
+      .sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? ''))[0]
+    if (nextRenewal?.renewal_date) money.push(`${nextRenewal.name} · ${format(parseISO(nextRenewal.renewal_date), 'MMM d')}`)
+
+    const weekAgo = format(new Date(Date.now() - 7 * 86400_000), 'yyyy-MM-dd')
+    const thisWeek = personalNotes.filter(n => (n.created_at ?? '').slice(0, 10) >= weekAgo).length
+    const notes: string[] = []
+    if (personalNotes.length) notes.push(`${personalNotes.length} note${personalNotes.length === 1 ? '' : 's'}${thisWeek ? ` · ${thisWeek} this week` : ''}`)
+    const recent = [...personalNotes].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))[0]
+    if (recent?.title?.trim()) notes.push(recent.title.trim())
+
+    const upcoming = [...calendarEvents]
+      .filter(e => e.event_date >= today)
+      .sort((a, b) => a.event_date.localeCompare(b.event_date))
+    const calendar: string[] = upcoming.slice(0, 2).map(e => {
+      const when = e.event_date === today ? 'Today' : format(parseISO(e.event_date), 'EEE MMM d')
+      return `${when} · ${e.title}`
+    })
+
+    return { money, notes, calendar }
+  }, [subs, subsTotal, personalNotes, calendarEvents])
+
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
   // Round 33 (2026-08-27, "we can only grow them using habits and can move
@@ -565,7 +602,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
             partnerPing={!guestActive ? { selfIsOwner, onPing: pingPartner } : null}
             onOpenKitchen={() => setKitchenOpen(true)}
-            homeCard={homeCard} binLine={binLine} partOfDay={partOfDay}
+            homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}

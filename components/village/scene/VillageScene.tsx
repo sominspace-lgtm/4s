@@ -99,7 +99,7 @@ export default function VillageScene({
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
-  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day',
+  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
 }: {
   village: VillageState
   live: boolean
@@ -195,6 +195,13 @@ export default function VillageScene({
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
+  /** Live lines for the data-domain structures' glance-cards (2026-09-06)
+   *  — money / notes / calendar. Sourced in Village.tsx (hookless scene). */
+  structures?: {
+    money: string[]
+    notes: string[]
+    calendar: string[]
+  } | null
   /** Partners ping each other in home mode, same card as hostPing above —
    *  tap the OTHER figure (not your own) any time you're not hosting.
    *  `selfIsOwner` says which figure is "you" so the self-tap is excluded. */
@@ -240,7 +247,9 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references'
+  // money + notes are personal → stay locked in shared mode; calendar is
+  // household → open like Places/Home/References.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references' && id !== 'calendar'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -538,6 +547,28 @@ export default function VillageScene({
     // card itself already renders.
     setOpenPanel(id)
   }
+  // Fuzzy district tap (2026-09-06, "everything should still be tappable on
+  // mobile") — the scene is inherently landscape, so on a phone all ten
+  // districts render small; a tap that misses a district's own hit-rect
+  // but lands near it opens the nearest UNLOCKED one anyway. Locked ones
+  // are excluded so a stray tap on the shared wall never pops a PIN
+  // prompt out of nowhere. Only fires on a true background tap — see the
+  // svg onClick guard.
+  const fuzzyDistrictTap = (clientX: number, clientY: number) => {
+    if (arranging || gathering) return
+    const p = rawSvgPoint(clientX, clientY)
+    if (!p) return
+    let best: LandmarkId | null = null
+    let bestD = Infinity
+    for (const id of LANDMARK_IDS) {
+      if (districtLocked(id)) continue
+      const c = pos(id)
+      const d = Math.hypot(p.x - c.x, p.y - c.y)
+      if (d < bestD) { bestD = d; best = id }
+    }
+    if (best && bestD < 68) { recordVisit(best); setOpenPanel(best) }
+  }
+
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelHoverClose = () => { if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null } }
   const hoverPreview = (id: LandmarkId) => ({
@@ -634,6 +665,24 @@ export default function VillageScene({
       lines: ['Kitchen & home know-how'],
       actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
       secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
+    },
+    // Data-domain structures (2026-09-06) — money / notes / calendar.
+    // Lines come from `structures` (Village.tsx); fall back to a plain
+    // label while it's still loading or empty.
+    money: {
+      title: 'Money',
+      lines: structures?.money.length ? structures.money : ['Spending and renewals'],
+      actionLabel: 'Open Money', go: () => goToPersonal('money'),
+    },
+    notes: {
+      title: 'Notes',
+      lines: structures?.notes.length ? structures.notes : ['Everything you jotted down'],
+      actionLabel: 'Open Notes', go: () => goToPersonal('notes'),
+    },
+    calendar: {
+      title: 'Calendar',
+      lines: structures?.calendar.length ? structures.calendar : ["What's coming up"],
+      actionLabel: 'Open the calendar', go: () => goToHousehold('calendar'),
     },
   }
 
@@ -1125,7 +1174,17 @@ export default function VillageScene({
         touchAction: arranging || zoom > 1 ? 'none' : undefined,
         cursor: !arranging && zoom > 1 ? (panDragRef.current?.moved ? 'grabbing' : 'grab') : undefined,
       }}
-      onClick={() => setSelected(null)}
+      onClick={(e) => {
+        setSelected(null)
+        // Fuzzy district tap only when this is a true background tap:
+        // nothing interactive was hit, no card/overlay open (its backdrop
+        // has the .village-fade class and owns the close), and it wasn't
+        // the tail of a pan-drag.
+        if (suppressClickRef.current) return
+        const t = e.target as Element
+        if (t.closest?.('.village-district, .village-entity, .village-fade, foreignObject, a, button')) return
+        fuzzyDistrictTap(e.clientX, e.clientY)
+      }}
       onClickCapture={onSceneClickCapture}
       onPointerDown={onScenePointerDown}
       onPointerMove={onScenePointerMove}
@@ -2231,6 +2290,12 @@ export default function VillageScene({
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
       <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="References" onClick={openOrToggle('references', 'References')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
+      <DistrictLabel quiet={hosting} {...pos('money')} icon="coin" label="Money" onClick={openOrToggle('money', 'Money')} {...hoverPreview('money')} dark={dark} scale={1.08}
+        draggable={arranging} dragging={draggingId === 'money'} onPointerDown={startDrag('money')} selected={openPanel === 'money'} />
+      <DistrictLabel quiet={hosting} {...pos('notes')} icon="desk" label="Notes" onClick={openOrToggle('notes', 'Notes')} {...hoverPreview('notes')} dark={dark} scale={1.08}
+        draggable={arranging} dragging={draggingId === 'notes'} onPointerDown={startDrag('notes')} selected={openPanel === 'notes'} />
+      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08}
+        draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already
           tracks that had no presence in the village at all: your saved pins
@@ -2582,6 +2647,23 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
+      {/* Somi's cottage (2026-09-06) — a little cat house; tap it for the
+          same card as tapping Somi herself, for guests who can't catch
+          the moving cat. Minimal marker art until a real sprite exists. */}
+      {(() => { const p = decorPos('somiCottage'); return (
+        <Draggable x={p.x} y={p.y} id="somiCottage" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somiCottage')} r={11}>
+          <g onClick={() => { if (!arranging) setOpenSomiCard(true) }}
+            className={!arranging ? 'village-entity' : undefined}
+            style={{ cursor: !arranging ? 'pointer' : undefined }}>
+            <title>Somi&rsquo;s cottage</title>
+            <ellipse cx={0} cy={2} rx={9} ry={2} fill="var(--text)" opacity={0.15} />
+            <rect x={-7} y={-8} width={14} height={10} rx={1.4} fill="#b98a5e" stroke="#7a5230" strokeWidth={0.8} />
+            <path d="M -8 -8 L 0 -15 L 8 -8 Z" fill="#7a5230" />
+            <circle cx={0} cy={-3} r={3} fill="#3a2f26" />
+          </g>
+        </Draggable>
+      ) })()}
+
       {(() => {
         const p = decorPos('somi')
         // We're out — Somi stays behind, sitting by the front door.
