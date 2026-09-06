@@ -618,11 +618,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
 
-        {/* The corner readout (2026-09-04) — up whenever you're looking at
-            the village in home mode, not just once idle; grows + the scene
-            dims once the wall actually goes idle (`ambient`). Not during a
-            live gathering (the sky box owns the overlay then). */}
-        {!compact && !guestLive && (
+        {/* The corner readout — the WALL only (2026-09-06). On the personal
+            dashboard the scene is a small card and VillageText below it
+            already carries the "what's on" line, so a glass box over the
+            picture is just clutter there. On the wall it's a small tag
+            normally, and grows + dims the scene once idle (`ambient`). */}
+        {locked && !compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
             partOfDay={partOfDay} binLine={binLine} ambient={ambient} />

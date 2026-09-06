@@ -62,48 +62,44 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
 
   const weatherStr = weather ? `${Math.round(weather.tempF)}° · ${weatherMeta(weather.condition).label}` : null
 
+  // Small = just the time, a discreet tag in the corner. Big (idle) = the
+  // full readout. Fixed rem sizes, not vw (round 81) — the wall renders
+  // the scene at many sizes and a vw-relative font blew this card up on
+  // the narrow ones, covering the picture (round 82, 2026-09-06).
   return (
     <div
       aria-hidden
       style={{
-        position: 'absolute', top: ambient ? '5%' : '3%', left: ambient ? '5%' : '3%', zIndex: 3,
-        display: 'flex', flexDirection: 'column', gap: 2,
-        // Fixed rem caps, not vw-driven (round 81, 2026-09-05, "make sure
-        // the glass corner doesn't cover the sun/moon") — the sun/moon's
-        // own arc never comes near the top-left corner at full scene size
-        // (its peak height sits dead-center, lib/village/sky.ts), but a
-        // `vw`-relative clock font ties this card's size to the BROWSER
-        // viewport rather than the village's own rendered box. Anywhere
-        // the scene renders smaller than the full viewport (most layouts,
-        // and every mobile one) that let the card balloon far past its
-        // corner and reach toward the middle of the sky. A hard maxWidth
-        // plus fixed (not vw) font sizes keep it a small corner tag no
-        // matter how big or small the scene itself is drawn.
-        maxWidth: ambient ? '11rem' : '8rem',
+        position: 'absolute', top: ambient ? '5%' : '3.5%', left: ambient ? '5%' : '3.5%', zIndex: 3,
+        display: 'flex', flexDirection: 'column', gap: ambient ? 3 : 0,
+        maxWidth: ambient ? '12rem' : '5.5rem',
         pointerEvents: 'none', textAlign: 'left',
-        padding: ambient ? '0.8rem 1rem' : '0.4rem 0.6rem',
-        borderRadius: ambient ? 16 : 12,
-        background: 'rgba(255,255,255,0.10)',
-        border: '1px solid rgba(255,255,255,0.20)',
-        backdropFilter: 'blur(12px) saturate(1.15)', WebkitBackdropFilter: 'blur(12px) saturate(1.15)',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.2)',
+        padding: ambient ? '0.85rem 1.05rem' : '0.28rem 0.5rem',
+        borderRadius: ambient ? 16 : 10,
+        background: ambient ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+        border: `1px solid rgba(255,255,255,${ambient ? 0.2 : 0.14})`,
+        backdropFilter: 'blur(10px) saturate(1.1)', WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
+        boxShadow: ambient ? '0 12px 34px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.2)',
         color: '#fff', fontFamily: 'var(--font-body)',
-        textShadow: '0 1px 8px rgba(0,0,0,0.4)',
-        transition: 'all 600ms ease',
+        textShadow: '0 1px 8px rgba(0,0,0,0.45)',
+        transition: 'all 500ms ease',
       }}
     >
       {timeLabel && (
-        <div style={{ fontSize: ambient ? '1.7rem' : '0.95rem', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: ambient ? '1.9rem' : '0.82rem', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1, whiteSpace: 'nowrap' }}>
           {timeLabel}
         </div>
       )}
-      {(dateLabel || weatherStr) && (
-        <div style={{ fontSize: ambient ? '0.72rem' : '0.6rem', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {/* Date, weather and the what's-on line only in the big idle state —
+          the small tag is time alone so it never grows enough to sit over
+          the cottage or the districts. */}
+      {ambient && (dateLabel || weatherStr) && (
+        <div style={{ fontSize: '0.74rem', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
         </div>
       )}
-      {line && (
-        <div style={{ fontSize: ambient ? '0.68rem' : '0.58rem', opacity: 0.85, marginTop: ambient ? '0.3rem' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {ambient && line && (
+        <div style={{ fontSize: '0.7rem', opacity: 0.85, marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {line}
         </div>
       )}
