@@ -1099,7 +1099,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'coin' | 'desk' | 'board'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'desk' | 'board'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1240,10 +1240,9 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   book: { w: 46, h: 41 },   // greenhouse.png
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
-  shelf: { w: 24, h: 22 },  // hand-drawn recipe-box + book, no source art
-  coin: { w: 20, h: 20 },   // minimal marker — money structure, real art tbd
+  shelf: { w: 40, h: 32 },  // kitchen.png — the market/pantry stall
   desk: { w: 24, h: 18 },   // minimal marker — notes structure, real art tbd
-  board: { w: 22, h: 24 },  // minimal marker — calendar structure, real art tbd
+  board: { w: 30, h: 27 },  // notice-board.png
 }
 
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
@@ -1356,18 +1355,6 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
-    case 'coin': // Money — a small counting house / coin. Minimal marker
-      // (2026-09-06) until a real building sprite exists.
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={10} ry={2} fill="var(--text)" opacity={0.16} />
-          <rect x={-9} y={-12} width={18} height={14} rx={1.6} fill="#c9b273" stroke="#8a7433" strokeWidth={0.9} />
-          <path d="M -9 -12 L 0 -19 L 9 -12 Z" fill="#8a7433" />
-          <circle cy={-4} r={3.6} fill="#f2e0a0" stroke="#8a7433" strokeWidth={0.7} />
-          <text x={0} y={-2.6} textAnchor="middle" fontSize={4.5} fill="#8a7433" fontFamily="var(--font-body)">$</text>
-          {dark && <circle cy={-6} r={9} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
-        </g>
-      )
     case 'desk': // Notes — a writing desk. Minimal marker (2026-09-06).
       return (
         <g>
@@ -1380,29 +1367,25 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cy={-6} r={9} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
         </g>
       )
-    case 'board': // Calendar — a village noticeboard. Minimal marker (2026-09-06).
+    case 'board': // Calendar — the village notice board (2026-09-06), notice-board.png
+      // cropped from village-civic-landmarks-alpha.png. Replaced the hand-drawn marker.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={9} ry={2} fill="var(--text)" opacity={0.16} />
-          <rect x={-1.6} y={-6} width={3.2} height={8} rx={1} fill="#7a5230" />
-          <rect x={-11} y={-22} width={22} height={17} rx={2} fill="#8a6f52" stroke="#5c4a34" strokeWidth={1} />
-          <rect x={-9} y={-20} width={18} height={13} rx={1} fill="#f3ead5" />
-          {[-6, 0, 6].map((cx, i) => (
-            <rect key={i} x={cx - 2} y={-17 + (i % 2) * 4} width={4} height={3} rx={0.4} fill="#c9803f" opacity={0.7} />
-          ))}
-          {dark && <circle cy={-13} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+          <ellipse cx={0} cy={2} rx={13} ry={2.4} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/notice-board.png" x={-15} y={-27} width={30} height={27}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cy={-15} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
-    case 'shelf': // References (round 80, 2026-09-04) — a small recipe box + book,
-      // hand-drawn like the nook prop it replaces rather than a cropped asset (no
-      // dedicated "reference library" building exists in the master folder yet).
+    case 'shelf': // References → Kitchen (2026-09-06) — kitchen.png, the pantry/market
+      // stall cropped from village-community-pantry-kitchen-garden-alpha.png. Replaced
+      // the hand-drawn recipe-box marker; the card still opens the Kitchen overlay.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={11} ry={2.2} fill="var(--text)" opacity={0.16} />
-          <rect x={-9} y={-11} width={18} height={13.5} rx={2} fill="#c9803f" stroke="#8a5a2c" strokeWidth={0.9} />
-          <rect x={-9} y={-11} width={18} height={3.6} fill="#e0a066" />
-          <rect x={-5.5} y={-20} width={11} height={10} rx={0.9} fill="#7a8f6e" stroke="#5c6e52" strokeWidth={0.7} />
-          {dark && <circle cy={-8} r={9} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
+          <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/kitchen.png" x={-20} y={-32} width={40} height={32}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cy={-16} r={11} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
         </g>
       )
   }

@@ -196,9 +196,8 @@ export default function VillageScene({
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
   /** Live lines for the data-domain structures' glance-cards (2026-09-06)
-   *  — money / notes / calendar. Sourced in Village.tsx (hookless scene). */
+   *  — notes / calendar. Sourced in Village.tsx (hookless scene). */
   structures?: {
-    money: string[]
     notes: string[]
     calendar: string[]
   } | null
@@ -247,9 +246,10 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  // money + notes are personal → stay locked in shared mode; calendar is
-  // household → open like Places/Home/References.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references' && id !== 'calendar'
+  // notes is personal → stays locked in shared mode; calendar is household
+  // and People is now the guest-facing house-info card → open like
+  // Places/Home/References.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references' && id !== 'calendar' && id !== 'people'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -638,13 +638,22 @@ export default function VillageScene({
       ],
       actionLabel: 'Open Places', go: () => goToSection('places'),
     },
+    // People district → house info for guests + quick access (2026-09-06).
+    // The big community tree is now the "everything a guest needs" hub:
+    // wifi, house notes, and a jump to the kitchen and home cheat sheets.
+    // Not personal data any more, so it's unlocked in shared mode.
     people: {
-      title: 'People',
-      lines: [
-        `${peopleCount} close`,
-        ...(soonestBirthdayDays != null ? [soonestBirthdayDays === 0 ? 'Birthday today' : `Birthday in ${soonestBirthdayDays}d`] : []),
-      ],
-      actionLabel: 'Open People', go: () => goToPersonal('people'),
+      title: 'House info',
+      lines: (() => {
+        const l = [
+          guestInfo.wifiName ? `Wifi · ${guestInfo.wifiName}` : null,
+          guestInfo.wifiPassword ? `Password · ${guestInfo.wifiPassword}` : null,
+          guestInfo.notes?.trim() || null,
+        ].filter(Boolean).slice(0, 3) as string[]
+        return l.length ? l : ['Wifi and house notes']
+      })(),
+      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
+      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
     archive: {
       title: 'Archive',
@@ -661,19 +670,14 @@ export default function VillageScene({
     // same as the well/postcard cards' secondary actions, rather than
     // reworking this card renderer for one district.
     references: {
-      title: 'References',
-      lines: ['Kitchen & home know-how'],
+      title: 'Kitchen',
+      lines: ['Recipes, timings, and home know-how'],
       actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
       secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
-    // Data-domain structures (2026-09-06) — money / notes / calendar.
-    // Lines come from `structures` (Village.tsx); fall back to a plain
-    // label while it's still loading or empty.
-    money: {
-      title: 'Money',
-      lines: structures?.money.length ? structures.money : ['Spending and renewals'],
-      actionLabel: 'Open Money', go: () => goToPersonal('money'),
-    },
+    // Data-domain structures (2026-09-06) — notes / calendar. Lines come
+    // from `structures` (Village.tsx); fall back to a plain label while
+    // it's still loading or empty.
     notes: {
       title: 'Notes',
       lines: structures?.notes.length ? structures.notes : ['Everything you jotted down'],
@@ -2288,10 +2292,8 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
-      <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="References" onClick={openOrToggle('references', 'References')} {...hoverPreview('references')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
-      <DistrictLabel quiet={hosting} {...pos('money')} icon="coin" label="Money" onClick={openOrToggle('money', 'Money')} {...hoverPreview('money')} dark={dark} scale={1.08}
-        draggable={arranging} dragging={draggingId === 'money'} onPointerDown={startDrag('money')} selected={openPanel === 'money'} />
       <DistrictLabel quiet={hosting} {...pos('notes')} icon="desk" label="Notes" onClick={openOrToggle('notes', 'Notes')} {...hoverPreview('notes')} dark={dark} scale={1.08}
         draggable={arranging} dragging={draggingId === 'notes'} onPointerDown={startDrag('notes')} selected={openPanel === 'notes'} />
       <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08}
@@ -2304,8 +2306,11 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
-        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
+      {/* People district → house info for guests (2026-09-06). The tree
+          stays; the card behind it is wifi + house notes + the cheat
+          sheets now, not contacts. */}
+      <DistrictLabel {...pos('people')} icon="people" label="House info" onClick={openOrToggle('people', 'House info')} {...hoverPreview('people')} dark={dark} scale={1.12}
+        count={peopleCount >= 0 ? 'wifi and house notes' : ''}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
@@ -2647,23 +2652,6 @@ export default function VillageScene({
           combined (~33 with a small margin). y dropped to GROUND_Y+20, well
           below PROPS.fences' first run (x 336-364, y GROUND_Y+1..+6) at the
           same x — Somi reads as standing in front of it, not through it. */}
-      {/* Somi's cottage (2026-09-06) — a little cat house; tap it for the
-          same card as tapping Somi herself, for guests who can't catch
-          the moving cat. Minimal marker art until a real sprite exists. */}
-      {(() => { const p = decorPos('somiCottage'); return (
-        <Draggable x={p.x} y={p.y} id="somiCottage" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somiCottage')} r={11}>
-          <g onClick={() => { if (!arranging) setOpenSomiCard(true) }}
-            className={!arranging ? 'village-entity' : undefined}
-            style={{ cursor: !arranging ? 'pointer' : undefined }}>
-            <title>Somi&rsquo;s cottage</title>
-            <ellipse cx={0} cy={2} rx={9} ry={2} fill="var(--text)" opacity={0.15} />
-            <rect x={-7} y={-8} width={14} height={10} rx={1.4} fill="#b98a5e" stroke="#7a5230" strokeWidth={0.8} />
-            <path d="M -8 -8 L 0 -15 L 8 -8 Z" fill="#7a5230" />
-            <circle cx={0} cy={-3} r={3} fill="#3a2f26" />
-          </g>
-        </Draggable>
-      ) })()}
-
       {(() => {
         const p = decorPos('somi')
         // We're out — Somi stays behind, sitting by the front door.

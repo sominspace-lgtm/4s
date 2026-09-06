@@ -473,10 +473,9 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   // in the shared area could land on the wrong one. This spot clears
   // Archive by x, Places by y, and People by x, with real margin.
   references: { x: 540, y: 300 },
-  // Data-domain structures (2026-09-06) — money (a counting house),
-  // notes (a writing desk), calendar (a noticeboard). Positions picked in
-  // the gaps between existing districts; hitbox non-overlap verified.
-  money: { x: 620, y: 176 },
+  // Data-domain structures (2026-09-06) — notes (a writing desk),
+  // calendar (a noticeboard). Positions picked in the gaps between
+  // existing districts; hitbox non-overlap verified.
   notes: { x: 200, y: 270 },
   calendar: { x: 280, y: 200 },
 }
@@ -556,10 +555,6 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   sylvia: { x: 372, y: GROUND_Y + 8 },
   harry: { x: 428, y: GROUND_Y + 8 },
   somi: { x: 330, y: 237 },
-  // Somi's cottage (2026-09-06) — a little cat house near where she
-  // wanders; tapping it opens the same card as tapping her, for guests
-  // who can't catch the moving cat.
-  somiCottage: { x: 360, y: 285 },
   // Guest-layer props (2026-09-04) — promoted from fixed offsets-off-Home
   // to real arrangeable decor ("everything should be able to be arranged
   // except the scene itself"). Defaults match where the old inline-offset

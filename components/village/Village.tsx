@@ -18,7 +18,6 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
-import { useSubscriptions, urgency } from '@/lib/hooks/useSubscriptions'
 import { useNotes } from '@/lib/hooks/useNotes'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
@@ -458,21 +457,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
   }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
 
-  // Data-domain structures (2026-09-06) — the money / notes / calendar
-  // buildings' glance-cards. Village is already a heavy component; these
-  // three hooks are small (one select each) and only their derived text
-  // reaches the hookless scene.
-  const { subs, total: subsTotal } = useSubscriptions()
+  // Data-domain structures (2026-09-06) — the notes / calendar buildings'
+  // glance-cards. Village is already a heavy component; these hooks are
+  // small (one select each) and only their derived text reaches the
+  // hookless scene.
   const { notes: personalNotes } = useNotes(null)
   const { items: calendarEvents } = useEvents()
   const structures = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd')
-    const money: string[] = []
-    if (subs.length) money.push(`$${Math.round(subsTotal)}/mo · ${subs.length} renewal${subs.length === 1 ? '' : 's'}`)
-    const nextRenewal = subs
-      .filter(s => s.renewal_date && s.renewal_date >= today && urgency(s) !== 'paid')
-      .sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? ''))[0]
-    if (nextRenewal?.renewal_date) money.push(`${nextRenewal.name} · ${format(parseISO(nextRenewal.renewal_date), 'MMM d')}`)
 
     const weekAgo = format(new Date(Date.now() - 7 * 86400_000), 'yyyy-MM-dd')
     const thisWeek = personalNotes.filter(n => (n.created_at ?? '').slice(0, 10) >= weekAgo).length
@@ -489,8 +481,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       return `${when} · ${e.title}`
     })
 
-    return { money, notes, calendar }
-  }, [subs, subsTotal, personalNotes, calendarEvents])
+    return { notes, calendar }
+  }, [personalNotes, calendarEvents])
 
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
@@ -618,12 +610,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
 
-        {/* The corner readout — the WALL only (2026-09-06). On the personal
-            dashboard the scene is a small card and VillageText below it
-            already carries the "what's on" line, so a glass box over the
-            picture is just clutter there. On the wall it's a small tag
-            normally, and grows + dims the scene once idle (`ambient`). */}
-        {locked && !compact && !guestLive && (
+        {/* The corner readout (2026-09-06). A discreet time-only chip on
+            the personal dashboard; on the wall it's the same small tag
+            normally and grows + dims the scene once idle (`ambient`). */}
+        {!compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
             partOfDay={partOfDay} binLine={binLine} ambient={ambient} />
