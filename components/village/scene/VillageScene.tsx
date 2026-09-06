@@ -528,7 +528,15 @@ export default function VillageScene({
     if (arranging) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
-    setOpenPanel(prev => (prev === id ? null : id))
+    // Always open, never toggle-closed (round 81, 2026-09-05, "make sure
+    // districts work on mobile and browser") — with a mouse, hovering
+    // already opens the card via onHoverIn below; a toggle-on-click meant
+    // clicking the district you were already hovering over immediately
+    // closed the card that hover had just shown. Touch has no hover, so
+    // it never had this bug, but the fix is the same for both: a tap/click
+    // always ensures the card is open. Dismissing is the backdrop tap the
+    // card itself already renders.
+    setOpenPanel(id)
   }
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelHoverClose = () => { if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null } }

@@ -66,11 +66,23 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
     <div
       aria-hidden
       style={{
-        position: 'absolute', top: ambient ? '6%' : '4%', left: ambient ? '6%' : '4%', zIndex: 3,
+        position: 'absolute', top: ambient ? '5%' : '3%', left: ambient ? '5%' : '3%', zIndex: 3,
         display: 'flex', flexDirection: 'column', gap: 2,
+        // Fixed rem caps, not vw-driven (round 81, 2026-09-05, "make sure
+        // the glass corner doesn't cover the sun/moon") — the sun/moon's
+        // own arc never comes near the top-left corner at full scene size
+        // (its peak height sits dead-center, lib/village/sky.ts), but a
+        // `vw`-relative clock font ties this card's size to the BROWSER
+        // viewport rather than the village's own rendered box. Anywhere
+        // the scene renders smaller than the full viewport (most layouts,
+        // and every mobile one) that let the card balloon far past its
+        // corner and reach toward the middle of the sky. A hard maxWidth
+        // plus fixed (not vw) font sizes keep it a small corner tag no
+        // matter how big or small the scene itself is drawn.
+        maxWidth: ambient ? '11rem' : '8rem',
         pointerEvents: 'none', textAlign: 'left',
-        padding: ambient ? '1rem 1.3rem' : '0.5rem 0.8rem',
-        borderRadius: ambient ? 18 : 14,
+        padding: ambient ? '0.8rem 1rem' : '0.4rem 0.6rem',
+        borderRadius: ambient ? 16 : 12,
         background: 'rgba(255,255,255,0.10)',
         border: '1px solid rgba(255,255,255,0.20)',
         backdropFilter: 'blur(12px) saturate(1.15)', WebkitBackdropFilter: 'blur(12px) saturate(1.15)',
@@ -81,17 +93,17 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
       }}
     >
       {timeLabel && (
-        <div style={{ fontSize: ambient ? 'clamp(2.4rem, 7vw, 4rem)' : 'clamp(1.1rem, 3vw, 1.5rem)', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1 }}>
+        <div style={{ fontSize: ambient ? '1.7rem' : '0.95rem', fontWeight: 300, letterSpacing: '0.01em', lineHeight: 1, whiteSpace: 'nowrap' }}>
           {timeLabel}
         </div>
       )}
       {(dateLabel || weatherStr) && (
-        <div style={{ fontSize: ambient ? 'clamp(0.85rem, 2.2vw, 1.05rem)' : '0.68rem', opacity: 0.9 }}>
+        <div style={{ fontSize: ambient ? '0.72rem' : '0.6rem', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
         </div>
       )}
       {line && (
-        <div style={{ fontSize: ambient ? 'clamp(0.78rem, 2vw, 0.92rem)' : '0.64rem', opacity: 0.85, marginTop: ambient ? '0.3rem' : 0 }}>
+        <div style={{ fontSize: ambient ? '0.68rem' : '0.58rem', opacity: 0.85, marginTop: ambient ? '0.3rem' : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {line}
         </div>
       )}

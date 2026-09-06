@@ -466,9 +466,13 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   archive: { x: 725, y: 204 },
   people: { x: 627, y: 317 },
   places: { x: 512, y: 209 },
-  // Upper-right, between Archive and People — clear of the ambient
-  // corner widget (top-left) and every other district (2026-09-04).
-  references: { x: 690, y: 245 },
+  // Right-of-centre foreground, in the open pocket below Places and left
+  // of People (2026-09-06). The upper-right corner turned out too crowded
+  // once every district's hit target grew — at (690,245) and then
+  // (676,260) the References hit-rect still overlapped Archive's, so a tap
+  // in the shared area could land on the wrong one. This spot clears
+  // Archive by x, Places by y, and People by x, with real margin.
+  references: { x: 540, y: 300 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
