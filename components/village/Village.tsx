@@ -267,6 +267,37 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     window.addEventListener('orientationchange', read)
     return () => { window.removeEventListener('resize', read); window.removeEventListener('orientationchange', read) }
   }, [])
+
+  // Phone width (2026-09-07) — the scene is inherently landscape and 8
+  // districts wide, so on a narrow screen it renders as an unreadable
+  // thumbnail. Below this breakpoint the normal (non-fullscreen) view
+  // becomes a horizontal-scroll strip: the SVG fills a comfortable height
+  // and overflows the width, so everything renders large and the reader
+  // swipes sideways. Fullscreen and the Today preview keep their own
+  // sizing.
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const mq = window.matchMedia('(max-width: 640px)')
+    const on = () => setIsNarrow(mq.matches)
+    on()
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  const scrollStrip = isNarrow && !fullscreen && !compact
+  const sceneScrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!scrollStrip) return
+    // Rest centred on Home; the edges (Growth Garden, Archive) are a short
+    // swipe either way. rAF so the SVG has laid out and scrollWidth is real.
+    const center = () => {
+      const el = sceneScrollRef.current
+      if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2
+    }
+    const id = requestAnimationFrame(center)
+    window.addEventListener('orientationchange', center)
+    return () => { cancelAnimationFrame(id); window.removeEventListener('orientationchange', center) }
+  }, [scrollStrip])
   useEffect(() => {
     if (!fullscreen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
@@ -559,12 +590,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             VillageScene's viewBox math instead (BASE_VB_H) — an actual
             recrop of the coordinate system, which can shrink the visible
             window without distorting anything inside it. */}
-        <div style={
-          compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
-          : fullscreen ? { width: '100%', height: '100%' }
-          : undefined
-        }>
-          <VillageScene village={v} live={clock !== null} palette={palette}
+        <div
+          ref={sceneScrollRef}
+          style={
+            compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
+            : fullscreen ? { width: '100%', height: '100%' }
+            : scrollStrip ? {
+                height: 'clamp(230px, 46vh, 380px)',
+                overflowX: 'auto', overflowY: 'hidden',
+                overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch',
+                display: 'flex',
+              }
+            : undefined
+          }>
+          <VillageScene village={v} live={clock !== null} palette={palette} scroll={scrollStrip}
             celestial={mood.forceNight ? null : celestial}
             sceneMood={mood}
             frozen={ambient}

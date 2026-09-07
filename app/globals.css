@@ -553,6 +553,12 @@ select, option {
 @keyframes village-fade { from { opacity: 0; } to { opacity: 1; } }
 .village-fade { animation: village-fade 400ms ease both; }
 
+/* The mobile glance-card bottom sheet (2026-09-07) — slides up from the
+   bottom edge instead of the SVG popover, which was cramped and clipped
+   on a phone. */
+@keyframes village-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.village-sheet { animation: village-sheet-up 220ms ease both; }
+
 /* ── Village weather and life ───────────────────────────────────────────
    Same budget as the three above: nothing under seven seconds, nothing over
    0.35 opacity. These are the things that make the place feel inhabited
@@ -775,7 +781,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade,
+  .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade, .village-sheet,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud, .village-twinkle,

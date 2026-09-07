@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { THEMES } from '@/lib/constants/themes'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
 import type { SeasonPalette } from '@/lib/village/palette'
@@ -81,6 +83,47 @@ function PingForm({ title, reasons, showNote, onSend }: {
   )
 }
 
+// The glance-card as a bottom sheet, for phones (2026-09-07) — the SVG
+// popover is fine on a desktop or the wall but on a narrow screen it's a
+// tiny target that clips off the top edge. Same content, finger-sized,
+// slides up from the bottom. Portalled to <body>, so it re-declares the
+// Bloom vars the same way the fullscreen overlay does (the portal lands
+// past the card's own theme scope).
+function GlanceSheet({ info, onClose }: {
+  info: { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void } }
+  onClose: () => void
+}) {
+  return (
+    <div style={{ ...THEMES.bloom, position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(20,16,10,0.3)' }} />
+      <div className="village-sheet" style={{
+        position: 'relative', background: 'var(--surface)', color: 'var(--text)',
+        borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTop: '1px solid var(--border)',
+        boxShadow: '0 -12px 44px rgba(0,0,0,0.28)', fontFamily: 'var(--font-body)',
+        padding: '12px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+      }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 14px' }} />
+        <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>{info.title}</div>
+        {info.lines.map((l, i) => (
+          <div key={i} style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{l}</div>
+        ))}
+        <button onClick={() => { info.go(); onClose() }} style={{
+          marginTop: 16, width: '100%', padding: '13px 16px', borderRadius: 13,
+          background: 'var(--gold)', color: 'var(--bg)', border: 'none',
+          fontSize: 14.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+        }}>{info.actionLabel}</button>
+        {info.secondary && (
+          <button onClick={() => { info.secondary!.go(); onClose() }} style={{
+            marginTop: 8, width: '100%', padding: '11px 16px', borderRadius: 13,
+            background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)',
+            fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+          }}>{info.secondary.label}</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /**
  * The scene itself: pure presentation, no hooks and no dates. Everything
  * time-shaped arrives as `live` (see Sky) and everything data-shaped arrives as
@@ -100,9 +143,14 @@ export default function VillageScene({
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
+  scroll = false,
 }: {
   village: VillageState
   live: boolean
+  /** Mobile horizontal-scroll strip: the SVG fills its container's height
+   *  and overflows the width, so the wide scene renders large and the
+   *  reader swipes sideways instead of squinting at a thumbnail. */
+  scroll?: boolean
   /** Prep OR live gathering — quiet the districts, show the house-info card. */
   hosting?: boolean
   /** Wifi + house notes, shown on the scene only while hosting. */
@@ -460,6 +508,20 @@ export default function VillageScene({
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
   const [openPanel, setOpenPanel] = useState<LandmarkId | null>(null)
+
+  // Phone-width — the glance-card renders as a bottom sheet instead of the
+  // cramped SVG popover (2026-09-07). Matches the `scroll` breakpoint in
+  // Village.tsx; detected here too so the sheet also applies to a phone in
+  // fullscreen, where `scroll` is off.
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(max-width: 640px)')
+    const on = () => setMobile(mq.matches)
+    on()
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
 
   // Tap-your-own-figure personal entry (2026-08-25) — same hover-card idea
   // as openPanel above, for Sylvia/Harry's cast figures. Only wired up in
@@ -1168,7 +1230,9 @@ export default function VillageScene({
       className={isFrozen ? 'village-idle-frozen' : undefined}
       preserveAspectRatio="xMidYMid meet"
       style={{
-        width: '100%', height: containerAspect ? '100%' : 'auto', display: 'block',
+        width: scroll ? 'auto' : '100%',
+        height: scroll || containerAspect ? '100%' : 'auto',
+        display: 'block', flex: scroll ? '0 0 auto' : undefined,
         touchAction: arranging || zoom > 1 ? 'none' : undefined,
         cursor: !arranging && zoom > 1 ? (panDragRef.current?.moved ? 'grabbing' : 'grab') : undefined,
       }}
@@ -2254,7 +2318,7 @@ export default function VillageScene({
           navigates via openOrToggle instead of being swallowed by this
           rect). A click anywhere else closes the card. The card body
           itself renders later, on top of everything. */}
-      {openPanel && !arranging && (
+      {openPanel && !arranging && !mobile && (
         <rect className="village-fade" x={0} y={0} width={800} height={440} fill="transparent"
           style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
       )}
@@ -2744,8 +2808,14 @@ export default function VillageScene({
           the card stops that click from reaching the rect so tapping
           inside never dismisses it. */}
       {openPanel && (() => {
-        const p = pos(openPanel)
         const info = panelContent[openPanel]
+        // Phone — a bottom sheet portalled past the SVG, not the popover.
+        if (mobile) {
+          return typeof document !== 'undefined'
+            ? createPortal(<GlanceSheet info={info} onClose={() => setOpenPanel(null)} />, document.body)
+            : null
+        }
+        const p = pos(openPanel)
         const width = 150
         const secondaryH = info.secondary ? 12 : 0
         const height = 34 + info.lines.length * 13 + 22 + secondaryH
