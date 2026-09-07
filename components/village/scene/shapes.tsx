@@ -1099,7 +1099,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'desk' | 'board'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'board'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1241,7 +1241,6 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
   shelf: { w: 40, h: 32 },  // kitchen.png — the market/pantry stall
-  desk: { w: 24, h: 18 },   // minimal marker — notes structure, real art tbd
   board: { w: 30, h: 27 },  // notice-board.png
 }
 
@@ -1353,18 +1352,6 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           <ellipse cx={-1} cy={2} rx={16} ry={2.4} fill="var(--text)" opacity={0.17} />
           <image href="/village-assets/people-tree.png" x={-22} y={-53} width={44} height={53}
             style={{ imageRendering: 'pixelated' }} />
-        </g>
-      )
-    case 'desk': // Notes — a writing desk. Minimal marker (2026-09-06).
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={11} ry={2} fill="var(--text)" opacity={0.16} />
-          <rect x={-11} y={-8} width={22} height={4} rx={1} fill="#a9784f" stroke="#7a5230" strokeWidth={0.8} />
-          <rect x={-9} y={-4} width={3} height={6} fill="#7a5230" />
-          <rect x={6} y={-4} width={3} height={6} fill="#7a5230" />
-          <rect x={-6} y={-13} width={9} height={6} rx={0.6} fill="#fbf3df" stroke="var(--border)" strokeWidth={0.5}
-            transform="rotate(-6 -1.5 -10)" />
-          {dark && <circle cy={-6} r={9} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
         </g>
       )
     case 'board': // Calendar — the village notice board (2026-09-06), notice-board.png

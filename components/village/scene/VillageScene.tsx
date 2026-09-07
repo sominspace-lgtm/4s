@@ -195,10 +195,9 @@ export default function VillageScene({
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
-  /** Live lines for the data-domain structures' glance-cards (2026-09-06)
-   *  — notes / calendar. Sourced in Village.tsx (hookless scene). */
+  /** Live lines for the calendar district's glance-card (2026-09-06).
+   *  Sourced in Village.tsx (hookless scene). */
   structures?: {
-    notes: string[]
     calendar: string[]
   } | null
   /** Partners ping each other in home mode, same card as hostPing above —
@@ -537,14 +536,15 @@ export default function VillageScene({
     if (arranging) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
-    // Always open, never toggle-closed (round 81, 2026-09-05, "make sure
-    // districts work on mobile and browser") — with a mouse, hovering
-    // already opens the card via onHoverIn below; a toggle-on-click meant
-    // clicking the district you were already hovering over immediately
-    // closed the card that hover had just shown. Touch has no hover, so
-    // it never had this bug, but the fix is the same for both: a tap/click
-    // always ensures the card is open. Dismissing is the backdrop tap the
-    // card itself already renders.
+    // Click-through to navigate (2026-09-07, "clicking does not work on
+    // browser") — on a real pointer the card is already open from hover by
+    // the time the click lands, so a click on the district itself should
+    // go where its button goes, not just re-open the card. On touch (no
+    // hover) the first tap opens the card and a second tap navigates, the
+    // same as tapping the card's own action button. The full-canvas
+    // dismiss backdrop now renders BEHIND the districts (see below), so
+    // this click actually reaches the district instead of the backdrop.
+    if (openPanel === id) { panelContent[id].go(); setOpenPanel(null); return }
     setOpenPanel(id)
   }
   // Fuzzy district tap (2026-09-06, "everything should still be tappable on
@@ -675,14 +675,8 @@ export default function VillageScene({
       actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
       secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
-    // Data-domain structures (2026-09-06) — notes / calendar. Lines come
-    // from `structures` (Village.tsx); fall back to a plain label while
-    // it's still loading or empty.
-    notes: {
-      title: 'Notes',
-      lines: structures?.notes.length ? structures.notes : ['Everything you jotted down'],
-      actionLabel: 'Open Notes', go: () => goToPersonal('notes'),
-    },
+    // Calendar (2026-09-06) — lines come from `structures` (Village.tsx);
+    // fall back to a plain label while it's still loading or empty.
     calendar: {
       title: 'Calendar',
       lines: structures?.calendar.length ? structures.calendar : ["What's coming up"],
@@ -2254,6 +2248,17 @@ export default function VillageScene({
           fill="var(--gold)" opacity={0.1} pointerEvents="none" />
       )}
 
+      {/* Dismiss backdrop for an open glance-card (2026-09-07) — rendered
+          HERE, before the district labels, so the labels paint on top and
+          stay clickable while a card is open (a click on a district then
+          navigates via openOrToggle instead of being swallowed by this
+          rect). A click anywhere else closes the card. The card body
+          itself renders later, on top of everything. */}
+      {openPanel && !arranging && (
+        <rect className="village-fade" x={0} y={0} width={800} height={440} fill="transparent"
+          style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
+      )}
+
       {/* District captions read as words now, not counters (2026-08-25) —
           "kill the numbers first" per the Village vision doc's own success
           test ("if all labels and numbers disappeared, would I still
@@ -2294,8 +2299,6 @@ export default function VillageScene({
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
       <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
-      <DistrictLabel quiet={hosting} {...pos('notes')} icon="desk" label="Notes" onClick={openOrToggle('notes', 'Notes')} {...hoverPreview('notes')} dark={dark} scale={1.08}
-        draggable={arranging} dragging={draggingId === 'notes'} onPointerDown={startDrag('notes')} selected={openPanel === 'notes'} />
       <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08}
         draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
@@ -2750,7 +2753,6 @@ export default function VillageScene({
         const top = Math.max(10, p.y - 40 - height)
         return (
           <g className="village-fade">
-            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
             <g transform={`translate(${cx - width / 2} ${top})`} onClick={e => e.stopPropagation()}
               onMouseEnter={cancelHoverClose} onMouseLeave={() => setOpenPanel(null)}>
               <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />

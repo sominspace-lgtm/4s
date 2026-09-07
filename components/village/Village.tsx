@@ -18,7 +18,6 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
-import { useNotes } from '@/lib/hooks/useNotes'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
@@ -457,21 +456,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
   }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
 
-  // Data-domain structures (2026-09-06) — the notes / calendar buildings'
-  // glance-cards. Village is already a heavy component; these hooks are
-  // small (one select each) and only their derived text reaches the
-  // hookless scene.
-  const { notes: personalNotes } = useNotes(null)
+  // Data-domain structures (2026-09-06) — the calendar building's
+  // glance-card. Only its derived text reaches the hookless scene.
   const { items: calendarEvents } = useEvents()
   const structures = useMemo(() => {
     const today = format(new Date(), 'yyyy-MM-dd')
-
-    const weekAgo = format(new Date(Date.now() - 7 * 86400_000), 'yyyy-MM-dd')
-    const thisWeek = personalNotes.filter(n => (n.created_at ?? '').slice(0, 10) >= weekAgo).length
-    const notes: string[] = []
-    if (personalNotes.length) notes.push(`${personalNotes.length} note${personalNotes.length === 1 ? '' : 's'}${thisWeek ? ` · ${thisWeek} this week` : ''}`)
-    const recent = [...personalNotes].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))[0]
-    if (recent?.title?.trim()) notes.push(recent.title.trim())
 
     const upcoming = [...calendarEvents]
       .filter(e => e.event_date >= today)
@@ -481,8 +470,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       return `${when} · ${e.title}`
     })
 
-    return { notes, calendar }
-  }, [personalNotes, calendarEvents])
+    return { calendar }
+  }, [calendarEvents])
 
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.

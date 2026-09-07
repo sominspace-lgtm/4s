@@ -473,11 +473,9 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   // in the shared area could land on the wrong one. This spot clears
   // Archive by x, Places by y, and People by x, with real margin.
   references: { x: 540, y: 300 },
-  // Data-domain structures (2026-09-06) — notes (a writing desk),
-  // calendar (a noticeboard). Positions picked in the gaps between
-  // existing districts; hitbox non-overlap verified.
-  notes: { x: 200, y: 270 },
-  calendar: { x: 280, y: 200 },
+  // Calendar (2026-09-06) — the village notice board, in the open pocket
+  // left of centre. Hitbox non-overlap verified.
+  calendar: { x: 240, y: 234 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
