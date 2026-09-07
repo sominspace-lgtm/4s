@@ -141,6 +141,22 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'plankStack', label: 'Wood planks', href: 'plank-stack.png', aspect: 274 / 140, h: 6 },
   { key: 'wheelbarrowTools', label: 'Work cart', href: 'wheelbarrow-tools.png', aspect: 290 / 176, h: 11 },
   { key: 'hangLantern', label: 'Hanging lantern', href: 'hang-lantern-2.png', aspect: 160 / 360, h: 15 },
+
+  // Round 84 (2026-09-07, "add all the elements in the folder") — the last
+  // year-round props not yet listed. street-lamp / lantern-post were
+  // cropped earlier but never surfaced; bench / market-stall / grassy-knoll
+  // / doormat / watering-can are fresh crops from structures-decor-paths,
+  // infrastructure-connectors, nature-resting-spaces and left-behind-
+  // objects. Everything foliage-shaped on those sheets (the flower hedge,
+  // the planter's blooms) still stays out per the "nothing that plants a
+  // flower" rule the flowerVase/flowerPlanter comments set.
+  { key: 'streetLamp', label: 'Street lamp', href: 'street-lamp.png', aspect: 136 / 242, h: 20 },
+  { key: 'lanternPost', label: 'Lantern post', href: 'lantern-post.png', aspect: 168 / 204, h: 17 },
+  { key: 'benchPlain', label: 'Wooden bench', href: 'bench.png', aspect: 307 / 126, h: 9 },
+  { key: 'marketStall', label: 'Market stall', href: 'market-stall.png', aspect: 280 / 221, h: 24 },
+  { key: 'grassyKnoll', label: 'Grassy knoll', href: 'grassy-knoll.png', aspect: 310 / 236, h: 16 },
+  { key: 'doormat', label: 'Doormat', href: 'doormat.png', aspect: 316 / 111, h: 4 },
+  { key: 'wateringCan', label: 'Watering can', href: 'watering-can.png', aspect: 162 / 135, h: 9 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {
