@@ -700,22 +700,22 @@ export default function VillageScene({
       ],
       actionLabel: 'Open Places', go: () => goToSection('places'),
     },
-    // People district → house info for guests + quick access (2026-09-06).
-    // The big community tree is now the "everything a guest needs" hub:
-    // wifi, house notes, and a jump to the kitchen and home cheat sheets.
-    // Not personal data any more, so it's unlocked in shared mode.
+    // People district → the reference / information hub (2026-09-07). The
+    // big community tree is where household know-how lives: the home cheat
+    // sheet, the kitchen cheat sheet, plus wifi and house notes for a
+    // guest. Not personal data, so it stays unlocked in shared mode.
     people: {
-      title: 'House info',
+      title: 'Reference',
       lines: (() => {
         const l = [
           guestInfo.wifiName ? `Wifi · ${guestInfo.wifiName}` : null,
           guestInfo.wifiPassword ? `Password · ${guestInfo.wifiPassword}` : null,
           guestInfo.notes?.trim() || null,
         ].filter(Boolean).slice(0, 3) as string[]
-        return l.length ? l : ['Wifi and house notes']
+        return l.length ? l : ['House and kitchen know-how']
       })(),
-      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
-      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
+      actionLabel: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener'),
+      secondary: { label: 'Open Kitchen', go: () => onOpenKitchen?.() },
     },
     archive: {
       title: 'Archive',
@@ -737,12 +737,16 @@ export default function VillageScene({
       actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
       secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
-    // Calendar (2026-09-06) — lines come from `structures` (Village.tsx);
-    // fall back to a plain label while it's still loading or empty.
+    // Calendar (2026-09-06) — the notice board. Primary is the shared
+    // calendar; the personal Notes hub rides along as a secondary link
+    // (2026-09-07, "the notice board should link to calendar/notes"),
+    // hidden in shared mode since notes are personal. Lines come from
+    // `structures` (Village.tsx); fall back to a plain label.
     calendar: {
       title: 'Calendar',
       lines: structures?.calendar.length ? structures.calendar : ["What's coming up"],
       actionLabel: 'Open the calendar', go: () => goToHousehold('calendar'),
+      secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
   }
 
@@ -2373,11 +2377,11 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      {/* People district → house info for guests (2026-09-06). The tree
-          stays; the card behind it is wifi + house notes + the cheat
-          sheets now, not contacts. */}
-      <DistrictLabel {...pos('people')} icon="people" label="House info" onClick={openOrToggle('people', 'House info')} {...hoverPreview('people')} dark={dark} scale={1.12}
-        count={peopleCount >= 0 ? 'wifi and house notes' : ''}
+      {/* People district → the reference / information hub (2026-09-07).
+          The community tree stays; the card behind it is the home and
+          kitchen cheat sheets plus wifi and house notes, not contacts. */}
+      <DistrictLabel {...pos('people')} icon="people" label="Reference" onClick={openOrToggle('people', 'Reference')} {...hoverPreview('people')} dark={dark} scale={1.12}
+        count={peopleCount >= 0 ? 'house know-how' : ''}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
