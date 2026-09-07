@@ -223,7 +223,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={fontVars}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/192.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-180.png" />
       </head>
       <body>
         {children}
