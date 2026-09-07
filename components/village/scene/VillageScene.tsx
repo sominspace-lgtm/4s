@@ -136,14 +136,14 @@ export default function VillageScene({
   horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
   contributions = [], guestQrUri = null, guestAlbumUrl = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
-  placesCount = 0, placeNames = [], peopleCount = 0, soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
+  placesCount = 0, placeNames = [], soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
-  scroll = false, pulse = {},
+  scroll = false, pulse = {}, memoryAlbums = [],
 }: {
   village: VillageState
   live: boolean
@@ -155,6 +155,9 @@ export default function VillageScene({
    *  the last few days (warmer glow), 'faded' = left alone for weeks
    *  (dim, desaturated). Absent = neutral. Set in Village.tsx. */
   pulse?: Partial<Record<string, 'fresh' | 'faded'>>
+  /** The household's shared photo albums, for the community tree's card
+   *  (2026-09-07) — the tree is the "memories" district. */
+  memoryAlbums?: { label: string; url: string }[]
   /** Prep OR live gathering — quiet the districts, show the house-info card. */
   hosting?: boolean
   /** Wifi + house notes, shown on the scene only while hosting. */
@@ -180,9 +183,8 @@ export default function VillageScene({
   /** A few real place names for the Places hover-card (2026-08-25) — not
    *  personal data, safe to show in shared mode too (see districtLocked). */
   placeNames?: string[]
-  /** Contacts, for the People district's count badge. */
-  peopleCount?: number
-  /** Days until the soonest upcoming birthday, if any — see usePeople's daysUntilBirthday. */
+  /** Days until the soonest upcoming birthday, if any — see usePeople's
+   *  daysUntilBirthday. Drives the birthday bunting over Memories. */
   soonestBirthdayDays?: number | null
   /** Date ideas grouped by area (SLO, Santa Cruz, …) — the memory map, see MemoryMarker. */
   dateIdeaAreas?: { area: string; count: number }[]
@@ -297,11 +299,11 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  // Kitchen (cheat sheets), the notice board (calendar + house info) and
-  // Places are household-facing → open in shared mode. Forest/Projects/
-  // Archive/People stay locked — habits, projects, the reflection archive
-  // and contacts are all personal.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'calendar' && id !== 'references'
+  // Kitchen (cheat sheets), the notice board (calendar + house info),
+  // Places and Memories (shared photo albums) are household-facing → open
+  // in shared mode. Forest/Projects/Archive stay locked — habits,
+  // projects and the reflection archive are personal.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'calendar' && id !== 'references' && id !== 'people'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -705,17 +707,24 @@ export default function VillageScene({
       ],
       actionLabel: 'Open Places', go: () => goToSection('places'),
     },
-    // People district → the community tree, back to the people in your
-    // life (2026-09-07). Contacts are personal, so it locks in shared mode.
+    // People district → Memories (2026-09-07). The community tree is the
+    // gallery: the household's shared photo albums, plus the trip
+    // postcards on the rack. Shared, not personal, so it stays open in
+    // shared mode. Somi's own photos land here too once that exists.
     people: {
-      title: 'People',
-      lines: [
-        peopleCount > 0 ? `${spellCount(peopleCount)} close` : 'No one added yet',
-        ...(soonestBirthdayDays != null
-          ? [soonestBirthdayDays === 0 ? 'A birthday today' : `A birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`]
-          : []),
-      ],
-      actionLabel: 'Open People', go: () => goToPersonal('people'),
+      title: 'Memories',
+      lines: (() => {
+        const l: string[] = []
+        if (memoryAlbums.length) l.push(`${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}`)
+        l.push(`${spellCount(POSTCARDS.length)} postcard${POSTCARDS.length === 1 ? '' : 's'} on the rack`)
+        if (memoryAlbums[0]?.label) l.push(memoryAlbums[0].label)
+        return l.slice(0, 3)
+      })(),
+      actionLabel: memoryAlbums.length ? `Open ${memoryAlbums[0].label || 'the album'}` : 'See the postcards',
+      go: memoryAlbums.length
+        ? () => window.open(memoryAlbums[0].url, '_blank', 'noopener')
+        : () => setPostcardsOpen(true),
+      secondary: memoryAlbums.length ? { label: 'See the postcards', go: () => setPostcardsOpen(true) } : undefined,
     },
     archive: {
       title: 'Archive',
@@ -2376,10 +2385,10 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      {/* People district — the community tree, the people in your life
-          (2026-09-07: back to contacts after a stint as the info hub). */}
-      <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
-        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
+      {/* People district → Memories (2026-09-07). The community tree is the
+          gallery: shared photo albums plus the trip postcards. */}
+      <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="Memories" onClick={openOrToggle('people', 'Memories')} {...hoverPreview('people')} dark={dark} scale={1.12}
+        count={memoryAlbums.length ? `${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}` : 'trips, parties, and Somi'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}

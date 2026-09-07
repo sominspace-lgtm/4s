@@ -19,6 +19,7 @@ import { usePeople, daysUntilBirthday } from '@/lib/hooks/usePeople'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useEvents } from '@/lib/hooks/useEvents'
+import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -346,6 +347,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const reflectionDays = useReflectionDays()
   const clock = useVillageClock()
   const { spaces } = useSharedSpaces(userId)
+  // Photo/memory albums for the community tree's card (2026-09-07) — the
+  // household's shared album links (Google Photos, iCloud, …); the tree is
+  // the "memories" district now.
+  const { links: memoryLinks } = useMemoryLinks(spaces[0]?.id ?? null)
   // Partners ping each other in home mode (2026-09-04) — same idea as
   // guest ping, a session-authed route instead of the guest token one.
   // 'sylvia' = the space owner, 'harry' = the other accepted member.
@@ -689,6 +694,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
+            memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
@@ -706,7 +712,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               onChangeLayout(next)
             } : undefined}
             placesCount={places.length} placeNames={places.slice(0, 3).map(p => p.name)}
-            peopleCount={people.length} soonestBirthdayDays={soonestBirthdayDays}
+            soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
             homeOccupied={homeOccupied} dateKey={dateKey} />
