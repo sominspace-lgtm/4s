@@ -1099,7 +1099,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'board'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'board'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1240,7 +1240,6 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   book: { w: 46, h: 41 },   // greenhouse.png
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
-  shelf: { w: 40, h: 32 },  // kitchen.png — the market/pantry stall
   board: { w: 30, h: 27 },  // notice-board.png
 }
 
@@ -1364,21 +1363,10 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
           {dark && <circle cy={-15} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
         </g>
       )
-    case 'shelf': // References → Kitchen (2026-09-06) — kitchen.png, the pantry/market
-      // stall cropped from village-community-pantry-kitchen-garden-alpha.png. Replaced
-      // the hand-drawn recipe-box marker; the card still opens the Kitchen overlay.
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/kitchen.png" x={-20} y={-32} width={40} height={32}
-            style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cy={-16} r={11} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
-        </g>
-      )
   }
 }
 
-export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false, quiet = false }: {
+export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggable = false, dragging = false, onPointerDown, onHoverIn, onHoverOut, dark = false, scale = 1, selected = false, quiet = false, freshness }: {
   x: number; y: number; icon: DistrictIconKind; label: string; count?: string; onClick: () => void
   /** Hosting a gathering — drop the name + count so the couple's life isn't
    *  narrated to a room of guests; the building stays as scenery. */
@@ -1403,7 +1391,14 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
    *  touch's equivalent of :hover for revealing the label, see the name/
    *  count text below. VillageScene passes `openPanel === id`. */
   selected?: boolean
+  /** Life pulse (2026-09-07) — 'fresh' warms and enlarges the ambient
+   *  glow, 'faded' dims it and desaturates the symbol. Suppressed while
+   *  hosting (`quiet`), the same as the label text. */
+  freshness?: 'fresh' | 'faded'
 }) {
+  const pulseOn = freshness && !quiet
+  const glowR = pulseOn && freshness === 'fresh' ? 23 : pulseOn && freshness === 'faded' ? 15 : 19
+  const glowO = pulseOn && freshness === 'fresh' ? 0.3 : pulseOn && freshness === 'faded' ? 0.05 : 0.15
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={onClick} onPointerDown={onPointerDown}
       onMouseEnter={draggable ? undefined : onHoverIn} onMouseLeave={draggable ? undefined : onHoverOut}
@@ -1436,13 +1431,19 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
           opacity (not gated on `dark`) so it reads as the building's own
           warm presence rather than a night-only light. */}
       {/* Bumped 0.1 → 0.15, r 16 → 19 (round 40, 2026-08-28, "add glow and
-          ambience to light sources and ambience"). */}
-      <circle r={19} fill="var(--amber)" opacity={0.15} filter="url(#vglow)" />
+          ambience to light sources and ambience"). Radius/opacity flex with
+          the life pulse (round 84) — a tended district glows warmer, a
+          neglected one barely at all. */}
+      <circle r={glowR} fill="var(--amber)" opacity={glowO} filter="url(#vglow)"
+        style={{ transition: 'opacity 600ms ease' }} />
       {/* Scaled up ~30% (round two, 2026-08-27) — measured against a real
           screenshot, the art read as a small prop next to its own label at
           the original coordinates below. This is the one knob that fixes
-          that for all six at once, independent of Home's own extra 1.25x. */}
-      <g transform="scale(1.3)">
+          that for all six at once, independent of Home's own extra 1.25x.
+          A 'faded' pulse desaturates and dims the symbol so it reads as
+          untended without disappearing. */}
+      <g transform="scale(1.3)"
+        style={pulseOn && freshness === 'faded' ? { filter: 'saturate(0.45)', opacity: 0.72 } : undefined}>
         <DistrictArt kind={icon} dark={dark} />
       </g>
       {/* A small numeric corner badge, iOS-notification-style, whenever the

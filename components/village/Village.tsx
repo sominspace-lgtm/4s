@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, differenceInCalendarDays } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useVillageWork } from '@/lib/hooks/useVillageWork'
@@ -229,6 +229,34 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     })).sort((a, b) => b.minDist - a.minDist)[0]?.s ?? { x: 400, y: GROUND_Y + 10 }
     onChangeLayout({ ...layout, [id]: spot })
   }
+  // Starter layouts (2026-09-07) — the Inventory has ~65 props; a one-tap
+  // themed set means you don't have to place them one by one. Each writes a
+  // fresh layout blob (districts fall back to their defaults, custom props
+  // placed in open foreground ground). "Minimal" just clears everything.
+  const STARTER_LAYOUTS: Record<'cozy' | 'garden', { key: string; x: number; y: number }[]> = {
+    cozy: [
+      { key: 'benchPlain', x: 342, y: GROUND_Y + 42 },
+      { key: 'lanternPost', x: 297, y: GROUND_Y + 40 },
+      { key: 'firewood', x: 460, y: GROUND_Y + 46 },
+      { key: 'hobbyBookCoffee', x: 356, y: GROUND_Y + 30 },
+      { key: 'campBlanket', x: 522, y: GROUND_Y + 52 },
+    ],
+    garden: [
+      { key: 'gardenBed', x: 180, y: GROUND_Y + 44 },
+      { key: 'flowerPlanter', x: 250, y: GROUND_Y + 50 },
+      { key: 'wateringCan', x: 208, y: GROUND_Y + 36 },
+      { key: 'wildflowerStrip', x: 600, y: GROUND_Y + 52 },
+      { key: 'gardenLantern', x: 138, y: GROUND_Y + 36 },
+      { key: 'wheelbarrowFlowers', x: 662, y: GROUND_Y + 44 },
+    ],
+  }
+  function applyStarterLayout(kind: 'cozy' | 'garden' | 'minimal') {
+    if (!onChangeLayout) return
+    if (kind === 'minimal') { onChangeLayout({}); return }
+    const next: VillageLayout = {}
+    for (const p of STARTER_LAYOUTS[kind]) next[makeCustomItemId(p.key)] = { x: p.x, y: p.y }
+    onChangeLayout(next)
+  }
   // Zoom (round 4; folded into the ⋯ menu round 78). Discrete 0.25 steps,
   // clamped to [1, 2] — the canvas has nothing past its own edges so
   // "zooming out" below 1 just exposes blank space, and 2 is close enough
@@ -286,13 +314,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   }, [])
   const scrollStrip = isNarrow && !fullscreen && !compact
   const sceneScrollRef = useRef<HTMLDivElement>(null)
+  const [edgeHints, setEdgeHints] = useState({ left: false, right: false })
   useEffect(() => {
     if (!scrollStrip) return
     // Rest centred on Home; the edges (Growth Garden, Archive) are a short
     // swipe either way. rAF so the SVG has laid out and scrollWidth is real.
     const center = () => {
       const el = sceneScrollRef.current
-      if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2
+      if (!el) return
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2
+      const over = el.scrollWidth - el.clientWidth
+      setEdgeHints({ left: el.scrollLeft > 8, right: el.scrollLeft < over - 8 })
     }
     const id = requestAnimationFrame(center)
     window.addEventListener('orientationchange', center)
@@ -504,6 +536,41 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return { calendar }
   }, [calendarEvents])
 
+  // Life pulse (2026-09-07) — a district touched in the last few days glows
+  // warmer; one left alone for weeks fades and desaturates. Not a number or
+  // a streak, just the place looking tended or not. Only the districts with
+  // a clean recency signal get an entry; the rest render neutral. Skipped
+  // on the shared wall (`locked`) — it's a personal-progress cue.
+  const villagePulse = useMemo(() => {
+    if (locked) return {}
+    const now = new Date()
+    const rank = (iso: string | number | null): 'fresh' | 'faded' | undefined => {
+      if (iso == null) return undefined
+      const d = differenceInCalendarDays(now, typeof iso === 'number' ? new Date(iso) : parseISO(iso))
+      return d <= 3 ? 'fresh' : d > 21 ? 'faded' : undefined
+    }
+    const maxTime = (times: number[]) => (times.length ? Math.max(...times) : null)
+    const p: Partial<Record<string, 'fresh' | 'faded'>> = {}
+
+    const habitT = maxTime(Object.values(completions).flat().map(d => parseISO(d).getTime()))
+    if (rank(habitT)) p.forest = rank(habitT)
+
+    const projT = maxTime([
+      ...workItems.map(i => parseISO(i.created_at).getTime()),
+      ...done.map(i => (i.completed_at ? parseISO(i.completed_at).getTime() : 0)),
+    ].filter(Boolean))
+    if (rank(projT)) p.projects = rank(projT)
+
+    const evtT = maxTime(calendarEvents.map(e => (e.created_at ? parseISO(e.created_at).getTime() : 0)).filter(Boolean))
+    if (rank(evtT)) p.calendar = rank(evtT)
+
+    // reflectionDays is a count over a recent window, not dated — a zero
+    // means nothing new went into the archive lately.
+    if (reflectionDays === 0) p.archive = 'faded'
+
+    return p
+  }, [locked, completions, workItems, done, calendarEvents, reflectionDays])
+
   // Deterministic placement: same entity, same spot, every load. A place you
   // recognise, not a chart that reshuffles. See lib/village/layout.
   // Round 33 (2026-08-27, "we can only grow them using habits and can move
@@ -592,6 +659,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             window without distorting anything inside it. */}
         <div
           ref={sceneScrollRef}
+          onScroll={scrollStrip ? (e => {
+            const el = e.currentTarget
+            setEdgeHints({
+              left: el.scrollLeft > 8,
+              right: el.scrollLeft < el.scrollWidth - el.clientWidth - 8,
+            })
+          }) : undefined}
           style={
             compact ? { transform: 'scale(1.18)', transformOrigin: '50% 60%' }
             : fullscreen ? { width: '100%', height: '100%' }
@@ -614,7 +688,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             containerAspect={fullscreen ? viewportAspect : null}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
-            locked={locked} onLockedNavigate={onLockedNavigate}
+            locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
@@ -637,6 +711,24 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
             homeOccupied={homeOccupied} dateKey={dateKey} />
         </div>
+
+        {/* Swipe affordance for the mobile scroll strip (2026-09-07) — a
+            soft fade on whichever edge still has scene past it, so it
+            reads as "there's more this way". */}
+        {scrollStrip && (
+          <>
+            <div aria-hidden style={{
+              position: 'absolute', top: 0, bottom: 0, left: 0, width: '2.2rem', pointerEvents: 'none',
+              background: 'linear-gradient(to right, var(--surface), transparent)',
+              opacity: edgeHints.left ? 0.9 : 0, transition: 'opacity 200ms ease', zIndex: 2,
+            }} />
+            <div aria-hidden style={{
+              position: 'absolute', top: 0, bottom: 0, right: 0, width: '2.2rem', pointerEvents: 'none',
+              background: 'linear-gradient(to left, var(--surface), transparent)',
+              opacity: edgeHints.right ? 0.9 : 0, transition: 'opacity 200ms ease', zIndex: 2,
+            }} />
+          </>
+        )}
 
         {/* The corner readout (2026-09-06). A discreet time-only chip on
             the personal dashboard; on the wall it's the same small tag
@@ -849,6 +941,22 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem',
             boxShadow: '0 4px 14px color-mix(in srgb, var(--text) 12%, transparent)',
           }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '0.3rem' }}>
+              {(['cozy', 'garden', 'minimal'] as const).map(k => (
+                <button
+                  key={k}
+                  onClick={() => { applyStarterLayout(k); setInventoryOpen(false) }}
+                  title={k === 'minimal' ? 'Clear everything back to a bare village' : `A ${k} starter arrangement`}
+                  className="press"
+                  style={{
+                    flex: 1, textTransform: 'capitalize',
+                    background: 'color-mix(in srgb, var(--gold) 12%, transparent)', border: '1px solid var(--gold)',
+                    borderRadius: '7px', padding: '0.32rem 0.2rem', color: 'var(--gold)', cursor: 'pointer',
+                    fontSize: '0.6rem', fontFamily: 'var(--font-body)',
+                  }}
+                >{k}</button>
+              ))}
+            </div>
             {ASSET_LIBRARY.map(a => (
               <button
                 key={a.key}

@@ -143,7 +143,7 @@ export default function VillageScene({
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
-  scroll = false,
+  scroll = false, pulse = {},
 }: {
   village: VillageState
   live: boolean
@@ -151,6 +151,10 @@ export default function VillageScene({
    *  and overflows the width, so the wide scene renders large and the
    *  reader swipes sideways instead of squinting at a thumbnail. */
   scroll?: boolean
+  /** Life pulse (2026-09-07) — per-district recency. 'fresh' = tended in
+   *  the last few days (warmer glow), 'faded' = left alone for weeks
+   *  (dim, desaturated). Absent = neutral. Set in Village.tsx. */
+  pulse?: Partial<Record<string, 'fresh' | 'faded'>>
   /** Prep OR live gathering — quiet the districts, show the house-info card. */
   hosting?: boolean
   /** Wifi + house notes, shown on the scene only while hosting. */
@@ -296,7 +300,7 @@ export default function VillageScene({
   // notes is personal → stays locked in shared mode; calendar is household
   // and People is now the guest-facing house-info card → open like
   // Places/Home/References.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'references' && id !== 'calendar' && id !== 'people'
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'calendar' && id !== 'people'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -723,19 +727,6 @@ export default function VillageScene({
         v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'Its first year',
       ],
       actionLabel: 'Open Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
-    },
-    // References (2026-09-04) — a proper district instead of a nook prop
-    // floating near the cottage; brought the same shortcut it replaced
-    // (Kitchen + Home cheat sheets) into the normal card pattern every
-    // other district uses. One action button (Kitchen — the more frequent
-    // ask); Home Cheat Sheet rides along as a low-key secondary link,
-    // same as the well/postcard cards' secondary actions, rather than
-    // reworking this card renderer for one district.
-    references: {
-      title: 'Kitchen',
-      lines: ['Recipes, timings, and home know-how'],
-      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
-      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
     // Calendar (2026-09-06) — the notice board. Primary is the shared
     // calendar; the personal Notes hub rides along as a secondary link
@@ -2087,8 +2078,6 @@ export default function VillageScene({
         </Draggable>
       ) })()}
 
-      {/* The nook prop is gone — References is a proper district now
-          (see the DistrictLabel + panelContent.references above). */}
 
       {/* Bin by the gate — the evening before / morning of collection.
           Arrangeable now (round 80) — decorPos('bins') instead of a fixed
@@ -2334,7 +2323,7 @@ export default function VillageScene({
           any more, which also quietly disables DistrictLabel's red
           notification-badge circle (it only triggers on a leading digit) —
           removing the badge and rewording the caption were the same fix. */}
-      <DistrictLabel quiet={hosting} {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} {...hoverPreview('forest')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('forest')} icon="leaf" label="Growth Garden" onClick={openOrToggle('forest', 'Growth Garden')} {...hoverPreview('forest')} dark={dark} scale={1.12} freshness={pulse.forest}
         count={v.plants.length === 0 ? 'waiting to be planted' : growingCount === 0 ? 'resting' : restingCount > 0 ? 'growing and resting' : 'growing quietly'}
         draggable={arranging} dragging={draggingId === 'forest'} onPointerDown={startDrag('forest')} selected={openPanel === 'forest'} />
       {/* "Living painting" sunset beat (round 50, 2026-08-28, "shadows
@@ -2359,15 +2348,13 @@ export default function VillageScene({
       {hosting && !arranging && (
         <HouseInfo x={pos('home').x + 46} y={pos('home').y + 6} info={guestInfo} />
       )}
-      <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12} freshness={pulse.projects}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
-      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12}
+      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12} freshness={pulse.archive}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
-      <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
-        draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
-      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08}
+      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
         draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already

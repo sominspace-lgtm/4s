@@ -414,14 +414,7 @@ export const DEFAULT_ITEM_SCALE: Record<string, number> = {
 // per postcard is the next step (stored per-user, keyed by `id`).
 export const POSTCARDS: { id: string; label: string }[] = [
   { id: 'yosemite', label: 'Yosemite' },
-  { id: 'lakeside-camping', label: 'Lakeside camping' },
-  { id: 'bike-ride', label: 'Bike ride' },
-  { id: 'new-apartment', label: 'New apartment' },
-  { id: 'cooking-at-home', label: 'Cooking at home' },
-  { id: 'board-game-night', label: 'Board game night' },
-  { id: 'tennis', label: 'Tennis' },
-  { id: 'bowling', label: 'Bowling' },
-  { id: 'golf', label: 'Golf' },
+  { id: 'lakeside-camping', label: 'Camping' },
 ]
 
 
@@ -466,13 +459,6 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   archive: { x: 725, y: 204 },
   people: { x: 627, y: 317 },
   places: { x: 512, y: 209 },
-  // Right-of-centre foreground, in the open pocket below Places and left
-  // of People (2026-09-06). The upper-right corner turned out too crowded
-  // once every district's hit target grew — at (690,245) and then
-  // (676,260) the References hit-rect still overlapped Archive's, so a tap
-  // in the shared area could land on the wrong one. This spot clears
-  // Archive by x, Places by y, and People by x, with real margin.
-  references: { x: 540, y: 300 },
   // Calendar (2026-09-06) — the village notice board, in the open pocket
   // left of centre. Hitbox non-overlap verified.
   calendar: { x: 240, y: 234 },
