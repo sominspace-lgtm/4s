@@ -157,10 +157,6 @@ export const ASSET_LIBRARY: AssetLibraryItem[] = [
   { key: 'grassyKnoll', label: 'Grassy knoll', href: 'grassy-knoll.png', aspect: 310 / 236, h: 16 },
   { key: 'doormat', label: 'Doormat', href: 'doormat.png', aspect: 316 / 111, h: 4 },
   { key: 'wateringCan', label: 'Watering can', href: 'watering-can.png', aspect: 162 / 135, h: 9 },
-
-  // Round 85 (2026-09-07) — the pantry/kitchen stall, freed up when the
-  // Kitchen district folded into Reference. Still a nice year-round prop.
-  { key: 'kitchenStall', label: 'Kitchen stall', href: 'kitchen.png', aspect: 714 / 576, h: 22 },
 ]
 
 export function findAsset(key: string): AssetLibraryItem | undefined {

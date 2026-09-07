@@ -297,10 +297,11 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  // notes is personal → stays locked in shared mode; calendar is household
-  // and People is now the guest-facing house-info card → open like
-  // Places/Home/References.
-  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'calendar' && id !== 'people'
+  // Kitchen (cheat sheets), the notice board (calendar + house info) and
+  // Places are household-facing → open in shared mode. Forest/Projects/
+  // Archive/People stay locked — habits, projects, the reflection archive
+  // and contacts are all personal.
+  const districtLocked = (id: LandmarkId) => locked && id !== 'places' && id !== 'home' && id !== 'calendar' && id !== 'references'
 
   // One wrapper so every district gets the same treatment — a locked click
   // never silently no-ops, it always explains itself via the unlock prompt.
@@ -704,22 +705,17 @@ export default function VillageScene({
       ],
       actionLabel: 'Open Places', go: () => goToSection('places'),
     },
-    // People district → the reference / information hub (2026-09-07). The
-    // big community tree is where household know-how lives: the home cheat
-    // sheet, the kitchen cheat sheet, plus wifi and house notes for a
-    // guest. Not personal data, so it stays unlocked in shared mode.
+    // People district → the community tree, back to the people in your
+    // life (2026-09-07). Contacts are personal, so it locks in shared mode.
     people: {
-      title: 'Reference',
-      lines: (() => {
-        const l = [
-          guestInfo.wifiName ? `Wifi · ${guestInfo.wifiName}` : null,
-          guestInfo.wifiPassword ? `Password · ${guestInfo.wifiPassword}` : null,
-          guestInfo.notes?.trim() || null,
-        ].filter(Boolean).slice(0, 3) as string[]
-        return l.length ? l : ['House and kitchen know-how']
-      })(),
-      actionLabel: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener'),
-      secondary: { label: 'Open Kitchen', go: () => onOpenKitchen?.() },
+      title: 'People',
+      lines: [
+        peopleCount > 0 ? `${spellCount(peopleCount)} close` : 'No one added yet',
+        ...(soonestBirthdayDays != null
+          ? [soonestBirthdayDays === 0 ? 'A birthday today' : `A birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`]
+          : []),
+      ],
+      actionLabel: 'Open People', go: () => goToPersonal('people'),
     },
     archive: {
       title: 'Archive',
@@ -728,14 +724,28 @@ export default function VillageScene({
       ],
       actionLabel: 'Open Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
     },
-    // Calendar (2026-09-06) — the notice board. Primary is the shared
-    // calendar; the personal Notes hub rides along as a secondary link
-    // (2026-09-07, "the notice board should link to calendar/notes"),
-    // hidden in shared mode since notes are personal. Lines come from
-    // `structures` (Village.tsx); fall back to a plain label.
+    // Kitchen (2026-09-07) — the pantry stall holds both cheat sheets.
+    // Household-facing, so it stays open in shared mode.
+    references: {
+      title: 'Kitchen',
+      lines: ['Recipes, timings, and home know-how'],
+      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
+      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
+    },
+    // Notice board (2026-09-07) — the household's shared board: what's on
+    // the calendar, the wifi and house info, and a jump to Notes. Notes is
+    // personal so that link hides in shared mode; the calendar and wifi
+    // stay visible to a guest. Event lines come from `structures`.
     calendar: {
-      title: 'Calendar',
-      lines: structures?.calendar.length ? structures.calendar : ["What's coming up"],
+      title: 'Notice board',
+      lines: (() => {
+        const evts = structures?.calendar.length ? structures.calendar : []
+        const wifi = guestInfo.wifiName
+          ? `Wifi · ${guestInfo.wifiName}${guestInfo.wifiPassword ? ` / ${guestInfo.wifiPassword}` : ''}`
+          : null
+        const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
+        return l.length ? l : ["What's coming up"]
+      })(),
       actionLabel: 'Open the calendar', go: () => goToHousehold('calendar'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
@@ -2354,7 +2364,9 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12} freshness={pulse.archive}
         count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
-      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Calendar" onClick={openOrToggle('calendar', 'Calendar')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
+      <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
+        draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
+      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Notice board" onClick={openOrToggle('calendar', 'Notice board')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
         draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already
@@ -2364,11 +2376,10 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      {/* People district → the reference / information hub (2026-09-07).
-          The community tree stays; the card behind it is the home and
-          kitchen cheat sheets plus wifi and house notes, not contacts. */}
-      <DistrictLabel {...pos('people')} icon="people" label="Reference" onClick={openOrToggle('people', 'Reference')} {...hoverPreview('people')} dark={dark} scale={1.12}
-        count={peopleCount >= 0 ? 'house know-how' : ''}
+      {/* People district — the community tree, the people in your life
+          (2026-09-07: back to contacts after a stint as the info hub). */}
+      <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="People" onClick={openOrToggle('people', 'People')} {...hoverPreview('people')} dark={dark} scale={1.12}
+        count={soonestBirthdayDays != null ? (soonestBirthdayDays === 0 ? 'birthday today' : `birthday in ${spellCount(soonestBirthdayDays)} day${soonestBirthdayDays === 1 ? '' : 's'}`) : peopleCount === 0 ? 'no one yet' : 'your people'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}

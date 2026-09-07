@@ -459,8 +459,11 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   archive: { x: 725, y: 204 },
   people: { x: 627, y: 317 },
   places: { x: 512, y: 209 },
-  // Calendar (2026-09-06) — the village notice board, in the open pocket
-  // left of centre. Hitbox non-overlap verified.
+  // Kitchen (2026-09-07) — the pantry/kitchen stall, back as its own
+  // district holding both cheat sheets. Right-of-centre foreground pocket.
+  references: { x: 540, y: 300 },
+  // Notice board (2026-09-06) — calendar, notes and house info, in the
+  // open pocket left of centre. Hitbox non-overlap verified.
   calendar: { x: 240, y: 234 },
 }
 

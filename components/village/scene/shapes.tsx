@@ -1099,7 +1099,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'board'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'board'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1240,6 +1240,7 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   book: { w: 46, h: 41 },   // greenhouse.png
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
+  shelf: { w: 40, h: 32 },  // kitchen.png — the pantry/kitchen stall
   board: { w: 30, h: 27 },  // notice-board.png
 }
 
@@ -1353,14 +1354,24 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
-    case 'board': // Calendar — the village notice board (2026-09-06), notice-board.png
-      // cropped from village-civic-landmarks-alpha.png. Replaced the hand-drawn marker.
+    case 'board': // Notice board — notice-board.png cropped from
+      // village-civic-landmarks-alpha.png.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={13} ry={2.4} fill="var(--text)" opacity={0.17} />
           <image href="/village-assets/notice-board.png" x={-15} y={-27} width={30} height={27}
             style={{ imageRendering: 'pixelated' }} />
           {dark && <circle cy={-15} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+        </g>
+      )
+    case 'shelf': // Kitchen — kitchen.png, the pantry/kitchen stall from
+      // village-community-pantry-kitchen-garden-alpha.png. Holds both cheat sheets.
+      return (
+        <g>
+          <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />
+          <image href="/village-assets/kitchen.png" x={-20} y={-32} width={40} height={32}
+            style={{ imageRendering: 'pixelated' }} />
+          {dark && <circle cy={-16} r={11} fill="var(--amber)" opacity={0.24} filter="url(#vglow)" />}
         </g>
       )
   }
