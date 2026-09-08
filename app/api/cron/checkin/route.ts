@@ -3,16 +3,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPushToUser, type PushPayload } from '@/lib/push/send'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// The weekly check-in nudge (Vercel Cron — see vercel.json). Runs at 05:00
-// and 06:00 UTC every day; the body no-ops unless it is currently 10pm in
-// America/Los_Angeles (exactly one of those two runs lands on 22:00 LA,
-// depending on daylight saving). It fires on Sunday night — the start of a
-// new check-in week — and again Monday and Tuesday night for anyone who
-// still hasn't checked in, then stops. Deduped per (week, day) so a given
-// night sends at most one reminder.
+// The weekly check-in nudge (Vercel Cron — see vercel.json). Runs once a
+// day at 06:00 UTC, which is 10pm (PST) or 11pm (PDT) in
+// America/Los_Angeles; the body no-ops unless it is currently the 10-11pm
+// LA hour, so it stays a late-evening reminder year-round. It fires on
+// Sunday night — the start of a new check-in week — and again Monday and
+// Tuesday night for anyone who still hasn't checked in, then stops.
+// Deduped per (week, day) so a given night sends at most one reminder.
 //
 // This used to live inside /api/cron/daily (once per week, ~9pm Sunday).
-// Pulled out here so it lands at a predictable 10pm and can repeat.
+// Pulled out here so it lands late evening and can repeat.
 
 async function safePush(admin: SupabaseClient, userId: string, payload: PushPayload): Promise<number> {
   try { return await sendPushToUser(admin, userId, payload) }
@@ -48,10 +48,11 @@ export async function GET(request: Request) {
   }
 
   const { weekday, hour, date } = laParts(new Date())
-  // Only act at 10pm LA, and only Sunday (first nudge) through Tuesday
-  // (re-reminders). Every other invocation is a no-op.
+  // Only act in the 10-11pm LA hour (the 06:00-UTC run lands there year-
+  // round, 10pm in winter / 11pm in summer), and only Sunday (first nudge)
+  // through Tuesday (re-reminders). Every other invocation is a no-op.
   const nudgeDays = ['Sun', 'Mon', 'Tue']
-  if (hour !== 22 || !nudgeDays.includes(weekday)) {
+  if ((hour !== 22 && hour !== 23) || !nudgeDays.includes(weekday)) {
     return NextResponse.json({ skipped: true, weekday, hour })
   }
 
