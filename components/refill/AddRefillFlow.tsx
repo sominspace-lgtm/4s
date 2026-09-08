@@ -189,7 +189,7 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
   if (method === 'scan') {
     return (
       <div style={wrap}>
-        <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginBottom: '0.6rem' }}>Upload a photo of the product label — 4S will try to read quantity and usage from it.</p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginBottom: '0.6rem' }}>Upload a photo of the product label. 4S will try to read quantity and usage from it.</p>
         <input ref={fileRef} type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleScan(e.target.files[0])} style={{ fontSize: '0.72rem', color: 'var(--muted)' }} />
         {extracting && <p style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.5rem' }}>Reading label…</p>}
         <div style={{ marginTop: '0.6rem' }}><button onClick={() => setMethod('menu')} className="btn btn-ghost">← back</button></div>
@@ -200,7 +200,7 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
   if (method === 'link') {
     return (
       <div style={wrap}>
-        <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginBottom: '0.6rem' }}>Paste an Amazon or product link — 4S will try to pull the product name and details.</p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--muted)', marginBottom: '0.6rem' }}>Paste an Amazon or product link. 4S will try to pull the product name and details.</p>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <input value={linkInput} onChange={e => setLinkInput(e.target.value)} placeholder="https://…" style={{ ...inputStyle, flex: 1 }} />
           <button onClick={handleLink} className="btn btn-primary" disabled={extracting}>{extracting ? 'Reading…' : 'Extract'}</button>

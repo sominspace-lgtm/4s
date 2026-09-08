@@ -57,7 +57,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
               <input
                 value={name}
                 onChange={e => rememberName(e.target.value)}
-                placeholder="optional — so the village knows who came"
+                placeholder="optional, so the village knows who came"
                 style={S.input}
                 autoComplete="name"
               />
@@ -266,7 +266,7 @@ function SongQueue({ token, musicUrl, onBack, onAddSong }: {
 
       <div style={{ textAlign: 'left', margin: '0.4rem 0 0.8rem' }}>
         {loading && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>Loading the queue…</p>}
-        {!loading && songs.length === 0 && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>No requests yet — be the first.</p>}
+        {!loading && songs.length === 0 && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>No requests yet. Be the first.</p>}
         {songs.map(s => (
           <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', borderBottom: '1px solid #efe3c8' }}>
             <button

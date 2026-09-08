@@ -62,7 +62,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
     // If email confirmation is on, Supabase parks the address in new_email
     // until the link is clicked; otherwise it applies immediately.
     if (data.user?.new_email) {
-      setKeepMsg({ text: `Almost done — confirm via the link we sent to ${keepEmail.trim()}.`, ok: true })
+      setKeepMsg({ text: `Almost done. Confirm via the link we sent to ${keepEmail.trim()}.`, ok: true })
     } else {
       setKeepMsg({ text: 'Your space is saved. You can now sign in from any device.', ok: true })
       setTimeout(() => router.refresh(), 1200)
@@ -150,7 +150,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
       >← dashboard</button>
 
       <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: '2rem', marginBottom: '0.4rem' }}>Account</h1>
-      <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>{isAnonymous ? 'Guest space — not saved to an email yet' : email}</p>
+      <p style={{ fontSize: '0.73rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>{isAnonymous ? 'Guest space, not saved to an email yet' : email}</p>
 
       {/* Keep your space — guest → permanent upgrade */}
       {isAnonymous && (
@@ -184,7 +184,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
           </div>
         </Row>
         <Row label="Email">
-          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{isAnonymous ? 'None yet — add one above to keep your space' : email}</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{isAnonymous ? 'None yet. Add one above to keep your space' : email}</span>
         </Row>
       </div>
 
@@ -206,8 +206,8 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
         <Row label="Browser alerts">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.73rem', color: 'var(--muted)' }}>
-              {notifState === 'granted' ? "✓ Enabled — you'll be notified about overdue items" :
-               notifState === 'denied'  ? '✗ Blocked — allow in browser settings to enable' :
+              {notifState === 'granted' ? "✓ Enabled. You'll be notified about overdue items" :
+               notifState === 'denied'  ? '✗ Blocked. Allow in browser settings to enable' :
                'Get alerted when work items go overdue'}
             </span>
             {notifState !== 'granted' && notifState !== 'denied' && (
@@ -222,7 +222,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
         <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Your data</div>
         <Row label="Export">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.73rem', color: 'var(--muted)' }}>Download everything as JSON — habits, tasks, captures, preferences.</span>
+            <span style={{ fontSize: '0.73rem', color: 'var(--muted)' }}>Download everything as JSON: habits, tasks, captures, preferences.</span>
             <Btn onClick={exportData} disabled={exporting}>{exporting ? 'exporting…' : 'Export'}</Btn>
           </div>
         </Row>

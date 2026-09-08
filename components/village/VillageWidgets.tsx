@@ -40,7 +40,7 @@ export default function VillageWidgets({ userId, spaceId, village, panelBlocks }
     ? `${happenings.length} thing${happenings.length > 1 ? 's are' : ' is'} happening`
     : choresToday.length > 0
       ? `Quiet, but ${choresToday.length} thing${choresToday.length > 1 ? 's' : ''} could use your attention.`
-      : 'The village is quiet — nothing waiting on you right now.'
+      : 'The village is quiet. Nothing waiting on you right now.'
 
   return (
     <div className="lift organic" style={{

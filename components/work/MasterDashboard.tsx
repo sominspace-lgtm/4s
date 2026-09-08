@@ -183,12 +183,12 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
             lib/utils/taskStage.ts. Otherwise: a manual pin, one-way — once
             earned, never taken away by a toggle. */}
         {item.status === 'done' && stage === 'landmark' && (
-          <span title="Landmark — this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.68rem', flexShrink: 0, lineHeight: 1 }}>◆</span>
+          <span title="Landmark: this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.68rem', flexShrink: 0, lineHeight: 1 }}>◆</span>
         )}
         {item.status === 'done' && stage === 'completed' && (
           <button
             onClick={() => onUpdate(item.id, { landmark: true })}
-            title="Mark as a landmark — keep this one in the skyline"
+            title="Mark as a landmark: keep this one in the skyline"
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
               fontSize: '0.58rem', color: 'var(--muted)', opacity: hovered ? 0.5 : 0, transition: 'opacity 0.15s',
@@ -552,7 +552,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
               if (e.key === 'Enter') { suggestion ? confirmAndAdd(suggestion) : submit() }
               if (e.key === 'Escape') { setShowAdd(false); setTitle(''); setDismissedFor('') }
             }}
-            placeholder={t('New task — try "call the vet next thursday afternoon"', lang)}
+            placeholder={t('New task, try "call the vet next thursday afternoon"', lang)}
             style={inputStyle}
           />
 

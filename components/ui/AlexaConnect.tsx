@@ -52,7 +52,7 @@ export default function AlexaConnect({ userId }: { userId: string }) {
       if (data.code) setCode(data.code)
       else setErr(data.error || `Couldn't generate a code (status ${res.status}).`)
     } catch {
-      setErr('Network error — try again.')
+      setErr('Network error. Try again.')
     } finally { setLoading(false) }
   }
 

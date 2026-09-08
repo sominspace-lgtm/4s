@@ -138,7 +138,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
           )}
           {geoStatus === 'found' && geo && (
             <div style={{ fontSize: '0.64rem', color: 'var(--emerald)', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
-              <Icon name="pin" size={10} /> Found it{geo.city ? ` — ${[geo.city, geo.country].filter(Boolean).join(', ')}` : ''}
+              <Icon name="pin" size={10} /> Found it{geo.city ? `: ${[geo.city, geo.country].filter(Boolean).join(', ')}` : ''}
             </div>
           )}
           {geoStatus === 'not-found' && (
@@ -148,7 +148,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
           )}
         </div>
 
-        <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Note — why you're saving it (optional)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+        <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Note: why you're saving it (optional)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
 
         {hasSpace && (
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>

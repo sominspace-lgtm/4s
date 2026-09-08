@@ -12,7 +12,7 @@ import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
-  idea: 'Want to go', good: 'Good — go again', hmm: 'Hmm — no strong opinion', bad: 'Not again', archived: 'Archived',
+  idea: 'Want to go', good: 'Good, go again', hmm: 'No strong opinion', bad: 'Not again', archived: 'Archived',
 }
 
 const STATUS_ICON: Partial<Record<PlaceStatus, IconName>> = {

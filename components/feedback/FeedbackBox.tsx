@@ -21,7 +21,7 @@ export default function FeedbackBox() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setSending(false)
-      setError("Couldn't confirm your session — your message is still here, try again.")
+      setError("Couldn't confirm your session. Your message is still here, try again.")
       return
     }
     const { error: insertError } = await supabase.from('feedback').insert({ user_id: user.id, text: text.trim() })
@@ -55,7 +55,7 @@ export default function FeedbackBox() {
 
       {sent && (
         <div style={{ fontSize: '0.78rem', color: 'var(--emerald)', fontFamily: 'var(--font-body)' }}>
-          {t('Got it — thank you ✓', lang)}
+          {t('Got it, thank you ✓', lang)}
         </div>
       )}
 

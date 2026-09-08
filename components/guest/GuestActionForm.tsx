@@ -101,7 +101,7 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
       setPingSent({ sent: data.sent ?? 0 })
       setBusy(false)
     } catch {
-      setErr('No connection — try again.')
+      setErr('No connection. Try again.')
       setBusy(false)
     }
   }
@@ -124,7 +124,7 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
       if (!res.ok) { setErr(data.error ?? 'Something went wrong.'); setBusy(false); return }
       onDone()
     } catch {
-      setErr('No connection — try again.')
+      setErr('No connection. Try again.')
       setBusy(false)
     }
   }

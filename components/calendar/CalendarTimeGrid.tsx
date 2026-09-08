@@ -152,7 +152,7 @@ export default function CalendarTimeGrid({ days, entries, userId }: { days: Date
                   const top = (hh - START_HOUR) * HOUR_HEIGHT + (mm / 60) * HOUR_HEIGHT
                   const meta = AGENDA_TYPE_META[e.type]
                   return (
-                    <div key={e.key} title={`${e.label} — ${e.time}`} style={{
+                    <div key={e.key} title={`${e.label} · ${e.time}`} style={{
                       position: 'absolute', top, left: 2, right: 2, minHeight: '18px',
                       fontSize: '0.62rem', padding: '0.1em 0.4em', borderRadius: '4px',
                       color: meta.color, background: `color-mix(in srgb, ${meta.color} 16%, var(--surface))`,

@@ -31,7 +31,7 @@ const CALM_QUOTES = [
   "You don't have to do everything today.",
   'One breath, then one small thing.',
   'Rest is productive too.',
-  "This will pass — you've moved through hard days before.",
+  "This will pass. You've moved through hard days before.",
   'Slow is smooth, and smooth is calm.',
   'Do less, but do it gently.',
 ]
@@ -202,7 +202,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   function getInsight(): string {
     if (lang === 'ko') return getInsightKO({ overdue, dueToday, habitsDoneToday, habitsTotal, inProgress })
-    if (overdue > 0) return `${overdue} item${overdue > 1 ? 's are' : ' is'} overdue — tackle those first.`
+    if (overdue > 0) return `${overdue} item${overdue > 1 ? 's are' : ' is'} overdue. Tackle those first.`
     if (dueToday > 0 && habitsDoneToday === 0 && habitsTotal > 0) return `${dueToday} thing${dueToday > 1 ? 's' : ''} due today and no habits checked yet.`
     if (habitsTotal > 0 && habitsDoneToday === habitsTotal) return 'All habits done. Strong day.'
     if (inProgress > 0) return `${inProgress} item${inProgress > 1 ? 's' : ''} in progress. Keep the thread.`
@@ -243,23 +243,23 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     // Checked ahead of it because it's the more specific, more useful thing
     // to say once there's enough of a pile that naming a real next step
     // (one focused stretch, not "catch up on everything") actually helps.
-    if (overdue >= 3) return `${overdue} things are overdue — one focused stretch might clear more than piecemeal would.`
+    if (overdue >= 3) return `${overdue} things are overdue. One focused stretch might clear more than piecemeal would.`
     if (peopleQuiet.length > 0) return 'Someone may deserve a hello today.'
-    if (giftSoon > 0) return 'A gift moment is coming up — worth a thought.'
+    if (giftSoon > 0) return 'A gift moment is coming up. Worth a thought.'
     if (refillsDue > 0) return 'You may be running low on something.'
     if (dormantHabits.length > 0) {
       return dormantHabits.length === 1
-        ? `${dormantHabits[0].name} has gone quiet — it's still yours whenever you come back to it.`
-        : `${dormantHabits.length} habits have gone quiet — still yours, whenever.`
+        ? `${dormantHabits[0].name} has gone quiet. It's still yours whenever you come back to it.`
+        : `${dormantHabits.length} habits have gone quiet. Still yours, whenever.`
     }
     if (somiCareHints.length > 0) {
       const hint = somiCareHints[0]
       const label = careTypeLabel('somi', hint.kind).toLowerCase()
       const t = somiTypical[hint.kind]
       const every = t >= 12 ? `every ${Math.round(t / 7)} weeks` : t === 1 ? 'about daily' : `every ${t} days`
-      return `${label} is usually ${every} — worth a look.`
+      return `${label} is usually ${every}. Worth a look.`
     }
-    if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
+    if (overdue > 0) return 'A few things slipped. No need to fix them all at once.'
     return null
   }
   const whisper = (whisperDismissed || lowDay) ? null : pickWhisper()
@@ -267,10 +267,10 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   // Adaptive Guide — read the week and gently suggest a fitting Guide. Only
   // surfaces a Guide different from the current one; the user always chooses.
   function suggestGuide(): { guide: Mode; reason: string } | null {
-    if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue — Executive keeps things to the essentials.' }
+    if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue. Executive keeps things to the essentials.' }
     const maintenance = peopleQuiet.length + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
-    if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up — Friend keeps an eye on them with you.' }
-    if (overdue === 0 && dueToday === 0 && habitsDueCount === 0) return { guide: 'peaceful', reason: 'Things look calm — Peaceful keeps it light.' }
+    if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up. Friend keeps an eye on them with you.' }
+    if (overdue === 0 && dueToday === 0 && habitsDueCount === 0) return { guide: 'peaceful', reason: 'Things look calm. Peaceful keeps it light.' }
     return null
   }
   const suggestion = adaptiveDismissed ? null : suggestGuide()
@@ -359,7 +359,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
       {recovery ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.6rem', marginBottom: '0.5rem', padding: '1.2rem 1rem', borderRadius: '14px', background: 'color-mix(in srgb, var(--emerald) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--emerald) 20%, transparent)' }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Just the essentials today — you&apos;re doing enough.</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Just the essentials today. You&apos;re doing enough.</span>
           <Breathing />
           <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5, maxWidth: '22rem' }}>{quote}</span>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.2rem' }}>

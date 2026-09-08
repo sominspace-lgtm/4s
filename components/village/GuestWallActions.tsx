@@ -267,7 +267,7 @@ function WallSongQueue({ token, onBack, onAddSong }: { token: string; onBack: ()
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       <button onClick={onBack} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer', padding: 0 }}>← back</button>
       {loading && <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Loading the queue…</div>}
-      {!loading && songs.length === 0 && <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>No requests yet — be the first.</div>}
+      {!loading && songs.length === 0 && <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>No requests yet. Be the first.</div>}
       {songs.map(s => (
         <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0', borderBottom: '1px solid var(--border)' }}>
           <button

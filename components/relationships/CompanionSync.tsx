@@ -31,7 +31,7 @@ function ConfirmRow({ youConfirmed, partnerConfirmed, partnerEmail, onConfirm, b
   if (youConfirmed) {
     return (
       <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>
-        ✓ You confirmed{partnerEmail ? ` — waiting on ${partnerEmail}` : ''}
+        ✓ You confirmed{partnerEmail ? `, waiting on ${partnerEmail}` : ''}
       </span>
     )
   }

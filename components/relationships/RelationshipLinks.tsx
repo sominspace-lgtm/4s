@@ -76,8 +76,8 @@ export default function RelationshipLinks() {
 
       {adding && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem', padding: '0.9rem', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--hover-bg)' }}>
-          <input autoFocus style={inputStyle} placeholder="Label — e.g. Google Photos album" value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} />
-          <input style={inputStyle} placeholder="Link — e.g. photos.google.com/share/..." value={form.url}
+          <input autoFocus style={inputStyle} placeholder="Label, e.g. Google Photos album" value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} />
+          <input style={inputStyle} placeholder="Link, e.g. photos.google.com/share/..." value={form.url}
             onChange={e => setForm({ ...form, url: e.target.value })}
             onKeyDown={e => { if (e.key === 'Enter') save() }}
           />

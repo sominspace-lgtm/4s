@@ -47,13 +47,13 @@ export default function TodayHouseholdNeeds({ userId }: { userId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {choresNeeded.length > 0 && (
             <div style={{ fontSize: '0.72rem', color: 'var(--text)' }}>
-              {choresNeeded.length} chore{choresNeeded.length > 1 ? 's' : ''} due — {choresNeeded.slice(0, 3).map(c => c.name).join(', ')}
+              {choresNeeded.length} chore{choresNeeded.length > 1 ? 's' : ''} due: {choresNeeded.slice(0, 3).map(c => c.name).join(', ')}
               {choresNeeded.length > 3 ? ', …' : ''}
             </div>
           )}
           {shoppingNeeded.length > 0 && (
             <div style={{ fontSize: '0.72rem', color: 'var(--text)' }}>
-              {shoppingNeeded.length} thing{shoppingNeeded.length > 1 ? 's' : ''} to pick up — {shoppingNeeded.slice(0, 3).map(s => s.name).join(', ')}
+              {shoppingNeeded.length} thing{shoppingNeeded.length > 1 ? 's' : ''} to pick up: {shoppingNeeded.slice(0, 3).map(s => s.name).join(', ')}
               {shoppingNeeded.length > 3 ? ', …' : ''}
             </div>
           )}

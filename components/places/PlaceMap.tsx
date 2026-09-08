@@ -174,7 +174,7 @@ export default function PlaceMap({ places, theme, onSelect }: {
         border: '1px solid var(--border)', borderRadius: 'var(--radius)',
         color: 'var(--muted)', fontSize: '0.78rem', textAlign: 'center', padding: '1.5rem',
       }}>
-        <span>Map unavailable right now — your pins are still here, see them in the list below.</span>
+        <span>Map unavailable right now. Your pins are still here, see them in the list below.</span>
         <button onClick={() => setRetryTick(t => t + 1)} className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}>
           Try again
         </button>

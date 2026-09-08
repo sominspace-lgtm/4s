@@ -296,7 +296,7 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
           )}
 
           <div style={{ marginTop: '0.8rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, letterSpacing: '0.04em' }}>
-            {t('theme + guide stack — mix freely', lang)}
+            {t('theme + guide stack · mix freely', lang)}
           </div>
         </div>
       )}

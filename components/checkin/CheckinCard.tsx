@@ -42,7 +42,7 @@ export default function CheckinCard({ userId }: { userId: string }) {
         </div>
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
           {mineDone
-            ? (partnerDone ? 'You’re both in for this week.' : `Done — waiting on ${partnerName}.`)
+            ? (partnerDone ? 'You’re both in for this week.' : `Done. Waiting on ${partnerName}.`)
             : (partnerDone ? `${partnerName} has answered this week.` : 'A few minutes, just between you two.')}
           {mineDone && streak > 1 && (
             <span style={{ color: 'var(--gold)' }}> · {streak} weeks running</span>

@@ -60,7 +60,7 @@ export default function QuickNote() {
     setError(null)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      setError("Couldn't confirm your session — your text is still here, try again.")
+      setError("Couldn't confirm your session. Your text is still here, try again.")
       return
     }
     const { error: insertError } = await supabase
@@ -109,7 +109,7 @@ export default function QuickNote() {
           <>
             <div style={{ padding: '1.4rem 1.4rem 0' }}>
               <div style={{ fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.85rem', opacity: 0.6 }}>
-                {t('quick note — ⌘K', lang)}
+                {t('quick note · ⌘K', lang)}
               </div>
               <textarea
                 ref={inputRef}

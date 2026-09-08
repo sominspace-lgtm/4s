@@ -49,7 +49,7 @@ const KO: Record<string, string> = {
   '+ domain': '+ 영역',
 
   // ── Quick Note ────────────────────────────────────────────────────────
-  'quick note — ⌘K': '빠른 메모 — ⌘K',
+  'quick note · ⌘K': '빠른 메모 · ⌘K',
   "What's on your mind?": '무슨 생각을 하고 있나요?',
   'Save ↵': '저장 ↵',
   'saved ✓': '저장됨 ✓',
@@ -146,7 +146,7 @@ const KO: Record<string, string> = {
   // ── Feedback ──────────────────────────────────────────────────────────
   'suggestions & feedback': '제안 및 피드백',
   'Share an idea or report something →': '아이디어를 공유하거나 문제를 보고해주세요 →',
-  'Got it — thank you ✓': '감사합니다 ✓',
+  'Got it, thank you ✓': '감사합니다 ✓',
   'cancel (btn)': '취소',
   'send': '전송',
   'sending…': '전송 중…',

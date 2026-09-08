@@ -121,7 +121,7 @@ export default function ArchivePanel({ open, onClose }: Props) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', minWidth: 0 }}>
                       {item.landmark && (
-                        <span title="Landmark — this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.7rem', flexShrink: 0, lineHeight: 1.4 }}>◆</span>
+                        <span title="Landmark: this one stays in the skyline" style={{ color: 'var(--gold)', fontSize: '0.7rem', flexShrink: 0, lineHeight: 1.4 }}>◆</span>
                       )}
                       <div style={{ fontSize: '0.75rem', color: item.status === 'done' ? 'var(--text)' : 'var(--muted)', lineHeight: 1.4, textDecoration: item.status === 'cancelled' ? 'line-through' : 'none' }}>
                         {item.title}

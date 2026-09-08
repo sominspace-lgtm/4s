@@ -66,7 +66,7 @@ export default function SubsCard() {
             <button
               onClick={() => markPaid(s.id)}
               disabled={!s.renewal_date}
-              title={u === 'paid' ? 'Paid this cycle — click to advance again' : 'Mark this cycle paid'}
+              title={u === 'paid' ? 'Paid this cycle. Click to advance again' : 'Mark this cycle paid'}
               aria-label={`Mark ${s.name} paid`}
               className="press"
               style={{

@@ -114,7 +114,7 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
                 disabled={future}
                 aria-pressed={isDone}
                 aria-label={`${habit.name}, ${getDayLabel(d)}${isDone ? ', done' : ''}`}
-                title={wasDue ? 'Due this day' : 'Not scheduled this day — still loggable'}
+                title={wasDue ? 'Due this day' : 'Not scheduled this day, still loggable'}
                 className={future ? undefined : 'press'}
                 style={{
                   width: 22, height: 22, borderRadius: '5px', cursor: future ? 'default' : 'pointer',

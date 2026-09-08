@@ -40,7 +40,7 @@ export default function UnlockPanel({ open, onClose, reason }: {
     })
     const body = await res.json().catch(() => ({}))
     if (!res.ok) {
-      setError(body.error === 'not_set_up' ? 'That profile has no PIN yet — set one from the login screen.' : (body.error ?? 'Something went wrong.'))
+      setError(body.error === 'not_set_up' ? 'That profile has no PIN yet. Set one from the login screen.' : (body.error ?? 'Something went wrong.'))
       setLoading(false)
       return
     }

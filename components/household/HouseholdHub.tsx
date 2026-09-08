@@ -541,7 +541,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           <button
             onClick={() => doneChore(c)}
             className={`press ${justDone === c.id ? 'settle' : ''}`}
-            title="Mark done — resets the clock"
+            title="Mark done, resets the clock"
             style={{
               background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
               width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
@@ -815,7 +815,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           }}>
             <span className="t-card">Understanding Each Other</span>
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Icon name="lock" size={10} /> Personal — tap to unlock
+              <Icon name="lock" size={10} /> Personal, tap to unlock
             </span>
           </button>
         </section>
@@ -836,7 +836,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           }}>
             <span className="t-card">Check-ins</span>
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Icon name="lock" size={10} /> Personal — tap to unlock
+              <Icon name="lock" size={10} /> Personal, tap to unlock
             </span>
           </button>
         </section>

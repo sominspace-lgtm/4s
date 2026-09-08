@@ -32,8 +32,8 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
       const r = await fetch('/api/notify/test', { method: 'POST' })
       const j = await r.json().catch(() => ({}))
       if (r.ok && j.sent > 0) setTest({ state: 'sent' })
-      else if (r.ok) setTest({ state: 'error', msg: 'Nothing delivered — the subscription may be stale. Turn off and back on.' })
-      else setTest({ state: 'error', msg: j.error === 'VAPID keys are not configured' ? 'Server is missing its push keys — tell an admin.' : (j.error ?? 'Send failed.') })
+      else if (r.ok) setTest({ state: 'error', msg: 'Nothing delivered. The subscription may be stale, so turn it off and back on.' })
+      else setTest({ state: 'error', msg: j.error === 'VAPID keys are not configured' ? 'Server is missing its push keys. Tell an admin.' : (j.error ?? 'Send failed.') })
     } catch {
       setTest({ state: 'error', msg: 'Send failed.' })
     }
@@ -65,7 +65,7 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
           <div>
             <div style={{ fontSize: '0.76rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.8rem' }}>
               {push.status === 'denied'
-                ? 'Blocked in your browser settings — allow notifications for this site, then reload.'
+                ? 'Blocked in your browser settings. Allow notifications for this site, then reload.'
                 : 'Turn on push notifications on this device to choose what 4S tells you about.'}
             </div>
             {push.status !== 'denied' && (
@@ -89,7 +89,7 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
               <button onClick={sendTest} disabled={test.state === 'sending'} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>
-                {test.state === 'sending' ? 'Sending…' : test.state === 'sent' ? 'Sent — check your device ✓' : 'Send a test'}
+                {test.state === 'sending' ? 'Sending…' : test.state === 'sent' ? 'Sent, check your device ✓' : 'Send a test'}
               </button>
               <button onClick={push.unsubscribe} className="btn btn-ghost press" style={{ fontSize: '0.68rem', opacity: 0.7 }}>
                 Turn off on this device
