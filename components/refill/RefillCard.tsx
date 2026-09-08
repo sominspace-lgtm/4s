@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import IconButton from '@/components/ui/IconButton'
 import { format } from 'date-fns'
 import { computeStatus, runoutDate, STATUS_LABEL, REFILL_CATEGORIES, type BuyItem, type RefillStatus } from '@/lib/hooks/useBuyItems'
 
@@ -122,7 +123,7 @@ export default function RefillCard({ item, userId, onMarkBought, onMarkOpened, o
           <button onClick={() => onTogglePaused(item.id)} title={item.status === 'paused' ? 'Resume tracking' : 'Pause tracking'} className="btn btn-ghost" style={{ fontSize: '0.62rem', padding: '0.2em 0.4em' }}>
             {item.status === 'paused' ? '▶' : '⏸'}
           </button>
-          <button onClick={() => onRemove(item.id)} aria-label="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.62rem', opacity: 0.4 }}>✕</button>
+          <IconButton label="Delete" onClick={() => onRemove(item.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
         </div>
       </div>
     </div>

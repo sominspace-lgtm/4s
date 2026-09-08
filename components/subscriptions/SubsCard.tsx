@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import IconButton from '@/components/ui/IconButton'
 import { format, parseISO } from 'date-fns'
 import { useSubscriptions, urgency, type Cadence, type DueKind } from '@/lib/hooks/useSubscriptions'
 import { useLang } from '@/lib/LangContext'
@@ -81,7 +82,7 @@ export default function SubsCard() {
               {s.renewal_date ? `${s.due_kind} ${format(parseISO(s.renewal_date), 'MMM d')}` : '—'}
             </span>
             {/* Always faintly visible — there's no hover on touch. */}
-            <button onClick={() => remove(s.id)} aria-label={`Delete ${s.name}`} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.7rem', opacity: 0.4, flexShrink: 0, padding: '0.3rem 0.2rem' }}>✕</button>
+            <IconButton label={`Delete ${s.name}`} onClick={() => remove(s.id)} size={11} style={{ opacity: 0.4 }}>✕</IconButton>
           </div>
         )
       })}

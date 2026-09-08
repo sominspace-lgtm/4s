@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import IconButton from '@/components/ui/IconButton'
 import { usePeople, daysUntilBirthday, type Person } from '@/lib/hooks/usePeople'
 import { goToPersonal } from '@/lib/utils/navigate'
 
@@ -129,13 +130,13 @@ function GiftRow({ person, days, onUpdate, onRemove }: {
         <span style={{ fontSize: '0.64rem', color: 'var(--muted)', flexShrink: 0 }}>${person.gift_budget}</span>
       )}
 
-      <button
+      <IconButton
+        label={`Remove ${person.name}`}
         onClick={() => onRemove(person.id)}
-        aria-label={`Remove ${person.name}`}
         title="Removes the whole contact, not just the gift"
-        className="press"
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.6rem', opacity: hovered ? 0.4 : 0, transition: 'opacity 0.15s', flexShrink: 0 }}
-      >✕</button>
+        size={10}
+        style={{ opacity: hovered ? 0.4 : 0, transition: 'opacity 0.15s' }}
+      >✕</IconButton>
     </div>
   )
 }

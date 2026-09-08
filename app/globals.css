@@ -34,6 +34,12 @@
   --glow:      rgba(79,99,80,0.18);
   --selection: rgba(79,99,80,0.15);
   --hover-bg:  rgba(116,99,76,0.08);
+  /* The dim layer behind overlays. A dark wash reads correctly on both
+     light and dark themes, so these are global values, not per-theme.
+     --scrim: bottom sheets and side panels (no blur).
+     --scrim-modal: focused centred dialogs (paired with a backdrop blur). */
+  --scrim:       rgba(0,0,0,0.45);
+  --scrim-modal: rgba(0,0,0,0.55);
 
   --font-display: var(--font-lora), 'Lora', Georgia, serif;
   --font-body:    var(--font-nunito), 'Nunito Sans', sans-serif;
@@ -196,6 +202,24 @@ html, body {
 }
 .btn-danger:hover { background: color-mix(in srgb, var(--rose) 10%, transparent); }
 .btn:disabled { opacity: 0.4; cursor: default; }
+
+/* Small glyph buttons (dismiss ✕, inline edit, a bare Icon) — the visual
+   size stays tiny but an invisible 44px hit box is centred on the glyph via
+   ::after, so the touch target meets guidance without changing any layout.
+   See components/ui/IconButton.tsx. */
+.icon-btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--muted); line-height: 1; flex-shrink: 0; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.icon-btn::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 44px; height: 44px; transform: translate(-50%, -50%);
+}
+.icon-btn:hover:not(:disabled) { color: var(--text); }
+.icon-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* Pill controls — consistent tappable icon+label buttons (dashboard bar) */
 .pill {

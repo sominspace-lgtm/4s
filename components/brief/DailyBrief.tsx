@@ -13,6 +13,7 @@ import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import DailyThread from '@/components/brief/DailyThread'
+import IconButton from '@/components/ui/IconButton'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
 import { useCareLog } from '@/lib/hooks/useCareLog'
@@ -427,7 +428,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
         <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>
           <span aria-hidden style={{ color: 'var(--gold)', opacity: 0.7 }}>❋</span>
           <span style={{ flex: 1, fontStyle: 'italic' }}>{whisper}</span>
-          <button onClick={dismissWhisper} aria-label="Dismiss" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.7rem', padding: '0 0.2rem' }}>✕</button>
+          <IconButton label="Dismiss" onClick={dismissWhisper} size={11} style={{ opacity: 0.5 }}>✕</IconButton>
         </div>
       )}
 

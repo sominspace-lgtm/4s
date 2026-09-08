@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import IconButton from '@/components/ui/IconButton'
 
 // The Places feature's shared sheet primitive (2026-08-12).
 //
@@ -92,7 +93,7 @@ export default function PlacesSheet({ open, onClose, title, children }: {
   return createPortal(
     <>
       <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+        position: 'fixed', inset: 0, background: 'var(--scrim)',
         zIndex: isMobile ? 499 : 199,
         opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
         transition: 'opacity 0.2s',
@@ -111,7 +112,7 @@ export default function PlacesSheet({ open, onClose, title, children }: {
         )}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>{title}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          <IconButton label="Close" onClick={onClose} size={16}>✕</IconButton>
         </div>
         {children}
       </div>

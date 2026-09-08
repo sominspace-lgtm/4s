@@ -6,6 +6,7 @@ import { isDueOn, type Habit } from '@/lib/hooks/useHabits'
 import { dueUrgency, type WorkItem } from '@/lib/hooks/useWorkItems'
 import type { Place } from '@/lib/hooks/usePlaces'
 import type { SmartHomeDevice, ActiveScene } from '@/lib/hooks/useSmartHome'
+import IconButton from '@/components/ui/IconButton'
 
 // The glass step between a district's glance card and its real tab
 // (2026-09-08). A frosted half-sheet over the dimmed village showing a
@@ -46,7 +47,7 @@ export default function DistrictPreviewSheet({ district, data, onClose, onOpenFu
         <div style={S.grabber} />
         <div style={S.head}>
           <span style={S.kicker}>{TITLES[district]}</span>
-          <button onClick={onClose} aria-label="Close" style={S.x}>✕</button>
+          <IconButton label="Close" onClick={onClose} size={14}>✕</IconButton>
         </div>
 
         <div style={S.body}>{renderBody(district, data)}</div>

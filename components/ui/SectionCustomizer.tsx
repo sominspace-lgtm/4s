@@ -106,7 +106,7 @@ export default function SectionCustomizer({
   return createPortal(
     <>
       <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+        position: 'fixed', inset: 0, background: 'var(--scrim)',
         zIndex: 199, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none',
         transition: 'opacity 0.2s',
       }} />

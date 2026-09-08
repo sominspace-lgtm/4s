@@ -22,7 +22,7 @@ export default function ShortcutHelp({ open, onClose }: { open: boolean; onClose
       style={{
         position: 'fixed', inset: 0, zIndex: 530, display: 'flex',
         alignItems: 'center', justifyContent: 'center', padding: '1rem',
-        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+        background: 'var(--scrim-modal)', backdropFilter: 'blur(4px)',
       }}
     >
       <div

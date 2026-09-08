@@ -142,7 +142,7 @@ export default function SearchModal({ open, onClose }: Props) {
     <>
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 500, backdropFilter: 'blur(4px)' }}
+        style={{ position: 'fixed', inset: 0, background: 'var(--scrim-modal)', zIndex: 500, backdropFilter: 'blur(4px)' }}
       />
       <div role="dialog" aria-modal="true" aria-label="Search" style={{
         position: 'fixed', top: '18%', left: '50%', transform: 'translateX(-50%)',

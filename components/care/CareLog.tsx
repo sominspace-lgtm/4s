@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import IconButton from '@/components/ui/IconButton'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { CARE_TYPES, careTypeLabel, careSubjectName, type CareSubject } from '@/lib/utils/careTypes'
 
@@ -110,7 +111,7 @@ export default function CareLog({ subject, compact = false }: {
             const hint = gentleHints[0]
             const label = careTypeLabel(subject, hint.kind)
             const more = gentleHints.length > 1 ? `, and ${gentleHints.length - 1} more` : ''
-            return `${label} is usually ${everyPhrase(hint.typical)} — last done ${agoPhrase(hint.elapsed)}${more}.`
+            return `${label} is usually ${everyPhrase(hint.typical)}. Last done ${agoPhrase(hint.elapsed)}${more}.`
           })()}
         </div>
       )}
@@ -140,7 +141,7 @@ export default function CareLog({ subject, compact = false }: {
           display: 'flex', gap: '0.3rem', alignItems: 'center', padding: '0.4rem 0.5rem',
           background: 'color-mix(in srgb, var(--gold) 9%, var(--surface))', border: '1px solid color-mix(in srgb, var(--gold) 24%, var(--border))', borderRadius: 8,
         }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{pending.label} —</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{pending.label}:</span>
           <input
             autoFocus value={pending.detail}
             onChange={e => setPending({ ...pending, detail: e.target.value })}
@@ -178,8 +179,7 @@ export default function CareLog({ subject, compact = false }: {
                   <span style={{ color: 'var(--text)' }}>{careTypeLabel(subject, e.kind)}</span>
                   {e.detail && <span style={{ color: 'var(--muted)' }}>{e.detail}</span>}
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => remove(e.id)} aria-label="Remove" className="press"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                  <IconButton label="Remove" onClick={() => remove(e.id)} size={10} style={{ opacity: 0.35 }}>✕</IconButton>
                 </div>
               ))}
             </div>

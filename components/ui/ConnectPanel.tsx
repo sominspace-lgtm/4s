@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
+import IconButton from '@/components/ui/IconButton'
 
 // One place for every external connection (2026-08-11): Discord and Alexa
 // each had their own home (Household → Setup, Account respectively) — this
@@ -49,7 +50,7 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
   return (
     <>
       <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 199,
+        position: 'fixed', inset: 0, background: 'var(--scrim)', zIndex: 199,
         opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.2s',
       }} />
       <div ref={ref} style={{
@@ -62,7 +63,7 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Connect</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          <IconButton label="Close" onClick={onClose} size={16}>✕</IconButton>
         </div>
 
         <div style={sectionStyle}>

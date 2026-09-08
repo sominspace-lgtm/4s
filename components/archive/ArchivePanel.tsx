@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { format, parseISO } from 'date-fns'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
+import IconButton from '@/components/ui/IconButton'
 
 interface ArchivedItem {
   id: string
@@ -69,7 +70,7 @@ export default function ArchivePanel({ open, onClose }: Props) {
   return (
     <>
       <div style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 299,
+        position: 'fixed', inset: 0, background: 'var(--scrim)', zIndex: 299,
         opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.2s',
       }} />
       <div ref={ref} style={{
@@ -85,7 +86,7 @@ export default function ArchivePanel({ open, onClose }: Props) {
             <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>{t('Archive', lang)}</div>
             <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.5, marginTop: '0.15rem' }}>{t('Completed & cancelled work', lang)}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          <IconButton label={t('Close', lang)} onClick={onClose} size={16}>✕</IconButton>
         </div>
 
         {/* Filter */}

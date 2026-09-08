@@ -8,6 +8,7 @@ import { useEvents } from '@/lib/hooks/useEvents'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useNotes } from '@/lib/hooks/useNotes'
 import Icon from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 // Voice drop (2026-09-08) — hold the mic, say one line ("we're out of
 // coffee and Somi barely ate"), and it splits into actions you confirm
@@ -179,8 +180,8 @@ export default function VoiceDrop({ spaceId, compact = false }: { spaceId: strin
         <span style={{ fontSize: '0.7rem', color: 'var(--muted)', flex: 1 }}>
           {listening ? 'Listening…' : busy ? 'Reading it…' : 'Say or type one line'}
         </span>
-        <button onClick={() => { stopListening(); setOpen(false); setActions(null); setText('') }}
-          aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.8rem', minWidth: 32, minHeight: 32, lineHeight: 1 }}>✕</button>
+        <IconButton label="Close" size={13}
+          onClick={() => { stopListening(); setOpen(false); setActions(null); setText('') }}>✕</IconButton>
       </div>
 
       <textarea
@@ -218,8 +219,8 @@ export default function VoiceDrop({ spaceId, compact = false }: { spaceId: strin
             }}>
               <span style={{ fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', width: '3.6rem', flexShrink: 0 }}>{a.type}</span>
               <span style={{ flex: 1, color: 'var(--text)' }}>{a.label}</span>
-              <button onClick={() => setActions(actions.filter((_, j) => j !== i))} aria-label="Drop"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', minWidth: 30, minHeight: 30, lineHeight: 1 }}>✕</button>
+              <IconButton label="Drop this action" size={10} style={{ opacity: 0.5 }}
+                onClick={() => setActions(actions.filter((_, j) => j !== i))}>✕</IconButton>
             </div>
           ))}
           {actions.length > 0 && (

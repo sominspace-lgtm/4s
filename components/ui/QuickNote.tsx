@@ -86,7 +86,7 @@ export default function QuickNote() {
       onClick={() => setOpen(false)}
       style={{
         position: 'fixed', inset: 0, zIndex: 500,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+        background: 'var(--scrim-modal)', backdropFilter: 'blur(6px)',
       }}
     >
       {/* Top-anchored, not centered — a vertically centered dialog is the one
