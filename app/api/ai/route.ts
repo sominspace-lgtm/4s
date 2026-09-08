@@ -47,6 +47,42 @@ const SEARCH_SCHEMA = {
   additionalProperties: false,
 } as const
 
+// Voice / quick capture (2026-09-08) — one spoken or typed line split into
+// concrete actions the client then files through its normal hooks. Every
+// field is required-with-null, same as the schemas above, so the model
+// always returns a complete shape.
+const CAPTURE_SCHEMA = {
+  type: 'object',
+  properties: {
+    actions: {
+      type: 'array',
+      description: 'Zero or more actions. Empty if nothing actionable was said.',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['shopping', 'care', 'event', 'task', 'note'] },
+          label: { type: 'string', description: 'Short human summary of this one action' },
+          name: { type: ['string', 'null'], description: 'shopping: the item to buy' },
+          qty: { type: ['string', 'null'], description: 'shopping: quantity if stated' },
+          category: { type: ['string', 'null'] },
+          subject: { type: ['string', 'null'], enum: ['somi', 'self', 'home', null], description: 'care: Somi the cat, yourself, or the house' },
+          careKind: { type: ['string', 'null'], description: 'care: short lowercase slug, e.g. "ate", "meds", "litter", "walk"' },
+          note: { type: ['string', 'null'], description: 'care/event: a short detail' },
+          title: { type: ['string', 'null'], description: 'event or task title, date words removed' },
+          date: { type: ['string', 'null'], description: 'yyyy-MM-dd' },
+          time: { type: ['string', 'null'], description: 'HH:MM 24-hour' },
+          energy: { type: ['string', 'null'], enum: ['light', 'medium', 'deep', null] },
+          text: { type: ['string', 'null'], description: 'note: the full text to save' },
+        },
+        required: ['type', 'label', 'name', 'qty', 'category', 'subject', 'careKind', 'note', 'title', 'date', 'time', 'energy', 'text'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['actions'],
+  additionalProperties: false,
+} as const
+
 function firstText(content: Anthropic.ContentBlock[]): string {
   const block = content.find(b => b.type === 'text')
   return block && block.type === 'text' ? block.text : ''
@@ -160,6 +196,23 @@ export async function POST(request: Request) {
           output_config: { format: { type: 'json_schema', schema: SEARCH_SCHEMA } },
           system: 'You help someone search their own notes, tasks, and habits. Given their query and a list of their items (id, title, type), return the ids of the items that best answer or match the query, best first, at most 8. If the query is a question the item titles actually answer, also give a one-sentence plain answer; otherwise answer must be null. Never invent items or ids.',
           messages: [{ role: 'user', content: `Query: ${query}\n\nItems:\n${clean.map(i => `${i.id} [${i.type}] ${i.title}`).join('\n')}` }],
+        })
+        return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
+      }
+
+      // Voice / quick capture (2026-09-08) — the caller shows each action as
+      // a confirm chip and writes nothing until confirmed; on 503/502 it
+      // falls back to filing the raw text as a single note.
+      case 'route-capture': {
+        const text: string = (body.text ?? '').slice(0, 500)
+        if (!text.trim()) return NextResponse.json({ error: 'Missing text' }, { status: 400 })
+        const today = new Date().toISOString().slice(0, 10)
+        const response = await client.messages.create({
+          model: MODEL,
+          max_tokens: 700,
+          output_config: { format: { type: 'json_schema', schema: CAPTURE_SCHEMA } },
+          system: `Today is ${today}. Split one spoken note into zero or more concrete actions for a couple's home dashboard (their cat is Somi). Types: shopping = something to buy; care = something done for Somi, yourself, or the house (set subject and a short lowercase careKind); event = something dated or scheduled; task = a to-do with no fixed time; note = anything else or when a phrase is vague. Prefer note when unsure. Never invent specifics that were not said. Resolve relative dates against today.`,
+          messages: [{ role: 'user', content: text }],
         })
         return NextResponse.json({ result: JSON.parse(firstText(response.content)) })
       }

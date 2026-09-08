@@ -80,17 +80,45 @@ export function useCareLog(subject: CareSubject) {
     window.dispatchEvent(new CustomEvent('4s:care-changed'))
   }, [supabase, entries])
 
-  // Most recent entry per kind, and which kinds were logged today (local).
-  const { lastByKind, doneToday } = useMemo(() => {
+  // Most recent entry per kind, which kinds were logged today (local), the
+  // typical gap between entries of each kind, and — from that — a couple of
+  // gentle "it's been a while" hints. No counts, no streaks: the rhythm is
+  // read from the log itself, and a hint only says the interval and how long
+  // it's been. Nothing is "overdue" here, nothing follows you around.
+  const { lastByKind, doneToday, typicalIntervalByKind, gentleHints } = useMemo(() => {
     const last: Record<string, CareEntry> = {}
     const today = new Set<string>()
     const todayStr = new Date().toDateString()
+    const byKind: Record<string, number[]> = {}
     for (const e of entries) {
       if (!last[e.kind]) last[e.kind] = e
       if (new Date(e.logged_at).toDateString() === todayStr) today.add(e.kind)
+      ;(byKind[e.kind] ??= []).push(Date.parse(e.logged_at))
     }
-    return { lastByKind: last, doneToday: today }
+
+    const typical: Record<string, number> = {}
+    for (const [kind, stamps] of Object.entries(byKind)) {
+      // entries load newest-first; need >= 3 to claim a rhythm at all
+      if (stamps.length < 3) continue
+      const sorted = [...stamps].sort((a, b) => a - b)
+      const gaps: number[] = []
+      for (let i = 1; i < sorted.length; i++) gaps.push((sorted[i] - sorted[i - 1]) / 86_400_000)
+      gaps.sort((a, b) => a - b)
+      const mid = Math.floor(gaps.length / 2)
+      const median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2
+      typical[kind] = Math.round(median)
+    }
+
+    const hints: { kind: string; typical: number; elapsed: number }[] = []
+    for (const [kind, t] of Object.entries(typical)) {
+      if (t < 2) continue
+      const elapsed = Math.round((Date.now() - Date.parse(last[kind].logged_at)) / 86_400_000)
+      if (elapsed > t * 1.4) hints.push({ kind, typical: t, elapsed })
+    }
+    hints.sort((a, b) => b.elapsed / b.typical - a.elapsed / a.typical)
+
+    return { lastByKind: last, doneToday: today, typicalIntervalByKind: typical, gentleHints: hints.slice(0, 2) }
   }, [entries])
 
-  return { entries, loading, log, remove, lastByKind, doneToday, canShare: !shared || !!spaceId }
+  return { entries, loading, log, remove, lastByKind, doneToday, typicalIntervalByKind, gentleHints, canShare: !shared || !!spaceId }
 }

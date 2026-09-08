@@ -55,7 +55,7 @@ export function goToPersonal(tab: PersonalTab) {
 
 // Kept in sync with HouseholdTabId in lib/utils/householdLayout.ts — the two
 // must not drift, or a deep link can land on a tab that no longer renders.
-export type HouseholdTab = 'today' | 'home' | 'calendar' | 'smarthome' | 'reference'
+export type HouseholdTab = 'today' | 'home' | 'upkeep' | 'calendar' | 'smarthome' | 'reference'
 // `calendar` is no longer its own section (2026-09-02, folded back into a Home
 // block) — a 'calendar' deep link now lands on Home. Kept in the union so
 // existing callers keep type-checking. `today` is the section id `hhtoday`

@@ -13,7 +13,7 @@ export default function CareLog({ subject, compact = false }: {
   /** Home-block use: drop the heading, the parent block already has one. */
   compact?: boolean
 }) {
-  const { entries, loading, log, remove, doneToday, lastByKind, canShare } = useCareLog(subject)
+  const { entries, loading, log, remove, doneToday, lastByKind, gentleHints, canShare } = useCareLog(subject)
   const presets = CARE_TYPES[subject]
   const [pending, setPending] = useState<{ kind: string; label: string; detail: string } | null>(null)
   const [custom, setCustom] = useState('')
@@ -54,6 +54,19 @@ export default function CareLog({ subject, compact = false }: {
     if (g) g.items.push(e); else groups.push({ day, items: [e] })
   }
 
+  // "usually about every N days/weeks" — a plain reading of the log's own
+  // rhythm, never a countdown or a warning.
+  const everyPhrase = (days: number) => {
+    if (days >= 12) { const w = Math.round(days / 7); return `about every ${w} week${w === 1 ? '' : 's'}` }
+    if (days === 1) return 'about daily'
+    return `about every ${days} days`
+  }
+  const agoPhrase = (days: number) => {
+    if (days >= 12) { const w = Math.round(days / 7); return `${w} week${w === 1 ? '' : 's'} ago` }
+    if (days === 1) return 'yesterday'
+    return `${days} days ago`
+  }
+
   const quickLog = (kind: string, label: string, detail?: string) => {
     if (detail) { setPending({ kind, label, detail }); return }
     void log(kind)
@@ -89,6 +102,18 @@ export default function CareLog({ subject, compact = false }: {
           </button>
         ))}
       </div>
+
+      {/* Gentle rhythm hints — read from the log, never a badge or a count */}
+      {gentleHints.length > 0 && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
+          {(() => {
+            const hint = gentleHints[0]
+            const label = careTypeLabel(subject, hint.kind)
+            const more = gentleHints.length > 1 ? `, and ${gentleHints.length - 1} more` : ''
+            return `${label} is usually ${everyPhrase(hint.typical)} — last done ${agoPhrase(hint.elapsed)}${more}.`
+          })()}
+        </div>
+      )}
 
       {/* Free-text one-off */}
       <div style={{ display: 'flex', gap: '0.3rem' }}>

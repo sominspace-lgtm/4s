@@ -12,8 +12,11 @@ import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
+import DailyThread from '@/components/brief/DailyThread'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
+import { useCareLog } from '@/lib/hooks/useCareLog'
+import { careTypeLabel } from '@/lib/utils/careTypes'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
@@ -91,6 +94,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
   const { habits, completions } = useHabits()
+  const { gentleHints: somiCareHints, typicalIntervalByKind: somiTypical } = useCareLog('somi')
   const { subs, total: monthlyTotal } = useSubscriptions()
   const giftItems = useGiftOccasions()
   const { people } = usePeople()
@@ -247,6 +251,13 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       return dormantHabits.length === 1
         ? `${dormantHabits[0].name} has gone quiet — it's still yours whenever you come back to it.`
         : `${dormantHabits.length} habits have gone quiet — still yours, whenever.`
+    }
+    if (somiCareHints.length > 0) {
+      const hint = somiCareHints[0]
+      const label = careTypeLabel('somi', hint.kind).toLowerCase()
+      const t = somiTypical[hint.kind]
+      const every = t >= 12 ? `every ${Math.round(t / 7)} weeks` : t === 1 ? 'about daily' : `every ${t} days`
+      return `${label} is usually ${every} — worth a look.`
     }
     if (overdue > 0) return 'A few things slipped — no need to fix them all at once.'
     return null
@@ -452,6 +463,9 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     </div>
 
     {tailOrder.map(id => {
+      // The day in order (2026-09-08) — see DailyThread. Renders at the top
+      // of the reorderable group by default.
+      if (id === 'thread') return <DailyThread key="thread" userId={userId} />
       // The weekly relationship check-in — self-hides except near the
       // weekend / once someone's answered (2026-09-01).
       if (id === 'checkin') return <CheckinCard key="checkin" userId={userId} />

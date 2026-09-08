@@ -13,7 +13,7 @@
 // the Village is its own landing screen now, so a small preview of it on
 // Today was redundant. Today declutters down to: the greeting/stats card,
 // Household's needs panel, the area index, and the calendar.
-export type TodayBlockId = 'budget' | 'checkin' | 'selfcare' | 'areas' | 'calendar' | 'household'
+export type TodayBlockId = 'thread' | 'budget' | 'checkin' | 'selfcare' | 'areas' | 'calendar' | 'household'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -21,6 +21,9 @@ export interface TodayBlockConfig {
 }
 
 export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: string }> = {
+  // The day in order (2026-09-08) — check-in, care, meals, chores, events,
+  // merge-sorted by time. A timeline, read morning and night. See DailyThread.
+  thread:     { label: 'Daily thread',   hint: 'The day in order — check-in, care, meals, what’s due' },
   budget:     { label: 'Capacity',       hint: 'Deep/medium/light slots for today' },
   // The weekly relationship check-in (2026-09-01) — shows near the weekend
   // if you haven't done it, then who's answered. Self-hides otherwise.
@@ -40,13 +43,14 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // different component entirely, so its position here is cosmetic (see
 // DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. These
 // three are true siblings in the render tree and can be reordered.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['checkin', 'selfcare', 'areas', 'household'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['thread', 'checkin', 'selfcare', 'areas', 'household'])
 
 // Order here is the default order — not enforced at render time, so a
 // reorder in the customize panel actually changes what you see. Areas sits
 // last among the reorderable group, Calendar trails the whole list (matching
 // where it actually renders — see REORDERABLE's own comment).
 export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
+  { id: 'thread',     hidden: false },
   { id: 'budget',     hidden: false },
   { id: 'checkin',    hidden: false },
   { id: 'selfcare',   hidden: false },
