@@ -11,6 +11,7 @@ import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { useSharedWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useSharedEvents, useEvents } from '@/lib/hooks/useEvents'
+import IconButton from '@/components/ui/IconButton'
 
 // One calendar for everything the household has going on: chores, meals,
 // routines/maintenance, trips, and every dated task or event on this space —
@@ -353,11 +354,7 @@ function MonthView({ month, setMonth, selected, setSelected, entriesFor, spaceId
                   rule CalendarMonth already follows: a chore/meal/routine/
                   trip/task row is derived from its own hub. */}
               {e.kind === 'event' && e.id && (
-                <button
-                  onClick={() => removeEvent(e.id!)}
-                  aria-label="Remove event"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.2rem', flexShrink: 0 }}
-                >✕</button>
+                <IconButton label="Remove event" onClick={() => removeEvent(e.id!)} size={10} style={{ opacity: 0.5 }}>✕</IconButton>
               )}
             </div>
           ))}

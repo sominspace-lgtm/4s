@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useGoals, daysSinceTouched, isStale, type Goal } from '@/lib/hooks/useGoals'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import IconButton from '@/components/ui/IconButton'
 
 // Goals as commitments, not progress trackers.
 //
@@ -187,8 +188,7 @@ export default function GoalsSection({ userId }: { userId: string }) {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.62rem' }}>
                   pick back up
                 </button>
-                <button onClick={() => g.removeGoal(goal.id)} aria-label={`Delete ${goal.title}`} className="press"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem' }}>✕</button>
+                <IconButton label={`Delete ${goal.title}`} onClick={() => g.removeGoal(goal.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
               </div>
             ))}
           </div>

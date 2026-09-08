@@ -6,6 +6,7 @@ import { useTrips, type Trip, type TripStatus } from '@/lib/hooks/useTrips'
 import { useTripBundle, type ItineraryKind, type BudgetCategory } from '@/lib/hooks/useTripBundle'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
+import IconButton from '@/components/ui/IconButton'
 
 const STATUS_OPTIONS: TripStatus[] = ['dreaming', 'planning', 'booked', 'travelling', 'done', 'cancelled']
 const KIND_OPTIONS: ItineraryKind[] = ['activity', 'travel', 'stay', 'food', 'note']
@@ -54,8 +55,7 @@ function ItineraryItemRow({ item, onUpdate, onRemove }: {
           {item.title}{item.time_label && <span style={{ color: 'var(--muted)' }}> · {item.time_label}</span>}
           <span style={{ color: 'var(--gold)', opacity: 0.6, fontSize: '0.62rem', marginLeft: '0.4rem' }}>{editing ? '▾' : (item.item_date ? 'edit' : '▸ set date')}</span>
         </button>
-        <button onClick={() => onRemove(item.id)} aria-label={`Remove ${item.title}`} className="press"
-          style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+        <IconButton label={`Remove ${item.title}`} onClick={() => onRemove(item.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
       </div>
 
       {editing && (
@@ -215,8 +215,7 @@ export default function TripDetail({ trip, open, onClose }: {
               </div>
               <span style={{ fontSize: '0.74rem', color: 'var(--text)', flexShrink: 0 }}>{b.currency} {Number(b.amount).toFixed(2)}</span>
               {b.source === 'user' && (
-                <button onClick={() => bundle.removeBudgetItem(b.id)} aria-label={`Remove ${b.label}`} className="press"
-                  style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                <IconButton label={`Remove ${b.label}`} onClick={() => bundle.removeBudgetItem(b.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
               )}
             </div>
           ))}
@@ -247,8 +246,7 @@ export default function TripDetail({ trip, open, onClose }: {
           {bundle.shortlist.map(s => (
             <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
               <span style={{ flex: 1, fontSize: '0.76rem', color: 'var(--text)' }}>{s.place?.name ?? 'Unknown place'}</span>
-              <button onClick={() => bundle.removeFromShortlist(s.place_id)} aria-label="Remove from shortlist" className="press"
-                style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', cursor: 'pointer' }}>✕</button>
+              <IconButton label="Remove from shortlist" onClick={() => bundle.removeFromShortlist(s.place_id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
             </div>
           ))}
 

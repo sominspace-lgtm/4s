@@ -7,6 +7,7 @@ import {
 } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
+import IconButton from '@/components/ui/IconButton'
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MAX_DOTS = 4
@@ -137,11 +138,7 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
                     task/renewal/refill/gift row is derived from its own hub
                     and should be edited there, not silently forked here. */}
                 {e.type === 'event' && e.id && (
-                  <button
-                    onClick={() => removeEvent(e.id!)}
-                    aria-label="Remove event"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.2rem', flexShrink: 0 }}
-                  >✕</button>
+                  <IconButton label="Remove event" onClick={() => removeEvent(e.id!)} size={10} style={{ opacity: 0.5 }}>✕</IconButton>
                 )}
               </div>
             )

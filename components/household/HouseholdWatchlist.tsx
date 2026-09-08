@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useWatchlist, type WatchlistDomain, type WatchlistStatus, type WatchlistItem } from '@/lib/hooks/useWatchlist'
 import Icon from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -62,8 +63,7 @@ function DomainBacklog({ domain, label, verb, spaceId }: {
                 >
                   {STATUS_ORDER.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                 </select>
-                <button onClick={() => removeItem(i.id)} aria-label={`Remove ${i.title}`} className="press"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
+                <IconButton label={`Remove ${i.title}`} onClick={() => removeItem(i.id)} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
               </div>
             ))}
           </div>

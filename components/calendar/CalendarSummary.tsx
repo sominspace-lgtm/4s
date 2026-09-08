@@ -3,6 +3,7 @@
 import { format, differenceInCalendarDays } from 'date-fns'
 import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
+import IconButton from '@/components/ui/IconButton'
 
 const WINDOW_DAYS = 14
 const MAX_UPCOMING = 8
@@ -23,11 +24,7 @@ function Row({ entry, overdue, onRemoveEvent }: { entry: AgendaEntry; overdue: b
         {overdue ? 'overdue' : format(entry.date, 'EEE, MMM d')}
       </span>
       {entry.type === 'event' && entry.id && (
-        <button
-          onClick={() => onRemoveEvent(entry.id!)}
-          aria-label="Remove event"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', padding: '0 0.1rem', flexShrink: 0 }}
-        >✕</button>
+        <IconButton label="Remove event" onClick={() => onRemoveEvent(entry.id!)} size={10} style={{ opacity: 0.5 }}>✕</IconButton>
       )}
     </div>
   )

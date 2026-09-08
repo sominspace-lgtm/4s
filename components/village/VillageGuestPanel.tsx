@@ -472,7 +472,7 @@ const S: Record<string, React.CSSProperties> = {
   link: { background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: 'inherit', padding: 0, textDecoration: 'underline' },
   modRow: { display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.4rem', background: 'var(--bg)', borderRadius: '8px' },
   badge: { fontSize: '0.58rem', color: 'var(--muted)', background: 'var(--hover-bg, color-mix(in srgb, var(--text) 8%, transparent))', borderRadius: '5px', padding: '0.1rem 0.3rem', flexShrink: 0 },
-  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: '0.15rem', lineHeight: 1, flexShrink: 0 },
+  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', lineHeight: 1, flexShrink: 0, minWidth: 32, minHeight: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
   endBtn: {
     width: '100%', marginTop: '1rem', padding: '0.65rem', border: 'none', borderRadius: '11px',
     background: 'var(--gold)', color: 'var(--bg)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',

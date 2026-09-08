@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Gathering, PrepItem } from '@/lib/hooks/useGathering'
+import IconButton from '@/components/ui/IconButton'
 
 // The getting-started checklist, as a one-time popup (2026-09-04) — used
 // to gate a whole separate "prep" scene phase; now a gathering goes live
@@ -60,7 +61,7 @@ export default function GatheringChecklistPopup({ gathering, signals = [], start
           {items.length > 0 && (
             <span style={{ fontSize: '0.64rem', color: 'var(--muted)' }}>{doneCount}/{items.length}</span>
           )}
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+          <IconButton label="Close" onClick={onClose} size={13}>✕</IconButton>
         </div>
 
         {countdown && (

@@ -9,6 +9,7 @@ import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 import Icon, { type IconName } from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
   idea: 'Want to go', good: 'Good — go again', hmm: 'Hmm — no strong opinion', bad: 'Not again', archived: 'Archived',
@@ -468,7 +469,7 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
             {place.tags.map(tag => (
               <span key={tag} className="pill" style={{ fontSize: '0.66rem', padding: '0.3rem 0.6rem' }}>
                 {tag}
-                <button onClick={() => removeTag(tag)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 0, fontSize: '0.6rem' }}>✕</button>
+                <IconButton label={`Remove ${tag}`} onClick={() => removeTag(tag)} size={10}>✕</IconButton>
               </span>
             ))}
           </div>

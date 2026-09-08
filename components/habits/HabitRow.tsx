@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { scheduleSummary, isDueOn, type Habit } from '@/lib/hooks/useHabits'
 import { plantFor, STAGE_INDEX, completionsToNextStage } from '@/lib/village/state'
 import PlantGlyph from './PlantGlyph'
+import IconButton from '@/components/ui/IconButton'
 
 interface HabitRowProps {
   habit: Habit & { shared?: boolean }
@@ -149,35 +150,27 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
           : <span style={{ opacity: 0.5 }}>new</span>}
       </div>
 
-      <button
+      <IconButton
+        label={habit.paused ? 'Resume tracking' : 'Pause tracking'}
         onClick={() => onTogglePaused(habit.id)}
-        title={habit.paused ? 'Resume tracking' : 'Pause tracking'}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-          fontSize: '0.62rem', color: 'var(--muted)',
-          opacity: habit.paused ? 0.8 : (hovered ? 0.4 : 0), transition: 'opacity 0.15s',
-        }}
-      >{habit.paused ? '▶' : '⏸'}</button>
+        size={10}
+        style={{ opacity: habit.paused ? 0.8 : (hovered ? 0.4 : 0), transition: 'opacity 0.15s' }}
+      >{habit.paused ? '▶' : '⏸'}</IconButton>
 
-      {/* Share toggle */}
-      <button
+      <IconButton
+        label={shared ? 'Shared with companions' : 'Share with companions'}
         onClick={toggleShare}
-        title={shared ? 'Shared with companions' : 'Share with companions'}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-          fontSize: '0.62rem', color: shared ? 'var(--gold)' : 'var(--muted)',
-          opacity: shared ? 0.8 : hovered ? 0.3 : 0, transition: 'opacity 0.15s',
-        }}
-      >⇆</button>
+        size={10}
+        color={shared ? 'var(--gold)' : undefined}
+        style={{ opacity: shared ? 0.8 : hovered ? 0.3 : 0, transition: 'opacity 0.15s' }}
+      >⇆</IconButton>
 
-      <button
+      <IconButton
+        label={`Delete ${habit.name}`}
         onClick={() => onDelete(habit.id)}
-        aria-label={`Delete ${habit.name}`}
-        style={{
-          background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
-          fontSize: '0.65rem', opacity: hovered ? 0.4 : 0, transition: 'opacity 0.15s', flexShrink: 0,
-        }}
-      >✕</button>
+        size={10}
+        style={{ opacity: hovered ? 0.4 : 0, transition: 'opacity 0.15s' }}
+      >✕</IconButton>
     </div>
   )
 }

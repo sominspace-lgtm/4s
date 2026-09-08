@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 // The one reorder/hide drawer, used at every level that has a customizable
 // list — top-level tabs (CustomizePanel), Today's blocks (was
@@ -124,9 +125,7 @@ export default function SectionCustomizer({
           <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>
             {title}
           </div>
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1,
-          }}>✕</button>
+          <IconButton label="Close" onClick={onClose} size={16}>✕</IconButton>
         </div>
 
         <div style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.5rem', lineHeight: 1.6 }}>

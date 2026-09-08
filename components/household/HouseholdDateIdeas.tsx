@@ -6,6 +6,7 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { uploadDateIdeaPhoto, getDateIdeaPhotoUrls } from '@/lib/storage/dateIdeaPhotos'
 import type { Energy } from '@/lib/hooks/useWorkItems'
 import Icon from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -102,8 +103,7 @@ function IdeaBox({ idea, places, update, removeIdea, addPlace, spaceId }: {
           flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
           fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.35,
         }}>{idea.title}</button>
-        <button onClick={() => removeIdea(idea.id)} aria-label={`Remove ${idea.title}`} className="press"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+        <IconButton label={`Remove ${idea.title}`} onClick={() => removeIdea(idea.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
@@ -167,8 +167,7 @@ function IdeaBox({ idea, places, update, removeIdea, addPlace, spaceId }: {
                 display: 'inline-flex', alignItems: 'center', gap: '0.3em',
               }}>
                 {tag}
-                <button onClick={() => update(idea.id, { tags: idea.tags.filter((_, ti) => ti !== i) })} aria-label={`Remove ${tag}`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.6, fontSize: '0.5rem', padding: 0 }}>✕</button>
+                <IconButton label={`Remove ${tag}`} onClick={() => update(idea.id, { tags: idea.tags.filter((_, ti) => ti !== i) })} size={8} color="var(--gold)" style={{ opacity: 0.6 }}>✕</IconButton>
               </span>
             ))}
             <input value={tagDraft} onChange={e => setTagDraft(e.target.value)}

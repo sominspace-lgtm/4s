@@ -10,6 +10,7 @@ import { SkeletonRow } from '@/components/ui/Skeleton'
 import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
 import Icon, { type IconName } from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 // Energy, not priority — how much of a person a task takes, not a ranking of
 // what matters. No color implies urgency; the dot count is the only signal.
@@ -196,10 +197,7 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
           >◇ landmark</button>
         )}
 
-        <button onClick={() => onRemove(item.id)} style={{
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-          fontSize: '0.55rem', color: 'var(--muted)', opacity: hovered ? 0.35 : 0, transition: 'opacity 0.15s',
-        }}>✕</button>
+        <IconButton label="Remove" onClick={() => onRemove(item.id)} size={9} style={{ opacity: hovered ? 0.35 : 0, transition: 'opacity 0.15s' }}>✕</IconButton>
       </div>
 
       {/* Meta row — DENSITY FIX (2026-08-07).

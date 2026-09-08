@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useSmartHome, type SmartHomeDevice } from '@/lib/hooks/useSmartHome'
 import { SCENE_PRESETS } from '@/lib/smarthome/apply'
 import Icon, { type IconName } from '@/components/ui/Icon'
+import IconButton from '@/components/ui/IconButton'
 
 // Smart Home (2026-08-25) — a manual device/status list, not a real
 // automation integration (no Home Assistant/IoT API exists anywhere in this
@@ -76,7 +77,7 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
                     <Icon name={(r.icon as IconName) || 'sparkle'} size={13} />{r.name}
                   </button>
                   {r.custom && (
-                    <button onClick={() => deleteScene(r.custom!.id)} aria-label={`Delete ${r.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.6rem' }}>✕</button>
+                    <IconButton label={`Delete ${r.name}`} onClick={() => deleteScene(r.custom!.id)} size={10} style={{ opacity: 0.5 }}>✕</IconButton>
                   )}
                 </span>
                 )
@@ -156,8 +157,7 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', opacity: 0.7, fontSize: '0.6rem', flexShrink: 0 }}>
                   {d.note ? 'note' : '+ note'}
                 </button>
-                <button onClick={() => removeDevice(d.id)} aria-label={`Remove ${d.name}`} className="press"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                <IconButton label={`Remove ${d.name}`} onClick={() => removeDevice(d.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
               </div>
               {editingNote[d.id] ? (
                 <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem', marginLeft: '2.2rem' }}>
