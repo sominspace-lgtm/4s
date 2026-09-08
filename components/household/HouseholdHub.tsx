@@ -20,6 +20,7 @@ import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
 import CheckinForm from '@/components/checkin/CheckinForm'
+import CheckinPhoto from '@/components/checkin/CheckinPhoto'
 import { openSmartHome } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
@@ -981,7 +982,14 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                                   <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
                                 </div>
                               ))}
+                              {c.note && (
+                                <div>
+                                  <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>Anything else</div>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.note}</div>
+                                </div>
+                              )}
                             </div>
+                            <CheckinPhoto path={c.photo_path} />
                           </div>
                         )
                       })}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { weekOfSunday } from '@/lib/utils/checkinQuestions'
+import { uploadCheckinPhoto } from '@/lib/storage/checkinPhotos'
 
 export interface CheckinAnswer {
   questionKey: string
@@ -17,6 +18,8 @@ export interface Checkin {
   space_id: string
   week_of: string
   answers: CheckinAnswer[]
+  photo_path: string | null
+  note: string | null
   completed_at: string
 }
 
@@ -54,7 +57,10 @@ export function useCheckins(userId: string | null = null) {
     return () => window.removeEventListener('4s:checkins-changed', onChanged)
   }, [load])
 
-  const submitCheckin = useCallback(async (answers: CheckinAnswer[]): Promise<{ error: string | null }> => {
+  const submitCheckin = useCallback(async (
+    answers: CheckinAnswer[],
+    extras?: { photo?: File | null; note?: string | null },
+  ): Promise<{ error: string | null }> => {
     if (!userId || !spaceId) return { error: 'No shared space yet' }
     const week = weekOfSunday()
     // One submission per week, no edits after (2026-09-03). Guard on what we
@@ -67,13 +73,26 @@ export function useCheckins(userId: string | null = null) {
       .filter(a => typeof a.questionKey === 'string' && typeof a.answer === 'string' && a.answer.trim())
       .map(a => ({ questionKey: a.questionKey, questionText: a.questionText ?? null, answer: a.answer.slice(0, 2000) }))
     if (clean.length === 0) return { error: 'Nothing to save' }
-    const { error } = await supabase.from('checkins').insert(
-      { user_id: userId, space_id: spaceId, week_of: week, answers: clean, completed_at: new Date().toISOString() },
-    )
+
+    // The photo is required by the form; upload it before the row so a
+    // failed upload doesn't leave a check-in with no picture.
+    let photoPath: string | null = null
+    if (extras?.photo) {
+      try { photoPath = await uploadCheckinPhoto(spaceId, week, userId, extras.photo) }
+      catch (e) { return { error: e instanceof Error ? e.message : 'Photo upload failed' } }
+    }
+
+    const { error } = await supabase.from('checkins').insert({
+      user_id: userId, space_id: spaceId, week_of: week, answers: clean,
+      photo_path: photoPath, note: extras?.note?.trim().slice(0, 2000) || null,
+      completed_at: new Date().toISOString(),
+    })
     if (error) {
       return { error: error.code === '23505' ? 'You’ve already checked in this week.' : error.message }
     }
     window.dispatchEvent(new CustomEvent('4s:checkins-changed'))
+    // If that completes the pair, let the server celebrate it to both of you.
+    void fetch('/api/checkin/celebrate', { method: 'POST' }).catch(() => {})
     return { error: null }
   }, [supabase, userId, spaceId, checkins])
 

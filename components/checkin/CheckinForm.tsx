@@ -18,7 +18,7 @@ function isValid(q: CheckinQuestion, v: string): boolean {
 }
 
 export default function CheckinForm({ onSubmit, onClose }: {
-  onSubmit: (answers: CheckinAnswer[]) => Promise<{ error: string | null }>
+  onSubmit: (answers: CheckinAnswer[], extras?: { photo?: File | null; note?: string | null }) => Promise<{ error: string | null }>
   onClose: () => void
 }) {
   const weekKey = useMemo(() => weekOfSunday(), [])
@@ -27,24 +27,36 @@ export default function CheckinForm({ onSubmit, onClose }: {
 
   const [step, setStep] = useState(0)
   const [values, setValues] = useState<Record<string, string>>({})
+  const [note, setNote] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Restore an in-progress draft for this week.
+  useEffect(() => {
+    if (!photo) { setPhotoUrl(null); return }
+    const url = URL.createObjectURL(photo)
+    setPhotoUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [photo])
+
+  // Restore an in-progress draft for this week (the photo can't be saved
+  // to localStorage — it's re-picked if you refresh mid-form).
   useEffect(() => {
     try {
       const raw = localStorage.getItem(draftKey)
       if (raw) {
-        const d = JSON.parse(raw) as { values?: Record<string, string>; step?: number }
+        const d = JSON.parse(raw) as { values?: Record<string, string>; step?: number; note?: string }
         if (d.values) setValues(d.values)
+        if (typeof d.note === 'string') setNote(d.note)
         if (typeof d.step === 'number') setStep(Math.min(d.step, questions.length))
       }
     } catch { /* private mode / bad json — start fresh */ }
   }, [draftKey, questions.length])
 
   useEffect(() => {
-    try { localStorage.setItem(draftKey, JSON.stringify({ values, step })) } catch { /* ignore */ }
-  }, [draftKey, values, step])
+    try { localStorage.setItem(draftKey, JSON.stringify({ values, step, note })) } catch { /* ignore */ }
+  }, [draftKey, values, step, note])
 
   const onReview = step >= questions.length
   const q = questions[step]
@@ -54,13 +66,14 @@ export default function CheckinForm({ onSubmit, onClose }: {
 
   async function finish() {
     if (!allValid) { setError('Please answer every question first.'); return }
+    if (!photo) { setError('Add a photo from this week to finish.'); return }
     setSaving(true); setError(null)
     const answers: CheckinAnswer[] = questions.map(qq => ({
       questionKey: qq.key,
       questionText: qq.text,
       answer: (values[qq.key] ?? '').trim(),
     }))
-    const { error } = await onSubmit(answers)
+    const { error } = await onSubmit(answers, { photo, note: note.trim() || null })
     setSaving(false)
     if (error) { setError(error); return }
     try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
@@ -110,6 +123,45 @@ export default function CheckinForm({ onSubmit, onClose }: {
                 </div>
               ))}
             </div>
+
+            {/* A photo from this week — required (2026-09-08) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text)' }}>
+                A photo from this week <span style={{ color: 'var(--muted)', fontSize: '0.66rem' }}>· required</span>
+              </div>
+              <label style={{
+                position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                border: `1px dashed ${photo ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 12,
+                overflow: 'hidden', minHeight: photoUrl ? undefined : '5rem',
+                background: 'var(--bg)', color: 'var(--muted)', fontSize: '0.72rem',
+              }}>
+                {photoUrl
+                  ? <img src={photoUrl} alt="" style={{ width: '100%', maxHeight: '14rem', objectFit: 'cover', display: 'block' }} />
+                  : <span>Choose or take a photo</span>}
+                <input type="file" accept="image/*" capture="environment"
+                  onChange={e => setPhoto(e.target.files?.[0] ?? null)}
+                  style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+              </label>
+              {photo && (
+                <button onClick={() => setPhoto(null)} className="press" style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.64rem' }}>
+                  Choose a different one
+                </button>
+              )}
+            </div>
+
+            {/* Anything else — optional */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text)' }}>
+                Anything else <span style={{ color: 'var(--muted)', fontSize: '0.66rem' }}>· optional</span>
+              </div>
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                placeholder="A note the questions didn't cover"
+                style={{
+                  width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)',
+                  borderRadius: 10, padding: '0.55rem 0.7rem', fontSize: '0.8rem', color: 'var(--text)',
+                  outline: 'none', fontFamily: 'inherit', resize: 'vertical',
+                }} />
+            </div>
           </>
         ) : (
           <>
@@ -128,7 +180,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
           )}
           <div style={{ flex: 1 }} />
           {onReview ? (
-            <button onClick={finish} disabled={saving || !allValid} className="btn btn-primary press" style={{ fontSize: '0.74rem' }}>
+            <button onClick={finish} disabled={saving || !allValid || !photo} className="btn btn-primary press" style={{ fontSize: '0.74rem', opacity: (!allValid || !photo) ? 0.4 : 1 }}>
               {saving ? 'Submitting…' : 'Submit'}
             </button>
           ) : (
