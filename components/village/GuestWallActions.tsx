@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Icon from '@/components/ui/Icon'
 import GuestActionForm, { GUEST_ACTIONS, useGuestName, type GuestActionKind } from '@/components/guest/GuestActionForm'
+import type { GuestInfo, MenuItem, AgendaItem } from '@/lib/hooks/useGathering'
 
 // Guest actions on the wall itself — the same contributions the
 // /g/[token] phone portal collects, posted to the same endpoint. The
@@ -12,11 +13,24 @@ import GuestActionForm, { GUEST_ACTIONS, useGuestName, type GuestActionKind } fr
 
 type Kind = GuestActionKind
 
-export default function GuestWallActions({ token, photoAlbumUrl = null, onInteract }: { token: string; photoAlbumUrl?: string | null; onInteract?: () => void }) {
+export default function GuestWallActions({ token, photoAlbumUrl = null, guestInfo = null, menu = [], agenda = [], onInteract }: {
+  token: string
+  photoAlbumUrl?: string | null
+  guestInfo?: GuestInfo | null
+  menu?: MenuItem[]
+  agenda?: AgendaItem[]
+  onInteract?: () => void
+}) {
   const [open, setOpen] = useState<Kind | null>(null)
   const [showQueue, setShowQueue] = useState(false)
   const [showBye, setShowBye] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
+  const [showWhatson, setShowWhatson] = useState(false)
+  const [showPhotos, setShowPhotos] = useState(false)
   const [justLeft, setJustLeft] = useState(false)
+
+  const hasInfo = !!(guestInfo?.wifiName || guestInfo?.wifiPassword || guestInfo?.notes)
+  const hasWhatson = menu.length > 0 || agenda.length > 0
   const [name, rememberName] = useGuestName()
   const [hosts, setHosts] = useState<{ name: string }[]>([])
 
@@ -40,6 +54,68 @@ export default function GuestWallActions({ token, photoAlbumUrl = null, onIntera
     return (
       <div style={shell}>
         <WallGoodbye photoAlbumUrl={photoAlbumUrl} onBack={() => setShowBye(false)} />
+      </div>
+    )
+  }
+
+  if (showInfo) {
+    return (
+      <div style={shell}>
+        <WallBack onBack={() => setShowInfo(false)} />
+        <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text)' }}>House info</div>
+        {guestInfo?.wifiName && (
+          <div style={infoRow}><span style={infoLabel}>Wifi</span><span>{guestInfo.wifiName}</span></div>
+        )}
+        {guestInfo?.wifiPassword && (
+          <div style={infoRow}><span style={infoLabel}>Password</span><span>{guestInfo.wifiPassword}</span></div>
+        )}
+        {guestInfo?.notes && (
+          <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{guestInfo.notes}</div>
+        )}
+      </div>
+    )
+  }
+
+  if (showWhatson) {
+    return (
+      <div style={shell}>
+        <WallBack onBack={() => setShowWhatson(false)} />
+        {agenda.length > 0 && (
+          <>
+            <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text)' }}>The plan</div>
+            {agenda.map(a => (
+              <div key={a.id} style={infoRow}><span style={infoLabel}>{a.time}</span><span style={{ opacity: a.done ? 0.5 : 1 }}>{a.label}</span></div>
+            ))}
+          </>
+        )}
+        {menu.length > 0 && (
+          <>
+            <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text)', marginTop: agenda.length ? '0.4rem' : 0 }}>On the menu</div>
+            {menu.map(m => (
+              <div key={m.id} style={{ fontSize: '0.74rem', color: 'var(--text)' }}>
+                {m.name}{m.note && <span style={{ color: 'var(--muted)' }}> · {m.note}</span>}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    )
+  }
+
+  if (showPhotos) {
+    return (
+      <div style={shell}>
+        <WallBack onBack={() => setShowPhotos(false)} />
+        <div style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text)', textAlign: 'center' }}>Add your photos</div>
+        {photoAlbumUrl ? (
+          <>
+            <div style={{ fontSize: '0.66rem', color: 'var(--muted)', textAlign: 'center' }}>Scan with your phone to open the shared album</div>
+            <AlbumQR url={photoAlbumUrl} />
+            <a href={photoAlbumUrl} target="_blank" rel="noreferrer" style={{ ...pillBtn, textAlign: 'center', textDecoration: 'none' }}>Open the album</a>
+          </>
+        ) : (
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center' }}>The hosts haven&rsquo;t set up a photo album yet.</div>
+        )}
       </div>
     )
   }
@@ -75,28 +151,34 @@ export default function GuestWallActions({ token, photoAlbumUrl = null, onIntera
       <div style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text)' }}>Leave something</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))', gap: '0.4rem' }}>
         {GUEST_ACTIONS.map(a => (
-          <button key={a.kind} onClick={() => { setOpen(a.kind); onInteract?.() }} className="press" style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-            padding: '0.6rem 0.3rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'inherit',
-          }}>
+          <button key={a.kind} onClick={() => { setOpen(a.kind); onInteract?.() }} className="press" style={tileStyle}>
             <Icon name={a.icon} size={17} />
             <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>{a.label}</span>
           </button>
         ))}
-        <button onClick={() => { setShowQueue(true); onInteract?.() }} className="press" style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-          padding: '0.6rem 0.3rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'inherit',
-        }}>
+        <button onClick={() => { setShowQueue(true); onInteract?.() }} className="press" style={tileStyle}>
           <Icon name="mic" size={17} />
           <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>What&rsquo;s playing</span>
         </button>
-        <button onClick={() => { setShowBye(true); onInteract?.() }} className="press" style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-          padding: '0.6rem 0.3rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'inherit',
-        }}>
+        {hasInfo && (
+          <button onClick={() => { setShowInfo(true); onInteract?.() }} className="press" style={tileStyle}>
+            <Icon name="controls" size={17} />
+            <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>House info</span>
+          </button>
+        )}
+        {hasWhatson && (
+          <button onClick={() => { setShowWhatson(true); onInteract?.() }} className="press" style={tileStyle}>
+            <Icon name="clipboard" size={17} />
+            <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>What&rsquo;s on</span>
+          </button>
+        )}
+        {photoAlbumUrl && (
+          <button onClick={() => { setShowPhotos(true); onInteract?.() }} className="press" style={tileStyle}>
+            <Icon name="camera" size={17} />
+            <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>Add photos</span>
+          </button>
+        )}
+        <button onClick={() => { setShowBye(true); onInteract?.() }} className="press" style={tileStyle}>
           <span style={{ fontSize: 17, lineHeight: 1 }}>👋</span>
           <span style={{ fontSize: '0.62rem', textAlign: 'center' }}>Heading home</span>
         </button>
@@ -105,30 +187,41 @@ export default function GuestWallActions({ token, photoAlbumUrl = null, onIntera
   )
 }
 
-// The wall's goodbye screen (2026-09-04) — a guest who used the wall all
-// night needs their OWN phone for photos, so this is the one place a QR
-// still shows: scan it to open the shared album later. Generated client
-// -side with the same `qrcode` lib Village.tsx uses for the join link.
-function WallGoodbye({ photoAlbumUrl, onBack }: { photoAlbumUrl: string | null; onBack: () => void }) {
+// A small back link, shared by the wall's sub-screens.
+function WallBack({ onBack }: { onBack: () => void }) {
+  return (
+    <button onClick={onBack} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer', padding: '0.2rem 0', minHeight: 32 }}>← back</button>
+  )
+}
+
+// The shared-album QR (2026-09-08) — the wall can't take photos itself, so
+// a guest scans this to open the album on their own phone. Same `qrcode`
+// lib Village.tsx uses for the join link. Used by both the "Add photos"
+// tile and the goodbye screen.
+function AlbumQR({ url }: { url: string }) {
   const [qr, setQr] = useState<string | null>(null)
   useEffect(() => {
-    if (!photoAlbumUrl) { setQr(null); return }
     let alive = true
-    import('qrcode').then(({ default: QRCode }) => QRCode.toDataURL(photoAlbumUrl, { margin: 1, width: 240 }))
+    import('qrcode').then(({ default: QRCode }) => QRCode.toDataURL(url, { margin: 1, width: 240 }))
       .then(uri => { if (alive) setQr(uri) })
       .catch(() => { if (alive) setQr(null) })
     return () => { alive = false }
-  }, [photoAlbumUrl])
+  }, [url])
+  if (!qr) return null
+  return <img src={qr} alt="Scan to open the photo album" width={140} height={140} style={{ borderRadius: 8, background: '#fff', padding: 6, alignSelf: 'center' }} />
+}
 
+// The wall's goodbye screen (2026-09-04) — thanks + the album QR.
+function WallGoodbye({ photoAlbumUrl, onBack }: { photoAlbumUrl: string | null; onBack: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', textAlign: 'center' }}>
-      <button onClick={onBack} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer', padding: 0 }}>← back</button>
+      <WallBack onBack={onBack} />
       <span style={{ fontSize: 22 }}>👋</span>
       <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)' }}>Thanks for coming</div>
       {photoAlbumUrl ? (
         <>
           <div style={{ fontSize: '0.66rem', color: 'var(--muted)' }}>Scan with your phone to add your photos later</div>
-          {qr && <img src={qr} alt="Scan to open the photo album" width={130} height={130} style={{ borderRadius: 8, background: '#fff', padding: 6 }} />}
+          <AlbumQR url={photoAlbumUrl} />
         </>
       ) : (
         <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>The village will remember that you were here.</div>
@@ -205,4 +298,16 @@ const shell: React.CSSProperties = {
 const pillBtn: React.CSSProperties = {
   background: 'var(--rose)', color: 'var(--bg)', border: 'none', borderRadius: 10,
   padding: '0.5rem', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+}
+const tileStyle: React.CSSProperties = {
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+  padding: '0.6rem 0.3rem', minHeight: 60, cursor: 'pointer', color: 'var(--text)', fontFamily: 'inherit',
+}
+const infoRow: React.CSSProperties = {
+  display: 'flex', gap: '0.6rem', fontSize: '0.76rem', color: 'var(--text)', padding: '0.15rem 0',
+}
+const infoLabel: React.CSSProperties = {
+  fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)',
+  width: '4.2rem', flexShrink: 0, paddingTop: '0.1rem',
 }

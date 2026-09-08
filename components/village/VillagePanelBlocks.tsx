@@ -7,7 +7,7 @@ import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { kitchenLookup, openExternal } from '@/lib/utils/cheatSheets'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import type { VillageState } from '@/lib/village/state'
-import type { Gathering } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import ScenesCard from './ScenesCard'
 import ShortcutsCard from './ShortcutsCard'
@@ -40,6 +40,7 @@ export interface VillagePanelProps {
   gathering?: Gathering | null
   guestUrl?: string | null
   qrDataUri?: string | null
+  guestInfo?: GuestInfo
 }
 
 export default function VillagePanelBlocks(props: VillagePanelProps) {
@@ -67,11 +68,20 @@ export default function VillagePanelBlocks(props: VillagePanelProps) {
 
 // ── Guest set ──────────────────────────────────────────────────────────────
 
-function GuestSet({ village, gathering, guestUrl, qrDataUri, spaceId, onInteract }: VillagePanelProps) {
+function GuestSet({ village, gathering, guestUrl, qrDataUri, spaceId, onInteract, guestInfo }: VillagePanelProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       <ProgressCard village={village} guest />
-      {gathering && <GuestWallActions token={gathering.token} photoAlbumUrl={gathering.photo_album_url} onInteract={onInteract} />}
+      {gathering && (
+        <GuestWallActions
+          token={gathering.token}
+          photoAlbumUrl={gathering.photo_album_url}
+          guestInfo={guestInfo ?? null}
+          menu={gathering.menu ?? []}
+          agenda={gathering.agenda ?? []}
+          onInteract={onInteract}
+        />
+      )}
       <MusicCard spaceId={spaceId} compact readOnly />
       {(qrDataUri || gathering?.photo_album_url) && (
         <div className="organic" style={{

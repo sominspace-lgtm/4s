@@ -6,7 +6,7 @@ import type { VillageState } from '@/lib/village/state'
 import Icon from '@/components/ui/Icon'
 import NowNext from './NowNext'
 import VillagePanelBlocks from './VillagePanelBlocks'
-import type { Gathering } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
 
 // The wall / kiosk counterpart to VillageWidgets — a swipe-up sheet over the
 // Village scene. Content comes from VillagePanelBlocks:
@@ -18,7 +18,7 @@ import type { Gathering } from '@/lib/hooks/useGathering'
 // Only mounted when `locked` (shared mode) — see Village.tsx.
 export default function VillageHomeSheet({
   userId, spaceId, ambient, onInteract, gathering, onStartGathering,
-  village, panelBlocks = [], onLockedNavigate, guestUrl = null, qrDataUri = null,
+  village, panelBlocks = [], onLockedNavigate, guestUrl = null, qrDataUri = null, guestInfo,
 }: {
   userId: string
   spaceId: string | null
@@ -31,6 +31,7 @@ export default function VillageHomeSheet({
   onLockedNavigate?: (label: string) => void
   guestUrl?: string | null
   qrDataUri?: string | null
+  guestInfo?: GuestInfo
 }) {
   const [open, setOpen] = useState(false)
   const [dragY, setDragY] = useState<number | null>(null)
@@ -145,6 +146,7 @@ export default function VillageHomeSheet({
           gathering={gathering}
           guestUrl={guestUrl}
           qrDataUri={qrDataUri}
+          guestInfo={guestInfo}
         />
       </div>
     </div>

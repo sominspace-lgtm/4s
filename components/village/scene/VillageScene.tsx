@@ -45,7 +45,7 @@ function PingForm({ title, reasons, showNote, onSend }: {
   title: string
   reasons: string[]
   showNote: boolean
-  onSend: (reason: string) => void
+  onSend: (text: string, isNote: boolean) => void
 }) {
   const [note, setNote] = useState('')
   const chip: React.CSSProperties = {
@@ -58,14 +58,14 @@ function PingForm({ title, reasons, showNote, onSend }: {
       <div style={{ fontSize: 9.5, fontWeight: 600 }}>{title}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
         {reasons.map(r => (
-          <button key={r} onClick={() => onSend(r)} style={chip}>{r}</button>
+          <button key={r} onClick={() => onSend(r, false)} style={chip}>{r}</button>
         ))}
       </div>
       {showNote && (
         <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>
           <input
             value={note} onChange={e => setNote(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && note.trim()) onSend(note.trim()) }}
+            onKeyDown={e => { if (e.key === 'Enter' && note.trim()) onSend(note.trim(), true) }}
             placeholder="pick up flour…" maxLength={140}
             style={{
               flex: 1, minWidth: 0, fontSize: 8, fontFamily: 'inherit', padding: '3px 6px',
@@ -73,7 +73,7 @@ function PingForm({ title, reasons, showNote, onSend }: {
             }}
           />
           <button
-            onClick={() => note.trim() && onSend(note.trim())}
+            onClick={() => note.trim() && onSend(note.trim(), true)}
             disabled={!note.trim()}
             style={{ ...chip, opacity: note.trim() ? 1 : 0.5, background: 'var(--gold)', borderColor: 'var(--gold)', color: 'var(--bg)' }}
           >Send</button>
@@ -89,9 +89,11 @@ function PingForm({ title, reasons, showNote, onSend }: {
 // slides up from the bottom. Portalled to <body>, so it re-declares the
 // Bloom vars the same way the fullscreen overlay does (the portal lands
 // past the card's own theme scope).
-function GlanceSheet({ info, onClose }: {
+function GlanceSheet({ info, onClose, onPrimary }: {
   info: { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void } }
   onClose: () => void
+  /** What the main button does — a district preview step, or straight nav. */
+  onPrimary: () => void
 }) {
   return (
     <div style={{ ...THEMES.bloom, position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
@@ -107,7 +109,7 @@ function GlanceSheet({ info, onClose }: {
         {info.lines.map((l, i) => (
           <div key={i} style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{l}</div>
         ))}
-        <button onClick={() => { info.go(); onClose() }} style={{
+        <button onClick={() => { onPrimary(); onClose() }} style={{
           marginTop: 16, width: '100%', padding: '13px 16px', borderRadius: 13,
           background: 'var(--gold)', color: 'var(--bg)', border: 'none',
           fontSize: 14.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
@@ -143,7 +145,7 @@ export default function VillageScene({
   hosting = false, guestInfo = {}, soloFigure = false,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
-  scroll = false, pulse = {}, memoryAlbums = [],
+  scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
 }: {
   village: VillageState
   live: boolean
@@ -223,6 +225,9 @@ export default function VillageScene({
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
   onLockedNavigate?: (label: string) => void
+  /** Open the compact glass preview for a district instead of navigating
+   *  straight out. Given the district id and the nav it would have run. */
+  onOpenPreview?: (id: LandmarkId, go: () => void) => void
   /** Guest Mode (2026-08-29) — the village is open to guests. Orthogonal to
    *  `locked`. Warms the scene up regardless of time of day: lanterns and
    *  window glow forced on, party bunting over Home, a warm colour wash. */
@@ -257,7 +262,7 @@ export default function VillageScene({
   /** Partners ping each other in home mode, same card as hostPing above —
    *  tap the OTHER figure (not your own) any time you're not hosting.
    *  `selfIsOwner` says which figure is "you" so the self-tap is excluded. */
-  partnerPing?: { selfIsOwner: boolean; onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
+  partnerPing?: { selfIsOwner: boolean; onPing: (who: 'sylvia' | 'harry', reason: string, note?: string) => void } | null
   /** Opens the Kitchen overlay (from the reference nook in the scene). */
   onOpenKitchen?: () => void
   /** Live lines for the Home cottage tap-card: tonight's dinner, the next
@@ -2810,10 +2815,16 @@ export default function VillageScene({
           inside never dismisses it. */}
       {openPanel && (() => {
         const info = panelContent[openPanel]
+        const panelId = openPanel
+        // The glance card's button opens a compact preview sheet first
+        // (see DistrictPreviewSheet); only that sheet's own button leaves
+        // the village. Falls back to direct nav where no preview handler
+        // is wired (e.g. /village-preview).
+        const primary = () => { if (onOpenPreview) onOpenPreview(panelId, info.go); else info.go() }
         // Phone — a bottom sheet portalled past the SVG, not the popover.
         if (mobile) {
           return typeof document !== 'undefined'
-            ? createPortal(<GlanceSheet info={info} onClose={() => setOpenPanel(null)} />, document.body)
+            ? createPortal(<GlanceSheet info={info} onPrimary={primary} onClose={() => setOpenPanel(null)} />, document.body)
             : null
         }
         const p = pos(openPanel)
@@ -2832,7 +2843,7 @@ export default function VillageScene({
               {info.lines.map((line, i) => (
                 <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
               ))}
-              <g transform={`translate(${width / 2} ${height - 15 - secondaryH})`} onClick={() => { info.go(); setOpenPanel(null) }}
+              <g transform={`translate(${width / 2} ${height - 15 - secondaryH})`} onClick={() => { primary(); setOpenPanel(null) }}
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
                 <rect x={-48} y={-9} width={96} height={18} rx={9} fill="color-mix(in srgb, var(--gold) 14%, transparent)" stroke="var(--gold)" strokeWidth={0.8} />
                 <text x={0} y={0.5} dominantBaseline="central" textAnchor="middle" fontSize={7.5} fill="var(--gold)" fontFamily="var(--font-body)">{info.actionLabel} →</text>
@@ -2964,8 +2975,9 @@ export default function VillageScene({
                       title={isPartner ? `Ping ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'}` : `Call ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'} over`}
                       reasons={reasons}
                       showNote={isPartner}
-                      onSend={reason => {
-                        activePing.onPing(pingOpen, reason)
+                      onSend={(text, isNote) => {
+                        if (isPartner && isNote) partnerPing!.onPing(pingOpen, '', text)
+                        else activePing.onPing(pingOpen, text)
                         setPingDone(true)
                         setTimeout(close, 1600)
                       }}

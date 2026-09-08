@@ -22,7 +22,7 @@ import { useEvents } from '@/lib/hooks/useEvents'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
-import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
+import { forestSlots, districtSlots, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
@@ -35,6 +35,7 @@ import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import KitchenMode from './KitchenMode'
+import DistrictPreviewSheet from './DistrictPreviewSheet'
 import GatheringChecklistPopup from './GatheringChecklistPopup'
 import HostingSetup from './HostingSetup'
 import MilestoneMoment from './MilestoneMoment'
@@ -183,6 +184,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
   const [panelCustomizeOpen, setPanelCustomizeOpen] = useState(false)
   const [kitchenOpen, setKitchenOpen] = useState(false)
+  // District glance card → compact glass preview → real tab (2026-09-08).
+  // The scene hands up the id and the navigation it would have run; the
+  // preview sheet's own button runs it.
+  const [preview, setPreview] = useState<{ id: LandmarkId; go: () => void } | null>(null)
   // The getting-started checklist popup — up once right after starting a
   // gathering, reopenable any time from the ⋯ menu (round 80, 2026-09-04,
   // replaces the old separate "prep" scene phase).
@@ -388,11 +393,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // guest ping, a session-authed route instead of the guest token one.
   // 'sylvia' = the space owner, 'harry' = the other accepted member.
   const selfIsOwner = spaces[0]?.owner_id === userId
-  const pingPartner = (_who: 'sylvia' | 'harry', reason: string) => {
+  const pingPartner = (_who: 'sylvia' | 'harry', reason: string, note?: string) => {
     void fetch('/api/village/ping', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ reason }),
+      // A free-text errand goes as `note` (the route allows 140 there); a
+      // chip goes as `reason` (clipped to 60).
+      body: JSON.stringify(note ? { note } : { reason }),
     }).catch(() => { /* the card still says "on their way" */ })
   }
   // Is the other partner around? Empty (no rows / no space) = assume yes and
@@ -756,6 +763,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
             partnerPing={!guestActive ? { selfIsOwner, onPing: pingPartner } : null}
             onOpenKitchen={() => setKitchenOpen(true)}
+            onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } setPreview({ id, go }) }}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
@@ -1077,6 +1085,26 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           <KitchenMode spaceId={spaces[0]?.id ?? null} onClose={() => setKitchenOpen(false)} />
         )}
 
+        {preview && (
+          <DistrictPreviewSheet
+            district={preview.id}
+            onClose={() => setPreview(null)}
+            onOpenFull={() => { preview.go(); setPreview(null) }}
+            data={{
+              habits, completions,
+              tasks: workItems,
+              places,
+              devices: smartHomeDevices, activeScene,
+              albums: memoryLinks.map(l => ({ label: l.label, url: l.url })),
+              events: structures?.calendar ?? [],
+              wifiName: guestInfo.wifiName ?? null,
+              notes: guestInfo.notes ?? null,
+              treeRings: v.treeRings,
+              dinner: homeCard?.dinner ?? null,
+            }}
+          />
+        )}
+
         {/* Host panel — music playlist, photo album, guest moderation, and
             "end the gathering" → the keepsake editor. Opened from the ⋯
             menu's "Manage the gathering". */}
@@ -1147,6 +1175,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onLockedNavigate={onLockedNavigate}
             guestUrl={guestUrl}
             qrDataUri={qrDataUri}
+            guestInfo={guestInfo}
           />
         )}
 
