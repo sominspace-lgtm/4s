@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
+import { useRoutines } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
@@ -134,10 +134,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // whichever real account backs the shared-device session as "online".
   usePresenceHeartbeat(userId, spaceId, !sharedMode)
   const partnerPresence = usePartnerPresence(userId, spaceId)
-  const [addingRoutine, setAddingRoutine] = useState(false)
-  const [routineName, setRoutineName] = useState('')
-  const [routineCadence, setRoutineCadence] = useState('7')
-  const [routineSteps, setRoutineSteps] = useState('')
 
   const [choreName, setChoreName] = useState('')
   const [choreCadence, setChoreCadence] = useState('7')
@@ -669,86 +665,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     )
   }
 
-  // Grouped multi-step chores (2026-08-13) — "Sunday Home Reset" with
-  // sub-tasks, separate from the flat single-item chores block above.
-  function renderRoutines() {
-    const routines = routinesHook.routines.filter(r => r.kind === 'routine')
-    return (
-      <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
-        <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Routines</span>
-          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{routines.length}</span>
-        </summary>
-        <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-
-        {routines.length === 0 && !routinesHook.loading && (
-          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-            Nothing yet. A routine is a named group of steps — &ldquo;Sunday Home Reset&rdquo;: Bathroom, Kitchen, Laundry, Trash, Sheets.
-          </div>
-        )}
-
-        {[...routines].sort((a, b) => routineDue(a) - routineDue(b)).map(r => {
-          const done = r.items.filter(i => i.done).length
-          const due = routineDue(r)
-          return (
-            <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
-                <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
-                  {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
-                </span>
-              </div>
-              {r.last_done_at && nameFor(r.last_done_by) && (
-                <div style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.3rem' }}>
-                  Last done by {nameFor(r.last_done_by)}, {daysAgo(r.last_done_at)}
-                </div>
-              )}
-              {r.items.map(i => (
-                <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
-                  <button onClick={() => routinesHook.toggleRoutineItem(r.id, i.id)} className="press" style={{
-                    width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                    background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                  }} />
-                  <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
-                    {i.label}
-                  </span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-                <button onClick={() => routinesHook.markRoutineDone(r.id)} className="btn btn-secondary press" style={{ fontSize: '0.66rem' }}>Mark whole thing done</button>
-                <button onClick={() => routinesHook.removeRoutine(r.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', cursor: 'pointer' }}>Remove</button>
-              </div>
-            </div>
-          )
-        })}
-
-        {addingRoutine ? (
-          <form
-            onSubmit={async e => {
-              e.preventDefault()
-              if (!routineName.trim()) return
-              await routinesHook.addRoutine('routine', routineName.trim(), Number(routineCadence) || 7, routineSteps.split(',').map(s => s.trim()).filter(Boolean))
-              setRoutineName(''); setRoutineSteps(''); setRoutineCadence('7'); setAddingRoutine(false)
-            }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
-          >
-            <input value={routineName} onChange={e => setRoutineName(e.target.value)} placeholder="Routine name (e.g. Sunday Home Reset)" style={input} autoFocus />
-            <input value={routineSteps} onChange={e => setRoutineSteps(e.target.value)} placeholder="Steps, comma-separated (Bathroom, Kitchen, Laundry...)" style={input} />
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Every</span>
-              <input type="number" min="1" value={routineCadence} onChange={e => setRoutineCadence(e.target.value)} style={{ ...input, width: '60px' }} />
-              <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days</span>
-              <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-              <button type="button" onClick={() => setAddingRoutine(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
-            </div>
-          </form>
-        ) : (
-          <button onClick={() => setAddingRoutine(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New routine</button>
-        )}
-        </div>
-      </details>
-    )
-  }
+  // Routines used to be a cadence + a multi-step checklist; since
+  // 2026-09-08 they're a care log (subject 'routines') — tap what you did,
+  // tracked by day, same as Somi's and the house's care.
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -839,19 +758,17 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
-          Chores (a single item on a cadence), routines (a named group of
-          steps), and the care logs (Somi + the house), logged as they
-          happen rather than on a schedule. */}
+          Chores stay a cadence list; routines and the care logs (Somi + the
+          house) are all the same "tap what you did, tracked by day" shape. */}
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div className="t-card">Chores &amp; routines</div>
+            <div className="t-card">Chores</div>
             {renderChores()}
-            {renderRoutines()}
           </section>
 
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div className="t-card">Care</div>
+            <div className="t-card">Care &amp; routines</div>
             <details open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
               <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -871,6 +788,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                   </div>
                 )}
                 <CareLog subject="somi" compact />
+              </div>
+            </details>
+            <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Routines</summary>
+              <div style={{ marginTop: '0.7rem' }}>
+                <CareLog subject="routines" compact />
               </div>
             </details>
             <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
