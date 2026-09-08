@@ -15,7 +15,6 @@ import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import DailyThread from '@/components/brief/DailyThread'
 import IconButton from '@/components/ui/IconButton'
 import CheckinCard from '@/components/checkin/CheckinCard'
-import CareLog from '@/components/care/CareLog'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { careTypeLabel } from '@/lib/utils/careTypes'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
@@ -470,14 +469,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       // The weekly relationship check-in — self-hides except near the
       // weekend / once someone's answered (2026-09-01).
       if (id === 'checkin') return <CheckinCard key="checkin" userId={userId} />
-      if (id === 'selfcare') return (
-        <div key="selfcare" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.9rem 1.2rem' }}>
-          <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>
-            Looking after yourself
-          </div>
-          <CareLog subject="self" compact />
-        </div>
-      )
       if (id === 'areas' && !lowDay) return (
         <div key="areas">
           <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, marginBottom: '0.5rem' }}>

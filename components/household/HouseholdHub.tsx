@@ -18,9 +18,10 @@ import HouseholdDateIdeas from './HouseholdDateIdeas'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
+import IconButton from '@/components/ui/IconButton'
 import CheckinForm from '@/components/checkin/CheckinForm'
 import CheckinPhoto from '@/components/checkin/CheckinPhoto'
-import { openSmartHome } from '@/lib/utils/navigate'
+import { openSmartHome, goToSection } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
@@ -303,7 +304,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                     </div>
                   </div>
                   {s.qty && <span style={{ fontSize: '0.64rem', color: 'var(--muted)', flexShrink: 0 }}>{s.qty}</span>}
-                  <button onClick={() => h.removeShopping(s.id)} aria-label={`Remove ${s.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+                  <IconButton label={`Remove ${s.name}`} onClick={() => h.removeShopping(s.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
                 </div>
               ))}
             </div>
@@ -377,7 +378,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                         textDecorationColor: 'var(--faint)', textUnderlineOffset: '2px',
                       }}
                     >{m.title}</button>
-                    <button onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.55rem', flexShrink: 0 }}>✕</button>
+                    <IconButton label={`Remove ${m.title}`} onClick={() => h.removeMeal(m.id)} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
                   </div>
                 ))}
               </div>
@@ -474,8 +475,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
               retire
             </button>
-            <button onClick={() => h.removeRule(r.id)} aria-label={`Delete ${r.text}`} className="press"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+            <IconButton label={`Delete ${r.text}`} onClick={() => h.removeRule(r.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
           </div>
         ))}
 
@@ -574,7 +574,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
             style={{ ...input, width: '80px', fontSize: '0.62rem', padding: '0.3rem 0.4rem', flexShrink: 0 }}
           />
-          <button onClick={() => h.removeChore(c.id)} aria-label={`Remove ${c.name}`} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.4, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
+          <IconButton label={`Remove ${c.name}`} onClick={() => h.removeChore(c.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
         </div>
       )
     }
@@ -755,7 +755,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div className="t-card">Chores</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <div className="t-card">Chores</div>
+              <button onClick={() => goToSection('habits')} className="press" style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.66rem', padding: 0, opacity: 0.7,
+              }}>Track habits →</button>
+            </div>
             {renderChores()}
           </section>
 
@@ -771,7 +776,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                     borderRadius: '8px', padding: '0.45rem 0.6rem',
                   }}>
                     <span style={{ flex: 1 }}>
-                      {somiChores.length} old Somi chore{somiChores.length === 1 ? '' : 's'} ({somiChores.map(c => c.name).join(', ')}) — care is logged here now, not on a cadence.
+                      {somiChores.length} old Somi chore{somiChores.length === 1 ? '' : 's'} ({somiChores.map(c => c.name).join(', ')}). Care is logged here now, not on a cadence.
                     </span>
                     <button onClick={() => { somiChores.forEach(c => h.removeChore(c.id)) }} className="press" style={{
                       flexShrink: 0, background: 'none', border: '1px solid var(--border)', borderRadius: '7px',
@@ -977,7 +982,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.2rem' }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>{selectedMeal.title}</span>
-              <button onClick={() => setSelectedMealId(null)} aria-label="Close" className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+              <IconButton label="Close" onClick={() => setSelectedMealId(null)} size={13}>✕</IconButton>
             </div>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginBottom: '1rem' }}>
               {selectedMeal.slot} · {format(parseISO(selectedMeal.meal_date), 'EEEE d MMM')}

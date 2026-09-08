@@ -95,7 +95,7 @@ export default function DailyThread({ userId }: { userId: string }) {
         label: careTypeLabel(e.subject, e.kind),
         meta: `${careSubjectName(e.subject)}${e.detail ? ` · ${e.detail}` : ''}`,
         tone: 'done',
-        go: () => goToHousehold(e.subject === 'self' ? 'today' : 'upkeep'),
+        go: () => goToHousehold('upkeep'),
       })
     }
 
