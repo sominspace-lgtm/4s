@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/ui/IconButton'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { CARE_TYPES, careTypeLabel, careSubjectName, type CareSubject } from '@/lib/utils/careTypes'
@@ -18,6 +18,28 @@ export default function CareLog({ subject, compact = false }: {
   const presets = CARE_TYPES[subject]
   const [pending, setPending] = useState<{ kind: string; label: string; detail: string } | null>(null)
   const [custom, setCustom] = useState('')
+
+  // After you tap a care task it's logged straight away (the "last done"
+  // clock resets to today). A misfire is one tap to undo — this holds the
+  // just-created entry for a few seconds so Undo has something to delete.
+  const [undo, setUndo] = useState<{ id: string; label: string } | null>(null)
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current) }, [])
+
+  const doLog = async (kind: string, label: string, opts?: { detail?: string }) => {
+    const res = await log(kind, opts)
+    if (res.entry) {
+      setUndo({ id: res.entry.id, label })
+      if (undoTimer.current) clearTimeout(undoTimer.current)
+      undoTimer.current = setTimeout(() => setUndo(null), 7000)
+    }
+  }
+  const runUndo = () => {
+    if (!undo) return
+    void remove(undo.id)
+    setUndo(null)
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+  }
 
   // Custom actions (2026-09-08, "we should be able to add more") — any kind
   // you've logged before that isn't a preset becomes its own reusable
@@ -70,8 +92,9 @@ export default function CareLog({ subject, compact = false }: {
 
   const quickLog = (kind: string, label: string, detail?: string) => {
     if (detail) { setPending({ kind, label, detail }); return }
-    void log(kind)
+    void doLog(kind, label)
   }
+  const lastLabel = (kind: string) => (lastByKind[kind] ? relDay(lastByKind[kind].logged_at) : 'not yet')
 
   const pill = (active: boolean): React.CSSProperties => ({
     fontSize: '0.72rem', fontFamily: 'inherit', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: 999,
@@ -94,15 +117,32 @@ export default function CareLog({ subject, compact = false }: {
         </div>
       )}
 
-      {/* Quick-log buttons */}
+      {/* Quick-log buttons — each shows when it was last done; tapping logs
+          it now and resets that to "today". */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
         {types.map(t => (
           <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, 'detail' in t ? t.detail : undefined)} style={pill(doneToday.has(t.kind))}>
             {t.label}
-            {lastByKind[t.kind] ? ` · ${relDay(lastByKind[t.kind].logged_at)}` : ''}
+            <span style={{ opacity: 0.6, marginLeft: '0.3em' }}>· {lastLabel(t.kind)}</span>
           </button>
         ))}
       </div>
+
+      {/* Undo the tap you just made */}
+      {undo && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem',
+          color: 'var(--muted)', padding: '0.35rem 0.5rem', borderRadius: 8,
+          background: 'color-mix(in srgb, var(--emerald) 10%, var(--surface))',
+          border: '1px solid color-mix(in srgb, var(--emerald) 22%, var(--border))',
+        }}>
+          <span style={{ flex: 1 }}>Logged {undo.label}.</span>
+          <button onClick={runUndo} className="press" style={{
+            background: 'none', border: '1px solid var(--border)', borderRadius: 999,
+            padding: '0.2rem 0.7rem', fontSize: '0.7rem', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', minHeight: 30,
+          }}>Undo</button>
+        </div>
+      )}
 
       {/* Gentle rhythm hints — read from the log, never a badge or a count */}
       {gentleHints.length > 0 && (
@@ -120,7 +160,7 @@ export default function CareLog({ subject, compact = false }: {
       <div style={{ display: 'flex', gap: '0.3rem' }}>
         <input
           value={custom} onChange={e => setCustom(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { void log(custom.trim()); setCustom('') } }}
+          onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { void doLog(custom.trim(), custom.trim()); setCustom('') } }}
           placeholder={presets.length ? 'Something else…' : 'Add something to track'}
           style={{
             flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)',
@@ -128,7 +168,7 @@ export default function CareLog({ subject, compact = false }: {
           }}
         />
         <button className="press" disabled={!custom.trim()} aria-label="Log"
-          onClick={() => { if (custom.trim()) { void log(custom.trim()); setCustom('') } }}
+          onClick={() => { if (custom.trim()) { void doLog(custom.trim(), custom.trim()); setCustom('') } }}
           style={{
             background: 'var(--gold)', color: 'var(--bg)', border: 'none', borderRadius: 8,
             padding: '0 0.7rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600, opacity: custom.trim() ? 1 : 0.5,
@@ -146,7 +186,7 @@ export default function CareLog({ subject, compact = false }: {
             autoFocus value={pending.detail}
             onChange={e => setPending({ ...pending, detail: e.target.value })}
             onKeyDown={e => {
-              if (e.key === 'Enter') { void log(pending.kind, { detail: pending.detail }); setPending(null) }
+              if (e.key === 'Enter') { void doLog(pending.kind, pending.label, { detail: pending.detail }); setPending(null) }
               if (e.key === 'Escape') setPending(null)
             }}
             placeholder={CARE_TYPES[subject].find(t => t.kind === pending.kind)?.detail}
@@ -155,7 +195,7 @@ export default function CareLog({ subject, compact = false }: {
               borderRadius: 6, padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
             }}
           />
-          <button className="press" onClick={() => { void log(pending.kind, { detail: pending.detail }); setPending(null) }}
+          <button className="press" onClick={() => { void doLog(pending.kind, pending.label, { detail: pending.detail }); setPending(null) }}
             style={{ background: 'var(--gold)', color: 'var(--bg)', border: 'none', borderRadius: 6, padding: '0.25rem 0.55rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}>
             Log
           </button>

@@ -54,8 +54,8 @@ export function useCareLog(subject: CareSubject) {
 
   const log = useCallback(async (kind: string, opts?: { note?: string; detail?: string; loggedAt?: string }) => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Not signed in' }
-    if (shared && !spaceId) return { error: 'Set up a shared space first' }
+    if (!user) return { error: 'Not signed in', entry: null }
+    if (shared && !spaceId) return { error: 'Set up a shared space first', entry: null }
     const row = {
       user_id: user.id,
       space_id: shared ? spaceId : null,
@@ -66,10 +66,10 @@ export function useCareLog(subject: CareSubject) {
       logged_at: opts?.loggedAt ?? new Date().toISOString(),
     }
     const { data, error } = await supabase.from('care_logs').insert(row).select().single()
-    if (error) return { error: error.message }
+    if (error) return { error: error.message, entry: null }
     setEntries(prev => [data as CareEntry, ...prev].sort((a, b) => b.logged_at.localeCompare(a.logged_at)))
     window.dispatchEvent(new CustomEvent('4s:care-changed'))
-    return { error: null }
+    return { error: null, entry: data as CareEntry }
   }, [supabase, subject, shared, spaceId])
 
   const remove = useCallback(async (id: string) => {
