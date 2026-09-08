@@ -216,16 +216,17 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
           ))}
         </div>
 
-        {/* Every pin is shared now (2026-09-09). A pin that predates that and
-            is still private gets one tap to bring onto the shared map. */}
-        {hasSpace && place.space_id === null && spaceId && (
-          <button
-            onClick={() => updatePlace(place!.id, { space_id: spaceId })}
-            className="press"
-            style={{ alignSelf: 'flex-start', background: 'none', border: '1px solid var(--border)', borderRadius: '7px', padding: '0.3rem 0.6rem', fontSize: '0.7rem', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Add to the shared map
-          </button>
+        {/* Shared by default at creation; this is the post-creation toggle
+            both ways (2026-09-09). */}
+        {hasSpace && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={place.space_id === null}
+              onChange={e => updatePlace(place!.id, { space_id: e.target.checked ? null : spaceId ?? null })}
+            />
+            Keep this private
+          </label>
         )}
 
         {/* Save this pin as a date idea (2026-08-24) — creates a date_ideas

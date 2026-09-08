@@ -26,15 +26,16 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
   // coordinates instead of the "no location yet" fallback.
   const [geo, setGeo] = useState<{ lat: number; lng: number; city: string | null; country: string | null } | null>(null)
   const [geoStatus, setGeoStatus] = useState<'idle' | 'looking' | 'found' | 'not-found'>('idle')
-  // Every pin is shared (2026-09-09) — a saved place is household business
-  // the same way a chore or a shopping item is, and there's no "keep this
-  // private" any more. On a solo account usePlaces.addPlace still resolves
-  // `shared: true` with no real space to `space_id: null`, so it stays
-  // personal by construction until a partner joins.
+  // Shared by default (2026-09-09) — a saved place is household business the
+  // same way a chore or a shopping item is, so the pin lands on the shared
+  // map unless you tick "keep this private". On a solo account
+  // usePlaces.addPlace resolves shared with no real space to space_id null
+  // regardless, so it stays personal until a partner joins.
+  const [isPrivate, setIsPrivate] = useState(false)
   const [saving, setSaving] = useState(false)
 
   function reset() {
-    setName(''); setKinds(['place']); setNote(''); setAddress('')
+    setName(''); setKinds(['place']); setNote(''); setAddress(''); setIsPrivate(false)
     setGeo(null); setGeoStatus('idle')
   }
 
@@ -86,7 +87,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
       country: geo?.country ?? null,
       lat: geo?.lat ?? null,
       lng: geo?.lng ?? null,
-      shared: true,
+      shared: !isPrivate,
     }, spaceId)
     setSaving(false)
     if (!error) { reset(); onClose() }
@@ -149,8 +150,14 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
         <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Note: why you're saving it (optional)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
 
         {hasSpace && (
-          <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75 }}>
-            Saved to your shared map, so you both see it.
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
+            Keep this private
+          </label>
+        )}
+        {hasSpace && !isPrivate && (
+          <div style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.7 }}>
+            Goes on your shared map, so you both see it.
           </div>
         )}
 
