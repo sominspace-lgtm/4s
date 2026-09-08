@@ -593,22 +593,17 @@ export default function VillageScene({
     setOpenSomiCard(o => !o)
   }
 
-  // A tap on a district goes straight to its primary action — the tab it
-  // opens, no glance-card step first (2026-09-07, "when districts are
-  // clicked they should open a tab instead of bringing you to another page
-  // first"). The glance card lives on as a desktop hover peek (see
-  // hoverPreview). The one exception: on a phone, a district that carries a
-  // SECOND action (Kitchen → also the home cheat sheet; the notice board →
-  // also Notes; Memories → also the postcards) opens the sheet as a
-  // chooser, since there's no hover there to reveal it. Locked districts
-  // are unchanged: straight to the PIN prompt, never a card.
+  // Click or hover a district and its glance card comes up first — on
+  // every device (2026-09-07, "a tab popup up first on click/hover; to
+  // take us to the actual tab we need to click go to"). Nothing navigates
+  // until the card's own "Go to …" button is tapped. Locked districts are
+  // the exception: straight to the PIN prompt, never a card, since the
+  // card's live content is only ever safe once a district isn't locked.
   const activateDistrict = (id: LandmarkId, label: string) => {
     if (arranging) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
-    if (mobile && panelContent[id].secondary) { setOpenPanel(id); return }
-    setOpenPanel(null)
-    panelContent[id].go()
+    setOpenPanel(id)
   }
   const openOrToggle = (id: LandmarkId, label: string) => () => activateDistrict(id, label)
   // Fuzzy district tap (2026-09-06, "everything should still be tappable on
@@ -662,7 +657,7 @@ export default function VillageScene({
         // prompt instead.
         ...(v.plants.length ? [plantSlots.slice(0, 3).map(s => s.plant.name).join(', ')] : []),
       ],
-      actionLabel: 'Open Habits', go: () => goToPersonal('habits'),
+      actionLabel: 'Go to Habits', go: () => goToPersonal('habits'),
     },
     home: {
       title: 'Home',
@@ -678,7 +673,7 @@ export default function VillageScene({
             homeCard.sceneName ? `Scene · ${homeCard.sceneName}` : null,
           ].filter(Boolean).slice(0, 3) as string[]
         : ['Lights, scenes, and more'],
-      actionLabel: 'Open Smart Home', go: openSmartHome,
+      actionLabel: 'Go to Smart Home', go: openSmartHome,
     },
     projects: {
       title: 'Projects',
@@ -690,7 +685,7 @@ export default function VillageScene({
         // project's real title.
         ...(v.buildings.length ? [buildingSlots.slice(0, 3).map(s => s.building.title).join(', ')] : []),
       ],
-      actionLabel: 'Open Tasks', go: () => goToPersonal('tasks'),
+      actionLabel: 'Go to Tasks', go: () => goToPersonal('tasks'),
     },
     places: {
       title: 'Places',
@@ -700,7 +695,7 @@ export default function VillageScene({
         // fine even in shared mode — see districtLocked's own comment.
         ...(placeNames.length ? [placeNames.slice(0, 3).join(', ')] : []),
       ],
-      actionLabel: 'Open Places', go: () => goToSection('places'),
+      actionLabel: 'Go to Places', go: () => goToSection('places'),
     },
     // People district → Memories (2026-09-07). The community tree is the
     // gallery: the household's shared photo albums, plus the trip
@@ -715,7 +710,7 @@ export default function VillageScene({
         if (memoryAlbums[0]?.label) l.push(memoryAlbums[0].label)
         return l.slice(0, 3)
       })(),
-      actionLabel: memoryAlbums.length ? `Open ${memoryAlbums[0].label || 'the album'}` : 'See the postcards',
+      actionLabel: memoryAlbums.length ? `Go to ${memoryAlbums[0].label || 'the album'}` : 'Go to the postcards',
       go: memoryAlbums.length
         ? () => window.open(memoryAlbums[0].url, '_blank', 'noopener')
         : () => setPostcardsOpen(true),
@@ -726,14 +721,14 @@ export default function VillageScene({
       lines: [
         v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'Its first year',
       ],
-      actionLabel: 'Open Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
+      actionLabel: 'Go to the Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
     },
     // Kitchen (2026-09-07) — the pantry stall holds both cheat sheets.
     // Household-facing, so it stays open in shared mode.
     references: {
       title: 'Kitchen',
       lines: ['Recipes, timings, and home know-how'],
-      actionLabel: 'Open Kitchen', go: () => onOpenKitchen?.(),
+      actionLabel: 'Go to the Kitchen sheet', go: () => onOpenKitchen?.(),
       secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
     },
     // Notice board (2026-09-07) — the household's shared board: what's on
@@ -750,7 +745,7 @@ export default function VillageScene({
         const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
         return l.length ? l : ["What's coming up"]
       })(),
-      actionLabel: 'Open the calendar', go: () => goToHousehold('calendar'),
+      actionLabel: 'Go to the calendar', go: () => goToHousehold('calendar'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
   }
