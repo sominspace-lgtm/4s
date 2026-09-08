@@ -26,17 +26,15 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
   // coordinates instead of the "no location yet" fallback.
   const [geo, setGeo] = useState<{ lat: number; lng: number; city: string | null; country: string | null } | null>(null)
   const [geoStatus, setGeoStatus] = useState<'idle' | 'looking' | 'found' | 'not-found'>('idle')
-  // Auto-shared by default (2026-08-21) — a pin is household business the
-  // same way a chore or a shopping item already is; opting OUT (private) is
-  // the exception now, not opting in. Only meaningful when hasSpace is
-  // true — usePlaces.addPlace still resolves `shared: true` with no real
-  // space to `space_id: null` regardless, so a solo account stays private
-  // by construction even though this defaults true.
-  const [isPrivate, setIsPrivate] = useState(false)
+  // Every pin is shared (2026-09-09) — a saved place is household business
+  // the same way a chore or a shopping item is, and there's no "keep this
+  // private" any more. On a solo account usePlaces.addPlace still resolves
+  // `shared: true` with no real space to `space_id: null`, so it stays
+  // personal by construction until a partner joins.
   const [saving, setSaving] = useState(false)
 
   function reset() {
-    setName(''); setKinds(['place']); setNote(''); setAddress(''); setIsPrivate(false)
+    setName(''); setKinds(['place']); setNote(''); setAddress('')
     setGeo(null); setGeoStatus('idle')
   }
 
@@ -88,7 +86,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
       country: geo?.country ?? null,
       lat: geo?.lat ?? null,
       lng: geo?.lng ?? null,
-      shared: !isPrivate,
+      shared: true,
     }, spaceId)
     setSaving(false)
     if (!error) { reset(); onClose() }
@@ -151,15 +149,14 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
         <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Note: why you're saving it (optional)" rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
 
         {hasSpace && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
-            Keep this private
-          </label>
+          <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75 }}>
+            Saved to your shared map, so you both see it.
+          </div>
         )}
 
         {geoStatus !== 'found' && (
           <div style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.7, lineHeight: 1.5 }}>
-            No coordinates yet — that&rsquo;s fine. This pin will show in the list under &ldquo;no location&rdquo; until you add an address it can look up.
+            No coordinates yet, that&rsquo;s fine. This pin will show in the list under &ldquo;no location&rdquo; until you add an address it can look up.
           </div>
         )}
 

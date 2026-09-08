@@ -56,8 +56,13 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
    *  is hidden and this decides the view. */
   forcedTab?: SubTab
 }) {
-  const { spaces } = useSharedSpaces(userId)
-  const spaceId = spaces[0]?.id ?? null
+  const { spaces, members } = useSharedSpaces(userId)
+  // The space the household actually uses — the one with an accepted member,
+  // not spaces[0] (which can be an empty solo space). Same rule HouseholdHub
+  // and the care log use. A pin saved against the wrong space is invisible
+  // to the partner, which is the whole point of saving it.
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
+    ?? spaces[0]?.id ?? null
   const { places: allPlaces, withLocation: allWithLocation, withoutLocation: allWithoutLocation, loading } = usePlaces()
 
   const shared = <T extends { space_id: string | null }>(rows: T[]) =>
