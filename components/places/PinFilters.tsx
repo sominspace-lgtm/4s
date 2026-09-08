@@ -43,7 +43,10 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   onAddFilter: (label: string, centerPlaceId: string, radiusKm: number) => void
   onRemoveFilter: (id: string) => void
 }) {
-  const availableKinds = KIND_ORDER.filter(k => kindsInUse.includes(k))
+  // `restaurant` always shows as a filter chip even with no restaurant pins
+  // yet (2026-09-08, user request) — every other kind still only appears
+  // once something actually uses it.
+  const availableKinds = KIND_ORDER.filter(k => kindsInUse.includes(k) || k === 'restaurant')
   const [adding, setAdding] = useState(false)
   const [label, setLabel] = useState('')
   const [centerId, setCenterId] = useState('')
