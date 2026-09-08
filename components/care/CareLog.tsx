@@ -14,9 +14,19 @@ export default function CareLog({ subject, compact = false }: {
   compact?: boolean
 }) {
   const { entries, loading, log, remove, doneToday, lastByKind, canShare } = useCareLog(subject)
-  const types = CARE_TYPES[subject]
+  const presets = CARE_TYPES[subject]
   const [pending, setPending] = useState<{ kind: string; label: string; detail: string } | null>(null)
   const [custom, setCustom] = useState('')
+
+  // Custom actions (2026-09-08, "we should be able to add more") — any kind
+  // you've logged before that isn't a preset becomes its own reusable
+  // button. Adding one is just: type it in the free-text box once.
+  const presetKinds = new Set(presets.map(t => t.kind))
+  const customKinds = [...new Set(entries.map(e => e.kind).filter(k => !presetKinds.has(k)))]
+  const types = [
+    ...presets,
+    ...customKinds.map(k => ({ kind: k, label: k, custom: true as const })),
+  ]
 
   const relTime = (iso: string) => {
     const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
@@ -71,7 +81,7 @@ export default function CareLog({ subject, compact = false }: {
       {/* Quick-log buttons */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
         {types.map(t => (
-          <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, t.detail)} style={pill(doneToday.has(t.kind))}>
+          <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, 'detail' in t ? t.detail : undefined)} style={pill(doneToday.has(t.kind))}>
             {t.label}
             {doneToday.has(t.kind) && lastByKind[t.kind] ? ` · ${relTime(lastByKind[t.kind].logged_at)}` : ''}
           </button>

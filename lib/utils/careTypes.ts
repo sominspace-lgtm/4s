@@ -3,7 +3,7 @@
 // is the order the quick-log buttons render. `detail` prompts for the
 // "10mg" / "4.2 kg" / "annual checkup" bit when the action needs one.
 
-export type CareSubject = 'somi' | 'self'
+export type CareSubject = 'somi' | 'self' | 'home'
 
 export interface CareType {
   kind: string
@@ -37,13 +37,25 @@ export const CARE_TYPES: Record<CareSubject, CareType[]> = {
     { kind: 'doctor', label: 'Doctor', detail: 'Reason' },
     { kind: 'dentist', label: 'Dentist' },
   ],
+  home: [
+    { kind: 'filters', label: 'HVAC filter' },
+    { kind: 'smoke', label: 'Smoke detector' },
+    { kind: 'water_filter', label: 'Water filter' },
+    { kind: 'gutters', label: 'Gutters' },
+    { kind: 'deep_clean', label: 'Deep clean', detail: 'Which room' },
+    { kind: 'plants', label: 'Watered plants' },
+    { kind: 'car', label: 'Car', detail: 'What (oil, wash, tires…)' },
+    { kind: 'appliance', label: 'Appliance', detail: 'Which, what' },
+    { kind: 'repair', label: 'Repair', detail: 'What' },
+    { kind: 'pest', label: 'Pest control' },
+  ],
 }
 
 export function careTypeLabel(subject: CareSubject, kind: string): string {
   return CARE_TYPES[subject].find(t => t.kind === kind)?.label ?? kind
 }
 
-const SUBJECT_NAME: Record<CareSubject, string> = { somi: 'Somi', self: 'You' }
+const SUBJECT_NAME: Record<CareSubject, string> = { somi: 'Somi', self: 'You', home: 'The house' }
 export function careSubjectName(subject: CareSubject): string {
   return SUBJECT_NAME[subject] ?? subject
 }

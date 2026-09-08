@@ -170,9 +170,13 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
 
+  // Somi's care moved to the care log (2026-09-08) — chores in a "Somi"
+  // folder don't belong under Chores any more. They're kept until the user
+  // clears them (a button in the Somi care section), just not listed here.
+  const somiChores = h.chores.filter(c => /somi/i.test(c.folder ?? ''))
   // Soonest-due first — the list orders itself by what actually needs doing,
   // so nobody has to scan for it.
-  const sortedChores = [...h.chores].sort((a, b) => choreDue(a) - choreDue(b))
+  const sortedChores = [...h.chores].filter(c => !/somi/i.test(c.folder ?? '')).sort((a, b) => choreDue(a) - choreDue(b))
 
   async function doneChore(c: Chore) {
     setJustDone(c.id)
@@ -523,7 +527,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // aisle categories. Only shown once something is actually in a folder;
     // a household with zero folders sees the exact same flat list as
     // before this existed, no empty "Other" heading imposed on them.
-    const existingFolders = [...new Set(h.chores.map(c => c.folder).filter((f): f is string => !!f))].sort()
+    const existingFolders = [...new Set(sortedChores.map(c => c.folder).filter((f): f is string => !!f))].sort()
     const grouped = existingFolders.length > 0
     const unfoldered = sortedChores.filter(c => !c.folder)
 
@@ -826,30 +830,57 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           automation integration. */}
       {tab === 'smarthome' && <HouseholdSmartHome spaceId={spaceId} />}
 
-      {/* Reference tab order (2026-09-02): Notes, Chores, Routines, Date
-          Ideas, Watchlist, Understanding (folded), Check-in. Calendar and
-          House rules moved to Home; Maintenance was removed. */}
+      {/* Reference tab order (2026-09-08): Notes, Date Ideas, Watchlist,
+          Understanding (folded), Check-in. Chores / routines / care moved
+          to their own Upkeep tab; Calendar and House rules are Home blocks. */}
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
 
-      {/* Upkeep & care (2026-09-08) — one section for the recurring stuff:
-          chores (a single item on a cadence), routines (a named group of
-          steps), and Somi's care log (fed / litter / meds, logged as it
-          happens rather than on a schedule). */}
-      {tab === 'reference' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-          <div className="t-card">Upkeep &amp; care</div>
-          {renderChores()}
-          {renderRoutines()}
-          <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
-            <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
-            <div style={{ marginTop: '0.7rem' }}>
-              <CareLog subject="somi" compact />
-            </div>
-          </details>
-        </section>
+      {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
+          Chores (a single item on a cadence), routines (a named group of
+          steps), and the care logs (Somi + the house), logged as they
+          happen rather than on a schedule. */}
+      {tab === 'upkeep' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <div className="t-card">Chores &amp; routines</div>
+            {renderChores()}
+            {renderRoutines()}
+          </section>
+
+          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <div className="t-card">Care</div>
+            <details open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
+              <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {somiChores.length > 0 && (
+                  <div style={{
+                    fontSize: '0.68rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+                    background: 'color-mix(in srgb, var(--gold) 8%, var(--surface))', border: '1px solid color-mix(in srgb, var(--gold) 22%, var(--border))',
+                    borderRadius: '8px', padding: '0.45rem 0.6rem',
+                  }}>
+                    <span style={{ flex: 1 }}>
+                      {somiChores.length} old Somi chore{somiChores.length === 1 ? '' : 's'} ({somiChores.map(c => c.name).join(', ')}) — care is logged here now, not on a cadence.
+                    </span>
+                    <button onClick={() => { somiChores.forEach(c => h.removeChore(c.id)) }} className="press" style={{
+                      flexShrink: 0, background: 'none', border: '1px solid var(--border)', borderRadius: '7px',
+                      padding: '0.25rem 0.55rem', fontSize: '0.64rem', color: 'var(--muted)', cursor: 'pointer',
+                    }}>Clear them</button>
+                  </div>
+                )}
+                <CareLog subject="somi" compact />
+              </div>
+            </details>
+            <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>The house</summary>
+              <div style={{ marginTop: '0.7rem' }}>
+                <CareLog subject="home" compact />
+              </div>
+            </details>
+          </section>
+        </div>
       )}
 
       {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),

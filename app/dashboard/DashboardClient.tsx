@@ -149,6 +149,7 @@ const SECTION_GROUPS: Record<string, string> = {
   places:    'ours',
   'places-pins':  'ours',
   'places-trips': 'ours',
+  upkeep:    'ours',
   // Household's own sub-tabs — real top-level sections for both personal
   // and shared use as of 2026-08-25 (used to nest one click behind a single
   // "Household" tab; still grouped visually in shared mode's Home Bar, see
@@ -202,7 +203,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'reference'] },
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'reference'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-pins', 'places-trips'] },
 ]
 
@@ -401,7 +402,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'reference', 'village', 'places', 'places-pins', 'places-trips'])
+  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-pins', 'places-trips'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -494,6 +495,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
       home: t('Home', lang),
+      upkeep: t('Upkeep', lang),
       reference: t('Reference', lang),
     }
 
@@ -527,9 +529,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />
         case 'places-pins':  return <PlacesHub key="places-pins" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="pins" />
         case 'places-trips': return <PlacesHub key="places-trips" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="trips" />
-        // Home / Reference — one <HouseholdHub forcedTab> per section.
-        // Smart Home only renders inside SmartHomeOverlay.
-        case 'home': case 'reference':
+        // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
+        // section. Smart Home only renders inside SmartHomeOverlay.
+        case 'home': case 'upkeep': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }

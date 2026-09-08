@@ -26,7 +26,7 @@ export function useCareLog(subject: CareSubject) {
   const { spaces, members } = useSharedSpaces('')
   const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
     ?? spaces[0]?.id ?? null
-  const shared = subject === 'somi'
+  const shared = subject !== 'self'
 
   const [entries, setEntries] = useState<CareEntry[]>([])
   const [loading, setLoading] = useState(true)
