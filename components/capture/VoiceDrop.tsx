@@ -180,7 +180,7 @@ export default function VoiceDrop({ spaceId, compact = false }: { spaceId: strin
           {listening ? 'Listening…' : busy ? 'Reading it…' : 'Say or type one line'}
         </span>
         <button onClick={() => { stopListening(); setOpen(false); setActions(null); setText('') }}
-          aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.8rem' }}>✕</button>
+          aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.8rem', minWidth: 32, minHeight: 32, lineHeight: 1 }}>✕</button>
       </div>
 
       <textarea
@@ -219,7 +219,7 @@ export default function VoiceDrop({ spaceId, compact = false }: { spaceId: strin
               <span style={{ fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', width: '3.6rem', flexShrink: 0 }}>{a.type}</span>
               <span style={{ flex: 1, color: 'var(--text)' }}>{a.label}</span>
               <button onClick={() => setActions(actions.filter((_, j) => j !== i))} aria-label="Drop"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem' }}>✕</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', minWidth: 30, minHeight: 30, lineHeight: 1 }}>✕</button>
             </div>
           ))}
           {actions.length > 0 && (

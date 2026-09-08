@@ -826,15 +826,7 @@ select, option {
 .village-idle-frozen .village-cycle-frame:first-child { opacity: 1 !important; }
 .village-idle-frozen .village-sky-stop { transition: none !important; }
 
-/* Respect reduced motion everywhere */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* (The global reduced-motion reset lives once, near the top of this file.) */
 
 /* ── MapLibre re-skin (Places, 2026-08-12) ─────────────────────────────
    MapLibre's default control chrome is white boxes with grey borders — the
