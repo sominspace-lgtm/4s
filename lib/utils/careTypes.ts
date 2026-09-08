@@ -3,7 +3,7 @@
 // is the order the quick-log buttons render. `detail` prompts for the
 // "10mg" / "4.2 kg" / "annual checkup" bit when the action needs one.
 
-export type CareSubject = 'somi' | 'self' | 'home' | 'routines'
+export type CareSubject = 'somi' | 'self' | 'home'
 
 export interface CareType {
   kind: string
@@ -14,9 +14,10 @@ export interface CareType {
 
 export const CARE_TYPES: Record<CareSubject, CareType[]> = {
   somi: [
+    { kind: 'litter', label: "Clean Somi's litter" },
+    { kind: 'litter_deep', label: "Deep-clean Somi's litter box" },
     { kind: 'bathe', label: 'Bathe Somi' },
     { kind: 'nails', label: "Trim Somi's nails" },
-    { kind: 'litter_deep', label: "Deep-clean Somi's litter box" },
     { kind: 'flea_tick', label: 'Flea/tick treatment for Somi' },
     { kind: 'vet', label: 'Vet checkup for Somi', detail: 'Reason' },
   ],
@@ -44,17 +45,13 @@ export const CARE_TYPES: Record<CareSubject, CareType[]> = {
     { kind: 'repair', label: 'Repair', detail: 'What' },
     { kind: 'pest', label: 'Pest control' },
   ],
-  // Routines are structured like care now (2026-09-08) — no presets, you
-  // add your own ("Sunday home reset", "Change the sheets"). Whatever you
-  // type once becomes a reusable button.
-  routines: [],
 }
 
 export function careTypeLabel(subject: CareSubject, kind: string): string {
   return CARE_TYPES[subject].find(t => t.kind === kind)?.label ?? kind
 }
 
-const SUBJECT_NAME: Record<CareSubject, string> = { somi: 'Somi', self: 'You', home: 'The house', routines: 'Routines' }
+const SUBJECT_NAME: Record<CareSubject, string> = { somi: 'Somi', self: 'You', home: 'The house' }
 export function careSubjectName(subject: CareSubject): string {
   return SUBJECT_NAME[subject] ?? subject
 }

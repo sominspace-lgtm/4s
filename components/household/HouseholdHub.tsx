@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { useRoutines } from '@/lib/hooks/useRoutines'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
 import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
@@ -122,7 +121,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // future caller renders it without forcedTab.
   const tab = forcedTab ?? (sharedMode ? 'reference' : 'home')
   const h = useHousehold(spaceId)
-  const routinesHook = useRoutines(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
   // I'm-in), so a personal solo-trip daydream would otherwise show up on
   // the SHARED household calendar next to it — filtered here to only trips
@@ -215,13 +213,11 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // filterable map, the same refactor todayBlocks.ts already did for Today's
   // own content. Each renderer closes over the local state/handlers above.
   const homeBlockRenderers: Record<HomeBlockId, () => React.ReactNode> = {
-    // The household calendar — its own section until 2026-09-02, a Home block
-    // again now (calendar isn't a place you live in, it's something you
-    // check). Maintenance-kind routines are filtered out — that feature was
-    // removed 2026-09-02.
+    // The household calendar — its own section until 2026-09-02, a Home
+    // block again now (calendar isn't a place you live in, it's something
+    // you check). Routines removed from Household 2026-09-08.
     calendar: () => (
-      <HouseholdCalendar chores={h.chores} meals={h.meals}
-        routines={routinesHook.routines.filter(r => r.kind === 'routine')} trips={trips} spaceId={spaceId} />
+      <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />
     ),
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
@@ -665,10 +661,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     )
   }
 
-  // Routines used to be a cadence + a multi-step checklist; since
-  // 2026-09-08 they're a care log (subject 'routines') — tap what you did,
-  // tracked by day, same as Somi's and the house's care.
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Which household */}
@@ -724,7 +716,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {/* Fixed, not part of homeBlocks — this is the one section meant
               to always be first, so it isn't reorderable or hideable like
               the blocks below it (2026-08-21). */}
-          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines.filter(r => r.kind === 'routine')} />
+          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={() => setHomeCustomizeOpen(true)} title="Customize Home" className="press" style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.68rem', padding: '0.2rem',
@@ -758,8 +750,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
-          Chores stay a cadence list; routines and the care logs (Somi + the
-          house) are all the same "tap what you did, tracked by day" shape. */}
+          Chores stay a cadence list; the care logs (Somi + the house) are
+          "tap what you did, tracked by day". Routines were removed. */}
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -768,7 +760,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           </section>
 
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div className="t-card">Care &amp; routines</div>
+            <div className="t-card">Care</div>
             <details open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
               <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -788,12 +780,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                   </div>
                 )}
                 <CareLog subject="somi" compact />
-              </div>
-            </details>
-            <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Routines</summary>
-              <div style={{ marginTop: '0.7rem' }}>
-                <CareLog subject="routines" compact />
               </div>
             </details>
             <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>

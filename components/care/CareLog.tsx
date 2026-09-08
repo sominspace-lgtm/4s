@@ -95,7 +95,7 @@ export default function CareLog({ subject, compact = false }: {
         <input
           value={custom} onChange={e => setCustom(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && custom.trim()) { void log(custom.trim()); setCustom('') } }}
-          placeholder={presets.length ? 'Something else…' : subject === 'routines' ? 'Add a routine (e.g. Sunday home reset)' : 'Add something to track'}
+          placeholder={presets.length ? 'Something else…' : 'Add something to track'}
           style={{
             flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 8, padding: '0.35rem 0.55rem', fontSize: '0.74rem', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
