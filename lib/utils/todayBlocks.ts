@@ -13,7 +13,7 @@
 // the Village is its own landing screen now, so a small preview of it on
 // Today was redundant. Today declutters down to: the greeting/stats card,
 // Household's needs panel, the area index, and the calendar.
-export type TodayBlockId = 'budget' | 'checkin' | 'areas' | 'calendar' | 'household'
+export type TodayBlockId = 'budget' | 'checkin' | 'selfcare' | 'areas' | 'calendar' | 'household'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -25,6 +25,8 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   // The weekly relationship check-in (2026-09-01) — shows near the weekend
   // if you haven't done it, then who's answered. Self-hides otherwise.
   checkin:    { label: 'Weekly check-in', hint: 'The relationship check-in, toward the weekend' },
+  // A care log for yourself (2026-09-08) — meds, movement, rest, appointments.
+  selfcare:   { label: 'Looking after yourself', hint: 'Meds, movement, rest — logged as you go' },
   areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Month view by default' },
   // A real "what needs you" panel, not a shortcut (2026-08-25 round two) —
@@ -38,7 +40,7 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // different component entirely, so its position here is cosmetic (see
 // DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. These
 // three are true siblings in the render tree and can be reordered.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['checkin', 'areas', 'household'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['checkin', 'selfcare', 'areas', 'household'])
 
 // Order here is the default order — not enforced at render time, so a
 // reorder in the customize panel actually changes what you see. Areas sits
@@ -47,6 +49,7 @@ export const REORDERABLE: Set<TodayBlockId> = new Set(['checkin', 'areas', 'hous
 export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
   { id: 'budget',     hidden: false },
   { id: 'checkin',    hidden: false },
+  { id: 'selfcare',   hidden: false },
   { id: 'household',  hidden: false },
   { id: 'areas',      hidden: false },
   { id: 'calendar',   hidden: false },

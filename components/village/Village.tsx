@@ -20,6 +20,7 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
+import { useCareLog } from '@/lib/hooks/useCareLog'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -558,25 +559,24 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   // Host checklist auto-signals (2026-09-08) — a few "getting ready" items
   // that answer themselves from real state, shown above the manual list in
-  // GatheringChecklistPopup. Somi's feed is a household chore; the porch
-  // light is a smart-home device; the playlist / album are on the
-  // gathering row. Best-effort name matching — absent = the row is hidden,
-  // never shown as an unchecked chore a guest could see.
+  // GatheringChecklistPopup. Somi's feed comes from her care log; the
+  // porch light is a smart-home device; the playlist / album are on the
+  // gathering row. Absent = the row is hidden, never shown as an
+  // unchecked item a guest could see.
+  const somiCare = useCareLog('somi')
   const hostSignals = useMemo(() => {
-    const somiChore = household.chores.find(c => /somi|feed|kibble|cat food/i.test(c.name))
-    const somiFedToday = somiChore?.last_done_at
-      ? differenceInCalendarDays(new Date(), parseISO(somiChore.last_done_at)) === 0
-      : false
     const outdoorLight = smartHomeDevices.find(d =>
       /porch|patio|entry|entrance|front door|outdoor|exterior|walkway|garden/i.test(d.name) &&
       /light|lamp|lantern|sconce/i.test(d.name))
     return [
-      somiChore && { key: 'somi', label: 'Somi fed', done: somiFedToday },
+      somiCare.entries.length > 0 || somiCare.canShare
+        ? { key: 'somi', label: 'Somi fed', done: somiCare.doneToday.has('fed') }
+        : null,
       outdoorLight && { key: 'porch', label: `${outdoorLight.name} on`, done: outdoorLight.on_state },
       { key: 'playlist', label: 'Playlist ready', done: !!gathering?.music_url },
       { key: 'album', label: 'Photo album ready', done: !!gathering?.photo_album_url },
     ].filter((x): x is { key: string; label: string; done: boolean } => !!x)
-  }, [household.chores, smartHomeDevices, gathering?.music_url, gathering?.photo_album_url])
+  }, [somiCare.entries.length, somiCare.canShare, somiCare.doneToday, smartHomeDevices, gathering?.music_url, gathering?.photo_album_url])
 
   // Data-domain structures (2026-09-06) — the calendar building's
   // glance-card. Only its derived text reaches the hookless scene.

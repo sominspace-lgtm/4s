@@ -19,6 +19,7 @@ import HouseholdDateIdeas from './HouseholdDateIdeas'
 import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
+import CareLog from '@/components/care/CareLog'
 import CheckinForm from '@/components/checkin/CheckinForm'
 import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import { openSmartHome } from '@/lib/utils/navigate'
@@ -227,6 +228,18 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // or any day this week's check-in still isn't done, else a no-op. Same
     // component as Today's CheckinCard (2026-09-03).
     checkin: () => <CheckinCard userId={userId} />,
+
+    // Somi's care log (2026-09-08) — fed / litter / brushed / meds / vet,
+    // logged as it happens. Replaces the "Somi" chore folder; care isn't a
+    // cadence you fall behind on, it's a record you keep together.
+    somiCare: () => (
+      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+        <div style={{ fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.6rem' }}>
+          Somi&rsquo;s care
+        </div>
+        <CareLog subject="somi" compact />
+      </section>
+    ),
 
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
