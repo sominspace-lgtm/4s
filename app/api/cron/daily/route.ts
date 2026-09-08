@@ -11,26 +11,18 @@ async function safePush(admin: SupabaseClient, userId: string, payload: PushPayl
   catch (e) { console.error('[cron/daily] push failed', { userId, err: e instanceof Error ? e.message : e }); return 0 }
 }
 
-// The one scheduled server nudge (Vercel Cron, daily at 04:00 UTC — which is
-// ~8-9pm the evening before in America/Los_Angeles, so the weekly check-in
-// nudge lands Sunday evening. See vercel.json).
-// Was `waiting-notice`, overdue tasks only; now a few kinds, each gated by
-// the user's own notifyPrefs (user_prefs.layout.notifyPrefs, missing = on)
-// and deduped per-kind via push_notify_state.last_sent so a kind fires at
-// most once per its own natural window.
+// A scheduled server nudge (Vercel Cron, daily at 04:00 UTC — see
+// vercel.json). Overdue tasks and a subscription renewing tomorrow. The
+// weekly check-in nudge lives in its own cron now (/api/cron/checkin).
+// Was `waiting-notice`, overdue tasks only; now a couple of kinds, each
+// gated by the user's own notifyPrefs (user_prefs.layout.notifyPrefs,
+// missing = on) and deduped per-kind via push_notify_state.last_sent so a
+// kind fires at most once per its own natural window.
 //
 // Still the product's promise: named, never counted; nothing alarmist;
 // nothing that follows you around out of guilt.
 
-type Kind = 'overdueTasks' | 'subRenewal' | 'checkinNudge'
-
-/** The Sunday that starts this check-in week, as YYYY-MM-DD — matches
- *  weekOfSunday() in lib/utils/checkinQuestions.ts (Sunday-anchored 2026-09-03). */
-function weekSunday(d: Date): string {
-  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-  x.setUTCDate(x.getUTCDate() - x.getUTCDay())
-  return x.toISOString().slice(0, 10)
-}
+type Kind = 'overdueTasks' | 'subRenewal'
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -40,39 +32,18 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient()
   const now = new Date()
-  // Reckoned in the household's timezone (America/Los_Angeles, matching the old
-  // Discord check-in bot), not UTC — so "Sunday" and "this week" mean the same
-  // thing to the person reading the push as they do here. The cron runs daily
-  // at 04:00 UTC (see vercel.json), which is ~8-9pm the previous day in LA, so
-  // the check-in nudge lands Sunday evening.
+  // Reckoned in the household's timezone (America/Los_Angeles), not UTC — so
+  // "today" and "tomorrow" mean the same thing to the person reading the
+  // push as they do here.
   const la = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Los_Angeles', weekday: 'short',
+    timeZone: 'America/Los_Angeles',
     year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(now)
   const laPart = (t: Intl.DateTimeFormatPartTypes) => la.find(p => p.type === t)?.value ?? ''
   const today = `${laPart('year')}-${laPart('month')}-${laPart('day')}`
-  const isSunday = laPart('weekday') === 'Sun'
-  const weekStart = weekSunday(new Date(`${today}T12:00:00Z`))
 
   const { data: subscribed } = await admin.from('push_subscriptions').select('user_id')
   const userIds = [...new Set((subscribed ?? []).map(r => r.user_id as string))]
-
-  // For the check-in nudge: who's checked in this week, and who shares a
-  // space with whom — so the reminder can say "your partner checked in,
-  // your turn" instead of the generic line.
-  const [{ data: weekRows }, { data: allSpaces }, { data: allMembers }] = await Promise.all([
-    admin.from('checkins').select('user_id').gte('week_of', weekStart),
-    admin.from('shared_spaces').select('id, owner_id'),
-    admin.from('shared_space_members').select('space_id, member_id, status'),
-  ])
-  const doneThisWeek = new Set((weekRows ?? []).map(r => r.user_id as string))
-  const spacePeople: Set<string>[] = (allSpaces ?? []).map(s => {
-    const people = new Set<string>([s.owner_id as string])
-    for (const m of allMembers ?? []) {
-      if (m.space_id === s.id && m.status === 'accepted' && m.member_id) people.add(m.member_id as string)
-    }
-    return people
-  })
 
   let notified = 0
   for (const userId of userIds) {
@@ -118,21 +89,9 @@ export async function GET(request: Request) {
       }
     }
 
-    // 3. Sunday-evening check-in nudge — if this week (LA-local) has no row for
-    //    this user yet. `isSunday` and `weekStart` are both reckoned in
-    //    America/Los_Angeles above, so this fires on the 04:00-UTC run whose
-    //    LA-local time is Sunday ~9pm.
-    if (isSunday && on('checkinNudge') && sent[`checkin:${weekStart}`] === undefined && !doneThisWeek.has(userId)) {
-      const partnerDone = spacePeople.some(people =>
-        people.has(userId) && [...people].some(p => p !== userId && doneThisWeek.has(p)))
-      const n = await safePush(admin, userId, {
-        title: '4S',
-        body: partnerDone ? 'Your partner checked in — your turn.' : 'Time for your weekly check-in.',
-        url: '/dashboard',
-      })
-      fresh[`checkin:${weekStart}`] = today
-      if (n > 0) notified++
-    }
+    // The Sunday-evening check-in nudge moved to its own cron
+    // (/api/cron/checkin) so it lands at a predictable 10pm LA and repeats
+    // Monday/Tuesday for anyone who hasn't checked in yet.
 
     if (Object.keys(fresh).length > 0) {
       // Prune keys older than ~30 days so the map doesn't grow forever.
