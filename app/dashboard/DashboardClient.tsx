@@ -112,6 +112,10 @@ const DEPRECATED_SECTION_IDS = new Set([
   // 'calendar' deprecated again 2026-09-02 — folded back into a Home block
   // (see householdLayout.ts). Any layout that still names it gets it stripped.
   'calendar',
+  // 'places-pins' merged into 'places' (2026-09-09) — the map now carries a
+  // docked pin list, so a separate Pins pill is redundant. mergeLayout
+  // strips the old id; 'places' and 'places-trips' stay.
+  'places-pins',
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -147,7 +151,6 @@ const SECTION_GROUPS: Record<string, string> = {
   people:    'mine',
   village:   'your world',
   places:    'ours',
-  'places-pins':  'ours',
   'places-trips': 'ours',
   upkeep:    'ours',
   // Household's own sub-tabs — real top-level sections for both personal
@@ -204,7 +207,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'reference'] },
-  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-pins', 'places-trips'] },
+  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips'] },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialMilestonesSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
@@ -402,7 +405,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-pins', 'places-trips'])
+  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-trips'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -486,7 +489,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang), places: t('Places', lang),
-      'places-pins': t('Pins', lang), 'places-trips': t('Trips', lang),
+      'places-trips': t('Trips', lang),
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
@@ -524,10 +527,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'notes':    return <NotesHub key="notes" userId={userId} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
-        // Places — Map / Pins / Trips are Home-Bar pills now (2026-09-03),
-        // one <PlacesHub forcedTab> per section, same pattern as Household.
+        // Places (2026-09-09) — the map carries a docked pin list, so it's
+        // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />
-        case 'places-pins':  return <PlacesHub key="places-pins" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="pins" />
         case 'places-trips': return <PlacesHub key="places-trips" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="trips" />
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.

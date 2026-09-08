@@ -5,6 +5,7 @@ import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import type { Place, PlaceStatus } from '@/lib/hooks/usePlaces'
 import type { PlaceFilter } from '@/lib/hooks/usePlaceFilters'
 import { haversineKm } from '@/lib/utils/geo'
+import { HOME_COORD, NEARBY_KM } from '@/lib/constants/home'
 import Icon, { type IconName } from '@/components/ui/Icon'
 
 export interface PinFilterState {
@@ -15,9 +16,13 @@ export interface PinFilterState {
   tags: string[]
   /** Active saved radius filter's id (see PlaceFilter) — 'null' means show everything. */
   radiusFilterId: string | null
+  /** Only pins within NEARBY_KM of home (2026-09-09). */
+  nearbyOnly: boolean
+  /** Only pins that are also a date idea (2026-09-09) — resolved in PlacesHub. */
+  dateIdeaOnly: boolean
 }
 
-export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, status: null, tags: [], radiusFilterId: null }
+export const DEFAULT_PIN_FILTERS: PinFilterState = { query: '', kind: null, status: null, tags: [], radiusFilterId: null, nearbyOnly: false, dateIdeaOnly: false }
 
 const STATUS_CHIPS: { id: PlaceStatus; label: string; icon?: IconName }[] = [
   { id: 'idea', label: 'Want to go' },
@@ -55,7 +60,7 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   // chips is a lot of vertical space to spend before the map even shows.
   // Stays open automatically once a filter is active, since that's exactly
   // the moment you need to see (and clear) what's narrowing the pins.
-  const activeCount = (filters.kind ? 1 : 0) + (filters.status ? 1 : 0) + filters.tags.length + (filters.radiusFilterId ? 1 : 0) + (filters.query.trim() ? 1 : 0)
+  const activeCount = (filters.kind ? 1 : 0) + (filters.status ? 1 : 0) + filters.tags.length + (filters.radiusFilterId ? 1 : 0) + (filters.query.trim() ? 1 : 0) + (filters.nearbyOnly ? 1 : 0) + (filters.dateIdeaOnly ? 1 : 0)
   const [open, setOpen] = useState(activeCount > 0)
 
   const chipStyle = (active: boolean): React.CSSProperties => ({
@@ -73,6 +78,8 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   }
 
   const activeSummary: string[] = []
+  if (filters.nearbyOnly) activeSummary.push('Near us')
+  if (filters.dateIdeaOnly) activeSummary.push('Date ideas')
   if (filters.query.trim()) activeSummary.push(`"${filters.query.trim()}"`)
   if (filters.status) activeSummary.push(STATUS_CHIPS.find(s => s.id === filters.status)?.label ?? filters.status)
   if (filters.kind) activeSummary.push(kindSpec(filters.kind).label)
@@ -228,6 +235,10 @@ export function applyPinFilters<T extends { name: string; kind: string; status: 
     if (radius) {
       if (p.lat == null || p.lng == null) return false
       if (haversineKm({ lat: p.lat, lng: p.lng }, radius) > radius.km) return false
+    }
+    if (filters.nearbyOnly) {
+      if (p.lat == null || p.lng == null) return false
+      if (haversineKm({ lat: p.lat, lng: p.lng }, HOME_COORD) > NEARBY_KM) return false
     }
     return true
   })

@@ -34,6 +34,15 @@ export interface KindSpec {
   fields: KindField[]
 }
 
+// One open + one close time (2026-09-09), stored in `details` as "HH:MM".
+// A single window, not per-day — enough for a live "Open now" badge on the
+// kinds where "is it worth going right now" is the real question. See
+// lib/utils/placeHours.ts.
+const HOURS_FIELDS: KindField[] = [
+  { key: 'open', label: 'Opens', type: 'text', placeholder: '09:00' },
+  { key: 'close', label: 'Closes', type: 'text', placeholder: '21:00' },
+]
+
 export const PLACE_KINDS: Record<string, KindSpec> = {
   restaurant: {
     label: 'Restaurant', icon: '◍', color: '--amber',
@@ -41,6 +50,7 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
       { key: 'cuisine', label: 'Cuisine', type: 'text', placeholder: 'e.g. ramen' },
       { key: 'price_level', label: 'Price', type: 'select', options: ['$', '$$', '$$$', '$$$$'] },
       { key: 'reservation', label: 'Reservation', type: 'text', placeholder: 'notes on booking' },
+      ...HOURS_FIELDS,
     ],
   },
   cafe: {
@@ -48,12 +58,14 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
     fields: [
       { key: 'good_for', label: 'Good for', type: 'text', placeholder: 'e.g. working, quiet mornings' },
       { key: 'wifi', label: 'Wifi', type: 'bool' },
+      ...HOURS_FIELDS,
     ],
   },
   bar: {
     label: 'Bar', icon: '◑', color: '--rose',
     fields: [
       { key: 'vibe', label: 'Vibe', type: 'text' },
+      ...HOURS_FIELDS,
     ],
   },
   court: {
@@ -66,6 +78,7 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
       { key: 'reservation_required', label: 'Reservation required', type: 'bool' },
       { key: 'booking_url', label: 'Booking link', type: 'url' },
       { key: 'fee', label: 'Fee', type: 'text' },
+      ...HOURS_FIELDS,
     ],
   },
   gym: {
@@ -112,6 +125,7 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
     label: 'Activity', icon: '✳', color: '--purple',
     fields: [
       { key: 'booking_url', label: 'Booking link', type: 'url' },
+      ...HOURS_FIELDS,
     ],
   },
   // A pin whose whole point is "we should go here together" (2026-08-24).

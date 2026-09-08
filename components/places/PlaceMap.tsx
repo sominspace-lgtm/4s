@@ -5,7 +5,7 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle } from '@/lib/map/style'
 import { kindSpec } from '@/lib/constants/placeKinds'
-import { boundsOf } from '@/lib/utils/geo'
+import { boundsOf, type LngLatBounds } from '@/lib/utils/geo'
 import MapControls from '@/components/places/MapControls'
 import type { Place } from '@/lib/hooks/usePlaces'
 
@@ -18,15 +18,22 @@ import type { Place } from '@/lib/hooks/usePlaces'
 // dependency. Points are colored by kind via a MapLibre `match` expression
 // fed straight from lib/constants/placeKinds.ts, so adding a kind there is
 // the only thing a new marker color needs.
-export default function PlaceMap({ places, theme, onSelect }: {
+export default function PlaceMap({ places, theme, onSelect, onViewportChange, focusPlaceId = null }: {
   places: Place[] // must all have lat/lng — filter before passing in
   theme: string
   onSelect: (place: Place) => void
+  /** Fires on moveend (and once when ready) with the current visible box —
+   *  the docked pin list narrows to what's on screen. */
+  onViewportChange?: (bounds: LngLatBounds) => void
+  /** When this changes, ease the camera to that pin. */
+  focusPlaceId?: string | null
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const placesRef = useRef(places)
   useEffect(() => { placesRef.current = places })
+  const onViewportChangeRef = useRef(onViewportChange)
+  useEffect(() => { onViewportChangeRef.current = onViewportChange })
   const [ready, setReady] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
   // Bumped by the "Try again" button on the unavailable fallback — remounts
@@ -83,11 +90,17 @@ export default function PlaceMap({ places, theme, onSelect }: {
       // already happened — the same class of "waiting on something already
       // missed" bug as the 'load' hang, just at construction time instead
       // of tile-load time.
+      function emitViewport() {
+        const b = map.getBounds()
+        onViewportChangeRef.current?.({ west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() })
+      }
       function onStyleReady() {
         clearTimeout(loadTimeout)
         if (bounds) map.fitBounds([[bounds.west, bounds.south], [bounds.east, bounds.north]], { padding: 40, duration: 0 })
         setReady(true)
         setMapInstance(map)
+        emitViewport()
+        map.on('moveend', emitViewport)
       }
       if (map.isStyleLoaded()) onStyleReady()
       else map.once('style.load', onStyleReady)
@@ -99,6 +112,16 @@ export default function PlaceMap({ places, theme, onSelect }: {
     // changes re-style below rather than remounting the whole map (that
     // would reset the user's pan/zoom).
   }, [retryTick])
+
+  // Ease to a pin when the docked list asks for it.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !focusPlaceId) return
+    const p = placesRef.current.find(x => x.id === focusPlaceId)
+    if (p && p.lat != null && p.lng != null) {
+      map.easeTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 14), duration: 600 })
+    }
+  }, [focusPlaceId, ready])
 
   // Re-tint on theme change without remounting or losing camera position.
   useEffect(() => {
@@ -122,7 +145,7 @@ export default function PlaceMap({ places, theme, onSelect }: {
       features: places.map(p => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng!, p.lat!] },
-        properties: { id: p.id, kind: p.kind },
+        properties: { id: p.id, kind: p.kind, status: p.status },
       })),
     }
 
@@ -152,7 +175,14 @@ export default function PlaceMap({ places, theme, onSelect }: {
         'circle-color': kindColors.length
           ? (['match', ['get', 'kind'], ...kindColors, readCssColor('--gold')] as unknown as maplibregl.ExpressionSpecification)
           : readCssColor('--gold'),
-        'circle-radius': 6, 'circle-stroke-width': 1.5, 'circle-stroke-color': readCssColor('--bg'),
+        'circle-radius': 7, 'circle-stroke-width': 2,
+        // Ring color carries status — a "good" pin gets an emerald halo,
+        // "not again" a rose one, everything else blends into the map.
+        'circle-stroke-color': (['match', ['get', 'status'],
+          'good', readCssColor('--emerald'),
+          'bad', readCssColor('--rose'),
+          readCssColor('--bg'),
+        ] as unknown as maplibregl.ExpressionSpecification),
       },
     })
 
@@ -215,7 +245,7 @@ function placeKindColorPairs(): Record<string, string> {
   // just needs valid pairs. Reading from PLACE_KINDS keeps one source of
   // truth between the sheet icon color and the map marker color.
   const out: Record<string, string> = {}
-  for (const kind of ['place', 'restaurant', 'cafe', 'bar', 'court', 'park', 'beach', 'trail', 'hotel', 'shop', 'activity']) {
+  for (const kind of ['place', 'restaurant', 'cafe', 'bar', 'court', 'gym', 'date-idea', 'park', 'beach', 'trail', 'hotel', 'shop', 'activity']) {
     out[kind] = readCssColor(kindSpec(kind).color)
   }
   return out

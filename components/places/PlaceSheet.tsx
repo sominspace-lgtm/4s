@@ -7,6 +7,8 @@ import ProvenanceBadge from '@/components/places/ProvenanceBadge'
 import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces, type Place, type PlaceStatus } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
+import { useAddToTrip } from '@/lib/hooks/useAddToTrip'
+import type { Trip } from '@/lib/hooks/useTrips'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
@@ -24,7 +26,7 @@ const STATUS_ICON: Partial<Record<PlaceStatus, IconName>> = {
 // actions as a tertiary link at the bottom. No rating anywhere — see
 // supabase/migrations/places_travel.sql for why. Google/lookup refresh isn't
 // here yet; place lookup (Phase 3) adds that block.
-export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: {
+export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, trips = [] }: {
   place: Place | null
   open: boolean
   onClose: () => void
@@ -32,8 +34,13 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
    *  whether one actually exists (a solo account has neither). */
   spaceId?: string | null
   hasSpace?: boolean
+  /** Trips this pin can be added to (2026-09-09). */
+  trips?: Trip[]
 }) {
   const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
+  const addToTrip = useAddToTrip()
+  const [tripPicking, setTripPicking] = useState(false)
+  const [addedToTrip, setAddedToTrip] = useState<string | null>(null)
   // Date ideas share this pin rather than copying it — see the "Save as a
   // date idea" action below.
   const { ideas, addIdea } = useDateIdeas(spaceId ?? null)
@@ -62,6 +69,9 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
     getPlacePhotoUrls(place.photo_paths).then(urls => { if (!cancelled) setPhotoUrls(urls) })
     return () => { cancelled = true }
   }, [place?.id, place?.photo_paths])
+
+  // Reset the per-pin trip-picker state when the sheet swaps to another pin.
+  useEffect(() => { setTripPicking(false); setAddedToTrip(null) }, [place?.id])
 
   if (!place) return <PlacesSheet open={open} onClose={onClose} title="Place">{null}</PlacesSheet>
 
@@ -256,6 +266,30 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace }: 
           <a href={mapsHref} target="_blank" rel="noreferrer" className="btn btn-primary press" style={{ fontSize: '0.74rem', textAlign: 'center', textDecoration: 'none' }}>
             Open in Maps
           </a>
+        )}
+
+        {/* Add this pin to a trip's shortlist (2026-09-09). */}
+        {trips.length > 0 && (
+          addedToTrip ? (
+            <div style={{ fontSize: '0.7rem', color: 'var(--emerald)' }}>Added to {addedToTrip}.</div>
+          ) : tripPicking ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+              {trips.map(tr => (
+                <button key={tr.id} className="press" onClick={async () => {
+                  const res = await addToTrip(tr.id, place!.id, tr.space_id)
+                  if (!res.error) { setAddedToTrip(tr.title); setTripPicking(false) }
+                }} style={{
+                  textAlign: 'left', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8,
+                  padding: '0.4rem 0.6rem', fontSize: '0.74rem', color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
+                }}>{tr.title}{tr.destination ? <span style={{ color: 'var(--muted)' }}> · {tr.destination}</span> : null}</button>
+              ))}
+              <button onClick={() => setTripPicking(false)} className="press" style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          ) : (
+            <button onClick={() => setTripPicking(true)} className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}>
+              Add to a trip
+            </button>
+          )
         )}
 
         {/* Photos */}

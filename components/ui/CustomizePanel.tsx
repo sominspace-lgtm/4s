@@ -68,8 +68,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'reference', label: 'Reference', hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill
   // row under the Places icon like Household's own.
-  { id: 'places',   label: 'Places: Map',   hidden: false },
-  { id: 'places-pins',  label: 'Places: Pins',  hidden: false },
+  { id: 'places',   label: 'Places',   hidden: false },
   { id: 'places-trips', label: 'Places: Trips', hidden: false },
 ]
 

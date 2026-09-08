@@ -1,24 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
 import { usePlaces } from '@/lib/hooks/usePlaces'
+import { haversineKm } from '@/lib/utils/geo'
+import { HOME_COORD, NEARBY_KM } from '@/lib/constants/home'
 import Icon from '@/components/ui/Icon'
 
 // Manual entry only (Phase 2). Places must be fully usable with zero external
 // services — this is that path, not a fallback for when Phase 3's place
 // lookup is unavailable. Phase 3 adds a search box above this same form that
 // fills these fields in; it does not replace them.
-export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
+export default function AddPlacePanel({ open, spaceId, hasSpace, onClose, initialKind }: {
   open: boolean
   spaceId: string | null
   hasSpace: boolean
   onClose: () => void
+  /** Pre-selects a kind chip — used by the empty-state starter cards. */
+  initialKind?: string
 }) {
   const { addPlace } = usePlaces()
   const [name, setName] = useState('')
-  const [kinds, setKinds] = useState<string[]>(['place'])
+  const [kinds, setKinds] = useState<string[]>([initialKind ?? 'place'])
+  // Re-seed the kind when the panel opens from a different starter card.
+  useEffect(() => { if (open) setKinds([initialKind ?? 'place']) }, [open, initialKind])
   const [note, setNote] = useState('')
   const [address, setAddress] = useState('')
   // Filled in silently by the address lookup below — never shown as its own
@@ -35,7 +41,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
   const [saving, setSaving] = useState(false)
 
   function reset() {
-    setName(''); setKinds(['place']); setNote(''); setAddress(''); setIsPrivate(false)
+    setName(''); setKinds([initialKind ?? 'place']); setNote(''); setAddress(''); setIsPrivate(false)
     setGeo(null); setGeoStatus('idle')
   }
 
@@ -77,6 +83,9 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
     e.preventDefault()
     if (!name.trim()) return
     setSaving(true)
+    // Auto-tag anything within ~5 miles of home as "nearby" so it lands in
+    // the Near us filter without a manual tag.
+    const near = geo && haversineKm({ lat: geo.lat, lng: geo.lng }, HOME_COORD) <= NEARBY_KM
     const { error } = await addPlace({
       name: name.trim(),
       kind: kinds[0],
@@ -87,6 +96,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose }: {
       country: geo?.country ?? null,
       lat: geo?.lat ?? null,
       lng: geo?.lng ?? null,
+      tags: near ? ['nearby'] : [],
       shared: !isPrivate,
     }, spaceId)
     setSaving(false)

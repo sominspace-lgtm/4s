@@ -12,8 +12,10 @@
 // for the rest of it. Clearing the promise on failure means the next call
 // actually retries.
 
-const HOME_LAT = 37.485938
-const HOME_LON = -122.218869
+import { HOME_COORD } from '@/lib/constants/home'
+
+const HOME_LAT = HOME_COORD.lat
+const HOME_LON = HOME_COORD.lng
 
 export type WeatherCondition = 'clear' | 'cloudy' | 'fog' | 'rain' | 'snow' | 'storm'
 
