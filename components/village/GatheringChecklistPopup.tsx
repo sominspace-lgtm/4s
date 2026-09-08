@@ -9,14 +9,29 @@ import type { Gathering, PrepItem } from '@/lib/hooks/useGathering'
 // (Village.tsx), reopenable any time from the ⋯ menu ("Checklist"). Same
 // data (gathering.prep / onUpdatePrep) as before, just presented as a
 // dismissible card instead of a mode.
-export default function GatheringChecklistPopup({ gathering, onUpdate, onClose }: {
+export default function GatheringChecklistPopup({ gathering, signals = [], startsAt = null, onUpdate, onClose }: {
   gathering: Gathering
+  /** Auto-checked items derived from real state (Somi's feed chore, the
+   *  porch light, the playlist / album) — read-only, shown above the
+   *  manual list. See Village.tsx's hostSignals. */
+  signals?: { key: string; label: string; done: boolean }[]
+  /** When the doors open, for the "Expecting guests" countdown line. */
+  startsAt?: string | null
   onUpdate?: (items: PrepItem[]) => void
   onClose: () => void
 }) {
   const [adding, setAdding] = useState('')
   const items = gathering.prep ?? []
   const doneCount = items.filter(i => i.done).length
+
+  const untilDoors = startsAt ? new Date(startsAt).getTime() - Date.now() : null
+  const countdown = untilDoors != null && untilDoors > 0
+    ? untilDoors < 3_600_000
+      ? `Doors open in ${Math.max(1, Math.round(untilDoors / 60_000))} min`
+      : untilDoors < 86_400_000
+        ? `Doors open in ${Math.round(untilDoors / 3_600_000)} h`
+        : `Doors open ${new Date(startsAt!).toLocaleDateString(undefined, { weekday: 'short' })} ${new Date(startsAt!).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+    : null
 
   const toggle = (id: string) => onUpdate?.(items.map(i => (i.id === id ? { ...i, done: !i.done } : i)))
   const add = () => {
@@ -47,6 +62,27 @@ export default function GatheringChecklistPopup({ gathering, onUpdate, onClose }
           )}
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
         </div>
+
+        {countdown && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--rose)', fontWeight: 500 }}>{countdown}</div>
+        )}
+
+        {signals.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', paddingBottom: '0.15rem', borderBottom: '1px solid color-mix(in srgb, var(--border) 60%, transparent)' }}>
+            {signals.map(s => (
+              <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{
+                  width: 17, height: 17, flexShrink: 0, borderRadius: 5,
+                  border: `1.5px solid ${s.done ? 'var(--emerald)' : 'var(--border)'}`,
+                  background: s.done ? 'var(--emerald)' : 'none', color: 'var(--bg)', fontSize: '0.7rem',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                }}>{s.done ? '✓' : ''}</span>
+                <span style={{ fontSize: '0.78rem', color: s.done ? 'var(--muted)' : 'var(--text)' }}>{s.label}</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.7, marginLeft: 'auto' }}>auto</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {items.map(i => (
@@ -81,11 +117,6 @@ export default function GatheringChecklistPopup({ gathering, onUpdate, onClose }
             background: 'var(--rose)', color: 'var(--bg)', border: 'none', borderRadius: 8,
             padding: '0 0.6rem', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, lineHeight: 1,
           }}>+</button>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.68rem', color: 'var(--muted)' }}>
-          <span>{gathering.music_url ? '♪ playlist ready' : '♪ no playlist'}</span>
-          <span>{gathering.photo_album_url ? '▦ album ready' : '▦ no album'}</span>
         </div>
 
         <button onClick={onClose} className="press" style={{

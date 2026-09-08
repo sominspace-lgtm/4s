@@ -116,6 +116,8 @@ export interface UseGathering {
   memories: GatheringMemory[]
   ready: boolean
   startGathering: (title: string, opts?: { startsAt?: string | null }) => Promise<void>
+  /** Flip a scheduled ('prep') gathering to 'live'. */
+  openDoors: () => Promise<void>
   /** Replace the getting-started checklist (shown as a one-time popup now,
    *  not a separate scene phase — see GatheringChecklistPopup). */
   updatePrep: (items: PrepItem[]) => Promise<void>
@@ -247,19 +249,22 @@ export function useGathering(userId: string): UseGathering {
     return () => { alive = false; supabase.removeChannel(ch) }
   }, [supabase, spaceId, loadContributions])
 
-  // No more prep phase (round 80, 2026-09-04) — starting a gathering opens
-  // the doors immediately; the checklist that used to gate a separate
-  // "prep" scene state is now a one-time popup (GatheringChecklistPopup)
-  // that rides along on the same `prep`/`updatePrep` data, just presented
-  // differently. `phase`/`starts_at` columns stay in the DB, unused.
+  // Start hosting now, OR schedule it (2026-09-08, "Expecting guests"). A
+  // future `startsAt` opens the gathering in `phase: 'prep'` — the village
+  // stays its calm self, the wall shows a countdown, and the hosts can
+  // fill in the menu / agenda / checklist ahead of time. It flips to
+  // 'live' at the scheduled time (openDoors, on a client timer in
+  // Village.tsx), when a host taps "open the doors", or when a guest
+  // shows up early (the realtime handler above).
   const startGathering = useCallback(async (title: string, opts?: { startsAt?: string | null }) => {
     const sid = spaceRef.current
     if (!sid) return
+    const scheduled = !!opts?.startsAt && new Date(opts.startsAt).getTime() > Date.now()
     const { data, error } = await supabase
       .from('gatherings')
       .insert({
         space_id: sid, created_by: userId, title: title.trim() || 'Our gathering', token: makeToken(),
-        phase: 'live', starts_at: opts?.startsAt ?? null,
+        phase: scheduled ? 'prep' : 'live', starts_at: opts?.startsAt ?? null,
         prep: DEFAULT_PREP.map(p => ({ ...p, id: crypto.randomUUID() })),
       })
       .select('*')
@@ -268,6 +273,16 @@ export function useGathering(userId: string): UseGathering {
     setGathering(data as Gathering)
     setContributions([])
   }, [supabase, userId])
+
+  // Flip a scheduled gathering to live — the scheduled time arrived, a
+  // host tapped "open the doors", or a guest turned up early.
+  const openDoors = useCallback(async () => {
+    const g = gatheringRef.current
+    if (!g || g.phase === 'live') return
+    setGathering(prev => (prev ? { ...prev, phase: 'live' } : prev))
+    const { error } = await supabase.from('gatherings').update({ phase: 'live' }).eq('id', g.id)
+    if (error) console.error('[4s] openDoors failed:', error.message)
+  }, [supabase])
 
   const updatePrep = useCallback(async (items: PrepItem[]) => {
     const g = gatheringRef.current
@@ -388,7 +403,7 @@ export function useGathering(userId: string): UseGathering {
 
   return {
     gathering, contributions, memories, ready,
-    startGathering, updatePrep, closeGathering, setMusicUrl, setPhotoAlbumUrl,
+    startGathering, openDoors, updatePrep, closeGathering, setMusicUrl, setPhotoAlbumUrl,
     setMenu, setAgenda, setPinnedContribution,
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,

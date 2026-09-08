@@ -35,6 +35,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import KitchenMode from './KitchenMode'
 import GatheringChecklistPopup from './GatheringChecklistPopup'
+import HostingSetup from './HostingSetup'
 import MilestoneMoment from './MilestoneMoment'
 import { detectMilestones } from '@/lib/village/milestones'
 import { figureActivity } from '@/lib/village/figureActivity'
@@ -64,7 +65,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -96,6 +97,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  shows the guest QR + "End gathering". See useGathering / DashboardClient. */
   gathering?: Gathering | null
   onStartGathering?: (title: string, opts?: { startsAt?: string | null }) => void
+  /** Flip a scheduled ("Expecting guests") gathering to live. */
+  onOpenDoors?: () => void
   /** The getting-started checklist — shown once as a popup right after
    *  starting, reopenable from the ⋯ menu. No separate prep scene phase. */
   onUpdatePrep?: (items: PrepItem[]) => void
@@ -140,11 +143,33 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // the doors are open. During 'prep' the village stays its calm self while
   // the hosts get ready — see the prep panel in VillageHomeSheet.
   const guestLive = !!gathering && gathering.phase !== 'prep'
-  // "Hosting" is prep OR live (2026-09-04) — a guest arriving early shouldn't
-  // see the couple's control panel or their life narrated with counts. It
-  // quiets the districts and shows the house-info card; the party *look*
-  // (lanterns/outfits) still waits for `guestLive`.
-  const hosting = guestActive
+  // Scheduled but not open yet — "Expecting guests" (2026-09-08). The
+  // village stays its calm self; a countdown strip shows on the wall and
+  // the hosts can fill in the menu / agenda / checklist ahead of time.
+  const expecting = guestActive && !guestLive
+  const startsAtMs = gathering?.starts_at ? new Date(gathering.starts_at).getTime() : null
+  // Re-render the countdown strip every 30s while a scheduled gathering waits.
+  const [, forceTick] = useState(0)
+  useEffect(() => {
+    if (!expecting) return
+    const iv = setInterval(() => forceTick(n => n + 1), 30_000)
+    return () => clearInterval(iv)
+  }, [expecting])
+  // Flip to live at the scheduled time (a guest arriving early or the host
+  // tapping "open the doors" also do it — see useGathering).
+  useEffect(() => {
+    if (!expecting || !startsAtMs || !onOpenDoors) return
+    const wait = startsAtMs - Date.now()
+    if (wait <= 0) { onOpenDoors(); return }
+    const t = setTimeout(() => onOpenDoors(), Math.min(wait, 2_147_000_000))
+    return () => clearTimeout(t)
+  }, [expecting, startsAtMs, onOpenDoors])
+  // The guest-facing scene treatment (districts go quiet, the house-info
+  // signpost shows) waits for the doors to actually open — during
+  // "Expecting guests" the village is still just the couple's evening. A
+  // guest who turns up early flips the gathering to live (useGathering's
+  // realtime handler), which brings this on.
+  const hosting = guestLive
   const somi = useMemo(() => resolveSomi(petInfo), [petInfo])
   const pinnedMessage = useMemo(() => {
     const id = gathering?.pinned_contribution_id
@@ -161,9 +186,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // gathering, reopenable any time from the ⋯ menu (round 80, 2026-09-04,
   // replaces the old separate "prep" scene phase).
   const [checklistOpen, setChecklistOpen] = useState(false)
+  const [hostingSetupOpen, setHostingSetupOpen] = useState(false)
   const prevGatheringId = useRef<string | null>(null)
   useEffect(() => {
-    if (gathering && gathering.id !== prevGatheringId.current) setChecklistOpen(true)
+    if (gathering && gathering.id !== prevGatheringId.current) {
+      // Pop the checklist on start, unless the gathering is scheduled for
+      // more than 6 hours out — no need to nag about chairs on Tuesday for
+      // a Saturday dinner. It stays one tap away in the ⋯ menu.
+      const soon = !gathering.starts_at || new Date(gathering.starts_at).getTime() - Date.now() < 6 * 3_600_000
+      if (soon) setChecklistOpen(true)
+    }
     prevGatheringId.current = gathering?.id ?? null
   }, [gathering])
   useEffect(() => {
@@ -524,6 +556,28 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
   }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
 
+  // Host checklist auto-signals (2026-09-08) — a few "getting ready" items
+  // that answer themselves from real state, shown above the manual list in
+  // GatheringChecklistPopup. Somi's feed is a household chore; the porch
+  // light is a smart-home device; the playlist / album are on the
+  // gathering row. Best-effort name matching — absent = the row is hidden,
+  // never shown as an unchecked chore a guest could see.
+  const hostSignals = useMemo(() => {
+    const somiChore = household.chores.find(c => /somi|feed|kibble|cat food/i.test(c.name))
+    const somiFedToday = somiChore?.last_done_at
+      ? differenceInCalendarDays(new Date(), parseISO(somiChore.last_done_at)) === 0
+      : false
+    const outdoorLight = smartHomeDevices.find(d =>
+      /porch|patio|entry|entrance|front door|outdoor|exterior|walkway|garden/i.test(d.name) &&
+      /light|lamp|lantern|sconce/i.test(d.name))
+    return [
+      somiChore && { key: 'somi', label: 'Somi fed', done: somiFedToday },
+      outdoorLight && { key: 'porch', label: `${outdoorLight.name} on`, done: outdoorLight.on_state },
+      { key: 'playlist', label: 'Playlist ready', done: !!gathering?.music_url },
+      { key: 'album', label: 'Photo album ready', done: !!gathering?.photo_album_url },
+    ].filter((x): x is { key: string; label: string; done: boolean } => !!x)
+  }, [household.chores, smartHomeDevices, gathering?.music_url, gathering?.photo_album_url])
+
   // Data-domain structures (2026-09-06) — the calendar building's
   // glance-card. Only its derived text reaches the hookless scene.
   const { items: calendarEvents } = useEvents()
@@ -745,6 +799,39 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             partOfDay={partOfDay} binLine={binLine} ambient={ambient} />
         )}
 
+        {/* "Expecting guests" countdown (2026-09-08) — a calm strip while a
+            scheduled gathering waits for its start time. The scene stays
+            its normal self; this is the only thing that says "hosting
+            soon". Tapping "Open the doors" flips it live early. */}
+        {expecting && !compact && !arranging && (
+          <div style={{
+            position: 'absolute', top: '0.7rem', left: '50%', transform: 'translateX(-50%)', zIndex: 6,
+            display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: 'calc(100% - 1.4rem)',
+            background: 'color-mix(in srgb, var(--rose) 12%, var(--surface))',
+            border: '1px solid color-mix(in srgb, var(--rose) 28%, var(--border))',
+            borderRadius: 999, padding: '0.3rem 0.35rem 0.3rem 0.7rem',
+            boxShadow: '0 4px 14px color-mix(in srgb, var(--text) 12%, transparent)',
+            fontFamily: 'var(--font-body)',
+          }}>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {(() => {
+                const ms = startsAtMs ? startsAtMs - Date.now() : null
+                if (ms == null) return `Getting ready · ${gathering?.title ?? ''}`
+                if (ms <= 0) return 'Opening the doors…'
+                if (ms < 3_600_000) return `Guests in ${Math.max(1, Math.round(ms / 60_000))} min`
+                if (ms < 86_400_000) return `Guests in ${Math.round(ms / 3_600_000)} h`
+                return `Guests ${new Date(startsAtMs!).toLocaleDateString(undefined, { weekday: 'short' })} ${new Date(startsAtMs!).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+              })()}
+            </span>
+            {onOpenDoors && (
+              <button onClick={() => onOpenDoors()} className="press" style={{
+                background: 'var(--rose)', color: 'var(--bg)', border: 'none', borderRadius: 999,
+                padding: '0.25rem 0.6rem', fontSize: '0.66rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+              }}>Open the doors</button>
+            )}
+          </div>
+        )}
+
         {/* No sky box (removed 2026-09-04) — no QR needed for guests to
             join, they use the wall screen directly. */}
 
@@ -838,12 +925,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                       : onStartGathering
                         ? [
                             {
-                              label: 'Start hosting',
+                              label: 'Start hosting now',
                               on: () => {
                                 const title = window.prompt('Name this gathering (shown on the keepsake later):', 'Dinner at ours')
                                 if (title !== null) onStartGathering?.(title)
                               },
                             },
+                            { label: 'Expecting guests…', on: () => setHostingSetupOpen(true) },
                           ]
                         : []),
                     ...(memories.length > 0 && !guestActive
@@ -1033,9 +1121,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {checklistOpen && gathering && (
           <GatheringChecklistPopup
             gathering={gathering}
+            signals={hostSignals}
+            startsAt={gathering.starts_at}
             onUpdate={onUpdatePrep}
             onClose={() => setChecklistOpen(false)}
           />
+        )}
+
+        {hostingSetupOpen && onStartGathering && (
+          <HostingSetup onStart={onStartGathering} onClose={() => setHostingSetupOpen(false)} />
         )}
 
         {/* The shared/kiosk-mode swipe-up sheet (2026-08-25) — an overlay
