@@ -231,18 +231,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // component as Today's CheckinCard (2026-09-03).
     checkin: () => <CheckinCard userId={userId} />,
 
-    // Somi's care log (2026-09-08) — fed / litter / brushed / meds / vet,
-    // logged as it happens. Replaces the "Somi" chore folder; care isn't a
-    // cadence you fall behind on, it's a record you keep together.
-    somiCare: () => (
-      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-        <div style={{ fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.6rem' }}>
-          Somi&rsquo;s care
-        </div>
-        <CareLog subject="somi" compact />
-      </section>
-    ),
-
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
     // I have on", this answers "what does this house have on", and your
@@ -596,10 +584,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     }
 
     return (
-      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
-          Chores
-        </div>
+      <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+        <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Chores</span>
+          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{sortedChores.length}</span>
+        </summary>
+        <div style={{ marginTop: '0.7rem' }}>
 
         {sortedChores.length === 0 && !h.loading && (
           <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.6rem' }}>
@@ -670,7 +660,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           <input value={choreFolder} onChange={e => setChoreFolder(e.target.value)} list="chore-folders" placeholder="Folder (optional)" style={{ ...input, width: '120px' }} />
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
         </form>
-      </section>
+        </div>
+      </details>
     )
   }
 
@@ -679,8 +670,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   function renderRoutines() {
     const routines = routinesHook.routines.filter(r => r.kind === 'routine')
     return (
-      <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-        <div className="t-card">Routines</div>
+      <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+        <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Routines</span>
+          <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{routines.length}</span>
+        </summary>
+        <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
 
         {routines.length === 0 && !routinesHook.loading && (
           <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
@@ -746,7 +741,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         ) : (
           <button onClick={() => setAddingRoutine(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', alignSelf: 'flex-start' }}>+ New routine</button>
         )}
-      </section>
+        </div>
+      </details>
     )
   }
 
@@ -838,10 +834,23 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           Personal's Notes tab writes to, scoped to this household's space. */}
       {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
 
-      {/* Chores and Routines — "the cleaning and upkeep stuff" at two
-          granularities (a single recurring item, a named group of steps). */}
-      {tab === 'reference' && renderChores()}
-      {tab === 'reference' && renderRoutines()}
+      {/* Upkeep & care (2026-09-08) — one section for the recurring stuff:
+          chores (a single item on a cadence), routines (a named group of
+          steps), and Somi's care log (fed / litter / meds, logged as it
+          happens rather than on a schedule). */}
+      {tab === 'reference' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+          <div className="t-card">Upkeep &amp; care</div>
+          {renderChores()}
+          {renderRoutines()}
+          <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
+            <div style={{ marginTop: '0.7rem' }}>
+              <CareLog subject="somi" compact />
+            </div>
+          </details>
+        </section>
+      )}
 
       {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),
           see HouseholdDateIdeas's own header comment for why. */}

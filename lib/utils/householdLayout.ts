@@ -18,7 +18,7 @@ export type HouseholdTabId = 'home' | 'smarthome' | 'reference'
 // the same day; `chores`/`routines` moved to Reference 2026-08-25.
 // mergeHomeBlocks drops unknown saved ids, so a layout that still names any
 // of these is cleaned up automatically.
-export type HomeBlockId = 'calendar' | 'thisWeek' | 'checkin' | 'somiCare' | 'shopping' | 'meals' | 'rules' | 'moveIn'
+export type HomeBlockId = 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'meals' | 'rules' | 'moveIn'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // The household calendar — its own section until 2026-09-02, a Home block
@@ -29,9 +29,6 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   // The weekly relationship check-in prompt — renders on Sunday, or any day
   // this week's check-in still isn't done; a no-op otherwise (2026-09-03).
   checkin:  { label: 'Check-in',           hint: 'Complete this week’s check-in' },
-  // Somi's care log (2026-09-08) — fed, litter, brushed, meds, vet. Was a
-  // "Somi" folder under Chores; care isn't a cadence, it's a log.
-  somiCare: { label: 'Somi’s care',        hint: 'Fed, litter, meds, vet — logged as you go' },
   shopping: { label: 'Shopping list',      hint: 'What to buy' },
   meals:    { label: 'This week’s meals',  hint: 'What we’re eating' },
   // House rules — standing conventions ("no shoes inside"). Moved here from
@@ -42,13 +39,15 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   moveIn:   { label: 'Move-in',            hint: 'The Millton — what’s around it, and the buy-list sheet' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'thisWeek', 'checkin', 'somiCare', 'shopping', 'meals', 'rules', 'moveIn'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['calendar', 'thisWeek', 'checkin', 'shopping', 'meals', 'rules', 'moveIn'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: false }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_HOME_BLOCKS
   const order = DEFAULT_HOME_BLOCKS.map(s => s.id)
   const known = new Set(order)
+  // `somiCare` was briefly a Home block (2026-09-08), now merged into
+  // Reference's "Upkeep & care" — dropped here like any unknown id.
   const out = saved.filter(s => known.has(s.id))
   const have = new Set(out.map(s => s.id))
   // A block added to DEFAULT_HOME_BLOCKS after this layout was saved is
