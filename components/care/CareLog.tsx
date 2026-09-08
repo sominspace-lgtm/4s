@@ -28,12 +28,14 @@ export default function CareLog({ subject, compact = false }: {
     ...customKinds.map(k => ({ kind: k, label: k, custom: true as const })),
   ]
 
-  const relTime = (iso: string) => {
-    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.round(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
+  // Care is tracked by day, not by the minute (2026-09-08) — a rough
+  // "when was this last done" is all that's useful.
+  const relDay = (iso: string) => {
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    const days = Math.round((startOf(new Date()) - startOf(new Date(iso))) / 86_400_000)
+    if (days <= 0) return 'today'
+    if (days === 1) return 'yesterday'
+    if (days < 7) return `${days}d ago`
     return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
   const dayKey = (iso: string) => {
@@ -83,7 +85,7 @@ export default function CareLog({ subject, compact = false }: {
         {types.map(t => (
           <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, 'detail' in t ? t.detail : undefined)} style={pill(doneToday.has(t.kind))}>
             {t.label}
-            {doneToday.has(t.kind) && lastByKind[t.kind] ? ` · ${relTime(lastByKind[t.kind].logged_at)}` : ''}
+            {lastByKind[t.kind] ? ` · ${relDay(lastByKind[t.kind].logged_at)}` : ''}
           </button>
         ))}
       </div>
@@ -150,9 +152,7 @@ export default function CareLog({ subject, compact = false }: {
                 <div key={e.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', padding: '0.12rem 0', fontSize: '0.74rem' }}>
                   <span style={{ color: 'var(--text)' }}>{careTypeLabel(subject, e.kind)}</span>
                   {e.detail && <span style={{ color: 'var(--muted)' }}>{e.detail}</span>}
-                  <span style={{ color: 'var(--muted)', opacity: 0.7, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-                    {new Date(e.logged_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-                  </span>
+                  <div style={{ flex: 1 }} />
                   <button onClick={() => remove(e.id)} aria-label="Remove" className="press"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.35, fontSize: '0.6rem', flexShrink: 0 }}>✕</button>
                 </div>
