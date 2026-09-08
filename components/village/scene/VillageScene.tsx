@@ -593,29 +593,24 @@ export default function VillageScene({
     setOpenSomiCard(o => !o)
   }
 
-  // Every unlocked district opens its glance-card first (2026-09-04) —
-  // round 71's "one tap navigates" read as too eager once the card started
-  // carrying real live info (Home's dinner/next-task/bins line was the
-  // first case; the rest follow the same rule now for consistency). The
-  // card's own action button is what actually navigates. Locked districts
-  // are unchanged: straight to the PIN prompt, no card (its content is
-  // only ever safe to render once a district ISN'T locked, same guard as
-  // panelContent.forest's real-plant-names comment below).
-  const openOrToggle = (id: LandmarkId, label: string) => () => {
+  // A tap on a district goes straight to its primary action — the tab it
+  // opens, no glance-card step first (2026-09-07, "when districts are
+  // clicked they should open a tab instead of bringing you to another page
+  // first"). The glance card lives on as a desktop hover peek (see
+  // hoverPreview). The one exception: on a phone, a district that carries a
+  // SECOND action (Kitchen → also the home cheat sheet; the notice board →
+  // also Notes; Memories → also the postcards) opens the sheet as a
+  // chooser, since there's no hover there to reveal it. Locked districts
+  // are unchanged: straight to the PIN prompt, never a card.
+  const activateDistrict = (id: LandmarkId, label: string) => {
     if (arranging) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
-    // Click-through to navigate (2026-09-07, "clicking does not work on
-    // browser") — on a real pointer the card is already open from hover by
-    // the time the click lands, so a click on the district itself should
-    // go where its button goes, not just re-open the card. On touch (no
-    // hover) the first tap opens the card and a second tap navigates, the
-    // same as tapping the card's own action button. The full-canvas
-    // dismiss backdrop now renders BEHIND the districts (see below), so
-    // this click actually reaches the district instead of the backdrop.
-    if (openPanel === id) { panelContent[id].go(); setOpenPanel(null); return }
-    setOpenPanel(id)
+    if (mobile && panelContent[id].secondary) { setOpenPanel(id); return }
+    setOpenPanel(null)
+    panelContent[id].go()
   }
+  const openOrToggle = (id: LandmarkId, label: string) => () => activateDistrict(id, label)
   // Fuzzy district tap (2026-09-06, "everything should still be tappable on
   // mobile") — the scene is inherently landscape, so on a phone all ten
   // districts render small; a tap that misses a district's own hit-rect
@@ -635,7 +630,7 @@ export default function VillageScene({
       const d = Math.hypot(p.x - c.x, p.y - c.y)
       if (d < bestD) { bestD = d; best = id }
     }
-    if (best && bestD < 68) { recordVisit(best); setOpenPanel(best) }
+    if (best && bestD < 68) activateDistrict(best, best)
   }
 
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
