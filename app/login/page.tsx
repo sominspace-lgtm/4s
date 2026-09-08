@@ -137,6 +137,9 @@ export default function LoginPage() {
 
   return (
     <div style={{
+      // The front door stays cream on every device — a deliberate single
+      // look, so native inputs and scrollbars render light too.
+      colorScheme: 'light',
       minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg)',
       backgroundImage: 'radial-gradient(ellipse at top, color-mix(in srgb, var(--gold) 10%, transparent) 0%, transparent 55%), radial-gradient(ellipse at bottom left, color-mix(in srgb, var(--purple) 8%, transparent) 0%, transparent 55%)',

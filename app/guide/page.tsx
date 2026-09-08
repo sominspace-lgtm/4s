@@ -6,8 +6,9 @@ export const metadata = {
   description: 'How to use 4S Home: tasks, habits, notes, money, calendar, sharing, AI, and Alexa.',
 }
 
-// Public, shareable guide for new users. Uses default (Moonlight) theme tokens
-// from globals.css so it renders correctly without a logged-in ThemeProvider.
+// Public, shareable guide for new users. Renders on the :root fallback
+// palette from globals.css (light "bloom" cream) with no ThemeProvider, and
+// stays that way on every device — see the colorScheme pin on <main>.
 
 function Section({ id, kicker, title, children }: { id: string; kicker: string; title: string; children: React.ReactNode }) {
   return (
@@ -72,7 +73,7 @@ function IconRow({ icon, children }: { icon: string; children: React.ReactNode }
 
 export default function GuidePage() {
   return (
-    <main style={{ maxWidth: '760px', margin: '0 auto', padding: '2.5rem 1.25rem 5rem' }}>
+    <main style={{ colorScheme: 'light', maxWidth: '760px', margin: '0 auto', padding: '2.5rem 1.25rem 5rem' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>

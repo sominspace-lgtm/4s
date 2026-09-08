@@ -124,6 +124,8 @@ export default function OnboardPage() {
   return (
     <ThemeProvider theme={DEFAULT_THEME}>
       <div style={{
+        // Cream on every device (see login) — pin the browser chrome to light.
+        colorScheme: 'light',
         minHeight: '100vh', background: 'var(--bg)',
         backgroundImage: 'radial-gradient(ellipse at top right, var(--aurora-1) 0%, transparent 55%), radial-gradient(ellipse at bottom left, var(--aurora-2) 0%, transparent 55%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
