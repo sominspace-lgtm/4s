@@ -8,6 +8,14 @@ export type DateIdeaStatus = 'idea' | 'planned' | 'done'
 
 export type PriceRange = '$' | '$$' | '$$$' | '$$$$'
 
+/** The bucket a date idea sits in (2026-09-08). null = "Other / Any". */
+export type DateIdeaCategory = 'home' | 'cheap' | 'splurge'
+export const DATE_IDEA_CATEGORIES: { key: DateIdeaCategory; label: string }[] = [
+  { key: 'home', label: 'At home' },
+  { key: 'cheap', label: 'Cheap' },
+  { key: 'splurge', label: '$$$' },
+]
+
 export interface DateIdea {
   id: string
   space_id: string | null
@@ -26,6 +34,9 @@ export interface DateIdea {
    *  already cover. Everything else maps to a column that exists: name=title,
    *  location=place_id, description=notes, category=area/tags, cost=price_range. */
   indoor_outdoor: 'indoor' | 'outdoor' | 'either' | null
+  category: DateIdeaCategory | null
+  /** Set when the idea is marked done — the list becomes an album. */
+  photo_path: string | null
   created_at: string
   updated_at: string
 }
@@ -54,7 +65,7 @@ export function useDateIdeas(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags' | 'indoor_outdoor'>>): Promise<string | null> {
+  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags' | 'indoor_outdoor' | 'category'>>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('date_ideas')
@@ -65,7 +76,7 @@ export function useDateIdeas(spaceId: string | null) {
     return null
   }
 
-  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range' | 'indoor_outdoor'>>) {
+  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range' | 'indoor_outdoor' | 'category' | 'photo_path'>>) {
     const { error } = await supabase.from('date_ideas')
       .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
     if (!error) setIdeas(prev => prev.map(i => (i.id === id ? { ...i, ...fields } : i)))
