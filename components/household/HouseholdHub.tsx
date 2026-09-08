@@ -16,16 +16,17 @@ import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
-import NearbyPlaces, { NEW_HOME } from './NearbyPlaces'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
 import CheckinForm from '@/components/checkin/CheckinForm'
-import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import { openSmartHome } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
+
+/** The Millton, Redwood City CA — the move-in address the Move-In block is about. */
+const NEW_HOME = { label: 'The Millton', city: 'Redwood City, CA' }
 
 const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
 // slot was captured on every meal from the start but never shown or sorted
@@ -450,11 +451,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             Open the move-in spreadsheet ↗
           </a>
           <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.65, lineHeight: 1.5 }}>
-            The sheet holds the buy-list detail — budgets, room-by-room, links. This is just the glance:
-            what&rsquo;s around the new place.
+            The sheet holds the buy-list detail — budgets, room-by-room, links.
           </div>
         </section>
-        <NearbyPlaces />
       </div>
     ),
 
@@ -798,20 +797,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         <div style={{ fontSize: '0.7rem', color: 'var(--rose)', background: 'color-mix(in srgb, var(--rose) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)', borderRadius: '8px', padding: '0.5rem 0.7rem' }}>
           {h.error}
         </div>
-      )}
-
-      {/* Household Today (2026-09-03) — the "what does the house need right
-          now, and how was the week" view, mirroring Personal's Today. Every
-          piece already exists; this tab just composes them. */}
-      {tab === 'today' && (
-        <>
-          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} routines={routinesHook.routines.filter(r => r.kind === 'routine')} />
-          <CheckinCard userId={userId} />
-          <TodayHouseholdNeeds userId={userId} />
-          <WeeklyRecapBlock spaceId={spaceId} />
-          <HouseholdCalendar chores={h.chores} meals={h.meals}
-            routines={routinesHook.routines.filter(r => r.kind === 'routine')} trips={trips} spaceId={spaceId} defaultView="agenda" />
-        </>
       )}
 
       {tab === 'home' && (

@@ -61,7 +61,6 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Home's own group is [home, reference]. Calendar folded into Home as a
   // block 2026-09-02 (was its own section 2026-08-21); Routines folded into
   // Reference 2026-08-25.
-  { id: 'hhtoday',  label: 'Household today', hidden: false },
   { id: 'home',     label: 'Home',     hidden: false },
   { id: 'reference', label: 'Reference', hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill
