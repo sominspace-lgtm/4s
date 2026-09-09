@@ -468,13 +468,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     [villageRings],
   )
 
-  // Pin stories on the wall (2026-09-09) — a few nearby saved places with
-  // the one line the hosts wrote, tapped from a little pin cluster.
-  const placeStories = useMemo(
-    () => places.filter(p => p.note && p.note.trim()).slice(0, 4).map(p => ({ name: p.name, note: p.note!.trim(), kind: p.kind })),
-    [places],
-  )
-
   // "On this day" (2026-09-09) — a gathering memory / place / trip from
   // roughly a year (or 2, or 3) ago today, flipped up from the postcard rack.
   const onThisDay = useMemo(() => {
@@ -854,7 +847,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
             gathering={guestLive} hostNote={guestLive ? gathering?.pinned_note ?? null : null} contributions={contributions} guestQrUri={qrDataUri}
             sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
-            placeStories={placeStories} onThisDay={onThisDay} postcards={postcards}
+            onThisDay={onThisDay} postcards={postcards}
             ringNotes={ringNotes} foundedYear={accountCreated ? accountCreated.getFullYear() : null}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}

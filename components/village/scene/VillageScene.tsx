@@ -162,7 +162,7 @@ export default function VillageScene({
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
-  sparks = [], guestToken = null, placeStories = [], onThisDay = null, postcards = [],
+  sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
 }: {
   village: VillageState
@@ -254,9 +254,6 @@ export default function VillageScene({
   /** The live gathering token, only set on the wall during a gathering —
    *  lets a pond tap write a firefly via /api/g/[token]. */
   guestToken?: string | null
-  /** A few saved places with the note the hosts wrote (2026-09-09) — a pin
-   *  cluster by the Places district a guest can tap for the story. */
-  placeStories?: { name: string; note: string; kind: string }[]
   /** A memory / place / trip from roughly a year ago today. */
   onThisDay?: { text: string; yearsAgo: number } | null
   /** The household's real trips, for the postcard rack (2026-09-08). A trip
@@ -652,8 +649,6 @@ export default function VillageScene({
 
   // Postcard rack (round 66) — tap it to flip through your trip postcards.
   const [postcardsOpen, setPostcardsOpen] = useState(false)
-  // Which pin-story is open (index into placeStories), or null.
-  const [storyPin, setStoryPin] = useState<number | null>(null)
   // Which archive-tree ring is open (its calendar year), or null.
   const [ringYear, setRingYear] = useState<number | null>(null)
 
@@ -2613,27 +2608,6 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
-      {/* A little cluster of map pins by the Places district — tap one for
-          the line the hosts wrote when they saved it (2026-09-09). */}
-      {placeStories.length > 0 && !arranging && (() => {
-        const pp = pos('places')
-        return (
-          <g>
-            {placeStories.map((s, i) => {
-              const px = pp.x - 18 + i * 12
-              const py = pp.y + 16 + (i % 2) * 5
-              return (
-                <g key={s.name + i} transform={`translate(${px} ${py})`} className="village-entity"
-                  style={{ cursor: 'pointer' }} onClick={() => setStoryPin(storyPin === i ? null : i)}>
-                  <title>{s.name}</title>
-                  <path d="M0 0 C -3 -5 -3 -9 0 -9 C 3 -9 3 -5 0 0 Z" fill="var(--rose)" stroke="var(--bg)" strokeWidth={0.6} />
-                  <circle cx={0} cy={-6} r={1.5} fill="var(--bg)" />
-                </g>
-              )
-            })}
-          </g>
-        )
-      })()}
       {/* People district → Memories (2026-09-07). The community tree is the
           gallery: shared photo albums plus the trip postcards. */}
       <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="Memories" onClick={openOrToggle('people', 'Memories')} {...hoverPreview('people')} dark={dark} scale={1.12}
@@ -3392,33 +3366,6 @@ export default function VillageScene({
                       border: '0.8px solid var(--gold)', borderRadius: 8,
                     }}>Drop it in 🪙</button>
                   </div>
-                </div>
-              </foreignObject>
-            </g>
-          </g>
-        )
-      })()}
-
-      {/* The line the hosts wrote when they saved a pin (2026-09-09). */}
-      {storyPin != null && placeStories[storyPin] && (() => {
-        const s = placeStories[storyPin]
-        const pp = pos('places')
-        const w = 168, h = 66
-        const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, pp.x))
-        const top = Math.max(10, pp.y - 20 - h)
-        return (
-          <g className="village-fade">
-            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setStoryPin(null)} />
-            <g transform={`translate(${cx - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
-              <rect width={w} height={h} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
-              <foreignObject width={w} height={h} style={{ pointerEvents: 'all' }}>
-                <div style={{
-                  width: '100%', height: '100%', boxSizing: 'border-box', padding: '9px 11px',
-                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-                  fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 3,
-                }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
-                  <div style={{ fontSize: 8.5, color: 'var(--muted)', lineHeight: 1.4, flex: 1 }}>{s.note}</div>
                 </div>
               </foreignObject>
             </g>

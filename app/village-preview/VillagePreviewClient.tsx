@@ -94,11 +94,6 @@ export default function VillagePreviewClient() {
             plantSlots={bigSlots.plantSlots} buildingSlots={bigSlots.buildingSlots}
             gathering guestToken="preview-fake-token"
             sparks={sparks}
-            placeStories={[
-              { name: 'Little Green', note: 'the cafe from the rainy Tuesday', kind: 'cafe' },
-              { name: 'Cañada courts', note: 'lights until 9, never busy', kind: 'court' },
-              { name: 'The taco place', note: 'go for the al pastor', kind: 'restaurant' },
-            ]}
             onThisDay={{ text: 'You had people over: Alex, Sam, Jo.', yearsAgo: 1 }}
             somi={{ name: 'Somi', ageText: '1 year old', birthdayLabel: 'Born July 11, 2025', snack: 'Churu', tricks: ['sit', 'spin'], notes: 'Please don’t feed her from the table.', photoUrl: 'https://placecats.com/80/80' }}
           />
