@@ -250,6 +250,12 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
+  async function updateRule(id: string, fields: Partial<Pick<HouseRule, 'text' | 'category' | 'note'>>) {
+    const { error } = await supabase.from('household_rules').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
   async function toggleRuleActive(id: string, active: boolean) {
     const { error } = await supabase.from('household_rules').update({ active, updated_at: new Date().toISOString() }).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
@@ -294,7 +300,7 @@ export function useHousehold(spaceId: string | null) {
     addChore, markChoreDone, removeChore, setChoreFolder,
     addMeal, removeMeal, updateMeal,
     addShopping, toggleGot, clearGot, removeShopping,
-    addRule, toggleRuleActive, removeRule,
+    addRule, updateRule, toggleRuleActive, removeRule,
     addMoveinItem, toggleMoveinGot, removeMoveinItem,
   }
 }

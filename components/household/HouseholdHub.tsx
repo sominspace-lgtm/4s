@@ -15,6 +15,7 @@ import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import HouseholdDateIdeas from './HouseholdDateIdeas'
+import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
@@ -161,6 +162,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [ruleText, setRuleText] = useState('')
   const [ruleCategory, setRuleCategory] = useState('')
   const [showRetiredRules, setShowRetiredRules] = useState(false)
+  const [editingRule, setEditingRule] = useState<{ id: string; text: string } | null>(null)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
@@ -467,17 +469,38 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           </div>
         )}
 
-        {h.rules.filter(r => r.active).map(r => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)' }}>{r.text}</span>
-            {r.category && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', flexShrink: 0 }}>{r.category}</span>}
-            <button onClick={() => h.toggleRuleActive(r.id, false)} title="Retire this rule" className="press"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
-              retire
-            </button>
-            <IconButton label={`Delete ${r.text}`} onClick={() => h.removeRule(r.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
-          </div>
-        ))}
+        {h.rules.filter(r => r.active).map(r => {
+          const editing = editingRule?.id === r.id
+          const saveEdit = () => {
+            const t = editingRule?.text.trim()
+            if (t && t !== r.text) void h.updateRule(r.id, { text: t })
+            setEditingRule(null)
+          }
+          return (
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.4rem 0', borderBottom: '1px solid var(--faint)' }}>
+              {editing ? (
+                <input
+                  autoFocus value={editingRule!.text}
+                  onChange={e => setEditingRule({ id: r.id, text: e.target.value })}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingRule(null) }}
+                  onBlur={saveEdit}
+                  style={{ ...input, flex: 1, minWidth: 0, fontSize: '0.78rem' }}
+                />
+              ) : (
+                <button onClick={() => setEditingRule({ id: r.id, text: r.text })} className="press"
+                  style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'text', fontFamily: 'inherit', fontSize: '0.78rem', color: 'var(--text)' }}>
+                  {r.text}
+                </button>
+              )}
+              {r.category && !editing && <span style={{ fontSize: '0.6rem', color: 'var(--muted)', flexShrink: 0 }}>{r.category}</span>}
+              <button onClick={() => h.toggleRuleActive(r.id, false)} title="Retire this rule" className="press"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', flexShrink: 0 }}>
+                retire
+              </button>
+              <IconButton label={`Delete ${r.text}`} onClick={() => h.removeRule(r.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
+            </div>
+          )
+        })}
 
         {h.rules.some(r => !r.active) && (
           <div style={{ marginTop: '0.8rem' }}>
@@ -802,6 +825,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
 
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
+
+      {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
+      {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} />}
 
       {/* Understanding Each Other — real relationship content (love
           languages, preferences, the kind of thing Check-ins already gates),

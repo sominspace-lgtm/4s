@@ -405,7 +405,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-trips'])
+  // Shared device (no PIN): the Village (a picture, not data), Places
+  // (scoped to shared pins), and Household's Reference tab. Home / Upkeep /
+  // Calendar / Smart Home need the PIN — a guest on the wall has no reason
+  // to see the chore schedule or the meal plan (2026-09-10).
+  const SHARED_MODE_IDS = new Set(['reference', 'village', 'places', 'places-trips'])
 
   const visible = sections.filter(s =>
     !s.hidden

@@ -30,7 +30,6 @@ import { findAsset, parseCustomItemId } from '@/lib/village/assetLibrary'
 import { useCoupleLife } from './useCoupleLife'
 import { useWanderer } from './useWanderer'
 import { DEFAULT_SCENE_MOOD, type SceneMood } from '@/lib/smarthome/sceneMood'
-import HouseInfo from './HouseInfo'
 import {
   GRASS_TUFTS, STONES, DISTANT_TREES, POLLEN, FOREGROUND, MIDGROUND_BUSHES, EXTRA_TREES,
   PATH_D, NATURE_DETAILS, PATH_PAVERS, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
@@ -635,8 +634,14 @@ export default function VillageScene({
   // until the card's own "Go to …" button is tapped. Locked districts are
   // the exception: straight to the PIN prompt, never a card, since the
   // card's live content is only ever safe once a district isn't locked.
+  // During a gathering the wall is for the guests — only a few districts
+  // carry anything a guest wants (the house info, what's on the board, the
+  // memories tree, the map). Everything else stays quiet; the well has its
+  // own tap (2026-09-10).
+  const GUEST_CARD_DISTRICTS: LandmarkId[] = ['home', 'calendar', 'people', 'places']
   const activateDistrict = (id: LandmarkId, label: string) => {
     if (arranging) return
+    if (gathering && !GUEST_CARD_DISTRICTS.includes(id)) return
     recordVisit(id)
     if (districtLocked(id)) { setOpenPanel(null); onLockedNavigate?.(label); return }
     setOpenPanel(id)
@@ -667,7 +672,11 @@ export default function VillageScene({
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelHoverClose = () => { if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null } }
   const hoverPreview = (id: LandmarkId) => ({
-    onHoverIn: () => { if (!arranging) { cancelHoverClose(); setOpenPanel(id) } },
+    onHoverIn: () => {
+      if (arranging) return
+      if (gathering && !GUEST_CARD_DISTRICTS.includes(id)) return
+      cancelHoverClose(); setOpenPanel(id)
+    },
     // A short grace period so moving the pointer up into the card itself
     // (there's a gap above the district) doesn't dismiss it.
     onHoverOut: () => { cancelHoverClose(); hoverCloseTimer.current = setTimeout(() => setOpenPanel(null), 160) },
@@ -778,10 +787,17 @@ export default function VillageScene({
         const wifi = guestInfo.wifiName
           ? `Wifi · ${guestInfo.wifiName}${guestInfo.wifiPassword ? ` / ${guestInfo.wifiPassword}` : ''}`
           : null
+        // For a guest the board is the one place house info lives — wifi,
+        // whatever the hosts wrote, then what's on. Otherwise it's a
+        // calendar peek.
+        if (gathering) {
+          const l = [wifi, guestInfo.notes || null, ...evts].filter(Boolean).slice(0, 4) as string[]
+          return l.length ? l : ['Make yourself at home']
+        }
         const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
         return l.length ? l : ["What's coming up"]
       })(),
-      actionLabel: 'Go to the calendar', go: () => goToHousehold('calendar'),
+      actionLabel: 'Go to the calendar', go: () => goToHousehold('reference'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
   }
@@ -2462,9 +2478,8 @@ export default function VillageScene({
           scene. */}
       <DistrictLabel quiet={hosting} {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
-      {hosting && !arranging && (
-        <HouseInfo x={pos('home').x + 46} y={pos('home').y + 6} info={guestInfo} />
-      )}
+      {/* House info (wifi, notes) lives on the Notice board card now
+          (2026-09-10) — one place for a guest to look. */}
       <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12} freshness={pulse.projects}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
