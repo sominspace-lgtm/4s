@@ -311,33 +311,24 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
 // as "a place" rather than "the gaps between the things that matter" — the
 // goal is Animal Crossing × stationery, not more UI. Flat shapes, theme-
 // colored via CSS vars, same idiom as every other scene element.
+// Real pixel-art pond sprite (2026-09-08, from the master nature folder's
+// village-lake-pond-base). Includes its own cattails and bank. Anchored so
+// the water's centre sits at local (0,0) — koi and fireflies position off
+// that point.
+const POND = { src: '/village-assets/pond-base.png', aspect: 1019 / 530 }
 export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; scale?: number; onClick?: () => void }) {
   // onClick (round 50, 2026-08-28) — the pond is the "picnic" tap target for
   // the new attention/nudge system (VillageScene's own nudge state); same
   // stopPropagation/oversized-hit-circle idiom as VillagerShape's own
   // onClick, gated `!arranging` by the caller, not here.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  // Reeds along the back edge + one lily pad (2026-09-08). Static shapes —
-  // the reeds lean on the shared soft-sway keyframe, each with its own
-  // negative delay so the stand ripples rather than swaying in lockstep.
-  const reeds = [-13, -8, -3, 4, 10]
+  const w = 58, h = w / POND.aspect
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8} onClick={handleClick}
+    <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
-      {onClick && <ellipse cx={0} cy={0} rx={24} ry={9} fill="transparent" style={{ pointerEvents: 'all' }} />}
-      <ellipse cx={0} cy={0} rx={22} ry={7} fill="var(--slate)" opacity={0.28} />
-      <ellipse cx={0} cy={0} rx={22} ry={7} fill="none" stroke="var(--slate)" strokeWidth={0.7} opacity={0.35} />
-      <ellipse cx={-5} cy={-1.5} rx={6} ry={1.6} fill="var(--surface)" opacity={0.25} />
-      {/* lily pad on the near edge, with its wedge notch */}
-      <g transform="translate(9 2.5)">
-        <ellipse cx={0} cy={0} rx={3.6} ry={2.1} fill="var(--sage, var(--slate))" opacity={0.5} />
-        <path d="M0 0 L3.4 -1 L3.4 1 Z" fill="var(--bg)" opacity={0.4} />
-      </g>
-      {reeds.map((rx, i) => (
-        <rect key={i} x={rx} y={-11} width={1} height={11} rx={0.5}
-          fill="var(--sage, var(--slate))" opacity={0.55}
-          className="village-sway-soft" style={{ animationDelay: `${(hashPos('reed' + i) * -5).toFixed(2)}s` }} />
-      ))}
+      {onClick && <ellipse cx={0} cy={1} rx={26} ry={9} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      <image href={POND.src} x={-w / 2} y={-h * 0.6} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} opacity={0.95} />
     </g>
   )
 }
@@ -355,17 +346,21 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
   const brisk = timeOfDay === 'dawn' || timeOfDay === 'dusk'
   const koiN = night ? 2 : brisk ? 4 : 3
   const duckN = night ? 0 : brisk ? 2 : 1
-  const koiColors = ['var(--amber)', 'var(--rose, var(--amber))', 'var(--gold)']
+  const koiFrames = [0, 1, 2].map(i => ({ src: `/village-assets/koi-${i}.png`, aspect: 224 / 340 }))
   return (
     <g pointerEvents="none">
       {Array.from({ length: koiN }).map((_, i) => {
         const dx = (hashPos('koi' + i + 'x') - 0.5) * 30
         const dy = (hashPos('koi' + i + 'y') - 0.5) * 9
-        const cls = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
+        const angle = Math.round(hashPos('koi' + i + 'r') * 360)
+        const drift = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
         return (
-          <g key={i} transform={`translate(${cx + dx} ${cy + dy})`} className={night ? undefined : cls}>
-            <ellipse cx={0} cy={0} rx={2.4} ry={1.1} fill={koiColors[i % koiColors.length]} opacity={0.7} />
-            <path d={`M${-2.2} 0 L${-3.6} -1 L${-3.6} 1 Z`} fill={koiColors[i % koiColors.length]} opacity={0.6} />
+          // outer: place + face; middle: the slow drift wiggle; inner: the
+          // swim-cycle sprite.
+          <g key={i} transform={`translate(${cx + dx} ${cy + dy}) rotate(${angle})`}>
+            <g className={night ? undefined : drift}>
+              <SpriteCycle frames={koiFrames} x={0} y={4} height={8} periodSec={night ? 2.4 : 1.3} opacity={0.9} />
+            </g>
           </g>
         )
       })}

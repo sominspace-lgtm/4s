@@ -1857,7 +1857,7 @@ export default function VillageScene({
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
-          <PondShape x={0} y={0} scale={1.15}
+          <PondShape x={0} y={0} scale={1}
             onClick={!arranging ? () => {
               life.walkTo(p.x, p.y + 8)
               if (guestToken) dropFirefly(); else feedPond()

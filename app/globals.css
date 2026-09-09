@@ -452,6 +452,8 @@ select, option {
    with no JS timer. steps(1) makes each switch instant, matching pixel-art
    discrete poses rather than a smooth crossfade. */
 @keyframes village-cycle-2 { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+/* Koi swim — 3 frames (100%/3 ≈ 33.3%). */
+@keyframes village-cycle-3 { 0%, 33.2% { opacity: 1; } 33.3%, 100% { opacity: 0; } }
 @keyframes village-cycle-4 { 0%, 24.9% { opacity: 1; } 25%, 100% { opacity: 0; } }
 /* Somi's idle set (round 39, 2026-08-27) — 5 frames, one slice each (100%/5 = 20%). */
 @keyframes village-cycle-5 { 0%, 19.9% { opacity: 1; } 20%, 100% { opacity: 0; } }
