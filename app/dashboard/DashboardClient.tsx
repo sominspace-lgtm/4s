@@ -405,17 +405,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  // Shared device (no PIN): the Village (a picture, not data), Places
-  // (scoped to shared pins), and Household's Reference tab. Home / Upkeep /
-  // Calendar / Smart Home need the PIN — a guest on the wall has no reason
-  // to see the chore schedule or the meal plan (2026-09-10).
-  const SHARED_MODE_IDS = new Set(['reference', 'village', 'places', 'places-trips'])
+  // Plain shared device (the "Shared" login, no gathering running): the
+  // household's shared surfaces without a PIN — Home, Upkeep, Reference,
+  // the Village and Places. Going into personal data still needs the PIN
+  // (see UnlockPanel + the per-block "tap to unlock" rows).
+  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-trips'])
 
   // Guest / host mode — a shared device with a gathering actually live
-  // (2026-09-10). Tighter than plain shared view: a guest can see the
-  // Village, Places (not Trips), and the guest-safe bits of Reference
-  // (date ideas, watchlist, photo albums). Everything else needs the PIN,
-  // and is visible again in plain shared view once the gathering ends.
+  // (2026-09-10). Much tighter: only the Village, Places (not Trips), and
+  // the guest-safe bits of Reference (date ideas, watchlist, photo albums,
+  // hosting keepsakes). Everything else needs the PIN, and all of it is
+  // back in plain shared view the moment the gathering ends.
   const guestMode = sharedMode && gathering.gathering?.phase === 'live'
   const GUEST_MODE_IDS = new Set(['reference', 'village', 'places'])
 

@@ -800,7 +800,8 @@ export default function VillageScene({
         const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
         return l.length ? l : ["What's coming up"]
       })(),
-      actionLabel: gathering ? 'See what’s on' : 'Go to the calendar', go: () => goToHousehold('reference'),
+      actionLabel: gathering ? 'See what’s on' : 'Go to the calendar',
+      go: () => goToHousehold(gathering ? 'reference' : 'calendar'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
   }
