@@ -587,7 +587,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Pre-formatted here, not in the (hookless, dateless) scene — see
   // VillageScene's own prop comments.
   const timeLabel = clock ? format(clock, 'h:mm a') : null
-  const dateLabel = clock ? format(clock, 'EEEE, MMMM d') : null
+  const dateLabel = clock ? format(clock, 'EEE, MMM d') : null
   const moonLabel = clock && celestial?.body === 'moon' ? moonPhaseLabel(celestial.phase) : null
   // Same reasoning, round 50 (2026-08-28) — "living painting" day-to-day
   // flavor (see lib/village/vignette.ts) needs a stable per-day key, computed

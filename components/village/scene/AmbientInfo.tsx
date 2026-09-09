@@ -71,8 +71,8 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
       aria-hidden
       style={{
         position: 'absolute', top: ambient ? '5%' : '3.5%', left: ambient ? '5%' : '3.5%', zIndex: 3,
-        display: 'flex', flexDirection: 'column', gap: ambient ? 3 : 0,
-        maxWidth: ambient ? '12rem' : '5.5rem',
+        display: 'flex', flexDirection: 'column', gap: ambient ? 3 : 1,
+        maxWidth: ambient ? '12rem' : '9rem',
         pointerEvents: 'none', textAlign: 'left',
         padding: ambient ? '0.85rem 1.05rem' : '0.28rem 0.5rem',
         borderRadius: ambient ? 16 : 10,
@@ -90,14 +90,21 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
           {timeLabel}
         </div>
       )}
-      {/* Date, weather and the what's-on line only in the big idle state —
-          the small tag is time alone so it never grows enough to sit over
-          the cottage or the districts. */}
-      {ambient && (dateLabel || weatherStr) && (
-        <div style={{ fontSize: '0.74rem', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
-        </div>
-      )}
+      {/* Date + weather ride under the time in both states. The what's-on
+          line stays idle-only so the small tag never grows enough to sit
+          over the cottage or the districts. */}
+      {ambient
+        ? (dateLabel || weatherStr) && (
+          <div style={{ fontSize: '0.74rem', opacity: 0.9, whiteSpace: 'nowrap' }}>
+            {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
+          </div>
+        )
+        : (
+          <>
+            {dateLabel && <div style={{ fontSize: '0.58rem', opacity: 0.9, whiteSpace: 'nowrap', lineHeight: 1.25 }}>{dateLabel}</div>}
+            {weatherStr && <div style={{ fontSize: '0.58rem', opacity: 0.9, whiteSpace: 'nowrap', lineHeight: 1.25 }}>{weatherStr}</div>}
+          </>
+        )}
       {ambient && line && (
         <div style={{ fontSize: '0.7rem', opacity: 0.85, marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {line}
