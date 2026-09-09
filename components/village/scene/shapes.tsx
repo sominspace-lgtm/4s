@@ -214,7 +214,21 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
         ) : (
           <image href={`/village-assets/${species}-${i}.png`} x={-size / 2} y={-size}
             width={size} height={size}
-            style={{ imageRendering: 'pixelated', filter: plant.dormant ? 'grayscale(1)' : undefined }} />
+            style={{
+              imageRendering: 'pixelated',
+              filter: plant.dormant ? 'grayscale(1)' : undefined,
+              // Thirsty (due today, not yet watered) — a small lean, cleared
+              // the moment it's checked in. Not a warning, just a tell.
+              transform: plant.thirsty && !plant.dormant ? 'rotate(4deg)' : undefined,
+              transformBox: 'fill-box',
+              transformOrigin: 'bottom center',
+              transition: 'transform 0.6s ease',
+            }} />
+        )}
+        {plant.thirsty && !plant.dormant && (
+          <path d="M0 -3 q 1.6 2.4 0 4 q -1.6 -1.6 0 -4 z"
+            transform={`translate(${size * 0.32} ${-size - 2})`}
+            fill="var(--sky, #7fb9d6)" opacity={0.75} />
         )}
       </g>
     </g>

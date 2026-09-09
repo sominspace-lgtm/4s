@@ -61,6 +61,10 @@ export async function POST(request: Request, { params }: Props) {
     if (meta.title) meta.title = clip(meta.title, 120)
     if (meta.url) meta.url = clip(meta.url, 400)
   }
+  if (kind === 'spot') {
+    meta.place = clip(meta.place, 80)
+    if (!meta.place) return NextResponse.json({ error: 'Which place?' }, { status: 400 })
+  }
 
   if (!text && Object.keys(meta).length === 0) {
     return NextResponse.json({ error: 'Nothing to add' }, { status: 400 })

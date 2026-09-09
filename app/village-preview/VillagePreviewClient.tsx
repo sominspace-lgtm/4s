@@ -26,6 +26,7 @@ function fakeVillage(
     category: null,
     waterings: i * 3,
     toNextStage: i % 3 === 0 ? null : (i % 3) + 1,
+    thirsty: i === 1 || i === 5,
   }))
   const buildings: Building[] = [...Array(nBuildings)].map((_, i) => ({
     id: `b${i}`,

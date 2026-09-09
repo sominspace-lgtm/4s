@@ -28,7 +28,7 @@ const KIND_LABEL: Record<string, string> = {
 export default function VillageGuestPanel({
   gathering, spaceId = null, contributions, guestUrl, qrDataUri, memories, guestInfo, petInfo,
   onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onSetMenu, onSetAgenda, onSetPetInfo,
-  onModerate, onRemoveContribution, onSetPinnedContribution,
+  onModerate, onRemoveContribution, onSetPinnedContribution, onSetPinnedNote,
   onCloseGathering, onUpdateMemory, onDeleteMemory,
 }: {
   gathering: Gathering
@@ -53,6 +53,8 @@ export default function VillageGuestPanel({
    *  one home now, on the wall same as on your own phone). Pass null id
    *  to unpin. */
   onSetPinnedContribution?: (id: string | null) => void
+  /** One short line pinned to the info board for tonight. */
+  onSetPinnedNote?: (text: string) => void
   onCloseGathering?: () => void | Promise<GatheringMemory | null>
   onUpdateMemory?: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status'>>) => void
   onDeleteMemory?: (id: string) => void
@@ -64,6 +66,7 @@ export default function VillageGuestPanel({
   const [wifiName, setWifiName] = useState(guestInfo?.wifiName ?? '')
   const [wifiPassword, setWifiPassword] = useState(guestInfo?.wifiPassword ?? '')
   const [houseNotes, setHouseNotes] = useState(guestInfo?.notes ?? '')
+  const [pinnedNote, setPinnedNote] = useState(gathering.pinned_note ?? '')
   const prep = gathering.phase === 'prep'
 
   const endGathering = async () => {
@@ -103,6 +106,15 @@ export default function VillageGuestPanel({
           <button onClick={() => onSetPhotoAlbumUrl?.(album)} style={S.save}>Save</button>
         </div>
       </Field>
+
+      {onSetPinnedNote && (
+        <Field label="Pin a line to the board" hint="One short line guests see first on the info board tonight. Change it as the night goes.">
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <input value={pinnedNote} onChange={e => setPinnedNote(e.target.value)} placeholder="Cake in 10 — kitchen" maxLength={120} style={S.input} />
+            <button onClick={() => onSetPinnedNote(pinnedNote)} style={S.save}>Pin</button>
+          </div>
+        </Field>
+      )}
 
       {onSetGuestInfo && (
         <Field label="House info for guests" hint="Shown in the guest portal. Wifi, where the bathroom is, help yourself to drinks — whatever saves them asking.">

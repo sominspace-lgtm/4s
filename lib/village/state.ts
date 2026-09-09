@@ -1,5 +1,21 @@
-import { differenceInCalendarDays, differenceInCalendarMonths, parseISO } from 'date-fns'
+import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO } from 'date-fns'
 import type { Habit } from '@/lib/hooks/useHabits'
+
+// Local copy of useHabits.isDueOn — kept here so this pure module (used in
+// tests) never has to import the 'use client' hooks file. Same logic; keep
+// them in step.
+function habitDueOn(habit: Habit, dateStr: string, completions: string[]): boolean {
+  if (habit.paused) return false
+  if (habit.schedule_type === 'daily') return true
+  if (habit.schedule_type === 'weekly') {
+    return (habit.days_of_week ?? []).includes(parseISO(dateStr).getDay())
+  }
+  const n = habit.interval_days ?? 1
+  const prior = completions.filter(d => d <= dateStr).sort()
+  const last = prior[prior.length - 1]
+  if (!last) return true
+  return differenceInCalendarDays(parseISO(dateStr), parseISO(last)) >= n
+}
 import type { WorkItem } from '@/lib/hooks/useWorkItems'
 import { taskStage } from '@/lib/utils/taskStage'
 
@@ -27,6 +43,10 @@ export interface Plant {
   waterings: number
   /** Waterings until the next stage, or null once fully grown. */
   toNextStage: number | null
+  /** Due today and not yet watered — a started habit that could use a
+   *  check-in. Clears the moment it's done. Not a streak, not a warning:
+   *  the plant leans a little and shows a droplet, nothing more. */
+  thirsty: boolean
 }
 
 export interface Building {
@@ -88,7 +108,7 @@ export function completionsToNextStage(completions: string[]): number | null {
   return next === undefined ? null : next - completions.length
 }
 
-export function plantFor(habit: Habit, completions: string[]): Plant {
+export function plantFor(habit: Habit, completions: string[], now: Date = new Date()): Plant {
   // Peak, not recent: stage is computed from ALL-TIME completions so a plant
   // can never shrink. A quiet fortnight desaturates it (dormant) but the
   // thing you built stays exactly as big as you built it. This is the single
@@ -112,6 +132,12 @@ export function plantFor(habit: Habit, completions: string[]): Plant {
     category: habit.category,
     waterings: completions.length,
     toNextStage: completionsToNextStage(completions),
+    // Only a habit you've already started can read as thirsty — a brand-new
+    // one due today is a seed, not something you've let go dry.
+    thirsty: !habit.paused
+      && completions.length > 0
+      && habitDueOn(habit, format(now, 'yyyy-MM-dd'), completions)
+      && !completions.includes(format(now, 'yyyy-MM-dd')),
   }
 }
 
@@ -160,7 +186,7 @@ export function buildVillage(input: {
 }): VillageState {
   const now = input.now ?? new Date()
 
-  const plants = input.habits.map(h => plantFor(h, input.completions[h.id] ?? []))
+  const plants = input.habits.map(h => plantFor(h, input.completions[h.id] ?? [], now))
   const buildings = input.workItems
     .filter(isBuildingWorthy)
     .map(i => ({ id: i.id, title: i.title, phase: phaseFor(i), dueDate: i.due_date ?? null }))

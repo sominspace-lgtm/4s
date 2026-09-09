@@ -47,6 +47,9 @@ export interface Gathering {
   agenda: AgendaItem[]
   /** A guest message the hosts pinned to the wall, or null. */
   pinned_contribution_id: string | null
+  /** One short line the hosts pinned to the info board for the night
+   *  ("cake in 10", "we're in the backyard"). Cleared when the party ends. */
+  pinned_note: string | null
 }
 
 const DEFAULT_PREP: Omit<PrepItem, 'id'>[] = [
@@ -130,6 +133,8 @@ export interface UseGathering {
   setAgenda: (items: AgendaItem[]) => Promise<void>
   /** Pin a guest message to the wall, or pass null to clear it. */
   setPinnedContribution: (id: string | null) => Promise<void>
+  /** One short line the hosts pin to the info board for the night. */
+  setPinnedNote: (text: string) => Promise<void>
   moderate: (id: string, status: 'visible' | 'hidden') => Promise<void>
   removeContribution: (id: string) => Promise<void>
   updateMemory: (id: string, patch: Partial<Pick<GatheringMemory, 'title' | 'summary' | 'status' | 'series'>>) => Promise<void>
@@ -350,6 +355,15 @@ export function useGathering(userId: string): UseGathering {
     if (!error) setGathering(prev => (prev ? { ...prev, photo_album_url: clean } : prev))
   }, [supabase])
 
+  const setPinnedNote = useCallback(async (text: string) => {
+    const g = gatheringRef.current
+    if (!g) return
+    const clean = text.trim().slice(0, 120) || null
+    setGathering(prev => (prev ? { ...prev, pinned_note: clean } : prev))
+    const { error } = await supabase.from('gatherings').update({ pinned_note: clean }).eq('id', g.id)
+    if (error) console.error('[4s] setPinnedNote failed:', error.message)
+  }, [supabase])
+
   const setMenu = useCallback(async (items: MenuItem[]) => {
     const g = gatheringRef.current
     if (!g) return
@@ -424,7 +438,7 @@ export function useGathering(userId: string): UseGathering {
   return {
     gathering, contributions, memories, ready,
     startGathering, openDoors, updatePrep, closeGathering, setMusicUrl, setPhotoAlbumUrl,
-    setMenu, setAgenda, setPinnedContribution,
+    setMenu, setAgenda, setPinnedContribution, setPinnedNote,
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,
     petInfo, setPetInfo,

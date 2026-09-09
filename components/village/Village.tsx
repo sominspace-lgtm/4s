@@ -70,7 +70,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, boardNote = '', panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -126,6 +126,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   onSetMenu?: (items: MenuItem[]) => void
   onSetAgenda?: (items: AgendaItem[]) => void
   onSetPinnedContribution?: (id: string | null) => void
+  onSetPinnedNote?: (text: string) => void
   /** Somi's card (age / snack / tricks), space-level. */
   petInfo?: PetInfo
   onSetPetInfo?: (info: PetInfo) => void
@@ -851,7 +852,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
-            gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
+            gathering={guestLive} hostNote={guestLive ? gathering?.pinned_note ?? null : null} contributions={contributions} guestQrUri={qrDataUri}
             sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
             placeStories={placeStories} onThisDay={onThisDay} postcards={postcards}
             ringNotes={ringNotes} foundedYear={accountCreated ? accountCreated.getFullYear() : null}
@@ -1226,6 +1227,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onModerate={onModerate}
             onRemoveContribution={onRemoveContribution}
             onSetPinnedContribution={onSetPinnedContribution}
+            onSetPinnedNote={onSetPinnedNote}
             onCloseGathering={onCloseGathering}
             onUpdateMemory={onUpdateMemory}
             onDeleteMemory={onDeleteMemory}

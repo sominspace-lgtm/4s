@@ -106,8 +106,8 @@ function GlanceSheet({ info, onClose, onPrimary }: {
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 14px' }} />
         <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>{info.title}</div>
-        {info.cards && info.cards.length ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '4px 0 2px' }}>
+        {info.cards && info.cards.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '4px 0 8px' }}>
             {info.cards.map((c, i) => (
               <div key={i} style={{
                 fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.4,
@@ -121,7 +121,8 @@ function GlanceSheet({ info, onClose, onPrimary }: {
               }}>{c.text}</div>
             ))}
           </div>
-        ) : info.lines.map((l, i) => (
+        )}
+        {info.lines.map((l, i) => (
           <div key={i} style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{l}</div>
         ))}
         <button onClick={() => { onPrimary(); onClose() }} style={{
@@ -157,7 +158,7 @@ export default function VillageScene({
   timeLabel = null, dateLabel = null, moonLabel = null, tripCount = 0, zoom = 1,
   homeOccupied = null, dateKey = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
-  hosting = false, guestInfo = {}, soloFigure = false,
+  hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
@@ -183,6 +184,8 @@ export default function VillageScene({
   guestInfo?: { wifiName?: string; wifiPassword?: string; notes?: string }
   /** The other partner is out — render one figure near home, not the couple. */
   soloFigure?: boolean
+  /** A short line the hosts pinned to the info board for tonight. Guest mode. */
+  hostNote?: string | null
   /** Wall-iPad ambient/idle mode — freeze all scene motion (CSS + SMIL) so
    *  it reads as a still picture and doesn't drive the panel 24/7. */
   frozen?: boolean
@@ -653,6 +656,7 @@ export default function VillageScene({
   const [storyPin, setStoryPin] = useState<number | null>(null)
   // Which archive-tree ring is open (its calendar year), or null.
   const [ringYear, setRingYear] = useState<number | null>(null)
+
   const openSomi = () => {
     if (arranging) return
     setOpenSomiCard(o => !o)
@@ -824,19 +828,21 @@ export default function VillageScene({
           l.push(...evts)
           return l.length ? l.slice(0, 5) : ['Make yourself at home']
         }
+        // Home view: `cards` carries the week; lines is just a fallback.
         const week = structures?.week ?? []
-        const l = week.length
-          ? week.map(w => `${w.when} · ${w.text}`)
-          : evts.length ? evts : ["What's coming up"]
-        return l.slice(0, 3)
+        if (week.length) return []
+        return (evts.length ? evts : ["What's coming up"]).slice(0, 3)
       })(),
-      // Home view only — the pinned cards, partner note first. Guests never
-      // see `cards` (the gathering branch of `lines` renders instead).
-      cards: gathering ? undefined : (() => {
-        const week = structures?.week ?? []
+      // The pinned note card(s) — a partner's line at home, the host's line
+      // for the night in guest mode. Renderers show these above `lines`.
+      cards: (() => {
         const c: { text: string; tone?: 'note' }[] = []
+        if (gathering) {
+          if (hostNote) c.push({ text: hostNote, tone: 'note' })
+          return c.length ? c : undefined
+        }
         if (structures?.note) c.push({ text: structures.note, tone: 'note' })
-        for (const w of week) c.push({ text: `${w.when} · ${w.text}` })
+        for (const w of structures?.week ?? []) c.push({ text: `${w.when} · ${w.text}` })
         return c.length ? c : undefined
       })(),
       actionLabel: gathering ? 'See what’s on' : 'Go to the calendar',
@@ -3078,10 +3084,11 @@ export default function VillageScene({
         const p = pos(openPanel)
         const width = 150
         const secondaryH = info.secondary ? 12 : 0
-        // A partner note on the notice board rides above the lines, tinted.
-        const noteCard = info.cards?.find(c => c.tone === 'note')?.text ?? null
-        const noteH = noteCard ? 14 : 0
-        const height = 34 + info.lines.length * 13 + 22 + secondaryH + noteH
+        // Pinned cards (partner/host note, this-week items) ride above the
+        // lines as small tinted strips.
+        const cards = info.cards ?? []
+        const cardsH = cards.length * 14
+        const height = 34 + cardsH + info.lines.length * 13 + 22 + secondaryH
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
         const top = Math.max(10, p.y - 40 - height)
         return (
@@ -3091,15 +3098,18 @@ export default function VillageScene({
               <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
               <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
               <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{info.title}</text>
-              {noteCard && (
-                <>
-                  <rect x={6} y={22} width={width - 12} height={13} rx={3}
-                    fill="color-mix(in srgb, var(--rose, var(--gold)) 14%, var(--surface))" stroke="var(--border)" strokeWidth={0.5} />
-                  <text x={width / 2} y={31} textAnchor="middle" fontSize={7} fontStyle="italic" fill="var(--text)" fontFamily="var(--font-display)">{noteCard}</text>
-                </>
-              )}
+              {cards.map((c, i) => (
+                <g key={i}>
+                  <rect x={6} y={22 + i * 14} width={width - 12} height={13} rx={3}
+                    fill={c.tone === 'note'
+                      ? 'color-mix(in srgb, var(--rose, var(--gold)) 14%, var(--surface))'
+                      : 'color-mix(in srgb, var(--gold) 7%, var(--surface))'}
+                    stroke="var(--border)" strokeWidth={0.5} />
+                  <text x={width / 2} y={31 + i * 14} textAnchor="middle" fontSize={7} fontStyle="italic" fill="var(--text)" fontFamily="var(--font-display)">{c.text}</text>
+                </g>
+              ))}
               {info.lines.map((line, i) => (
-                <text key={i} x={width / 2} y={31 + noteH + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+                <text key={i} x={width / 2} y={31 + cardsH + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
               ))}
               <g transform={`translate(${width / 2} ${height - 15 - secondaryH})`} onClick={() => { primary(); setOpenPanel(null) }}
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>

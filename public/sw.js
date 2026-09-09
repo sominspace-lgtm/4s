@@ -4,7 +4,7 @@
 // this, a tab that was already open (or a browser that hadn't rechecked
 // sw.js yet) could keep serving stale JS/HTML through the fetch handler's
 // cache fallback indefinitely, even after a real deploy shipped a fix.
-const CACHE = '4s-v4'
+const CACHE = '4s-v5'
 const SHELL = ['/', '/dashboard', '/login']
 
 self.addEventListener('install', e => {

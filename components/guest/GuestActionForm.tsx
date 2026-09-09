@@ -14,7 +14,7 @@ import type { IconName } from '@/components/ui/Icon'
 // Payload shapes are byte-identical to what both files sent before — the
 // /api/g/[token] route and its KIND_FIELDS allowlist are unchanged.
 
-export type GuestActionKind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'find'
+export type GuestActionKind = 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'find' | 'spot'
 
 const PING_REASONS = ['At the door', 'Need a hand', 'Phone call', 'Come say hi']
 
@@ -36,6 +36,7 @@ export const GUEST_ACTIONS: GuestActionDef[] = [
   { kind: 'note', icon: 'brain', emoji: '💭', label: 'Leave a note', blurb: 'A thought, a wish, a memory' },
   { kind: 'song', icon: 'mic', emoji: '🎵', label: 'Add a song', blurb: 'For the record player' },
   { kind: 'from', icon: 'pin', emoji: '🗺️', label: 'Where you’re from', blurb: 'A pin on the map' },
+  { kind: 'spot', icon: 'pin', emoji: '📍', label: 'Recommend a place', blurb: 'Somewhere you love nearby' },
   { kind: 'find', icon: 'bell', emoji: '🔔', label: 'Find a host', blurb: 'Call Sylvia or Harry over' },
 ]
 
@@ -85,8 +86,9 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
   const canSubmit =
     kind === 'song' ? songTitle.trim().length > 0
       : kind === 'from' ? place.trim().length > 1
-        : kind === 'find' ? reason.trim().length > 0
-          : text.trim().length > 0
+        : kind === 'spot' ? place.trim().length > 1 && text.trim().length > 0
+          : kind === 'find' ? reason.trim().length > 0
+            : text.trim().length > 0
 
   const submitPing = async () => {
     setBusy(true); setErr(null)
@@ -112,6 +114,7 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
     const payload: Record<string, unknown> = { kind, guest_name: guestName.trim() || null }
     if (kind === 'song') { payload.title = songTitle.trim(); payload.url = songUrl.trim(); payload.body = songTitle.trim() }
     else if (kind === 'from') { payload.place = place.trim(); payload.body = place.trim() }
+    else if (kind === 'spot') { payload.place = place.trim(); payload.body = text.trim() }
     else payload.body = text.trim()
 
     try {
@@ -200,6 +203,13 @@ export default function GuestActionForm({ token, surface, kind, guestName, onGue
 
       {kind === 'from' && (
         <input value={place} onChange={e => setPlace(e.target.value)} placeholder="Town, or town & country" style={s.input} maxLength={60} />
+      )}
+
+      {kind === 'spot' && (
+        <>
+          <input value={place} onChange={e => setPlace(e.target.value)} placeholder="Name of the place" style={s.input} maxLength={80} />
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Why you love it" rows={3} style={{ ...s.area, marginTop: '0.5rem' }} maxLength={200} />
+        </>
       )}
 
       <input

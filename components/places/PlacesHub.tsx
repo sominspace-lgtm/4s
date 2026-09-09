@@ -15,6 +15,7 @@ import AddPlacePanel from '@/components/places/AddPlacePanel'
 import TripsPanel from '@/components/places/TripsPanel'
 import TripDetail from '@/components/places/TripDetail'
 import { useTrips } from '@/lib/hooks/useTrips'
+import { useGuestSuggestions } from '@/lib/hooks/useGuestSuggestions'
 import type { LngLatBounds } from '@/lib/utils/geo'
 
 // Dynamic, ssr:false: maplibre-gl touches `window` at module scope and would
@@ -55,7 +56,8 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
   // not spaces[0] (which can be an empty solo space).
   const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id
     ?? spaces[0]?.id ?? null
-  const { places: allPlaces, withLocation: allWithLocation, withoutLocation: allWithoutLocation, loading } = usePlaces()
+  const { places: allPlaces, withLocation: allWithLocation, withoutLocation: allWithoutLocation, loading, addPlace } = usePlaces()
+  const { suggestions: guestSuggestions, dismiss: dismissSuggestion } = useGuestSuggestions(spaceId ?? null)
   const { ideas } = useDateIdeas(spaceId)
 
   const shared = <T extends { space_id: string | null }>(rows: T[]) =>
@@ -223,6 +225,36 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
             dateIdeaIds={dateIdeaIds}
           />
         </div>
+      )}
+
+      {tab === 'map' && guestSuggestions.length > 0 && (
+        <section style={{ marginTop: '1rem' }}>
+          <div className="t-card" style={{ marginBottom: '0.5rem' }}>Guests suggested</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {guestSuggestions.map(s => (
+              <div key={s.id} style={{
+                border: '1px solid var(--border)', borderRadius: 10, padding: '0.65rem 0.8rem',
+                background: 'var(--surface)',
+              }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 600 }}>{s.place}</div>
+                {s.why && <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.15rem', lineHeight: 1.4 }}>{s.why}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.45rem' }}>
+                  {s.guestName && <span style={{ fontSize: '0.66rem', color: 'var(--muted)', flex: 1 }}>— {s.guestName}</span>}
+                  <button
+                    className="press"
+                    onClick={async () => {
+                      await addPlace({ name: s.place, note: s.why, status: 'idea', tags: ['guest-pick'], shared: true }, spaceId ?? null)
+                      dismissSuggestion(s.id)
+                    }}
+                    style={{ fontSize: '0.68rem', border: '1px solid var(--border)', borderRadius: 7, padding: '0.25rem 0.6rem', background: 'var(--hover-bg)', cursor: 'pointer', color: 'var(--text)', marginLeft: s.guestName ? 0 : 'auto' }}
+                  >Add as pin</button>
+                  <button className="press" onClick={() => dismissSuggestion(s.id)}
+                    style={{ fontSize: '0.68rem', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)' }}>Dismiss</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {tab === 'trips' && (
