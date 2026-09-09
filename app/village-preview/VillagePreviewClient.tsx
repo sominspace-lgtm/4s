@@ -62,6 +62,12 @@ export default function VillagePreviewClient() {
   const [theme, setTheme] = useState('bloom')
   const themeVars = THEMES[theme] ?? {}
   const isLight = themeVars['--scheme'] === 'light'
+  const [sparks, setSparks] = useState<{ id: string; glyph: string }[]>([])
+  // One big interactive scene at the top for guest-mode work — pass a fake
+  // token so pond/well writes take the guest path (the POST 404s, the
+  // optimistic firefly still shows).
+  const bigV = fakeVillage('summer', 'dusk', 8, 5)
+  const bigSlots = slotsFor(bigV)
 
   return (
     <div style={{ ...(themeVars as React.CSSProperties), background: 'var(--bg)', minHeight: '100vh', padding: '1.5rem' }}>
@@ -74,6 +80,26 @@ export default function VillagePreviewClient() {
             color: t === theme ? 'var(--bg)' : 'var(--text)',
           }}>{THEME_LABELS[t] ?? t}</button>
         ))}
+      </div>
+
+      <div style={{ maxWidth: 760, marginBottom: '1.6rem' }}>
+        <div style={{ color: 'var(--text)', fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          guest-mode scene ({sparks.length} fireflies)
+        </div>
+        <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)' }}>
+          <VillageScene
+            village={bigV} live palette={seasonPalette('summer', isLight)}
+            celestial={celestialOf(new Date(2026, 6, 15, 19))}
+            plantSlots={bigSlots.plantSlots} buildingSlots={bigSlots.buildingSlots}
+            gathering guestToken="preview-fake-token"
+            sparks={sparks}
+            somi={{ name: 'Somi', ageText: '1 year old', birthdayLabel: 'Born July 11, 2025', snack: 'Churu', tricks: ['sit', 'spin'], notes: 'Please don’t feed her from the table.' }}
+          />
+        </div>
+        <button onClick={() => setSparks(s => [...s, { id: `x${Date.now()}`, glyph: 'firefly' }])}
+          style={{ marginTop: 6, fontSize: '0.7rem', padding: '0.3em 0.7em', cursor: 'pointer', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}>
+          + firefly
+        </button>
       </div>
 
       {/* Density: growth has to stay visible past the old caps rather than

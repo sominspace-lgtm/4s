@@ -20,6 +20,7 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
+import { useVillageSparks } from '@/lib/hooks/useVillageSparks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
@@ -389,6 +390,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // household's shared album links (Google Photos, iCloud, …); the tree is
   // the "memories" district now.
   const { links: memoryLinks } = useMemoryLinks(spaces[0]?.id ?? null)
+  const sparks = useVillageSparks(spaces[0]?.id ?? null)
   // Partners ping each other in home mode (2026-09-04) — same idea as
   // guest ping, a session-authed route instead of the guest token one.
   // 'sylvia' = the space owner, 'harry' = the other accepted member.
@@ -757,6 +759,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
+            sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
             somi={somi}

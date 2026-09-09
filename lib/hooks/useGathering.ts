@@ -90,7 +90,7 @@ export interface GuestContribution {
   id: string
   gathering_id: string
   space_id: string
-  kind: 'photo' | 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge'
+  kind: 'photo' | 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge' | 'wish'
   guest_name: string | null
   body: string | null
   media_path: string | null

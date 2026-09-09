@@ -11,7 +11,7 @@ import type { MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
 // hardcoded allowlist. A guest can never name another table or another
 // space.
 
-export type GuestKind = 'photo' | 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge'
+export type GuestKind = 'photo' | 'thank_you' | 'guestbook' | 'note' | 'song' | 'from' | 'fridge' | 'wish'
 
 // Fields a guest may set, per kind. Anything else in the body is dropped
 // (not rejected) so an older portal build never starts failing when this
@@ -24,6 +24,10 @@ export const KIND_FIELDS: Record<GuestKind, { body: boolean; meta: string[] }> =
   from: { body: true, meta: ['place', 'lat', 'lng'] },
   fridge: { body: true, meta: ['icon'] },
   photo: { body: false, meta: [] }, // handled by the photo route, not the text route
+  // A firefly dropped on the pond (2026-09-09). No text; `glyph` picks the
+  // sprite. These accumulate forever and glow in the scene even outside a
+  // gathering — a slow record of everyone who's been over.
+  wish: { body: false, meta: ['glyph'] },
 }
 
 export interface GuestInfo {

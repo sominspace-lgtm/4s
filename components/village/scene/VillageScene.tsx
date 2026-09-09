@@ -11,6 +11,7 @@ import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { HOME_URL } from '@/lib/utils/cheatSheets'
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
+import { randomFortune } from '@/lib/village/fortunes'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
@@ -146,6 +147,7 @@ export default function VillageScene({
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
+  sparks = [], guestToken = null,
 }: {
   village: VillageState
   live: boolean
@@ -228,6 +230,12 @@ export default function VillageScene({
   /** Open the compact glass preview for a district instead of navigating
    *  straight out. Given the district id and the nav it would have run. */
   onOpenPreview?: (id: LandmarkId, go: () => void) => void
+  /** Fireflies guests have dropped on the pond — glow forever, home mode
+   *  included (see useVillageSparks). */
+  sparks?: { id: string; glyph: string }[]
+  /** The live gathering token, only set on the wall during a gathering —
+   *  lets a pond tap write a firefly via /api/g/[token]. */
+  guestToken?: string | null
   /** Guest Mode (2026-08-29) — the village is open to guests. Orthogonal to
    *  `locked`. Warms the scene up regardless of time of day: lanterns and
    *  window glow forced on, party bunting over Home, a warm colour wash. */
@@ -865,19 +873,57 @@ export default function VillageScene({
   const [wellOpen, setWellOpen] = useState(false)
   const [wellGlow, setWellGlow] = useState(false)
   const [wellText, setWellText] = useState('')
-  function submitGratitude() { setWellText(''); setWellOpen(true) }
+
+  // Pond fireflies (2026-09-09) — a guest taps the pond and a glowing
+  // firefly joins it for good. The write goes through the guest route
+  // (kind 'wish'); it comes back via useVillageSparks' realtime, but we
+  // also show one straight away so the tap feels instant. One per device
+  // per ~20s so heavy tapping doesn't hammer the route (the wall is one IP).
+  const [localSparks, setLocalSparks] = useState<{ id: string; glyph: string }[]>([])
+  function dropFirefly() {
+    if (arranging || !guestToken) return
+    try {
+      const k = '4s-firefly-last'
+      const last = Number(localStorage.getItem(k) || 0)
+      if (Date.now() - last < 20_000) return
+      localStorage.setItem(k, String(Date.now()))
+    } catch { /* private mode — just let it through */ }
+    const id = `local-${Date.now()}`
+    setLocalSparks(prev => [...prev, { id, glyph: 'firefly' }])
+    void fetch(`/api/g/${guestToken}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'wish', meta: { glyph: 'firefly' } }),
+    }).catch(() => { /* the firefly is already glowing; the row is a bonus */ })
+  }
+  // Merge the server-loaded swarm with any just-tapped ones not yet echoed.
+  const allSparks = [...sparks, ...localSparks.filter(l => !sparks.some(s => s.id === l.id))]
+  // In guest mode the well takes a short note or thank-you (name optional)
+  // and tosses back a fortune (2026-09-09). In home mode it stays the
+  // "grateful for" personal note, with the fortune as a small bonus.
+  const [wellName, setWellName] = useState('')
+  const [fortune, setFortune] = useState<string | null>(null)
+  function submitGratitude() { setWellText(''); setWellName(''); setWellOpen(true) }
   async function saveGratitude() {
     const text = wellText.trim()
     setWellOpen(false)
-    if (!text) return
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) await supabase.from('notes').insert({ user_id: user.id, space_id: null, title: '', body: `Grateful for: ${text}` })
-      window.dispatchEvent(new CustomEvent('4s:notes-changed'))
-    } catch { /* ignore — the well is a gesture, not a form */ }
+    if (text) {
+      try {
+        if (guestToken) {
+          await fetch(`/api/g/${guestToken}`, {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ kind: 'thank_you', guest_name: wellName.trim() || null, body: text }),
+          })
+        } else {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) await supabase.from('notes').insert({ user_id: user.id, space_id: null, title: '', body: `Grateful for: ${text}` })
+          window.dispatchEvent(new CustomEvent('4s:notes-changed'))
+        }
+      } catch { /* ignore — the well is a gesture, not a form */ }
+    }
     setWellGlow(true)
     setTimeout(() => setWellGlow(false), 1600)
+    setFortune(randomFortune())
   }
 
   // Screen coordinates → the SVG's own 800×440 user space, so a drag tracks
@@ -1701,9 +1747,34 @@ export default function VillageScene({
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
-          <PondShape x={0} y={0} scale={1.15} onClick={!arranging ? () => life.walkTo(p.x, p.y + 8) : undefined} />
+          <PondShape x={0} y={0} scale={1.15}
+            onClick={!arranging ? () => { life.walkTo(p.x, p.y + 8); dropFirefly() } : undefined} />
         </Draggable>
       ) })()}
+
+      {/* The firefly swarm — every guest who's tapped the pond, glowing on
+          for good. Deterministic scatter per id so it never reshuffles;
+          a pooled halo underneath that deepens as the swarm grows. */}
+      {allSparks.length > 0 && (() => {
+        const p = decorPos('pond')
+        return (
+          <g pointerEvents="none">
+            <ellipse cx={p.x} cy={p.y - 2} rx={26} ry={12}
+              fill="var(--amber)" opacity={Math.min(0.32, allSparks.length * 0.018)}
+              filter="url(#vglow)" />
+            {allSparks.slice(-80).map((s, i) => {
+              const dx = (hashPos(s.id + 'fx') - 0.5) * 46
+              const dy = (hashPos(s.id + 'fy') - 0.5) * 20
+              return (
+                <circle key={s.id} cx={p.x + dx} cy={p.y - 4 + dy} r={1.3}
+                  fill="var(--amber)" filter="url(#vglow)"
+                  className={`village-firefly village-firefly-${(i % 2) + 1}`}
+                  style={{ animationDelay: `${(hashPos(s.id) * 6).toFixed(2)}s` }} />
+              )
+            })}
+          </g>
+        )
+      })()}
       {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
           <BenchShape x={0} y={0} scale={1.15} />
@@ -3032,7 +3103,7 @@ export default function VillageScene({
           state out to Village.tsx. */}
       {wellOpen && (() => {
         const p = decorPos('wishingWell')
-        const w = 176, h = 92
+        const w = 176, h = guestToken ? 110 : 92
         const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, p.x))
         const top = Math.max(10, p.y - 34 - h)
         return (
@@ -3047,11 +3118,19 @@ export default function VillageScene({
                   fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 5,
                 }}>
                   <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span aria-hidden>✨</span> A thank-you for the well
+                    <span aria-hidden>✨</span> {guestToken ? 'Leave a wish or a thank-you' : 'A thank-you for the well'}
                   </div>
+                  {guestToken && (
+                    <input value={wellName} onChange={e => setWellName(e.target.value)} placeholder="Your name (optional)"
+                      style={{
+                        width: '100%', boxSizing: 'border-box', padding: '3px 6px', fontSize: 8.5,
+                        fontFamily: 'var(--font-body)', color: 'var(--text)',
+                        background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, outline: 'none',
+                      }} />
+                  )}
                   <textarea autoFocus value={wellText} onChange={e => setWellText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveGratitude() } }}
-                    placeholder="Something you're grateful for…"
+                    placeholder={guestToken ? 'A wish, or a thank-you for the hosts…' : "Something you're grateful for…"}
                     style={{
                       flex: 1, resize: 'none', width: '100%', boxSizing: 'border-box', padding: '4px 6px',
                       fontSize: 8.5, fontFamily: 'var(--font-body)', color: 'var(--text)',
@@ -3068,6 +3147,36 @@ export default function VillageScene({
                       border: '0.8px solid var(--gold)', borderRadius: 8,
                     }}>Drop it in 🪙</button>
                   </div>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* The fortune the well tosses back (2026-09-09). */}
+      {fortune && (() => {
+        const p = decorPos('wishingWell')
+        const w = 172, h = 74
+        const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, p.x))
+        const top = Math.max(10, p.y - 34 - h)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setFortune(null)} />
+            <g transform={`translate(${cx - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={w} height={h} rx={11} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={w} height={h} style={{ pointerEvents: 'all' }}>
+                <div style={{
+                  width: '100%', height: '100%', boxSizing: 'border-box', padding: '11px 12px',
+                  background: 'var(--surface)', border: '1px solid var(--gold)', borderRadius: 11,
+                  fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 4,
+                }}>
+                  <div style={{ fontSize: 8, fontWeight: 600, color: 'var(--gold)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>The well says</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--text)', lineHeight: 1.4, flex: 1 }}>{fortune}</div>
+                  <button onClick={() => setFortune(null)} style={{
+                    alignSelf: 'flex-end', fontSize: 8, fontFamily: 'var(--font-body)', color: 'var(--muted)',
+                    background: 'transparent', border: 'none', cursor: 'pointer', padding: '1px 4px',
+                  }}>ok</button>
                 </div>
               </foreignObject>
             </g>
