@@ -574,6 +574,22 @@ export default function VillageScene({
   }
   useEffect(() => () => { if (reactTimer.current) clearTimeout(reactTimer.current) }, [])
 
+  // Tap a partner → they wave (2026-09-09, guest curiosities). Tap the same
+  // one again within 2s → both drift together and do the meeting pose.
+  const lastFigTap = useRef<{ who: 'sylvia' | 'harry'; at: number } | null>(null)
+  const waveOrDrift = (who: 'sylvia' | 'harry') => {
+    if (arranging) return
+    const prev = lastFigTap.current
+    if (prev && prev.who === who && Date.now() - prev.at < 2000) {
+      const sp = decorPos('sylvia'), hp = decorPos('harry')
+      life.walkTo((sp.x + hp.x) / 2, (sp.y + hp.y) / 2)
+      lastFigTap.current = null
+    } else {
+      life.greet(who)
+      lastFigTap.current = { who, at: Date.now() }
+    }
+  }
+
   // Somi got a hover-card back (2026-08-26) — the direct one-tap navigate
   // tried on 2026-08-25 read as glitchy in practice (a tap on her tiny
   // figure hard-cutting straight to another tab, with nothing to visually
@@ -1300,6 +1316,15 @@ export default function VillageScene({
         if (suppressClickRef.current) return
         const t = e.target as Element
         if (t.closest?.('.village-district, .village-entity, .village-fade, foreignObject, a, button')) return
+        // A tap on the empty sky throws a little sparkle where you touched
+        // (2026-09-09) — pure whimsy, self-clearing, dead under reduced
+        // motion / idle-frozen like every other scene animation.
+        const pt = toSvgPoint(e.clientX, e.clientY)
+        if (pt && pt.y < GROUND_Y - 40 && !isFrozen) {
+          const burst = Array.from({ length: 4 }, (_, i) => ({ id: `sky-${Date.now()}-${i}`, x: pt.x + (i - 1.5) * 5, y: pt.y + (i % 2) * 4 }))
+          setSparkles(prev => [...prev, ...burst])
+          setTimeout(() => setSparkles(prev => prev.filter(s => !burst.some(b => b.id === s.id))), 700)
+        }
         fuzzyDistrictTap(e.clientX, e.clientY)
       }}
       onClickCapture={onSceneClickCapture}
@@ -2746,7 +2771,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && (
               <g style={active ? { transform: `translate(${life.sylvia.x - p.x}px, ${life.sylvia.y - p.y}px)`, transition: `transform ${life.sylvia.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Sylvia"
-                  onClick={() => { if (arranging) return; if (activePing && !isSelfFigure('sylvia')) { setPingOpen('sylvia'); return } life.greet('sylvia'); if (locked) openFigureOrToggle('sylvia')() }}
+                  onClick={() => { if (arranging) return; waveOrDrift('sylvia'); if (activePing && !isSelfFigure('sylvia')) { setPingOpen('sylvia'); return } if (locked) openFigureOrToggle('sylvia')() }}
                   wander={active} pose={life.sylvia.pose} face={life.sylvia.face} outfit={outfit} scale={itemScale('sylvia')} />
               </g>
             )}
@@ -2758,7 +2783,7 @@ export default function VillageScene({
             {!(settledNight && !arranging) && !sceneHidesFigures && !(soloFigure && !arranging) && (
               <g style={active ? { transform: `translate(${life.harry.x - p.x}px, ${life.harry.y - p.y}px)`, transition: `transform ${life.harry.dur}ms ease-in-out` } : undefined}>
                 <VillagerShape x={0} y={0} name="Harry"
-                  onClick={() => { if (arranging) return; if (activePing && !isSelfFigure('harry')) { setPingOpen('harry'); return } life.greet('harry'); if (locked) openFigureOrToggle('harry')() }}
+                  onClick={() => { if (arranging) return; waveOrDrift('harry'); if (activePing && !isSelfFigure('harry')) { setPingOpen('harry'); return } if (locked) openFigureOrToggle('harry')() }}
                   wander={active} pose={life.harry.pose} face={life.harry.face} outfit={outfit} scale={itemScale('harry')} />
               </g>
             )}
