@@ -16,7 +16,7 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
   userId: string
   timeLabel: string | null
   dateLabel: string | null
-  weather: { tempF: number; condition: WeatherCondition } | null
+  weather: { tempF: number; condition: WeatherCondition; sunrise?: string | null; sunset?: string | null } | null
   /** From Village.tsx's clock — reorders which single line leads. */
   partOfDay?: 'morning' | 'day' | 'evening' | 'night'
   /** "Bins out this morning" / "Bins out tonight", or null. */
@@ -61,6 +61,15 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
   })()
 
   const weatherStr = weather ? `${Math.round(weather.tempF)}° · ${weatherMeta(weather.condition).label}` : null
+  // Sunrise before midday, sundown after — whichever's the one still worth
+  // knowing. Real times from Open-Meteo, anchored to the home coordinate.
+  const sunStr = (() => {
+    if (!weather) return null
+    const morning = partOfDay === 'morning' || new Date().getHours() < 11
+    if (morning && weather.sunrise) return `Sunrise ${weather.sunrise}`
+    if (weather.sunset) return `Sundown ${weather.sunset}`
+    return null
+  })()
 
   // Small = just the time, a discreet tag in the corner. Big (idle) = the
   // full readout. Fixed rem sizes, not vw (round 81) — the wall renders
@@ -94,15 +103,16 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
           line stays idle-only so the small tag never grows enough to sit
           over the cottage or the districts. */}
       {ambient
-        ? (dateLabel || weatherStr) && (
+        ? (dateLabel || weatherStr || sunStr) && (
           <div style={{ fontSize: '0.74rem', opacity: 0.9, whiteSpace: 'nowrap' }}>
-            {[dateLabel, weatherStr].filter(Boolean).join('  ·  ')}
+            {[dateLabel, weatherStr, sunStr].filter(Boolean).join('  ·  ')}
           </div>
         )
         : (
           <>
             {dateLabel && <div style={{ fontSize: '0.58rem', opacity: 0.9, whiteSpace: 'nowrap', lineHeight: 1.25 }}>{dateLabel}</div>}
             {weatherStr && <div style={{ fontSize: '0.58rem', opacity: 0.9, whiteSpace: 'nowrap', lineHeight: 1.25 }}>{weatherStr}</div>}
+            {sunStr && <div style={{ fontSize: '0.55rem', opacity: 0.8, whiteSpace: 'nowrap', lineHeight: 1.25 }}>{sunStr}</div>}
           </>
         )}
       {ambient && line && (

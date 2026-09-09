@@ -15,10 +15,10 @@ export const GROUND_Y = 210
 // tuft's position and height stable across renders — same "pure function of
 // an id" rule the rest of the village runs under, just with a literal index
 // standing in for a real entity id since these aren't tied to any data.
-export const GRASS_TUFTS = Array.from({ length: 64 }, (_, i) => {
+export const GRASS_TUFTS = Array.from({ length: 82 }, (_, i) => {
   const seed = `grass-${i}`
   const x = 20 + hashPos(seed) * 760
-  const h = 4 + hashPos(seed + 'h') * 5
+  const h = 4 + hashPos(seed + 'h') * 6
   return { x, h, id: seed }
 })
 
@@ -79,7 +79,7 @@ export const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#
 // `depth` runs 0..1 from the back of this band to the very front and drives
 // both scale and which GREENS tone gets used, so the layer self-sorts into a
 // gradient of size and darkness instead of being a uniform scatter.
-export const FOREGROUND_COUNT = 38
+export const FOREGROUND_COUNT = 50 // denser foreground 2026-09-09 ("fill the empty foreground")
 export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
@@ -110,7 +110,7 @@ export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
 // district row, the other band that was mostly bare. Smaller and lighter
 // than FOREGROUND, so the two layers read as different distances rather
 // than as the same scatter repeated twice.
-export const MIDGROUND_COUNT = 22
+export const MIDGROUND_COUNT = 30
 export const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   const seed = `mg-${i}`
   // Bucketed x, same reasoning as FOREGROUND above (round 7 fix); every

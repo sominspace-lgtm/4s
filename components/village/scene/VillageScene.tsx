@@ -1305,7 +1305,12 @@ export default function VillageScene({
   // negative here would expose real blank canvas above y=0 (the exact
   // "cream bar" class of bug flagged earlier this project), not more sky.
   const CANVAS_W = 800, CANVAS_H = 440
-  let baseW = 800
+  // Pulled in ~5% on the wide axis (2026-09-09, "gentle overall zoom") — the
+  // scene read sparse with a lot of empty ground. x 400±380 still holds the
+  // farthest real content (habit plants from x=40, the Trips signpost near
+  // x=752). Height left alone so the foreground clearance from "image being
+  // cut" stays.
+  let baseW = 760
   // Taller default window (2026-08-29, "make sure the sky and moon/sun is
   // seen") — 330 kept the top edge around y=78 while the sun/moon arc peaks
   // at y=60, clipping the disc every midday. 380 + the top-edge cap in

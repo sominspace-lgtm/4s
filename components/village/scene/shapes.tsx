@@ -347,8 +347,31 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
   const koiN = night ? 4 : brisk ? 8 : 6
   const duckN = night ? 0 : brisk ? 2 : 1
   const koiFrames = [0, 1, 2].map(i => ({ src: `/village-assets/koi-${i}.png`, aspect: 176 / 258 }))
+  // The water's rough extent around (cx, cy) at the current pond size.
+  const RW = 34, RH = 13
+  // Sky glint on the water (2026-09-09) — a soft mirror of what's overhead,
+  // its colour and height shifting with the day. Very low opacity so it
+  // reads as sheen, not a second light source.
+  const glint = night
+    ? { fill: 'var(--surface)', cyOff: -3, rx: 12, ry: 3.5, op: 0.1 }
+    : brisk
+      ? { fill: 'var(--amber)', cyOff: 2, rx: 20, ry: 5, op: 0.14 }
+      : { fill: 'var(--surface)', cyOff: -4, rx: 22, ry: 6, op: 0.13 }
   return (
     <g pointerEvents="none">
+      <ellipse cx={cx - 6} cy={cy + glint.cyOff} rx={glint.rx} ry={glint.ry}
+        fill={glint.fill} opacity={glint.op} />
+      {/* lily pads on the water, toward the near edge */}
+      {[0, 1, 2].map(i => {
+        const lx = cx + (hashPos('lily' + i + 'x') - 0.5) * RW * 1.4
+        const ly = cy + RH * 0.4 + (hashPos('lily' + i + 'y') - 0.4) * RH
+        return (
+          <g key={'lp' + i} transform={`translate(${lx} ${ly})`}>
+            <ellipse cx={0} cy={0} rx={3.4} ry={2} fill="var(--sage, var(--slate))" opacity={0.55} />
+            <path d="M0 0 L3.2 -1 L3.2 1 Z" fill="var(--bg)" opacity={0.4} />
+          </g>
+        )
+      })}
       {Array.from({ length: koiN }).map((_, i) => {
         const dx = (hashPos('koi' + i + 'x') - 0.5) * 50
         const dy = (hashPos('koi' + i + 'y') - 0.5) * 16
@@ -358,10 +381,15 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
         const drift = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
         return (
           // outer: place + face; middle: the slow drift wiggle; inner: the
-          // swim-cycle sprite.
-          <g key={i} transform={`translate(${cx + dx} ${cy + dy}) rotate(${angle})`}>
-            <g className={night ? undefined : drift}>
-              <SpriteCycle frames={koiFrames} x={0} y={6} height={13} periodSec={night ? 2.4 : 1.3} opacity={0.92} />
+          // swim-cycle sprite. A soft shadow on the pond floor sits under
+          // each koi so it reads as being in the water.
+          <g key={i} transform={`translate(${cx + dx} ${cy + dy})`}>
+            <ellipse cx={1.5} cy={2} rx={3.2} ry={1.4} fill="var(--text)" opacity={0.13}
+              className={night ? undefined : drift} />
+            <g transform={`rotate(${angle})`}>
+              <g className={night ? undefined : drift}>
+                <SpriteCycle frames={koiFrames} x={0} y={6} height={13} periodSec={night ? 2.4 : 1.3} opacity={0.92} />
+              </g>
             </g>
           </g>
         )
@@ -378,6 +406,7 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
         )
       })}
       <FrogPlop cx={cx} cy={cy} frozen={frozen || night} />
+      <SurfaceRipple cx={cx} cy={cy} rw={RW} rh={RH} frozen={frozen} />
     </g>
   )
 }
@@ -399,6 +428,31 @@ function FrogPlop({ cx, cy, frozen }: { cx: number; cy: number; frozen: boolean 
   return (
     <ellipse key={rippleAt} cx={cx - 6} cy={cy + 2} rx={5} ry={2.4}
       fill="none" stroke="var(--slate)" strokeWidth={0.6} className="village-ripple" />
+  )
+}
+
+// A koi breaks the surface every so often — a small ring spreads from a
+// random spot in the water (2026-09-09). Same self-clearing shape as the
+// frog's plop, just quieter and more frequent.
+function SurfaceRipple({ cx, cy, rw, rh, frozen }: { cx: number; cy: number; rw: number; rh: number; frozen: boolean }) {
+  const [ping, setPing] = useState<{ id: number; x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (frozen) return
+    let alive = true
+    const tick = () => {
+      if (!alive) return
+      const x = cx + (Math.random() - 0.5) * rw * 1.3
+      const y = cy + (Math.random() - 0.4) * rh
+      setPing({ id: Date.now(), x, y })
+      setTimeout(() => alive && setPing(null), 1100)
+    }
+    const id = setInterval(tick, 8000 + Math.random() * 9000)
+    return () => { alive = false; clearInterval(id) }
+  }, [frozen, cx, cy, rw, rh])
+  if (!ping) return null
+  return (
+    <ellipse key={ping.id} cx={ping.x} cy={ping.y} rx={3.5} ry={1.7}
+      fill="none" stroke="var(--slate)" strokeWidth={0.5} className="village-ripple" />
   )
 }
 

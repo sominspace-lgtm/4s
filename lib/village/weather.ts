@@ -22,6 +22,16 @@ export type WeatherCondition = 'clear' | 'cloudy' | 'fog' | 'rain' | 'snow' | 's
 export interface WeatherNow {
   tempF: number
   condition: WeatherCondition
+  /** Today's sunrise / sunset at the home coordinate, as "h:mm a", or null. */
+  sunrise: string | null
+  sunset: string | null
+}
+
+function clockLabel(iso: unknown): string | null {
+  if (typeof iso !== 'string') return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 const CONDITION_META: Record<WeatherCondition, { label: string }> = {
@@ -56,14 +66,19 @@ let cachedPromise: Promise<WeatherNow | null> | null = null
 export async function loadWeather(): Promise<WeatherNow | null> {
   if (cached) return cached
   if (cachedPromise) return cachedPromise
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${HOME_LAT}&longitude=${HOME_LON}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${HOME_LAT}&longitude=${HOME_LON}&current=temperature_2m,weather_code&daily=sunrise,sunset&timezone=auto&temperature_unit=fahrenheit`
   cachedPromise = fetch(url, { signal: AbortSignal.timeout(8000) })
     .then(r => (r.ok ? r.json() : null))
     .then(json => {
       const temp = json?.current?.temperature_2m
       const code = json?.current?.weather_code
       if (typeof temp !== 'number' || typeof code !== 'number') { cachedPromise = null; return null }
-      const result: WeatherNow = { tempF: Math.round(temp), condition: conditionFromCode(code) }
+      const result: WeatherNow = {
+        tempF: Math.round(temp),
+        condition: conditionFromCode(code),
+        sunrise: clockLabel(json?.daily?.sunrise?.[0]),
+        sunset: clockLabel(json?.daily?.sunset?.[0]),
+      }
       cached = result
       return result
     })
