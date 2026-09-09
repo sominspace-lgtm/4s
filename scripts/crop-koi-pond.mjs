@@ -22,3 +22,21 @@ for (let i = 0; i < 3; i++) {
     .toFile(`${OUT}/koi-${i}.png`)
 }
 console.log('koi-0..2.png', win.width + 'x' + win.height)
+
+// Kill the magenta chroma-key halo the masters carry. Neither the koi
+// (orange / cream / navy) nor the pond (blue water, tan bank, green reeds,
+// brown cattail tips) has any real pink, so any pixel where R and B both
+// sit clearly above G is fringe — pull it down toward grey, drop it if faint.
+for (const name of ['pond-base.png', 'koi-0.png', 'koi-1.png', 'koi-2.png']) {
+  const p = `${OUT}/${name}`
+  const { data, info } = await sharp(p).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const out = Buffer.from(data)
+  for (let i = 0; i < data.length; i += info.channels) {
+    const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]
+    if (a === 0 || !(r > g + 4 && b > g + 2)) continue
+    if (a < 110) out[i + 3] = 0
+    else { out[i] = g + Math.round((r - g) * 0.22); out[i + 2] = g + Math.round((b - g) * 0.22) }
+  }
+  await sharp(out, { raw: { width: info.width, height: info.height, channels: info.channels } }).png().toFile(p)
+}
+console.log('defringed pond + koi')
