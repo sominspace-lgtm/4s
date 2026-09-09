@@ -42,6 +42,7 @@ import { mergeVillagePanelBlocks } from '@/lib/utils/villagePanel'
 import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
+import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 
 interface Props {
   email: string
@@ -405,19 +406,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Village and Places. Now that Household's sub-tabs are real top-level
   // ids (2026-08-25), this is a plain id list, not a flatMap over one
   // wrapping 'household' entry.
-  // Plain shared device (the "Shared" login, no gathering running): the
-  // household's shared surfaces without a PIN — Home, Upkeep, Reference,
-  // the Village and Places. Going into personal data still needs the PIN
-  // (see UnlockPanel + the per-block "tap to unlock" rows).
-  const SHARED_MODE_IDS = new Set(['home', 'upkeep', 'reference', 'village', 'places', 'places-trips'])
-
-  // Guest / host mode — a shared device with a gathering actually live
-  // (2026-09-10). Much tighter: only the Village, Places (not Trips), and
-  // the guest-safe bits of Reference (date ideas, watchlist, photo albums,
-  // hosting keepsakes). Everything else needs the PIN, and all of it is
-  // back in plain shared view the moment the gathering ends.
+  // Shared-device access rules live in lib/utils/sharedAccess.ts (unit
+  // tested). guestMode = a gathering is actually live on this shared
+  // device — it clamps the reachable sections down to the guest-safe set
+  // until the gathering ends.
   const guestMode = sharedMode && gathering.gathering?.phase === 'live'
-  const GUEST_MODE_IDS = new Set(['reference', 'village', 'places'])
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -429,7 +422,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     // and the `locked` prop on Village. Places is different: it's a real
     // working surface, not a picture, so instead of locking it we scope it
     // to shared-only content (see PlacesHub's sharedOnly).
-    && (!sharedMode || (guestMode ? GUEST_MODE_IDS : SHARED_MODE_IDS).has(s.id))
+    && (!sharedMode || sharedSectionVisible(s.id, guestMode))
   )
 
   // Sections are flat now for both personal and shared use (2026-08-25) —
