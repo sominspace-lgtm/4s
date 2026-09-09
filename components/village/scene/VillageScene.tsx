@@ -988,7 +988,7 @@ export default function VillageScene({
   function feedPond() {
     if (arranging || isFrozen) return
     const base = Date.now()
-    const next = Array.from({ length: 4 }).map((_, i) => ({ id: base + i, dx: (Math.random() - 0.5) * 26 }))
+    const next = Array.from({ length: 5 }).map((_, i) => ({ id: base + i, dx: (Math.random() - 0.5) * 44 }))
     setCrumbs(prev => [...prev, ...next])
     setTimeout(() => setCrumbs(prev => prev.filter(c => !next.some(n => n.id === c.id))), 900)
   }
@@ -1851,7 +1851,7 @@ export default function VillageScene({
           instead of PROPS' own fixed one, same pattern as the generic
           item-prop loop further down. */}
       {(() => { const p = decorPos('pond'); return (
-        <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
+        <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={38}>
           <PondShape x={0} y={0} scale={1}
             onClick={!arranging ? () => {
               life.walkTo(p.x, p.y + 8)
@@ -1866,11 +1866,10 @@ export default function VillageScene({
         <>
           <PondLife cx={p.x} cy={p.y - 1} timeOfDay={v.timeOfDay} frozen={isFrozen} />
           {crumbs.map(c => (
-            <circle key={c.id} cx={p.x + c.dx} cy={p.y - 2} r={0.9}
-              fill="var(--gold)" className="village-crumb" pointerEvents="none" />
+            <circle key={c.id} cx={p.x + c.dx} cy={p.y - 2} r={1} fill="var(--gold)" className="village-crumb" pointerEvents="none" />
           ))}
           {koiFed && (
-            <ellipse cx={p.x} cy={p.y - 2} rx={7} ry={3} fill="none"
+            <ellipse cx={p.x} cy={p.y - 2} rx={10} ry={4} fill="none"
               stroke="var(--slate)" strokeWidth={0.5} className="village-ripple" pointerEvents="none" />
           )}
         </>
@@ -1883,13 +1882,13 @@ export default function VillageScene({
         const p = decorPos('pond')
         return (
           <g pointerEvents="none">
-            <ellipse cx={p.x} cy={p.y - 2} rx={dark ? 20 : 26} ry={dark ? 9 : 12}
+            <ellipse cx={p.x} cy={p.y - 2} rx={dark ? 28 : 36} ry={dark ? 12 : 16}
               fill="var(--amber)" opacity={Math.min(dark ? 0.44 : 0.32, allSparks.length * (dark ? 0.026 : 0.018))}
               filter="url(#vglow)" />
             {allSparks.slice(-80).map((s, i) => {
               // At night they pool low over the water; by day they spread out.
-              const dx = (hashPos(s.id + 'fx') - 0.5) * (dark ? 26 : 46)
-              const dy = (hashPos(s.id + 'fy') - 0.5) * (dark ? 10 : 20)
+              const dx = (hashPos(s.id + 'fx') - 0.5) * (dark ? 36 : 62)
+              const dy = (hashPos(s.id + 'fy') - 0.5) * (dark ? 14 : 26)
               return (
                 <circle key={s.id} cx={p.x + dx} cy={p.y - 4 + dy} r={1.3}
                   fill="var(--amber)" filter="url(#vglow)"
