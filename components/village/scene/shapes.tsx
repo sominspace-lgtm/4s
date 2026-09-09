@@ -168,7 +168,7 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
   // now; hashPos still picks which of the two dormant/wilt variants a given
   // plant gets, same determinism rule as everywhere else in this file.
   const species = 'flower'
-  const size = [11, 16, 21, 26, 30][i] // ~20% smaller round 59 ("make flowers a bit smaller")
+  const size = [13, 19, 25, 31, 36][i] // nudged up 2026-09-09 ("make everything small a little bigger")
   const dormantSprite = `flower-dormant-${hashPos(plant.id + 'wilt') < 0.5 ? 1 : 2}`
 
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
@@ -322,7 +322,7 @@ export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; 
   // stopPropagation/oversized-hit-circle idiom as VillagerShape's own
   // onClick, gated `!arranging` by the caller, not here.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 84, h = w / POND.aspect
+  const w = 96, h = w / POND.aspect
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
@@ -344,22 +344,24 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
 }) {
   const night = timeOfDay === 'night'
   const brisk = timeOfDay === 'dawn' || timeOfDay === 'dusk'
-  const koiN = night ? 5 : brisk ? 9 : 7
+  const koiN = night ? 4 : brisk ? 8 : 6
   const duckN = night ? 0 : brisk ? 2 : 1
-  const koiFrames = [0, 1, 2].map(i => ({ src: `/village-assets/koi-${i}.png`, aspect: 224 / 340 }))
+  const koiFrames = [0, 1, 2].map(i => ({ src: `/village-assets/koi-${i}.png`, aspect: 176 / 258 }))
   return (
     <g pointerEvents="none">
       {Array.from({ length: koiN }).map((_, i) => {
-        const dx = (hashPos('koi' + i + 'x') - 0.5) * 52
-        const dy = (hashPos('koi' + i + 'y') - 0.5) * 15
-        const angle = Math.round(hashPos('koi' + i + 'r') * 360)
+        const dx = (hashPos('koi' + i + 'x') - 0.5) * 50
+        const dy = (hashPos('koi' + i + 'y') - 0.5) * 16
+        // Gentle spread of headings, half of them turned to face the other
+        // way — a full random rotation just reads as a diagonal smear.
+        const angle = Math.round((hashPos('koi' + i + 'r') - 0.5) * 80 + (hashPos('koi' + i + 'f') > 0.5 ? 180 : 0))
         const drift = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
         return (
           // outer: place + face; middle: the slow drift wiggle; inner: the
           // swim-cycle sprite.
           <g key={i} transform={`translate(${cx + dx} ${cy + dy}) rotate(${angle})`}>
             <g className={night ? undefined : drift}>
-              <SpriteCycle frames={koiFrames} x={0} y={6} height={13} periodSec={night ? 2.4 : 1.3} opacity={0.9} />
+              <SpriteCycle frames={koiFrames} x={0} y={6} height={13} periodSec={night ? 2.4 : 1.3} opacity={0.92} />
             </g>
           </g>
         )

@@ -15,7 +15,9 @@ console.log('pond-base.png', pm.width + 'x' + pm.height)
 // the same size so the swim cycle doesn't jitter; the koi sits mid-frame
 // and the tail wag stays inside this box.
 const FW = 724
-const win = { left: 250, top: 232, width: 224, height: 340 }
+// Tight to the koi body across all three frames (its bbox sits at ~277..446 x,
+// ~234..487 y in the source), so the sprite has no dead margin and reads big.
+const win = { left: 274, top: 232, width: 176, height: 258 }
 for (let i = 0; i < 3; i++) {
   await sharp(`${SRC}/koi-swim-animation-alpha.png`)
     .extract({ left: i * FW + win.left, top: win.top, width: win.width, height: win.height })

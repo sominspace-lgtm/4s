@@ -1720,7 +1720,7 @@ export default function VillageScene({
             since round 12, same reasoning as FOREGROUND's own swap below. */}
         <g opacity={0.8}>
           {MIDGROUND_BUSHES.map(b => {
-            const w = 12 * b.scale, h = 7 * b.scale
+            const w = 14.5 * b.scale, h = 8.5 * b.scale
             return (
               <image key={b.id} href="/village-assets/bush-mound.png" x={b.x - w / 2} y={b.y - h} width={w} height={h}
                 style={{ imageRendering: 'pixelated' }} />
@@ -1765,7 +1765,7 @@ export default function VillageScene({
               'wildflower-meadow.png': 680 / 204, 'flower-patch.png': 1.55,
               'firewood-bundle.png': 174 / 120,
             }
-            const w = d.w, h = w / (ar[d.src] ?? 1.5)
+            const w = d.w * 1.22, h = w / (ar[d.src] ?? 1.5)
             return (
               <g key={i} transform={d.flip ? `translate(${d.x} ${d.y}) scale(-1 1)` : `translate(${d.x} ${d.y})`}>
                 <ellipse cx={0} cy={0.5} rx={w * 0.44} ry={h * 0.14} fill="var(--text)" opacity={0.12} />
@@ -1796,7 +1796,7 @@ export default function VillageScene({
                   { src: 'snow-mound.png', ar: 221 / 104, x: 636, y: GROUND_Y + 22, w: 19, flip: true },
                 ]
             ).map((d, i) => {
-              const w = d.w, h = w / d.ar
+              const w = d.w * 1.2, h = w / d.ar
               return (
                 <g key={i} transform={d.flip ? `translate(${d.x} ${d.y}) scale(-1 1)` : `translate(${d.x} ${d.y})`}>
                   <ellipse cx={0} cy={0.4} rx={w * 0.44} ry={h * 0.16} fill="var(--text)" opacity={0.1} />
@@ -1814,7 +1814,7 @@ export default function VillageScene({
             scenery, not draggable — same idiom as the nature details. */}
         <g pointerEvents="none">
           {/* Flower arbor + bench */}
-          {(() => { const w = 23, h = w / (301 / 235), x = 348, y = GROUND_Y + 74; return (
+          {(() => { const w = 28, h = w / (301 / 235), x = 348, y = GROUND_Y + 74; return (
             <g transform={`translate(${x} ${y})`}>
               <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={2} fill="var(--text)" opacity={0.13} />
               <image href="/village-assets/arbor-bench.png" x={-w / 2} y={-h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
@@ -1822,7 +1822,7 @@ export default function VillageScene({
           ) })()}
           {/* Path lamps */}
           {[{ x: 176, y: GROUND_Y + 20 }, { x: 528, y: GROUND_Y + 24 }].map((p, i) => {
-            const w = 8, h = w / (136 / 242)
+            const w = 10, h = w / (136 / 242)
             return (
               <g key={i} transform={`translate(${p.x} ${p.y})`}>
                 {warm && <circle cx={0} cy={-h + 3} r={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-glow" />}
@@ -1834,7 +1834,7 @@ export default function VillageScene({
           })}
           {/* Tulip planters */}
           {[{ x: 40, y: GROUND_Y + 52 }, { x: 366, y: GROUND_Y + 28 }].map((p, i) => {
-            const w = 13, h = w / (251 / 115)
+            const w = 16, h = w / (251 / 115)
             return (
               <g key={i} transform={`translate(${p.x} ${p.y})`}>
                 <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={1.4} fill="var(--text)" opacity={0.12} />
@@ -1901,12 +1901,12 @@ export default function VillageScene({
       })()}
       {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <BenchShape x={0} y={0} scale={1.15} />
+          <BenchShape x={0} y={0} scale={1.38} />
         </Draggable>
       ) })}
       {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
-          <FlowerBedShape x={0} y={0} scale={1.15} hue={f.hue} onClick={!arranging ? () => life.walkTo(p.x, p.y + 6) : undefined} />
+          <FlowerBedShape x={0} y={0} scale={1.38} hue={f.hue} onClick={!arranging ? () => life.walkTo(p.x, p.y + 6) : undefined} />
         </Draggable>
       ) })}
       {/* The fence is back (round 39, 2026-08-27, "sync all new elements
@@ -1915,12 +1915,12 @@ export default function VillageScene({
           removed round 34/35). */}
       {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
-          <FenceShape x={0} y={0} length={f.length} scale={1.1} />
+          <FenceShape x={0} y={0} length={f.length} scale={1.25} />
         </Draggable>
       ) })}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <LampShape x={0} y={0} dark={warm} scale={1.1} />
+          <LampShape x={0} y={0} dark={warm} scale={1.3} />
         </Draggable>
       ) })}
       {(() => { const p = decorPos('clockTower'); return (
@@ -1949,7 +1949,7 @@ export default function VillageScene({
         </Draggable>
       ) })()}
       {/* Postcard rack (round 66) — flip through your trip postcards. */}
-      {(() => { const p = decorPos('postcardRack'); const s = itemScale('postcardRack'); const w = 24 * s, h = w * (145 / 203); return (
+      {(() => { const p = decorPos('postcardRack'); const s = itemScale('postcardRack'); const w = 29 * s, h = w * (145 / 203); return (
         <Draggable x={p.x} y={p.y} id="postcardRack" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('postcardRack')} r={14}>
           <g onClick={!arranging ? () => setPostcardsOpen(o => !o) : undefined}
             className={!arranging ? 'village-entity' : undefined} style={{ cursor: !arranging ? 'pointer' : undefined }}>
@@ -1961,7 +1961,7 @@ export default function VillageScene({
           </g>
         </Draggable>
       ) })()}
-      {(() => { const p = decorPos('picnicMat'); const w = 22, h = w * (280 / 460); return (
+      {(() => { const p = decorPos('picnicMat'); const w = 27, h = w * (280 / 460); return (
         <Draggable x={p.x} y={p.y} id="picnicMat" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('picnicMat')} r={13}>
           <g>
             <title>A picnic spot</title>
@@ -2037,7 +2037,8 @@ export default function VillageScene({
         const p0 = decorPos(p.id)
         // Resizable in arrange (round 48, 2026-08-28) — itemScale(id)
         // multiplies both dimensions uniformly so nothing stretches.
-        const s = itemScale(p.id)
+        // Nudged up 2026-09-09 ("make everything small a little bigger").
+        const s = itemScale(p.id) * 1.18
         const pw = p.w * s, ph = p.h * s
         return (
           <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={1}
