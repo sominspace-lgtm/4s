@@ -411,6 +411,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // to see the chore schedule or the meal plan (2026-09-10).
   const SHARED_MODE_IDS = new Set(['reference', 'village', 'places', 'places-trips'])
 
+  // Guest / host mode — a shared device with a gathering actually live
+  // (2026-09-10). Tighter than plain shared view: a guest can see the
+  // Village, Places (not Trips), and the guest-safe bits of Reference
+  // (date ideas, watchlist, photo albums). Everything else needs the PIN,
+  // and is visible again in plain shared view once the gathering ends.
+  const guestMode = sharedMode && gathering.gathering?.phase === 'live'
+  const GUEST_MODE_IDS = new Set(['reference', 'village', 'places'])
+
   const visible = sections.filter(s =>
     !s.hidden
     // Shared mode sees Household's sections, the Village and Places. The
@@ -421,7 +429,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     // and the `locked` prop on Village. Places is different: it's a real
     // working surface, not a picture, so instead of locking it we scope it
     // to shared-only content (see PlacesHub's sharedOnly).
-    && (!sharedMode || SHARED_MODE_IDS.has(s.id))
+    && (!sharedMode || (guestMode ? GUEST_MODE_IDS : SHARED_MODE_IDS).has(s.id))
   )
 
   // Sections are flat now for both personal and shared use (2026-08-25) —
@@ -538,7 +546,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.
         case 'home': case 'upkeep': case 'reference':
-          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
+          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} />
         default: return null
       }
     })()

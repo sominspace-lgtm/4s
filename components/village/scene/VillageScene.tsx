@@ -781,23 +781,26 @@ export default function VillageScene({
     // personal so that link hides in shared mode; the calendar and wifi
     // stay visible to a guest. Event lines come from `structures`.
     calendar: {
-      title: 'Notice board',
+      // In guest mode this is the info board — the one place everything a
+      // guest needs lives: wifi, the house notes, what's on tonight.
+      title: gathering ? 'Info board' : 'Notice board',
       lines: (() => {
         const evts = structures?.calendar.length ? structures.calendar : []
+        if (gathering) {
+          const l: string[] = []
+          if (guestInfo.wifiName) l.push(`Wifi · ${guestInfo.wifiName}`)
+          if (guestInfo.wifiPassword) l.push(`Password · ${guestInfo.wifiPassword}`)
+          if (guestInfo.notes) l.push(guestInfo.notes)
+          l.push(...evts)
+          return l.length ? l.slice(0, 5) : ['Make yourself at home']
+        }
         const wifi = guestInfo.wifiName
           ? `Wifi · ${guestInfo.wifiName}${guestInfo.wifiPassword ? ` / ${guestInfo.wifiPassword}` : ''}`
           : null
-        // For a guest the board is the one place house info lives — wifi,
-        // whatever the hosts wrote, then what's on. Otherwise it's a
-        // calendar peek.
-        if (gathering) {
-          const l = [wifi, guestInfo.notes || null, ...evts].filter(Boolean).slice(0, 4) as string[]
-          return l.length ? l : ['Make yourself at home']
-        }
         const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
         return l.length ? l : ["What's coming up"]
       })(),
-      actionLabel: 'Go to the calendar', go: () => goToHousehold('reference'),
+      actionLabel: gathering ? 'See what’s on' : 'Go to the calendar', go: () => goToHousehold('reference'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
   }
@@ -3206,7 +3209,7 @@ export default function VillageScene({
                   fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 5,
                 }}>
                   <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span aria-hidden>✨</span> {guestToken ? 'Leave a wish or a thank-you' : 'A thank-you for the well'}
+                    <span aria-hidden>✨</span> {guestToken ? 'A note or a thank-you for the well' : 'A thank-you for the well'}
                   </div>
                   {guestToken && (
                     <input value={wellName} onChange={e => setWellName(e.target.value)} placeholder="Your name (optional)"
@@ -3218,7 +3221,7 @@ export default function VillageScene({
                   )}
                   <textarea autoFocus value={wellText} onChange={e => setWellText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveGratitude() } }}
-                    placeholder={guestToken ? 'A wish, or a thank-you for the hosts…' : "Something you're grateful for…"}
+                    placeholder={guestToken ? 'A note or a thank-you for the hosts…' : "Something you're grateful for…"}
                     style={{
                       flex: 1, resize: 'none', width: '100%', boxSizing: 'border-box', padding: '4px 6px',
                       fontSize: 8.5, fontFamily: 'var(--font-body)', color: 'var(--text)',

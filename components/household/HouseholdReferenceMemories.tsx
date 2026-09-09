@@ -10,9 +10,10 @@ import IconButton from '@/components/ui/IconButton'
 // instead of only in Setup; and the "Tonight at the Village" keepsakes
 // saved when a gathering closes. Shows in shared mode too — Reference is
 // the one open household surface.
-export default function HouseholdReferenceMemories({ spaceId }: { spaceId: string | null }) {
+export default function HouseholdReferenceMemories({ spaceId, photosOnly = false }: { spaceId: string | null; photosOnly?: boolean }) {
   const links = useMemoryLinks(spaceId)
-  const { memories } = useGatheringMemories(spaceId)
+  // Skip the keepsake query entirely when only the albums should show.
+  const { memories } = useGatheringMemories(photosOnly ? null : spaceId)
   const [adding, setAdding] = useState(false)
   const [label, setLabel] = useState('')
   const [url, setUrl] = useState('')

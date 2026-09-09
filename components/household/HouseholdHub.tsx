@@ -75,7 +75,7 @@ function VibeBadge({ emoji }: { emoji: string }) {
   )
 }
 
-export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, onLockedNavigate, forcedTab }: {
+export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, onLockedNavigate, forcedTab }: {
   userId: string
   userEmail: string
   homeBlocks: SectionConfig[]
@@ -84,6 +84,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
    *  household's shared notes / lookups) rather than the full weekly-chore
    *  working view on Home. */
   sharedMode?: boolean
+  /** A gathering is live on this shared device — Reference shows only the
+   *  guest-safe bits (date ideas, watchlist, photo albums), 2026-09-10. */
+  guestMode?: boolean
   /** Prompts the real Harry/Sylvia PIN unlock (see UnlockPanel) — used to
    *  gate genuinely personal content (Check-ins) while sharedMode is on,
    *  same mechanism Village already uses (2026-08-25). */
@@ -770,7 +773,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space. */}
-      {tab === 'reference' && <HouseholdNotes spaceId={spaceId} />}
+      {tab === 'reference' && !guestMode && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
           Chores stay a cadence list; the care logs (Somi + the house) are
@@ -827,13 +830,13 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
-      {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} />}
+      {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} photosOnly={guestMode} />}
 
       {/* Understanding Each Other — real relationship content (love
           languages, preferences, the kind of thing Check-ins already gates),
           not household logistics. Locked in shared mode (2026-08-25 fix) —
           same "tap to unlock" pattern as Check-ins just below. */}
-      {tab === 'reference' && sharedMode && (
+      {tab === 'reference' && sharedMode && !guestMode && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <button onClick={() => onLockedNavigate?.('Understanding Each Other')} className="press" style={{
             width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
@@ -854,7 +857,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           the Today page now (2026-09-01, CheckinCard); the Discord bot still
           pushes rows too. Read-only here — this is where you go back and
           read what was said. */}
-      {tab === 'reference' && sharedMode && (
+      {tab === 'reference' && sharedMode && !guestMode && (
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
           <button onClick={() => onLockedNavigate?.('Check-ins')} className="press" style={{
             width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
