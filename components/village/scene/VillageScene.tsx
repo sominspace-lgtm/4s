@@ -147,7 +147,7 @@ export default function VillageScene({
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
-  sparks = [], guestToken = null,
+  sparks = [], guestToken = null, placeStories = [], onThisDay = null,
 }: {
   village: VillageState
   live: boolean
@@ -236,6 +236,11 @@ export default function VillageScene({
   /** The live gathering token, only set on the wall during a gathering —
    *  lets a pond tap write a firefly via /api/g/[token]. */
   guestToken?: string | null
+  /** A few saved places with the note the hosts wrote (2026-09-09) — a pin
+   *  cluster by the Places district a guest can tap for the story. */
+  placeStories?: { name: string; note: string; kind: string }[]
+  /** A memory / place / trip from roughly a year ago today. */
+  onThisDay?: { text: string; yearsAgo: number } | null
   /** Guest Mode (2026-08-29) — the village is open to guests. Orthogonal to
    *  `locked`. Warms the scene up regardless of time of day: lanterns and
    *  window glow forced on, party bunting over Home, a warm colour wash. */
@@ -258,7 +263,7 @@ export default function VillageScene({
   /** The evening's plan — feeds the what's-on strip, not drawn in-scene. */
   agenda?: { id: string; time: string; label: string; done: boolean }[]
   /** Somi's resolved card (age / snack / tricks), shown when the cat is tapped. */
-  somi?: { name: string; ageText: string; birthdayLabel: string; snack: string; tricks: string[]; notes: string | null } | null
+  somi?: { name: string; ageText: string; birthdayLabel: string; snack: string; tricks: string[]; notes: string | null; photoUrl?: string | null } | null
   /** Tapping a couple figure during a live gathering pings that host.
    *  `who` is 'sylvia' | 'harry'. Wired in Village.tsx to the ping route. */
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
@@ -613,10 +618,12 @@ export default function VillageScene({
     !gathering && !!partnerPing && (who === 'sylvia') === partnerPing.selfIsOwner
   // Somi's card, tapped from the cat. Falls back to sensible defaults when
   // the hosts haven't filled anything in (see lib/village/somi.ts).
-  const somiCard = somi ?? { name: 'Somi', ageText: somiAgeText(), birthdayLabel: somiBirthdayLabel(), snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null }
+  const somiCard = somi ?? { name: 'Somi', ageText: somiAgeText(), birthdayLabel: somiBirthdayLabel(), snack: 'Churu', tricks: ['sit', 'high five', 'spin', 'stand'], notes: null, photoUrl: null }
 
   // Postcard rack (round 66) — tap it to flip through your trip postcards.
   const [postcardsOpen, setPostcardsOpen] = useState(false)
+  // Which pin-story is open (index into placeStories), or null.
+  const [storyPin, setStoryPin] = useState<number | null>(null)
   const openSomi = () => {
     if (arranging) return
     setOpenSomiCard(o => !o)
@@ -2476,6 +2483,27 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('places')} icon="places" label="Places" onClick={openOrToggle('places', 'Places')} {...hoverPreview('places')} dark={dark} scale={1.12}
         count={placesCount === 0 ? 'no pins yet' : 'the map is growing'}
         draggable={arranging} dragging={draggingId === 'places'} onPointerDown={startDrag('places')} selected={openPanel === 'places'} />
+      {/* A little cluster of map pins by the Places district — tap one for
+          the line the hosts wrote when they saved it (2026-09-09). */}
+      {placeStories.length > 0 && !arranging && (() => {
+        const pp = pos('places')
+        return (
+          <g>
+            {placeStories.map((s, i) => {
+              const px = pp.x - 18 + i * 12
+              const py = pp.y + 16 + (i % 2) * 5
+              return (
+                <g key={s.name + i} transform={`translate(${px} ${py})`} className="village-entity"
+                  style={{ cursor: 'pointer' }} onClick={() => setStoryPin(storyPin === i ? null : i)}>
+                  <title>{s.name}</title>
+                  <path d="M0 0 C -3 -5 -3 -9 0 -9 C 3 -9 3 -5 0 0 Z" fill="var(--rose)" stroke="var(--bg)" strokeWidth={0.6} />
+                  <circle cx={0} cy={-6} r={1.5} fill="var(--bg)" />
+                </g>
+              )
+            })}
+          </g>
+        )
+      })()}
       {/* People district → Memories (2026-09-07). The community tree is the
           gallery: shared photo albums plus the trip postcards. */}
       <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="Memories" onClick={openOrToggle('people', 'Memories')} {...hoverPreview('people')} dark={dark} scale={1.12}
@@ -2993,7 +3021,7 @@ export default function VillageScene({
       {openSomiCard && (() => {
         const somiPos = decorPos('somi')
         const width = 176
-        const height = 132
+        const height = somiCard.photoUrl ? 150 : 132
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, somiPos.x))
         const top = Math.max(10, somiPos.y - 40 - height)
         return (
@@ -3008,8 +3036,16 @@ export default function VillageScene({
                   padding: '8px 10px', fontFamily: 'var(--font-body)', color: 'var(--text)',
                   display: 'flex', flexDirection: 'column', gap: 3,
                 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600 }}>{somiCard.name}</div>
-                  <div style={{ fontSize: 8, color: 'var(--muted)', opacity: 0.8 }}>{somiCard.birthdayLabel}</div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    {somiCard.photoUrl && (
+                      <img src={somiCard.photoUrl} alt="Somi" width={34} height={34}
+                        style={{ width: 34, height: 34, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} />
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600 }}>{somiCard.name}</div>
+                      <div style={{ fontSize: 8, color: 'var(--muted)', opacity: 0.8 }}>{somiCard.birthdayLabel}</div>
+                    </div>
+                  </div>
                   {somiCard.ageText && <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>{somiCard.ageText}</div>}
                   <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>Favourite snack: {somiCard.snack}</div>
                   {somiCard.tricks.length > 0 && (
@@ -3107,6 +3143,18 @@ export default function VillageScene({
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Postcards</span>
                     <span style={{ fontSize: 8, color: 'var(--muted)' }}>trips together</span>
                   </div>
+                  {onThisDay && (
+                    <div style={{
+                      marginBottom: 8, padding: '6px 8px', borderRadius: 6,
+                      background: 'color-mix(in srgb, var(--gold) 9%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--gold) 24%, var(--border))',
+                    }}>
+                      <div style={{ fontSize: 7.5, fontWeight: 700, color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {onThisDay.yearsAgo} year{onThisDay.yearsAgo === 1 ? '' : 's'} ago today
+                      </div>
+                      <div style={{ fontSize: 8.5, color: 'var(--text)', lineHeight: 1.4, marginTop: 2 }}>{onThisDay.text}</div>
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, overflowY: 'auto', paddingRight: 2 }}>
                     {POSTCARDS.map(pc => (
                       <div key={pc.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -3172,6 +3220,33 @@ export default function VillageScene({
                       border: '0.8px solid var(--gold)', borderRadius: 8,
                     }}>Drop it in 🪙</button>
                   </div>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* The line the hosts wrote when they saved a pin (2026-09-09). */}
+      {storyPin != null && placeStories[storyPin] && (() => {
+        const s = placeStories[storyPin]
+        const pp = pos('places')
+        const w = 168, h = 66
+        const cx = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, pp.x))
+        const top = Math.max(10, pp.y - 20 - h)
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setStoryPin(null)} />
+            <g transform={`translate(${cx - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={w} height={h} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={w} height={h} style={{ pointerEvents: 'all' }}>
+                <div style={{
+                  width: '100%', height: '100%', boxSizing: 'border-box', padding: '9px 11px',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+                  fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 3,
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
+                  <div style={{ fontSize: 8.5, color: 'var(--muted)', lineHeight: 1.4, flex: 1 }}>{s.note}</div>
                 </div>
               </foreignObject>
             </g>

@@ -26,12 +26,13 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 export default function VillageGuestPanel({
-  gathering, contributions, guestUrl, qrDataUri, memories, guestInfo, petInfo,
+  gathering, spaceId = null, contributions, guestUrl, qrDataUri, memories, guestInfo, petInfo,
   onClose, onSetGuestInfo, onSetMusicUrl, onSetPhotoAlbumUrl, onSetMenu, onSetAgenda, onSetPetInfo,
   onModerate, onRemoveContribution, onSetPinnedContribution,
   onCloseGathering, onUpdateMemory, onDeleteMemory,
 }: {
   gathering: Gathering
+  spaceId?: string | null
   contributions: GuestContribution[]
   guestUrl: string | null
   qrDataUri: string | null
@@ -137,7 +138,7 @@ export default function VillageGuestPanel({
 
       {onSetPetInfo && (
         <Field label="Somi's card" hint="Shown when a guest taps the cat. Blank fields fall back to the defaults.">
-          <SomiEditor info={petInfo ?? {}} onSave={onSetPetInfo} />
+          <SomiEditor info={petInfo ?? {}} onSave={onSetPetInfo} spaceId={spaceId} />
         </Field>
       )}
 
@@ -394,12 +395,28 @@ function AgendaEditor({ items, onChange }: { items: AgendaItem[]; onChange: (ite
   )
 }
 
-function SomiEditor({ info, onSave }: { info: PetInfo; onSave: (info: PetInfo) => void }) {
+function SomiEditor({ info, onSave, spaceId }: { info: PetInfo; onSave: (info: PetInfo) => void; spaceId: string | null }) {
   const [name, setName] = useState(info.name ?? '')
   const [ageText, setAgeText] = useState(info.ageText ?? '')
   const [snack, setSnack] = useState(info.snack ?? '')
   const [tricks, setTricks] = useState((info.tricks ?? []).join(', '))
   const [notes, setNotes] = useState(info.notes ?? '')
+  const [photoPath, setPhotoPath] = useState(info.photoPath ?? '')
+  const [uploading, setUploading] = useState(false)
+
+  async function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !spaceId) return
+    setUploading(true)
+    try {
+      const { uploadPetPhoto } = await import('@/lib/storage/petPhoto')
+      const path = await uploadPetPhoto(spaceId, file)
+      setPhotoPath(path)
+      onSave({ name: name.trim(), ageText: ageText.trim(), snack: snack.trim(), tricks: tricks.split(',').map(t => t.trim()).filter(Boolean), notes: notes.trim(), photoPath: path })
+    } catch { /* leave it */ }
+    setUploading(false)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
       <div style={{ display: 'flex', gap: '0.3rem' }}>
@@ -409,6 +426,10 @@ function SomiEditor({ info, onSave }: { info: PetInfo; onSave: (info: PetInfo) =
       <input value={snack} onChange={e => setSnack(e.target.value)} placeholder="Churu" style={S.input} />
       <input value={tricks} onChange={e => setTricks(e.target.value)} placeholder="sit, high five, spin, stand" style={S.input} />
       <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Please don’t feed her from the table." rows={2} style={{ ...S.input, resize: 'vertical', lineHeight: 1.5 }} />
+      <label style={{ fontSize: '0.68rem', color: 'var(--muted)', cursor: spaceId ? 'pointer' : 'default', opacity: spaceId ? 1 : 0.5 }}>
+        {uploading ? 'Uploading…' : photoPath ? 'Photo set. Change it →' : 'Add a photo of Somi →'}
+        <input type="file" accept="image/*" onChange={pickPhoto} disabled={!spaceId || uploading} style={{ display: 'none' }} />
+      </label>
       <button
         onClick={() => onSave({
           name: name.trim(),
@@ -416,6 +437,7 @@ function SomiEditor({ info, onSave }: { info: PetInfo; onSave: (info: PetInfo) =
           snack: snack.trim(),
           tricks: tricks.split(',').map(t => t.trim()).filter(Boolean),
           notes: notes.trim(),
+          photoPath: photoPath || undefined,
         })}
         style={{ ...S.save, alignSelf: 'flex-start', padding: '0.4rem 0.9rem' }}
       >Save Somi's card</button>

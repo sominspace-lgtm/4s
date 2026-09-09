@@ -16,6 +16,9 @@ export interface SomiInfo {
   snack?: string
   tricks?: string[]
   notes?: string
+  /** Storage path in the pet-photos bucket (2026-09-09). Village.tsx
+   *  resolves it to a signed URL as `photoUrl` on the card. */
+  photoPath?: string
 }
 
 /** Her actual birthday (2026-09-04) — everything else in this file can be
@@ -45,12 +48,13 @@ export function somiAgeText(now: Date = new Date()): string {
   return `${years} year${years === 1 ? '' : 's'}${months ? `, ${months} month${months === 1 ? '' : 's'}` : ''} old`
 }
 
-export const DEFAULT_SOMI: Required<Omit<SomiInfo, 'ageText' | 'notes'>> & Pick<SomiInfo, 'ageText' | 'notes'> = {
+export const DEFAULT_SOMI: Required<Omit<SomiInfo, 'ageText' | 'notes' | 'photoPath'>> & Pick<SomiInfo, 'ageText' | 'notes' | 'photoPath'> = {
   name: 'Somi',
   ageText: undefined,
   snack: 'Churu',
   tricks: ['sit', 'high five', 'spin', 'stand'],
   notes: 'Please don’t feed her from the table.',
+  photoPath: undefined,
 }
 
 export interface ResolvedSomi {
@@ -60,6 +64,11 @@ export interface ResolvedSomi {
   snack: string
   tricks: string[]
   notes: string | null
+  /** Raw storage path; Village.tsx swaps it for a signed URL. */
+  photoPath: string | null
+  /** Signed URL, filled in by Village.tsx (undefined in the scene's own
+   *  fallback and in previews). */
+  photoUrl?: string | null
 }
 
 /** Merge a stored override onto DEFAULT_SOMI. Empty strings / empty
@@ -84,5 +93,6 @@ export function resolveSomi(info: SomiInfo | null | undefined, now: Date = new D
     snack: str(o.snack, DEFAULT_SOMI.snack),
     tricks: tricks.length ? tricks : DEFAULT_SOMI.tricks,
     notes: optStr(o.notes, DEFAULT_SOMI.notes ?? null),
+    photoPath: optStr(o.photoPath, null),
   }
 }

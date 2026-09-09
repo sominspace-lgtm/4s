@@ -31,6 +31,7 @@ import { THEMES } from '@/lib/constants/themes'
 import QRCode from 'qrcode'
 import type { Gathering, GuestContribution, GatheringMemory, PrepItem, GuestInfo, MenuItem, AgendaItem, PetInfo } from '@/lib/hooks/useGathering'
 import { resolveSomi } from '@/lib/village/somi'
+import { getPetPhotoUrl } from '@/lib/storage/petPhoto'
 import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
@@ -173,7 +174,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // guest who turns up early flips the gathering to live (useGathering's
   // realtime handler), which brings this on.
   const hosting = guestLive
-  const somi = useMemo(() => resolveSomi(petInfo), [petInfo])
+  const somiBase = useMemo(() => resolveSomi(petInfo), [petInfo])
+  const [somiPhotoUrl, setSomiPhotoUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    getPetPhotoUrl(somiBase.photoPath).then(u => { if (alive) setSomiPhotoUrl(u) })
+    return () => { alive = false }
+  }, [somiBase.photoPath])
+  const somi = useMemo(() => ({ ...somiBase, photoUrl: somiPhotoUrl }), [somiBase, somiPhotoUrl])
   const pinnedMessage = useMemo(() => {
     const id = gathering?.pinned_contribution_id
     if (!id) return null
@@ -435,6 +443,42 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const { ideas } = useDateIdeas(spaces[0]?.id ?? null)
   const { trips } = useTrips()
   const tripCount = trips.filter(t => t.status !== 'done' && t.status !== 'cancelled').length
+
+  // Pin stories on the wall (2026-09-09) — a few nearby saved places with
+  // the one line the hosts wrote, tapped from a little pin cluster.
+  const placeStories = useMemo(
+    () => places.filter(p => p.note && p.note.trim()).slice(0, 4).map(p => ({ name: p.name, note: p.note!.trim(), kind: p.kind })),
+    [places],
+  )
+
+  // "On this day" (2026-09-09) — a gathering memory / place / trip from
+  // roughly a year (or 2, or 3) ago today, flipped up from the postcard rack.
+  const onThisDay = useMemo(() => {
+    const today = new Date()
+    const md = (d: string) => d.slice(5, 10)
+    const near = (dateStr: string) => {
+      const d = new Date(dateStr + 'T12:00:00')
+      const years = today.getFullYear() - d.getFullYear()
+      if (years < 1) return null
+      const diff = Math.abs((new Date(today.getFullYear(), d.getMonth(), d.getDate()).getTime() - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86_400_000)
+      return diff <= 3 ? years : null
+    }
+    for (const m of memories) {
+      const y = near(m.happened_on)
+      if (y) return { text: m.summary?.messages?.[0]?.text || `You had people over${m.summary?.guests?.length ? `: ${m.summary.guests.slice(0, 4).join(', ')}` : ''}.`, yearsAgo: y }
+    }
+    for (const p of places) {
+      if (!p.first_visited_on) continue
+      const y = near(p.first_visited_on)
+      if (y) return { text: `${p.name}${p.note ? ` — ${p.note.trim()}` : ''}`, yearsAgo: y }
+    }
+    for (const t of trips) {
+      if (!t.start_date) continue
+      const y = near(t.start_date)
+      if (y) return { text: t.title + (t.destination ? ` (${t.destination})` : ''), yearsAgo: y }
+    }
+    return null
+  }, [memories, places, trips])
   const dateIdeaAreas = useMemo(() => {
     const counts = new Map<string, number>()
     for (const idea of ideas) {
@@ -760,6 +804,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
+            placeStories={placeStories} onThisDay={onThisDay}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
             somi={somi}
@@ -1114,6 +1159,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {guestPanelOpen && gathering && (
           <VillageGuestPanel
             gathering={gathering}
+            spaceId={spaces[0]?.id ?? null}
             contributions={contributions}
             guestUrl={guestUrl}
             qrDataUri={qrDataUri}
