@@ -85,7 +85,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
    *  working view on Home. */
   sharedMode?: boolean
   /** A gathering is live on this shared device — Reference shows only the
-   *  guest-safe bits (date ideas, watchlist, photo albums), 2026-09-10. */
+   *  guest-safe bits (date ideas, watchlist, photo albums, hosting
+   *  keepsakes); Notes / Understanding / Check-ins need the PIN, 2026-09-10. */
   guestMode?: boolean
   /** Prompts the real Harry/Sylvia PIN unlock (see UnlockPanel) — used to
    *  gate genuinely personal content (Check-ins) while sharedMode is on,
@@ -830,7 +831,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
-      {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} photosOnly={guestMode} />}
+      {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} />}
 
       {/* Understanding Each Other — real relationship content (love
           languages, preferences, the kind of thing Check-ins already gates),
