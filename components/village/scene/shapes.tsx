@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { STAGE_INDEX, hashPos, type Plant, type Building, type VillageState } from '@/lib/village/state'
 
 // The repeated silhouettes: one per habit, one per project, one per district
@@ -302,6 +303,10 @@ export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; 
   // stopPropagation/oversized-hit-circle idiom as VillagerShape's own
   // onClick, gated `!arranging` by the caller, not here.
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
+  // Reeds along the back edge + one lily pad (2026-09-08). Static shapes —
+  // the reeds lean on the shared soft-sway keyframe, each with its own
+  // negative delay so the stand ripples rather than swaying in lockstep.
+  const reeds = [-13, -8, -3, 4, 10]
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`} opacity={0.8} onClick={handleClick}
       className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
@@ -309,7 +314,80 @@ export function PondShape({ x, y, scale = 1, onClick }: { x: number; y: number; 
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="var(--slate)" opacity={0.28} />
       <ellipse cx={0} cy={0} rx={22} ry={7} fill="none" stroke="var(--slate)" strokeWidth={0.7} opacity={0.35} />
       <ellipse cx={-5} cy={-1.5} rx={6} ry={1.6} fill="var(--surface)" opacity={0.25} />
+      {/* lily pad on the near edge, with its wedge notch */}
+      <g transform="translate(9 2.5)">
+        <ellipse cx={0} cy={0} rx={3.6} ry={2.1} fill="var(--sage, var(--slate))" opacity={0.5} />
+        <path d="M0 0 L3.4 -1 L3.4 1 Z" fill="var(--bg)" opacity={0.4} />
+      </g>
+      {reeds.map((rx, i) => (
+        <rect key={i} x={rx} y={-11} width={1} height={11} rx={0.5}
+          fill="var(--sage, var(--slate))" opacity={0.55}
+          className="village-sway-soft" style={{ animationDelay: `${(hashPos('reed' + i) * -5).toFixed(2)}s` }} />
+      ))}
     </g>
+  )
+}
+
+// Koi, ducks and a frog on the pond (2026-09-08). Kept out of PondShape so
+// PondShape stays a plain static shape; this carries the movement. Count and
+// pace read `timeOfDay` — more and livelier at dawn/dusk, half as many and
+// still at night. Scattered deterministically by `hashPos` so the school
+// never reshuffles between renders. `frozen` (idle wall / reduced motion)
+// drops the frog interval; the CSS classes are already in both freeze lists.
+export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
+  cx: number; cy: number; timeOfDay?: string; frozen?: boolean
+}) {
+  const night = timeOfDay === 'night'
+  const brisk = timeOfDay === 'dawn' || timeOfDay === 'dusk'
+  const koiN = night ? 2 : brisk ? 4 : 3
+  const duckN = night ? 0 : brisk ? 2 : 1
+  const koiColors = ['var(--amber)', 'var(--rose, var(--amber))', 'var(--gold)']
+  return (
+    <g pointerEvents="none">
+      {Array.from({ length: koiN }).map((_, i) => {
+        const dx = (hashPos('koi' + i + 'x') - 0.5) * 30
+        const dy = (hashPos('koi' + i + 'y') - 0.5) * 9
+        const cls = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
+        return (
+          <g key={i} transform={`translate(${cx + dx} ${cy + dy})`} className={night ? undefined : cls}>
+            <ellipse cx={0} cy={0} rx={2.4} ry={1.1} fill={koiColors[i % koiColors.length]} opacity={0.7} />
+            <path d={`M${-2.2} 0 L${-3.6} -1 L${-3.6} 1 Z`} fill={koiColors[i % koiColors.length]} opacity={0.6} />
+          </g>
+        )
+      })}
+      {Array.from({ length: duckN }).map((_, i) => {
+        const dx = (hashPos('duck' + i + 'x') - 0.5) * 24
+        const dy = (hashPos('duck' + i + 'y') - 0.5) * 7
+        return (
+          <g key={i} transform={`translate(${cx + dx} ${cy + dy})`} className={`village-koi-${(i + 1) % 2}`}>
+            <ellipse cx={0} cy={0} rx={2.8} ry={1.7} fill="var(--surface)" opacity={0.85} />
+            <circle cx={2.4} cy={-1.4} r={1.1} fill="var(--surface)" opacity={0.9} />
+            <circle cx={2.9} cy={-1.5} r={0.3} fill="var(--text)" opacity={0.6} />
+          </g>
+        )
+      })}
+      <FrogPlop cx={cx} cy={cy} frozen={frozen || night} />
+    </g>
+  )
+}
+
+function FrogPlop({ cx, cy, frozen }: { cx: number; cy: number; frozen: boolean }) {
+  const [rippleAt, setRippleAt] = useState<number | null>(null)
+  useEffect(() => {
+    if (frozen) return
+    let alive = true
+    const tick = () => {
+      if (!alive) return
+      setRippleAt(Date.now())
+      setTimeout(() => alive && setRippleAt(null), 1200)
+    }
+    const id = setInterval(tick, 20000 + Math.random() * 20000)
+    return () => { alive = false; clearInterval(id) }
+  }, [frozen])
+  if (rippleAt == null) return null
+  return (
+    <ellipse key={rippleAt} cx={cx - 6} cy={cy + 2} rx={5} ry={2.4}
+      fill="none" stroke="var(--slate)" strokeWidth={0.6} className="village-ripple" />
   )
 }
 

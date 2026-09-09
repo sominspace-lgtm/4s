@@ -12,7 +12,7 @@ import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/u
 import { HOME_URL } from '@/lib/utils/cheatSheets'
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { randomFortune } from '@/lib/village/fortunes'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -90,7 +90,7 @@ function PingForm({ title, reasons, showNote, onSend }: {
 // Bloom vars the same way the fullscreen overlay does (the portal lands
 // past the card's own theme scope).
 function GlanceSheet({ info, onClose, onPrimary }: {
-  info: { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void } }
+  info: { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void }; cards?: { text: string; tone?: 'note' }[] }
   onClose: () => void
   /** What the main button does — a district preview step, or straight nav. */
   onPrimary: () => void
@@ -106,7 +106,22 @@ function GlanceSheet({ info, onClose, onPrimary }: {
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 14px' }} />
         <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>{info.title}</div>
-        {info.lines.map((l, i) => (
+        {info.cards && info.cards.length ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '4px 0 2px' }}>
+            {info.cards.map((c, i) => (
+              <div key={i} style={{
+                fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.4,
+                color: 'var(--text)', padding: '9px 12px', borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: c.tone === 'note'
+                  ? 'color-mix(in srgb, var(--rose, var(--gold)) 12%, var(--surface))'
+                  : 'color-mix(in srgb, var(--gold) 7%, var(--surface))',
+                transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)`,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              }}>{c.text}</div>
+            ))}
+          </div>
+        ) : info.lines.map((l, i) => (
           <div key={i} style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{l}</div>
         ))}
         <button onClick={() => { onPrimary(); onClose() }} style={{
@@ -146,7 +161,8 @@ export default function VillageScene({
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
-  sparks = [], guestToken = null, placeStories = [], onThisDay = null,
+  sparks = [], guestToken = null, placeStories = [], onThisDay = null, postcards = [],
+  ringNotes = [], foundedYear = null,
 }: {
   village: VillageState
   live: boolean
@@ -240,6 +256,14 @@ export default function VillageScene({
   placeStories?: { name: string; note: string; kind: string }[]
   /** A memory / place / trip from roughly a year ago today. */
   onThisDay?: { text: string; yearsAgo: number } | null
+  /** The household's real trips, for the postcard rack (2026-09-08). A trip
+   *  with an albumUrl opens the photo album when tapped. */
+  postcards?: { id: string; title: string; destination: string | null; status: string; albumUrl: string | null }[]
+  /** Notes the household wrote for the archive tree's rings, keyed by
+   *  calendar year (2026-09-08). */
+  ringNotes?: { year: number; note: string; happenedOn?: string | null }[]
+  /** Calendar year the account started — the innermost ring. */
+  foundedYear?: number | null
   /** Guest Mode (2026-08-29) — the village is open to guests. Orthogonal to
    *  `locked`. Warms the scene up regardless of time of day: lanterns and
    *  window glow forced on, party bunting over Home, a warm colour wash. */
@@ -270,6 +294,10 @@ export default function VillageScene({
    *  Sourced in Village.tsx (hookless scene). */
   structures?: {
     calendar: string[]
+    /** The next few dated things — events, trips, birthdays (2026-09-08). */
+    week?: { kind: 'event' | 'trip' | 'birthday'; text: string; when: string }[]
+    /** One line a partner left the other. Home view only, never to guests. */
+    note?: string
   } | null
   /** Partners ping each other in home mode, same card as hostPing above —
    *  tap the OTHER figure (not your own) any time you're not hosting.
@@ -623,6 +651,8 @@ export default function VillageScene({
   const [postcardsOpen, setPostcardsOpen] = useState(false)
   // Which pin-story is open (index into placeStories), or null.
   const [storyPin, setStoryPin] = useState<number | null>(null)
+  // Which archive-tree ring is open (its calendar year), or null.
+  const [ringYear, setRingYear] = useState<number | null>(null)
   const openSomi = () => {
     if (arranging) return
     setOpenSomiCard(o => !o)
@@ -687,7 +717,7 @@ export default function VillageScene({
   const restingCount = v.plants.length - growingCount
   const standingCount = v.buildings.filter(b => b.phase === 'complete' || b.phase === 'landmark').length
   const underwayCount = v.buildings.length - standingCount
-  const panelContent: Record<LandmarkId, { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void } }> = {
+  const panelContent: Record<LandmarkId, { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void }; cards?: { text: string; tone?: 'note' }[] }> = {
     forest: {
       title: 'Growth Garden',
       lines: [
@@ -751,7 +781,7 @@ export default function VillageScene({
       lines: (() => {
         const l: string[] = []
         if (memoryAlbums.length) l.push(`${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}`)
-        l.push(`${spellCount(POSTCARDS.length)} postcard${POSTCARDS.length === 1 ? '' : 's'} on the rack`)
+        { const n = postcards.length || POSTCARDS.length; l.push(`${spellCount(n)} postcard${n === 1 ? '' : 's'} on the rack`) }
         if (memoryAlbums[0]?.label) l.push(memoryAlbums[0].label)
         return l.slice(0, 3)
       })(),
@@ -794,11 +824,20 @@ export default function VillageScene({
           l.push(...evts)
           return l.length ? l.slice(0, 5) : ['Make yourself at home']
         }
-        const wifi = guestInfo.wifiName
-          ? `Wifi · ${guestInfo.wifiName}${guestInfo.wifiPassword ? ` / ${guestInfo.wifiPassword}` : ''}`
-          : null
-        const l = [...evts, wifi].filter(Boolean).slice(0, 3) as string[]
-        return l.length ? l : ["What's coming up"]
+        const week = structures?.week ?? []
+        const l = week.length
+          ? week.map(w => `${w.when} · ${w.text}`)
+          : evts.length ? evts : ["What's coming up"]
+        return l.slice(0, 3)
+      })(),
+      // Home view only — the pinned cards, partner note first. Guests never
+      // see `cards` (the gathering branch of `lines` renders instead).
+      cards: gathering ? undefined : (() => {
+        const week = structures?.week ?? []
+        const c: { text: string; tone?: 'note' }[] = []
+        if (structures?.note) c.push({ text: structures.note, tone: 'note' })
+        for (const w of week) c.push({ text: `${w.when} · ${w.text}` })
+        return c.length ? c : undefined
       })(),
       actionLabel: gathering ? 'See what’s on' : 'Go to the calendar',
       go: () => goToHousehold(gathering ? 'reference' : 'calendar'),
@@ -940,6 +979,19 @@ export default function VillageScene({
   }
   // Merge the server-loaded swarm with any just-tapped ones not yet echoed.
   const allSparks = [...sparks, ...localSparks.filter(l => !sparks.some(s => s.id === l.id))]
+
+  // Feed the pond (2026-09-08) — in home mode, a tap tosses a few crumbs
+  // that arc onto the water; the koi give a quick rise. Purely cosmetic,
+  // no write. Each crumb self-removes after its short arc.
+  const [crumbs, setCrumbs] = useState<{ id: number; dx: number }[]>([])
+  function feedPond() {
+    if (arranging || isFrozen) return
+    const base = Date.now()
+    const next = Array.from({ length: 4 }).map((_, i) => ({ id: base + i, dx: (Math.random() - 0.5) * 26 }))
+    setCrumbs(prev => [...prev, ...next])
+    setTimeout(() => setCrumbs(prev => prev.filter(c => !next.some(n => n.id === c.id))), 900)
+  }
+  const koiFed = crumbs.length > 0
   // In guest mode the well takes a short note or thank-you (name optional)
   // and tosses back a fortune (2026-09-09). In home mode it stays the
   // "grateful for" personal note, with the fortune as a small bonus.
@@ -1800,8 +1852,27 @@ export default function VillageScene({
       {(() => { const p = decorPos('pond'); return (
         <Draggable x={p.x} y={p.y} id="pond" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('pond')} r={22}>
           <PondShape x={0} y={0} scale={1.15}
-            onClick={!arranging ? () => { life.walkTo(p.x, p.y + 8); dropFirefly() } : undefined} />
+            onClick={!arranging ? () => {
+              life.walkTo(p.x, p.y + 8)
+              if (guestToken) dropFirefly(); else feedPond()
+            } : undefined} />
         </Draggable>
+      ) })()}
+
+      {/* Pond life (2026-09-08) — koi and ducks drift, a frog plops now and
+          then; the school thins and stills at night. */}
+      {!arranging && (() => { const p = decorPos('pond'); return (
+        <>
+          <PondLife cx={p.x} cy={p.y - 1} timeOfDay={v.timeOfDay} frozen={isFrozen} />
+          {crumbs.map(c => (
+            <circle key={c.id} cx={p.x + c.dx} cy={p.y - 2} r={0.9}
+              fill="var(--gold)" className="village-crumb" pointerEvents="none" />
+          ))}
+          {koiFed && (
+            <ellipse cx={p.x} cy={p.y - 2} rx={7} ry={3} fill="none"
+              stroke="var(--slate)" strokeWidth={0.5} className="village-ripple" pointerEvents="none" />
+          )}
+        </>
       ) })()}
 
       {/* The firefly swarm — every guest who's tapped the pond, glowing on
@@ -1811,12 +1882,13 @@ export default function VillageScene({
         const p = decorPos('pond')
         return (
           <g pointerEvents="none">
-            <ellipse cx={p.x} cy={p.y - 2} rx={26} ry={12}
-              fill="var(--amber)" opacity={Math.min(0.32, allSparks.length * 0.018)}
+            <ellipse cx={p.x} cy={p.y - 2} rx={dark ? 20 : 26} ry={dark ? 9 : 12}
+              fill="var(--amber)" opacity={Math.min(dark ? 0.44 : 0.32, allSparks.length * (dark ? 0.026 : 0.018))}
               filter="url(#vglow)" />
             {allSparks.slice(-80).map((s, i) => {
-              const dx = (hashPos(s.id + 'fx') - 0.5) * 46
-              const dy = (hashPos(s.id + 'fy') - 0.5) * 20
+              // At night they pool low over the water; by day they spread out.
+              const dx = (hashPos(s.id + 'fx') - 0.5) * (dark ? 26 : 46)
+              const dy = (hashPos(s.id + 'fy') - 0.5) * (dark ? 10 : 20)
               return (
                 <circle key={s.id} cx={p.x + dx} cy={p.y - 4 + dy} r={1.3}
                   fill="var(--amber)" filter="url(#vglow)"
@@ -2336,36 +2408,69 @@ export default function VillageScene({
           signpost (round 10) is gone too (round 23) — blank-sign.png has no
           equivalent in the master folder either. */}
 
-      {/* Archive Grove — a small wild patch beside the Archive greenhouse.
-          Round 62 removed the big Life Tree here; round 64 ("fix cut down
-          tree") removes what was left — flat concentric ground rings that
-          read exactly like a fresh tree stump. In its place: a couple of
-          bushes and a strip of wildflowers, so the corner reads as a quiet
-          overgrown grove rather than a clearing where something was felled.
-          The account-age still lives in the district badge count and in
-          VillageText; the <title> keeps it for screen readers. */}
-      <g transform={`translate(725 ${GROUND_Y + 2})`}
-        className={!arranging ? 'village-entity' : undefined}
-        style={{ cursor: !arranging ? 'pointer' : undefined }}
-        onClick={arranging ? undefined : e => {
-          e.stopPropagation()
-          if (locked) { onLockedNavigate?.('Archive'); return }
-          setSelected(s => (s?.type === 'grove' ? null : { type: 'grove', id: 'grove' }))
-        }}>
-        <title>{
-          v.treeRings > 0
-            ? `Archive Grove, ${v.treeRings} year${v.treeRings === 1 ? '' : 's'} of growth`
-            : `Archive Grove, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
-        }</title>
-        <g opacity={0.9}>
-          <image href="/village-assets/wildflower-strip.png" x={-24} y={-9} width={44} height={44 * (341 / 512)}
-            style={{ imageRendering: 'pixelated' }} />
-          <image href="/village-assets/bush-mound.png" x={-30} y={-13} width={18} height={18 * (129 / 218)}
-            style={{ imageRendering: 'pixelated' }} />
-          <image href="/village-assets/flowering-bush.png" x={12} y={-15} width={17} height={17 * (209 / 276)}
-            style={{ imageRendering: 'pixelated' }} />
-        </g>
-      </g>
+      {/* Archive Grove — the household's tree (2026-09-08). Round 62 pulled
+          the old Life Tree and round 64 the flat ground rings ("read like a
+          stump"). It's back now as a standing seasonal tree whose canopy
+          thickens with the account's age, paired with a small cut-face at
+          the trunk foot that carves one ring per year — tap a ring to read
+          that year. Clearly a living tree and its count, not a felled one. */}
+      {(() => {
+        const tree = seasonTree('round', v.season)
+        const th = 34 + Math.max(0, Math.min(1, v.canopy)) * 22
+        const tw = th * tree.aspect
+        const rings = Math.max(0, v.treeRings)
+        return (
+          <g transform={`translate(725 ${GROUND_Y + 2})`}>
+            <title>{
+              rings > 0
+                ? `Archive Grove, ${rings} year${rings === 1 ? '' : 's'} of growth`
+                : `Archive Grove, ${v.accountMonths} month${v.accountMonths === 1 ? '' : 's'} of growth`
+            }</title>
+            <g opacity={0.9}>
+              <image href="/village-assets/wildflower-strip.png" x={-24} y={-9} width={44} height={44 * (341 / 512)}
+                style={{ imageRendering: 'pixelated' }} />
+              <image href="/village-assets/bush-mound.png" x={-30} y={-13} width={18} height={18 * (129 / 218)}
+                style={{ imageRendering: 'pixelated' }} />
+              <image href="/village-assets/flowering-bush.png" x={12} y={-15} width={17} height={17 * (209 / 276)}
+                style={{ imageRendering: 'pixelated' }} />
+            </g>
+            {/* the tree itself — tap opens the grove callout, same as before */}
+            <image href={tree.src} x={-tw / 2 - 2} y={-th - 2} width={tw} height={th}
+              style={{ imageRendering: 'pixelated', cursor: !arranging ? 'pointer' : undefined }}
+              className={!arranging ? 'village-entity' : undefined}
+              onClick={arranging ? undefined : e => {
+                e.stopPropagation()
+                if (locked) { onLockedNavigate?.('Archive'); return }
+                setSelected(s => (s?.type === 'grove' ? null : { type: 'grove', id: 'grove' }))
+              }} />
+            {/* the cut face at the trunk foot — one ring per year */}
+            {rings > 0 && !arranging && (() => {
+              const step = Math.min(1.5, 7 / rings)
+              const noteYears = new Set(ringNotes.map(r => r.year))
+              return (
+                <g transform="translate(-3 -1)">
+                  <ellipse cx={0} cy={0} rx={rings * step + 1.6} ry={(rings * step + 1.6) * 0.5}
+                    fill="var(--surface2, var(--surface))" stroke="var(--border)" strokeWidth={0.5} />
+                  {Array.from({ length: rings }).map((_, i) => {
+                    const year = foundedYear != null ? foundedYear + i : null
+                    const marked = year != null && noteYears.has(year)
+                    const r = (rings - i) * step
+                    return (
+                      <ellipse key={i} cx={0} cy={0} rx={r} ry={r * 0.5}
+                        fill="transparent"
+                        stroke={marked ? 'var(--gold)' : 'var(--slate)'}
+                        strokeWidth={marked ? 0.8 : 0.4}
+                        opacity={marked ? 0.9 : 0.5}
+                        style={{ cursor: year != null ? 'pointer' : undefined, pointerEvents: year != null ? 'stroke' : 'none' }}
+                        onClick={year != null ? e => { e.stopPropagation(); setRingYear(year) } : undefined} />
+                    )
+                  })}
+                </g>
+              )
+            })()}
+          </g>
+        )
+      })()}
 
       {/* Bloom Garden — waiting on BloomScan */}
       <g transform={`translate(300 418)`} opacity={v.flowers.length ? 1 : 0.35}>
@@ -2973,7 +3078,10 @@ export default function VillageScene({
         const p = pos(openPanel)
         const width = 150
         const secondaryH = info.secondary ? 12 : 0
-        const height = 34 + info.lines.length * 13 + 22 + secondaryH
+        // A partner note on the notice board rides above the lines, tinted.
+        const noteCard = info.cards?.find(c => c.tone === 'note')?.text ?? null
+        const noteH = noteCard ? 14 : 0
+        const height = 34 + info.lines.length * 13 + 22 + secondaryH + noteH
         const cx = Math.min(800 - width / 2 - 10, Math.max(width / 2 + 10, p.x))
         const top = Math.max(10, p.y - 40 - height)
         return (
@@ -2983,8 +3091,15 @@ export default function VillageScene({
               <rect width={width} height={height} rx={10} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
               <rect width={width} height={height} rx={10} fill="var(--surface)" stroke="var(--border)" strokeWidth={1} style={{ pointerEvents: 'all' }} />
               <text x={width / 2} y={17} textAnchor="middle" fontSize={9} fontWeight={600} fill="var(--text)" fontFamily="var(--font-body)">{info.title}</text>
+              {noteCard && (
+                <>
+                  <rect x={6} y={22} width={width - 12} height={13} rx={3}
+                    fill="color-mix(in srgb, var(--rose, var(--gold)) 14%, var(--surface))" stroke="var(--border)" strokeWidth={0.5} />
+                  <text x={width / 2} y={31} textAnchor="middle" fontSize={7} fontStyle="italic" fill="var(--text)" fontFamily="var(--font-display)">{noteCard}</text>
+                </>
+              )}
               {info.lines.map((line, i) => (
-                <text key={i} x={width / 2} y={31 + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
+                <text key={i} x={width / 2} y={31 + noteH + i * 13} textAnchor="middle" fontSize={7.5} fill="var(--muted)" fontFamily="var(--font-body)">{line}</text>
               ))}
               <g transform={`translate(${width / 2} ${height - 15 - secondaryH})`} onClick={() => { primary(); setOpenPanel(null) }}
                 style={{ cursor: 'pointer', pointerEvents: 'all' }}>
@@ -3174,15 +3289,43 @@ export default function VillageScene({
                       <div style={{ fontSize: 8.5, color: 'var(--text)', lineHeight: 1.4, marginTop: 2 }}>{onThisDay.text}</div>
                     </div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, overflowY: 'auto', paddingRight: 2 }}>
-                    {POSTCARDS.map(pc => (
-                      <div key={pc.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <img src={`/village-assets/postcards/${pc.id}.png`} alt={pc.label}
-                          style={{ width: '100%', aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)', imageRendering: 'pixelated' }} />
-                        <span style={{ fontSize: 7.5, color: 'var(--muted)', lineHeight: 1.1 }}>{pc.label}</span>
+                  {postcards.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span style={{ fontSize: 8.5, color: 'var(--muted)' }}>No trips yet.</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                        {POSTCARDS.map(pc => (
+                          <div key={pc.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <img src={`/village-assets/postcards/${pc.id}.png`} alt={pc.label}
+                              style={{ width: '100%', aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)', imageRendering: 'pixelated' }} />
+                            <span style={{ fontSize: 7.5, color: 'var(--muted)', lineHeight: 1.1 }}>{pc.label}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, overflowY: 'auto', paddingRight: 2 }}>
+                      {postcards.map((pc, i) => {
+                        const art = POSTCARDS[i % POSTCARDS.length]
+                        const faded = pc.status === 'dreaming' || pc.status === 'planning'
+                        const clickable = !!pc.albumUrl
+                        return (
+                          <div key={pc.id}
+                            onClick={clickable ? () => window.open(pc.albumUrl!, '_blank', 'noopener') : undefined}
+                            style={{ display: 'flex', flexDirection: 'column', gap: 2, cursor: clickable ? 'pointer' : 'default' }}>
+                            <div style={{ position: 'relative' }}>
+                              <img src={`/village-assets/postcards/${art.id}.png`} alt={pc.title}
+                                style={{ width: '100%', aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 5, border: '1px solid var(--border)', imageRendering: 'pixelated', opacity: faded ? 0.45 : 1 }} />
+                              {clickable && (
+                                <span style={{ position: 'absolute', right: 2, bottom: 2, fontSize: 7, color: 'var(--surface)', background: 'color-mix(in srgb, var(--text) 55%, transparent)', borderRadius: 3, padding: '0 3px' }}>open ↗</span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: 7.5, color: 'var(--text)', lineHeight: 1.15, fontWeight: 600 }}>{pc.title}</span>
+                            {pc.destination && <span style={{ fontSize: 7, color: 'var(--muted)', lineHeight: 1.1 }}>{pc.destination}</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </foreignObject>
             </g>
@@ -3266,6 +3409,37 @@ export default function VillageScene({
                 }}>
                   <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
                   <div style={{ fontSize: 8.5, color: 'var(--muted)', lineHeight: 1.4, flex: 1 }}>{s.note}</div>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        )
+      })()}
+
+      {/* A tapped archive-tree ring — the year it stands for (2026-09-08). */}
+      {ringYear != null && (() => {
+        const w = 176, h = 74
+        const cx = 725, top = Math.max(10, GROUND_Y - 60 - h)
+        const cxc = Math.min(800 - w / 2 - 10, Math.max(w / 2 + 10, cx))
+        const row = ringNotes.find(r => r.year === ringYear)
+        const ageYear = foundedYear != null ? ringYear - foundedYear + 1 : null
+        return (
+          <g className="village-fade">
+            <rect x={0} y={0} width={800} height={440} fill="transparent" style={{ pointerEvents: 'all' }} onClick={() => setRingYear(null)} />
+            <g transform={`translate(${cxc - w / 2} ${top})`} onClick={e => e.stopPropagation()}>
+              <rect width={w} height={h} rx={11} fill="var(--text)" opacity={0.12} transform="translate(0 2)" />
+              <foreignObject width={w} height={h} style={{ pointerEvents: 'all' }}>
+                <div style={{
+                  width: '100%', height: '100%', boxSizing: 'border-box', padding: '10px 12px',
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 11,
+                  fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column', gap: 3,
+                }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gold)' }}>
+                    {ringYear}{ageYear != null ? ` · year ${ageYear}` : ''}
+                  </div>
+                  <div style={{ fontSize: 9, color: row ? 'var(--text)' : 'var(--muted)', lineHeight: 1.4, flex: 1, fontStyle: row ? 'normal' : 'italic' }}>
+                    {row?.note ?? 'Nothing marked for this year yet.'}
+                  </div>
                 </div>
               </foreignObject>
             </g>

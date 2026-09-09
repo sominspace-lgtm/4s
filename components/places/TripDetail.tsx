@@ -157,6 +157,18 @@ export default function TripDetail({ trip, open, onClose }: {
             {trip.destination ?? 'No destination set'}
             {trip.start_date && ` · ${trip.start_date}${trip.end_date ? ` – ${trip.end_date}` : ''}`}
           </div>
+          {/* Photo album link (2026-09-08) — a trip with one set shows a
+              tappable postcard on the village rack. */}
+          <input
+            key={`album-${currentTrip.id}`}
+            defaultValue={trip.photo_album_url ?? ''}
+            onBlur={e => {
+              const next = e.target.value.trim() || null
+              if (next !== (currentTrip.photo_album_url ?? null)) updateTrip(currentTrip.id, { photo_album_url: next })
+            }}
+            placeholder="Photo album link"
+            style={{ ...input, fontSize: '0.72rem' }}
+          />
         </div>
 
         {/* Itinerary */}

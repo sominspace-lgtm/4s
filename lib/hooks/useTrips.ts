@@ -15,6 +15,7 @@ export interface Trip {
   end_date: string | null
   status: TripStatus
   notes: string | null
+  photo_album_url: string | null
   budget_total: number | null
   currency: string
   created_at: string
@@ -81,7 +82,7 @@ export function useTrips() {
   }
 
   async function updateTrip(id: string, fields: Partial<Pick<Trip,
-    'title' | 'destination' | 'start_date' | 'end_date' | 'status' | 'notes' | 'budget_total'
+    'title' | 'destination' | 'start_date' | 'end_date' | 'status' | 'notes' | 'photo_album_url' | 'budget_total'
   >>) {
     const { error: e } = await supabase.from('trips')
       .update({ ...fields, updated_at: new Date().toISOString() })

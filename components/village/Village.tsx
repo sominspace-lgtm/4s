@@ -20,6 +20,7 @@ import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useEvents } from '@/lib/hooks/useEvents'
 import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
+import { useVillageRings } from '@/lib/hooks/useVillageRings'
 import { useVillageSparks } from '@/lib/hooks/useVillageSparks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
@@ -69,7 +70,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, petInfo = {}, onSetPetInfo, boardNote = '', panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -128,6 +129,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   /** Somi's card (age / snack / tricks), space-level. */
   petInfo?: PetInfo
   onSetPetInfo?: (info: PetInfo) => void
+  /** One line a partner left the other, for the notice board (home view only). */
+  boardNote?: string
   /** The Village home panel's block config + writer — see lib/utils/villagePanel.ts. */
   panelBlocks?: SectionConfig[]
   onChangePanelBlocks?: (next: SectionConfig[]) => void
@@ -398,6 +401,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // household's shared album links (Google Photos, iCloud, …); the tree is
   // the "memories" district now.
   const { links: memoryLinks } = useMemoryLinks(spaces[0]?.id ?? null)
+  const { rings: villageRings } = useVillageRings(spaces[0]?.id ?? null)
   const sparks = useVillageSparks(spaces[0]?.id ?? null)
   // Partners ping each other in home mode (2026-09-04) — same idea as
   // guest ping, a session-authed route instead of the guest token one.
@@ -443,6 +447,25 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const { ideas } = useDateIdeas(spaces[0]?.id ?? null)
   const { trips } = useTrips()
   const tripCount = trips.filter(t => t.status !== 'done' && t.status !== 'cancelled').length
+
+  // The postcard rack (2026-09-08) — the household's real trips. A trip
+  // with a photo-album link opens it; the rest are keepsake cards.
+  const postcards = useMemo(() => {
+    const rank: Record<string, number> = { travelling: 0, done: 1, booked: 2, planning: 3, dreaming: 4 }
+    return trips
+      .filter(t => t.status !== 'cancelled')
+      .slice()
+      .sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9))
+      .slice(0, 9)
+      .map(t => ({ id: t.id, title: t.title, destination: t.destination, status: t.status, albumUrl: t.photo_album_url }))
+  }, [trips])
+
+  // The archive tree's dated rings (2026-09-08) — the notes Sylvia wrote per
+  // year, matched to the tree's own ring count in the scene.
+  const ringNotes = useMemo(
+    () => villageRings.map(r => ({ year: r.year, note: r.note, happenedOn: r.happened_on })),
+    [villageRings],
+  )
 
   // Pin stories on the wall (2026-09-09) — a few nearby saved places with
   // the one line the hosts wrote, tapped from a little pin cluster.
@@ -635,18 +658,44 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // glance-card. Only its derived text reaches the hookless scene.
   const { items: calendarEvents } = useEvents()
   const structures = useMemo(() => {
-    const today = format(new Date(), 'yyyy-MM-dd')
+    const now = new Date()
+    const today = format(now, 'yyyy-MM-dd')
 
     const upcoming = [...calendarEvents]
       .filter(e => e.event_date >= today)
       .sort((a, b) => a.event_date.localeCompare(b.event_date))
-    const calendar: string[] = upcoming.slice(0, 2).map(e => {
-      const when = e.event_date === today ? 'Today' : format(parseISO(e.event_date), 'EEE MMM d')
-      return `${when} · ${e.title}`
-    })
+    const whenLabel = (d: string) => (d === today ? 'Today' : format(parseISO(d), 'EEE MMM d'))
+    const calendar: string[] = upcoming.slice(0, 3).map(e => `${whenLabel(e.event_date)} · ${e.title}`)
 
-    return { calendar }
-  }, [calendarEvents])
+    // "This week" (2026-09-08) — the next few dated things across events,
+    // trips starting soon, and birthdays coming up. One merged list, sorted
+    // by date, three shown.
+    type BoardItem = { kind: 'event' | 'trip' | 'birthday'; text: string; when: string; sort: string }
+    const week: BoardItem[] = []
+    for (const e of upcoming.slice(0, 4)) {
+      week.push({ kind: 'event', text: e.title, when: whenLabel(e.event_date), sort: e.event_date })
+    }
+    const horizon = new Date(now.getTime() + 14 * 86_400_000)
+    for (const t of trips) {
+      if (!t.start_date || t.status === 'cancelled' || t.status === 'done') continue
+      if (t.start_date < today || parseISO(t.start_date) > horizon) continue
+      week.push({ kind: 'trip', text: t.destination ? `${t.title} — ${t.destination}` : t.title, when: whenLabel(t.start_date), sort: t.start_date })
+    }
+    for (const p of people) {
+      const days = daysUntilBirthday(p.birthday)
+      if (days == null || days > 14) continue
+      const d = new Date(now.getTime() + days * 86_400_000)
+      week.push({
+        kind: 'birthday',
+        text: `${p.name}'s birthday`,
+        when: days === 0 ? 'Today' : format(d, 'EEE MMM d'),
+        sort: format(d, 'yyyy-MM-dd'),
+      })
+    }
+    week.sort((a, b) => a.sort.localeCompare(b.sort))
+
+    return { calendar, week: week.slice(0, 3).map(({ kind, text, when }) => ({ kind, text, when })), note: boardNote }
+  }, [calendarEvents, trips, people, boardNote])
 
   // Life pulse (2026-09-07) — a district touched in the last few days glows
   // warmer; one left alone for weeks fades and desaturates. Not a number or
@@ -804,7 +853,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
             gathering={guestLive} contributions={contributions} guestQrUri={qrDataUri}
             sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
-            placeStories={placeStories} onThisDay={onThisDay}
+            placeStories={placeStories} onThisDay={onThisDay} postcards={postcards}
+            ringNotes={ringNotes} foundedYear={accountCreated ? accountCreated.getFullYear() : null}
             guestAlbumUrl={gathering?.photo_album_url ?? null}
             menu={gathering?.menu ?? []} agenda={gathering?.agenda ?? []}
             somi={somi}

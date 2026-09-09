@@ -6,6 +6,8 @@ import { format, parseISO } from 'date-fns'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 import IconButton from '@/components/ui/IconButton'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useVillageRings } from '@/lib/hooks/useVillageRings'
 
 interface ArchivedItem {
   id: string
@@ -20,15 +22,25 @@ interface ArchivedItem {
 interface Props {
   open: boolean
   onClose: () => void
+  userId?: string
+  accountCreatedAt?: string | null
 }
 
 // Archive Grove, from the 4S Village vision: this is where finished work
 // stops being a task and becomes personal history. Landmarks (see
 // lib/utils/taskStage.ts) are the earned ones — surfaced with their own
 // filter and a ◆ so they read as monuments, not just another line in a list.
-export default function ArchivePanel({ open, onClose }: Props) {
+export default function ArchivePanel({ open, onClose, userId, accountCreatedAt }: Props) {
   const lang = useLang()
   const supabase = createClient()
+  const { spaces, members } = useSharedSpaces(userId ?? '')
+  const ringSpaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? null
+  const { rings, setRing } = useVillageRings(ringSpaceId)
+  const foundedYear = accountCreatedAt ? new Date(accountCreatedAt).getFullYear() : null
+  const thisYear = new Date().getFullYear()
+  const ringYears: number[] = foundedYear != null
+    ? Array.from({ length: thisYear - foundedYear + 1 }, (_, i) => foundedYear + i)
+    : []
   const ref = useRef<HTMLDivElement>(null)
   const [items, setItems] = useState<ArchivedItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -101,6 +113,36 @@ export default function ArchivePanel({ open, onClose }: Props) {
           }}>{t(f, lang)}</button>
           ))}
         </div>
+
+        {/* Tree rings — a line per year for the archive tree in the village. */}
+        {ringSpaceId && ringYears.length > 0 && (
+          <details style={{ borderTop: '1px solid var(--border)', paddingTop: '0.7rem' }}>
+            <summary style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', cursor: 'pointer' }}>
+              Tree rings
+            </summary>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.55rem' }}>
+              {ringYears.slice().reverse().map(year => {
+                const existing = rings.find(r => r.year === year)?.note ?? ''
+                return (
+                  <div key={year} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.66rem', color: 'var(--gold)', width: '2.4rem', flexShrink: 0 }}>{year}</span>
+                    <input
+                      key={`ring-${year}-${existing}`}
+                      defaultValue={existing}
+                      onBlur={e => { const v = e.target.value.trim(); if (v !== existing) setRing(year, v) }}
+                      placeholder="what happened this year"
+                      style={{
+                        flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.72rem',
+                        fontFamily: 'var(--font-body)', color: 'var(--text)',
+                        background: 'var(--hover-bg)', border: '1px solid var(--border)', borderRadius: 7, outline: 'none',
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </details>
+        )}
 
         {loading ? (
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.5 }}>{t('Loading…', lang)}</div>

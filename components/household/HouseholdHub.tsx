@@ -75,7 +75,7 @@ function VibeBadge({ emoji }: { emoji: string }) {
   )
 }
 
-export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, onLockedNavigate, forcedTab }: {
+export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, onLockedNavigate, forcedTab, boardNote = '', onSetBoardNote }: {
   userId: string
   userEmail: string
   homeBlocks: SectionConfig[]
@@ -95,6 +95,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   /** Which sub-tab to show. Always set by DashboardClient — one
    *  <HouseholdHub forcedTab={id}> per Home/Calendar/Reference section. */
   forcedTab?: HouseholdTab
+  /** One line a partner leaves the other on the village notice board. */
+  boardNote?: string
+  onSetBoardNote?: (text: string) => void
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
@@ -224,7 +227,29 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // block again now (calendar isn't a place you live in, it's something
     // you check). Routines removed from Household 2026-09-08.
     calendar: () => (
-      <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />
+      <>
+        <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />
+        {onSetBoardNote && !guestMode && (
+          <div style={{ marginTop: '0.9rem' }}>
+            <div className="t-card" style={{ marginBottom: '0.4rem' }}>A line for the notice board</div>
+            <input
+              key={`boardnote-${boardNote}`}
+              defaultValue={boardNote}
+              onBlur={e => { const v = e.target.value.trim(); if (v !== boardNote) onSetBoardNote(v) }}
+              placeholder="Leave a line for the other"
+              maxLength={160}
+              style={{
+                width: '100%', padding: '0.5rem 0.65rem', fontSize: '0.8rem',
+                fontFamily: 'var(--font-body)', color: 'var(--text)',
+                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, outline: 'none',
+              }}
+            />
+            <div style={{ fontSize: '0.66rem', color: 'var(--muted)', marginTop: '0.3rem' }}>
+              Shows on the village notice board at home. Guests never see it.
+            </div>
+          </div>
+        )}
+      </>
     ),
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,

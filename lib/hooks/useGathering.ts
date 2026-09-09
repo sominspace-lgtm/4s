@@ -140,6 +140,10 @@ export interface UseGathering {
   /** Somi's card (age / snack / tricks). Space-level, persists across gatherings. */
   petInfo: PetInfo
   setPetInfo: (info: PetInfo) => Promise<void>
+  /** One line a partner left the other, shown on the notice board in home
+   *  view only (never to guests). Space-level. */
+  boardNote: string
+  setBoardNote: (text: string) => Promise<void>
 }
 
 export function useGathering(userId: string): UseGathering {
@@ -152,6 +156,7 @@ export function useGathering(userId: string): UseGathering {
   const [memories, setMemories] = useState<GatheringMemory[]>([])
   const [guestInfo, setGuestInfoState] = useState<GuestInfo>({})
   const [petInfo, setPetInfoState] = useState<PetInfo>({})
+  const [boardNote, setBoardNoteState] = useState('')
   const [ready, setReady] = useState(false)
   const contribRef = useRef<GuestContribution[]>([])
   contribRef.current = contributions
@@ -199,6 +204,10 @@ export function useGathering(userId: string): UseGathering {
         setGuestInfoState((row?.guest_info as GuestInfo | undefined) ?? {})
         setPetInfoState((row?.pet_info as PetInfo | undefined) ?? {})
       }
+      // Separate read — a missing board_note column (migration not run yet)
+      // must not take guest_info / pet_info down with it.
+      const { data: bn } = await supabase.from('shared_spaces').select('board_note').eq('id', spaceId).maybeSingle()
+      if (alive) setBoardNoteState((bn as { board_note?: string | null } | null)?.board_note ?? '')
       setReady(true)
     })()
 
@@ -401,6 +410,17 @@ export function useGathering(userId: string): UseGathering {
     if (error) console.error('[4s] setPetInfo failed:', error.message)
   }, [supabase])
 
+  const setBoardNote = useCallback(async (text: string) => {
+    const sid = spaceRef.current
+    if (!sid) return
+    const clean = text.trim().slice(0, 160)
+    setBoardNoteState(clean)
+    const { error } = await supabase.from('shared_spaces')
+      .update({ board_note: clean || null, board_note_by: userId, board_note_at: new Date().toISOString() })
+      .eq('id', sid)
+    if (error) console.error('[4s] setBoardNote failed:', error.message)
+  }, [supabase, userId])
+
   return {
     gathering, contributions, memories, ready,
     startGathering, openDoors, updatePrep, closeGathering, setMusicUrl, setPhotoAlbumUrl,
@@ -408,5 +428,6 @@ export function useGathering(userId: string): UseGathering {
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,
     petInfo, setPetInfo,
+    boardNote, setBoardNote,
   }
 }

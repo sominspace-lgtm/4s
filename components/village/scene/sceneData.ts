@@ -373,6 +373,9 @@ export const PROPS = {
     { x: 260, y: GROUND_Y - 6 },
     { x: 527, y: 280 },
     { x: 130, y: GROUND_Y + 26 },
+    // By the pond (2026-09-08) — a spot to sit for a beat. Auto-registers
+    // as a couple rest-spot; tapping the pond also sends someone here.
+    { x: 690, y: 316 },
   ],
   flowerBeds: [
     { x: 90, y: GROUND_Y + 14, hue: 'var(--blush)' },

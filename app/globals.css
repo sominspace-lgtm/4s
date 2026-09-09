@@ -611,6 +611,34 @@ select, option {
 .village-firefly-1 { animation-delay: 2.3s; }
 .village-firefly-2 { animation-delay: 4.6s; }
 
+/* Pond life (2026-09-08) — koi and ducks drift on a slow, uneven loop; two
+   paths so a small school never moves as one. A koi gives a quick rise when
+   you feed the pond; a frog's plop pushes a ripple out. All comfortably
+   inside the ambient budget (nothing fast, nothing opaque). */
+@keyframes village-koi-0 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33%      { transform: translate(10px, 3px) rotate(6deg); }
+  66%      { transform: translate(4px, -4px) rotate(-5deg); }
+}
+@keyframes village-koi-1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  40%      { transform: translate(-9px, -3px) rotate(-7deg); }
+  70%      { transform: translate(-3px, 4px) rotate(4deg); }
+}
+.village-koi-0 { animation: village-koi-0 15s ease-in-out infinite; }
+.village-koi-1 { animation: village-koi-1 18s ease-in-out infinite 2s; }
+.village-koi-slow { animation-duration: 26s; }
+@keyframes village-koi-rise { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-2px) scale(1.14); } }
+.village-koi-rise { animation: village-koi-rise 0.7s ease-out; }
+@keyframes village-crumb {
+  0%   { transform: translate(0, -14px); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 0.45; }
+}
+.village-crumb { animation: village-crumb 0.7s ease-in forwards; }
+@keyframes village-ripple { from { transform: scale(0.3); opacity: 0.55; } to { transform: scale(1); opacity: 0; } }
+.village-ripple { transform-box: fill-box; transform-origin: center; animation: village-ripple 1.1s ease-out forwards; }
+
 /* A loose, uneven wander rather than a clean loop — two different paths so
    the pair doesn't read as one shape mirrored. */
 @keyframes village-butterfly-0 {
@@ -807,6 +835,7 @@ select, option {
 @media (prefers-reduced-motion: reduce) {
   .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade, .village-sheet,
   .village-smoke circle, .village-birds, .village-firefly,
+  .village-koi-0, .village-koi-1, .village-koi-rise, .village-crumb, .village-ripple,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud, .village-twinkle,
   .village-tapped, .village-sparkle,
@@ -835,6 +864,8 @@ select, option {
 .village-idle-frozen .village-smoke circle,
 .village-idle-frozen .village-birds,
 .village-idle-frozen .village-firefly,
+.village-idle-frozen .village-koi-0,
+.village-idle-frozen .village-koi-1,
 .village-idle-frozen .village-butterfly-0,
 .village-idle-frozen .village-butterfly-1,
 .village-idle-frozen .village-petal,
