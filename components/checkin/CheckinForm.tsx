@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { questionsForWeek, weekOfSunday, isSingleEmoji, type CheckinQuestion } from '@/lib/utils/checkinQuestions'
 import type { CheckinAnswer } from '@/lib/hooks/useCheckins'
+import IconButton from '@/components/ui/IconButton'
 
 // One question per screen, then a review screen. Every question is required
 // (2026-09-03) and answers can't be changed once submitted, so: Next is
@@ -115,7 +116,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
                 <div key={qq.key} style={{ borderBottom: '1px solid var(--faint)', paddingBottom: '0.6rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.6rem' }}>
                     <div style={{ fontSize: '0.66rem', color: 'var(--muted)', flex: 1 }}>{qq.text}</div>
-                    <button onClick={() => setStep(i)} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.64rem', flexShrink: 0 }}>Edit</button>
+                    <IconButton label={`Edit "${qq.text}"`} onClick={() => setStep(i)} color="var(--gold)" size={11} style={{ flexShrink: 0 }}>Edit</IconButton>
                   </div>
                   <div style={{ fontSize: qq.kind === 'emoji' ? '1.3rem' : '0.8rem', color: 'var(--text)', marginTop: '0.2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {values[qq.key]?.trim() || '—'}
@@ -138,14 +139,19 @@ export default function CheckinForm({ onSubmit, onClose }: {
                 {photoUrl
                   ? <img src={photoUrl} alt="" style={{ width: '100%', maxHeight: '14rem', objectFit: 'cover', display: 'block' }} />
                   : <span>Choose or take a photo</span>}
-                <input type="file" accept="image/*" capture="environment"
+                {/* No `capture` attribute: that forces mobile browsers straight
+                    into the camera, skipping the native picker entirely — so
+                    "Choose or take a photo" was a lie, only the second half
+                    worked. Without it, iOS/Android show their full picker
+                    (Camera + Photo Library/Gallery + Files) as normal. */}
+                <input type="file" accept="image/*"
                   onChange={e => setPhoto(e.target.files?.[0] ?? null)}
                   style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
               </label>
               {photo && (
-                <button onClick={() => setPhoto(null)} className="press" style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.64rem' }}>
+                <IconButton label="Choose a different photo" onClick={() => setPhoto(null)} color="var(--gold)" size={11} style={{ alignSelf: 'flex-start' }}>
                   Choose a different one
-                </button>
+                </IconButton>
               )}
             </div>
 
