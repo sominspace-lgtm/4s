@@ -17,6 +17,7 @@ import TripDetail from '@/components/places/TripDetail'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useGuestSuggestions } from '@/lib/hooks/useGuestSuggestions'
 import type { LngLatBounds } from '@/lib/utils/geo'
+import HouseholdCustomLists from '@/components/household/HouseholdCustomLists'
 
 // Dynamic, ssr:false: maplibre-gl touches `window` at module scope and would
 // hard-fail server rendering, and this keeps its ~230KB gzipped out of the
@@ -33,7 +34,7 @@ function MapSkeleton() {
 }
 
 // 'pins' is a legacy alias kept so an old deep link still resolves.
-type ForcedTab = 'map' | 'pins' | 'trips'
+type ForcedTab = 'map' | 'pins' | 'trips' | 'lists'
 
 // Three starter suggestions for a brand-new pin collection (2026-09-09).
 const STARTERS: { kind: string; label: string }[] = [
@@ -68,7 +69,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
 
   const { filters: savedFilters, addFilter, removeFilter } = usePlaceFilters(spaceId)
 
-  const tab: 'map' | 'trips' = forcedTab === 'trips' ? 'trips' : 'map'
+  const tab: 'map' | 'trips' | 'lists' = forcedTab === 'trips' ? 'trips' : forcedTab === 'lists' ? 'lists' : 'map'
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -259,6 +260,18 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
 
       {tab === 'trips' && (
         <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} sharedOnly={sharedOnly} />
+      )}
+
+      {/* Lists, reachable from Places too (2026-09-22) — same data as
+          Household → Lists (useLists/household_lists), not a second set.
+          "Dream hotels" and "Bathroom codes" are inherently place-shaped —
+          each item optionally links to a pin — so browsing them from here,
+          alongside the pins themselves, is at least as natural as browsing
+          from Household. See HouseholdCustomLists's own header comment. */}
+      {tab === 'lists' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
+          <HouseholdCustomLists spaceId={spaceId} />
+        </section>
       )}
 
       <PlaceSheet place={selected} open={!!selected} onClose={() => setSelectedId(null)} spaceId={spaceId} hasSpace={spaces.length > 0} trips={trips} />

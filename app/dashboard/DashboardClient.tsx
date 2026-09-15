@@ -156,6 +156,7 @@ const SECTION_GROUPS: Record<string, string> = {
   village:   'your world',
   places:    'ours',
   'places-trips': 'ours',
+  'places-lists': 'ours',
   upkeep:    'ours',
   // Household's own sub-tabs — real top-level sections for both personal
   // and shared use as of 2026-08-25 (used to nest one click behind a single
@@ -211,7 +212,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'reference'] },
-  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips'] },
+  { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-lists'] },
 ]
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialMilestonesSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
@@ -504,7 +505,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const LABELS: Record<string, string> = {
       brief: t('Today', lang), village: t('Village', lang), places: t('Places', lang),
-      'places-trips': t('Trips', lang),
+      'places-trips': t('Trips', lang), 'places-lists': t('Lists', lang),
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
@@ -546,6 +547,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />
         case 'places-trips': return <PlacesHub key="places-trips" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="trips" />
+        case 'places-lists': return <PlacesHub key="places-lists" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="lists" />
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.
         case 'home': case 'upkeep': case 'reference':

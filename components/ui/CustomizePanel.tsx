@@ -70,6 +70,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // row under the Places icon like Household's own.
   { id: 'places',   label: 'Places',   hidden: false },
   { id: 'places-trips', label: 'Places: Trips', hidden: false },
+  { id: 'places-lists', label: 'Places: Lists', hidden: false },
 ]
 
 interface CustomizePanelProps {

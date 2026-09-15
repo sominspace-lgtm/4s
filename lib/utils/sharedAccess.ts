@@ -12,11 +12,17 @@
 // 'live'`, computed in DashboardClient.
 
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
-  'home', 'upkeep', 'reference', 'village', 'places', 'places-trips',
+  'home', 'upkeep', 'reference', 'village', 'places', 'places-trips', 'places-lists',
 ])
 
+// Lists is in GUEST_MODE_IDS deliberately (2026-09-22): "what's the wifi
+// password" / "what's the bathroom code" is exactly the kind of thing a
+// guest at a live gathering should be able to look up without the PIN —
+// the same reasoning Reference is already here for. This is coarser than
+// per-list: any list is guest-visible, not just the guest-appropriate ones,
+// matching the granularity Reference already accepts (house notes and all).
 export const GUEST_MODE_IDS: ReadonlySet<string> = new Set([
-  'reference', 'village', 'places',
+  'reference', 'village', 'places', 'places-lists',
 ])
 
 /** Is `sectionId` reachable on a shared device right now? */
