@@ -69,14 +69,21 @@ export default function HouseholdCustomLists({ spaceId }: { spaceId: string | nu
   )
 }
 
-function ListCard({ list, places, onAddItem, onUpdateItem, onToggleItem, onRemoveItem, onRemoveList }: {
+/** Exported so a specific named list (e.g. "Dream hotels" under Trips,
+ *  "Bathroom codes" under Places → Info — see NamedList.tsx) can be embedded
+ *  standalone without pulling in the generic multi-list browser above it. */
+export function ListCard({ list, places, onAddItem, onUpdateItem, onToggleItem, onRemoveItem, onRemoveList, defaultOpen = false }: {
   list: HouseholdList
   places: Place[]
   onAddItem: (label: string, extra?: { note?: string; place_id?: string | null; remind_at?: string | null }) => Promise<void>
   onUpdateItem: (itemId: string, patch: Record<string, unknown>) => Promise<void>
   onToggleItem: (itemId: string) => void
   onRemoveItem: (itemId: string) => void
-  onRemoveList: () => void
+  /** Absent (not just a no-op) hides the delete control — a pinned,
+   *  always-expected list like "Bathroom codes" shouldn't invite deleting
+   *  the whole list from a contextual embed, only editing its items. */
+  onRemoveList?: () => void
+  defaultOpen?: boolean
 }) {
   const [label, setLabel] = useState('')
   const [note, setNote] = useState('')
@@ -84,11 +91,13 @@ function ListCard({ list, places, onAddItem, onUpdateItem, onToggleItem, onRemov
   const [remindOn, setRemindOn] = useState('')
 
   return (
-    <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
+    <details open={defaultOpen} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
       <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
         <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1 }}>{list.name}</span>
         <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{list.items.length}</span>
-        <IconButton label={`Delete list ${list.name}`} onClick={onRemoveList} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
+        {onRemoveList && (
+          <IconButton label={`Delete list ${list.name}`} onClick={onRemoveList} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
+        )}
       </summary>
 
       <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

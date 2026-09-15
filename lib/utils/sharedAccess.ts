@@ -12,17 +12,18 @@
 // 'live'`, computed in DashboardClient.
 
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
-  'home', 'upkeep', 'reference', 'village', 'places', 'places-trips', 'places-lists',
+  'home', 'upkeep', 'reference', 'village', 'places', 'places-trips', 'places-info',
 ])
 
-// Lists is in GUEST_MODE_IDS deliberately (2026-09-22): "what's the wifi
-// password" / "what's the bathroom code" is exactly the kind of thing a
-// guest at a live gathering should be able to look up without the PIN —
-// the same reasoning Reference is already here for. This is coarser than
-// per-list: any list is guest-visible, not just the guest-appropriate ones,
-// matching the granularity Reference already accepts (house notes and all).
+// Info is in GUEST_MODE_IDS deliberately (2026-09-22, renamed from the old
+// Lists tab 2026-09-23): "what's the bathroom code" / "what's nearby" is
+// exactly the kind of thing a guest at a live gathering should be able to
+// look up without the PIN — the same reasoning Reference is already here
+// for. Dream hotels moved out to Trips (planning, not a guest lookup), so
+// this tab is now curated tightly enough that guest visibility is an even
+// easier call than it was for the old generic Lists tab.
 export const GUEST_MODE_IDS: ReadonlySet<string> = new Set([
-  'reference', 'village', 'places', 'places-lists',
+  'reference', 'village', 'places', 'places-info',
 ])
 
 /** Is `sectionId` reachable on a shared device right now? */

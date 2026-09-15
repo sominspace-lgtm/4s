@@ -17,7 +17,8 @@ import TripDetail from '@/components/places/TripDetail'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { useGuestSuggestions } from '@/lib/hooks/useGuestSuggestions'
 import type { LngLatBounds } from '@/lib/utils/geo'
-import HouseholdCustomLists from '@/components/household/HouseholdCustomLists'
+import NamedList from '@/components/household/NamedList'
+import NearbyPlaces from '@/components/places/NearbyPlaces'
 
 // Dynamic, ssr:false: maplibre-gl touches `window` at module scope and would
 // hard-fail server rendering, and this keeps its ~230KB gzipped out of the
@@ -34,7 +35,7 @@ function MapSkeleton() {
 }
 
 // 'pins' is a legacy alias kept so an old deep link still resolves.
-type ForcedTab = 'map' | 'pins' | 'trips' | 'lists'
+type ForcedTab = 'map' | 'pins' | 'trips' | 'info'
 
 // Three starter suggestions for a brand-new pin collection (2026-09-09).
 const STARTERS: { kind: string; label: string }[] = [
@@ -69,7 +70,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
 
   const { filters: savedFilters, addFilter, removeFilter } = usePlaceFilters(spaceId)
 
-  const tab: 'map' | 'trips' | 'lists' = forcedTab === 'trips' ? 'trips' : forcedTab === 'lists' ? 'lists' : 'map'
+  const tab: 'map' | 'trips' | 'info' = forcedTab === 'trips' ? 'trips' : forcedTab === 'info' ? 'info' : 'map'
   const [filters, setFilters] = useState<PinFilterState>(DEFAULT_PIN_FILTERS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -262,15 +263,24 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
         <TripsPanel spaceId={spaceId} hasSpace={spaces.length > 0} onSelect={t => setSelectedTripId(t.id)} sharedOnly={sharedOnly} />
       )}
 
-      {/* Lists, reachable from Places too (2026-09-22) — same data as
-          Household → Lists (useLists/household_lists), not a second set.
-          "Dream hotels" and "Bathroom codes" are inherently place-shaped —
-          each item optionally links to a pin — so browsing them from here,
-          alongside the pins themselves, is at least as natural as browsing
-          from Household. See HouseholdCustomLists's own header comment. */}
-      {tab === 'lists' && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <HouseholdCustomLists spaceId={spaceId} />
+      {/* Info (2026-09-23, replaces the generic Lists tab here) — the two
+          things you actually reach for while out and about, not a browser
+          for every list: the household's Bathroom codes (same
+          household_lists row Household → Lists would find, via NamedList so
+          there's no second "new list" chrome to manage from here) and live
+          distance to your saved pins. Dream hotels moved OUT of here and
+          under Trips (see TripsPanel) — it's trip planning, not a
+          look-something-up reference. */}
+      {tab === 'info' && (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <div className="t-label" style={{ marginBottom: '0.5rem' }}>Bathroom codes</div>
+            <NamedList spaceId={spaceId} name="Bathroom codes" startLabel="+ Start a Bathroom codes list" />
+          </div>
+          <div>
+            <div className="t-label" style={{ marginBottom: '0.5rem' }}>What&rsquo;s nearby</div>
+            <NearbyPlaces />
+          </div>
         </section>
       )}
 

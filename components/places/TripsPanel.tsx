@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTrips, type Trip, type TripStatus } from '@/lib/hooks/useTrips'
+import NamedList from '@/components/household/NamedList'
 
 const STATUS_LABEL: Record<TripStatus, string> = {
   dreaming: 'Dreaming', planning: 'Planning', booked: 'Booked',
@@ -122,6 +123,16 @@ export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = f
           </div>
         </div>
       )}
+
+      {/* Dream hotels, moved here from Places → Info (2026-09-23): a hotel
+          you'd love to stay at is trip planning, not a look-something-up
+          reference the way Bathroom codes is — it belongs next to Ideas and
+          Trips, not next to "what's nearby". Same household_lists row either
+          way, via NamedList. */}
+      <div>
+        <div style={sectionLabelStyle}>Dream hotels</div>
+        <NamedList spaceId={spaceId} name="Dream hotels" startLabel="+ Start a Dream hotels list" />
+      </div>
     </div>
   )
 }
