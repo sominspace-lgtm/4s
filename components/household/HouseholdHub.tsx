@@ -793,9 +793,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           automation integration. */}
       {tab === 'smarthome' && <HouseholdSmartHome spaceId={spaceId} />}
 
-      {/* Reference tab order (2026-09-08): Notes, Date Ideas, Watchlist,
-          Understanding (folded), Check-in. Chores / routines / care moved
-          to their own Upkeep tab; Calendar and House rules are Home blocks. */}
+      {/* Reference tab order (2026-09-08, Watchlist renamed to Lists
+          2026-09-22): Notes, Date Ideas, Lists, Understanding (folded),
+          Check-in. Chores / routines / care moved to their own Upkeep tab;
+          Calendar and House rules are Home blocks. */}
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space. */}

@@ -7,6 +7,21 @@ export interface ListItem {
   id: string
   label: string
   done: boolean
+  /** Optional note alongside the label — a bathroom code, a booking
+   *  reference, anything that doesn't belong in the title itself
+   *  (2026-09-22). */
+  note?: string
+  /** Optional link to a Places pin (2026-09-22) — e.g. a "Dream hotels"
+   *  item pointing at the real hotel once you've pinned it, or a
+   *  "Bathroom codes" item pointing at which place the code is for.
+   *  Nullable/absent on purpose: a list item doesn't have to be a place. */
+  place_id?: string | null
+  /** Optional reminder (2026-09-22) — same "due date" idea Tasks already
+   *  has, generalized to any list item. Checked by the daily push cron;
+   *  see app/api/cron/daily/route.ts's 'listReminder' kind. Cleared once
+   *  the reminder fires so it doesn't repeat, and cleared on toggling done.
+   */
+  remind_at?: string | null
 }
 
 export interface HouseholdList {
@@ -56,10 +71,20 @@ export function useLists(spaceId: string | null) {
     setLists(prev => prev.filter(l => l.id !== id))
   }
 
-  async function addItem(listId: string, label: string) {
+  async function addItem(listId: string, label: string, extra?: Pick<ListItem, 'note' | 'place_id' | 'remind_at'>) {
     const list = lists.find(l => l.id === listId)
     if (!list) return
-    const items = [...list.items, { id: newItemId(), label, done: false }]
+    const items = [...list.items, { id: newItemId(), label, done: false, ...extra }]
+    const { error } = await supabase.from('household_lists').update({ items }).eq('id', listId)
+    if (!error) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
+  }
+
+  /** Patches one item in place — used for linking a place, adding a note, or
+   *  setting/clearing a reminder without retyping the whole item. */
+  async function updateItem(listId: string, itemId: string, patch: Partial<Omit<ListItem, 'id'>>) {
+    const list = lists.find(l => l.id === listId)
+    if (!list) return
+    const items = list.items.map(i => (i.id === itemId ? { ...i, ...patch } : i))
     const { error } = await supabase.from('household_lists').update({ items }).eq('id', listId)
     if (!error) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
   }
@@ -67,7 +92,10 @@ export function useLists(spaceId: string | null) {
   async function toggleItem(listId: string, itemId: string) {
     const list = lists.find(l => l.id === listId)
     if (!list) return
-    const items = list.items.map(i => (i.id === itemId ? { ...i, done: !i.done } : i))
+    // Done also clears any pending reminder — a finished item has nothing
+    // left to be reminded about, so a stale remind_at wouldn't do anything
+    // except leave a future push about something already handled.
+    const items = list.items.map(i => (i.id === itemId ? { ...i, done: !i.done, remind_at: i.done ? i.remind_at : null } : i))
     const { error } = await supabase.from('household_lists').update({ items }).eq('id', listId)
     if (!error) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
   }
@@ -80,5 +108,5 @@ export function useLists(spaceId: string | null) {
     if (!error) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
   }
 
-  return { lists, loading, addList, removeList, addItem, toggleItem, removeItem }
+  return { lists, loading, addList, removeList, addItem, updateItem, toggleItem, removeItem }
 }

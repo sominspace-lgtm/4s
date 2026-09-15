@@ -19,6 +19,9 @@ import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
 import { useGathering } from '@/lib/hooks/useGathering'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { useMail } from '@/lib/hooks/useMail'
+import MailPanel from '@/components/ui/MailPanel'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
@@ -254,6 +257,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [mailOpen, setMailOpen] = useState(false)
+  // Just for the header's unread badge — MailPanel resolves its own space
+  // and messages independently (same "called in more than one place, synced
+  // by a shared event" pattern as useCaptures); 4s:mail-changed keeps this
+  // count in sync with whatever the panel does.
+  const { spaces: mailSpaces } = useSharedSpaces(userId)
+  const { unread: mailUnreadList } = useMail(mailSpaces[0]?.id ?? null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
   // Village's Archive district needs to open this same panel from deep
@@ -580,6 +590,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           onArchive={() => setArchiveOpen(true)}
           onConnect={() => setConnectOpen(true)}
           onNotifications={() => setNotificationsOpen(true)}
+          onMail={() => setMailOpen(true)}
+          mailUnread={mailUnreadList.length}
         />
       )}
 
@@ -592,6 +604,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
+      <MailPanel open={mailOpen} userId={userId} onClose={() => setMailOpen(false)} />
       <NotificationsPanel open={notificationsOpen} prefs={notifyPrefs} onChange={changeNotifyPrefs} onClose={() => setNotificationsOpen(false)} />
 
       {/* Bottom padding bumped 4rem→6rem (2026-08-25) — HomeBar is now the

@@ -33,6 +33,11 @@ interface HeaderProps {
   onArchive: () => void
   onConnect: () => void
   onNotifications: () => void
+  onMail: () => void
+  /** Unread mail count — shown as a small badge next to the menu item.
+   *  0/undefined means no badge, same "absent, not zero" convention as
+   *  Needs Attention on the Brief. */
+  mailUnread?: number
 }
 
 // One quiet overflow menu instead of a row of icon-only buttons — every
@@ -91,7 +96,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -275,6 +280,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           { icon: '←', label: 'Sign out', onClick: signOut },
         ] : [
           { icon: '⇄', label: 'Connect', onClick: onConnect },
+          { icon: '✉', label: mailUnread ? `Mail (${mailUnread})` : 'Mail', onClick: onMail },
           ...(push.status === 'unsupported' ? [] : [{
             icon: push.status === 'subscribed' ? '◉' : '◌',
             label: 'Notifications', onClick: onNotifications,

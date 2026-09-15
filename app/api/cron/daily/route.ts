@@ -22,7 +22,7 @@ async function safePush(admin: SupabaseClient, userId: string, payload: PushPayl
 // Still the product's promise: named, never counted; nothing alarmist;
 // nothing that follows you around out of guilt.
 
-type Kind = 'overdueTasks' | 'subRenewal'
+type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder'
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -83,6 +83,36 @@ export async function GET(request: Request) {
         const key = `sub:${s.id}:${rd}`
         if (days >= 0 && days <= 1 && sent[key] === undefined) {
           await safePush(admin, userId, { title: '4S', body: `${s.name} renews ${days === 0 ? 'today' : 'tomorrow'}.`, url: '/dashboard' })
+          fresh[key] = today
+          notified++
+        }
+      }
+    }
+
+    // 3. List item reminders — any household_lists item with a remind_at
+    // that's arrived (2026-09-22). Generalizes the same "due date" idea
+    // Tasks/subscriptions already get, to the free-form Lists feature (the
+    // point of the whole notify generalization this was added alongside —
+    // see components/household/HouseholdCustomLists.tsx).
+    if (on('listReminder')) {
+      // household_lists can be personal (space_id null) or shared; this
+      // cron runs on the admin client (no RLS), so space membership is
+      // checked by hand rather than relying on the table's own policy.
+      const [{ data: ownedSpaces }, { data: memberRows }] = await Promise.all([
+        admin.from('shared_spaces').select('id').eq('owner_id', userId),
+        admin.from('shared_space_members').select('space_id').eq('member_id', userId).eq('status', 'accepted'),
+      ])
+      const spaceIds = [...new Set([...(ownedSpaces ?? []).map(s => s.id as string), ...(memberRows ?? []).map(m => m.space_id as string)])]
+      const { data: lists } = await admin.from('household_lists').select('id, name, items')
+        .or(`user_id.eq.${userId}${spaceIds.length ? `,space_id.in.(${spaceIds.join(',')})` : ''}`)
+      for (const list of lists ?? []) {
+        const items = (list.items as { id: string; label: string; done?: boolean; remind_at?: string | null }[]) ?? []
+        for (const item of items) {
+          if (item.done || !item.remind_at) continue
+          if (Date.parse(item.remind_at) > now.getTime()) continue // not due yet
+          const key = `listitem:${item.id}`
+          if (sent[key] !== undefined) continue
+          await safePush(admin, userId, { title: list.name as string, body: item.label, url: '/dashboard' })
           fresh[key] = today
           notified++
         }

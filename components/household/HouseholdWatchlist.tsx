@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useWatchlist, type WatchlistDomain, type WatchlistStatus, type WatchlistItem } from '@/lib/hooks/useWatchlist'
 import Icon from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
+import HouseholdCustomLists from './HouseholdCustomLists'
 
 const inputStyle: React.CSSProperties = {
   background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
@@ -87,14 +88,19 @@ function DomainBacklog({ domain, label, verb, spaceId }: {
   )
 }
 
+// Renamed from "Watchlist" to "Lists" (user request, 2026-09-22): the games
+// and shows backlogs below are now two built-in lists inside a section that
+// also holds however many custom ones you make — "Lists" describes the
+// whole section, "Watchlist" only ever described part of it.
 export default function HouseholdWatchlist({ spaceId }: { spaceId: string | null }) {
   return (
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-      <details>
-        <summary className="t-card" style={{ cursor: 'pointer', listStyle: 'revert' }}>Watchlist</summary>
+      <details open>
+        <summary className="t-card" style={{ cursor: 'pointer', listStyle: 'revert' }}>Lists</summary>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', marginTop: '0.7rem' }}>
           <DomainBacklog domain="game" label={<><Icon name="gamepad" size={12} /> Game list</>} verb="play" spaceId={spaceId} />
           <DomainBacklog domain="media" label={<><Icon name="tv" size={12} /> Watch list</>} verb="watch" spaceId={spaceId} />
+          <HouseholdCustomLists spaceId={spaceId} />
         </div>
       </details>
     </section>
