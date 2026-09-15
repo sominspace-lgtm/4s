@@ -55,15 +55,19 @@ export function useLists(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addList(name: string): Promise<string | null> {
+  /** Returns the new list's id (so a caller can immediately addItem into it —
+   *  see PlaceBathroomCode.tsx, which needs to create-then-populate in one
+   *  action) alongside an error message. Existing callers that only cared
+   *  about success/failure still work: they just ignore `.id`. */
+  async function addList(name: string): Promise<{ id: string | null; error: string | null }> {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return 'Not signed in'
+    if (!user) return { id: null, error: 'Not signed in' }
     const { data, error } = await supabase.from('household_lists')
       .insert({ user_id: user.id, space_id: spaceId, name, items: [] })
       .select().single()
-    if (error) return error.message
+    if (error) return { id: null, error: error.message }
     setLists(prev => [...prev, data as HouseholdList])
-    return null
+    return { id: (data as HouseholdList).id, error: null }
   }
 
   async function removeList(id: string) {
@@ -73,10 +77,19 @@ export function useLists(spaceId: string | null) {
 
   async function addItem(listId: string, label: string, extra?: Pick<ListItem, 'note' | 'place_id' | 'remind_at'>) {
     const list = lists.find(l => l.id === listId)
-    if (!list) return
-    const items = [...list.items, { id: newItemId(), label, done: false, ...extra }]
+    // No early return when the list isn't in local state yet — it used to
+    // silently no-op here, which broke the exact case of "create a list then
+    // immediately add an item to it" (PlaceBathroomCode.tsx): addList's
+    // setLists schedules a re-render, it doesn't update THIS closure's
+    // `lists` binding, so the very next addItem call in the same async
+    // function always missed. A brand-new list's items are always `[]`, so
+    // appending is still correct without the local copy; load() afterward
+    // brings the row into state properly either way.
+    const items = [...(list?.items ?? []), { id: newItemId(), label, done: false, ...extra }]
     const { error } = await supabase.from('household_lists').update({ items }).eq('id', listId)
-    if (!error) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
+    if (error) return
+    if (list) setLists(prev => prev.map(l => (l.id === listId ? { ...l, items } : l)))
+    else await load()
   }
 
   /** Patches one item in place — used for linking a place, adding a note, or

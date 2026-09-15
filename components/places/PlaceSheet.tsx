@@ -12,6 +12,7 @@ import type { Trip } from '@/lib/hooks/useTrips'
 import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
+import PlaceBathroomCode from '@/components/places/PlaceBathroomCode'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
   idea: 'Want to go', good: 'Good, go again', hmm: 'No strong opinion', bad: 'Not again', archived: 'Archived',
@@ -359,6 +360,12 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
             </button>
           )}
         </div>
+
+        {/* Bathroom code — the other direction of Places → Info's Bathroom
+            codes list (2026-09-23): save or check one right on the pin it's
+            for, not on a separate list screen. Same household_lists row
+            either way; see PlaceBathroomCode.tsx. */}
+        <PlaceBathroomCode spaceId={spaceId ?? null} placeId={place.id} placeName={place.name} />
 
         <div>
           <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.4rem' }}>
