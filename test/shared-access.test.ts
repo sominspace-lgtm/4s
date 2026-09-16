@@ -4,7 +4,7 @@ import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 // The wall (a "Shared" login) must clamp down the moment a gathering goes
 // live, and open back up when it ends.
 describe('sharedSectionVisible', () => {
-  const GUEST_SAFE = ['reference', 'village', 'places', 'places-info']
+  const GUEST_SAFE = ['reference', 'village', 'places', 'places-nearby']
   const PLAIN_SHARED_EXTRA = ['home', 'upkeep', 'places-trips']
   const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'smarthome']
 

@@ -34,7 +34,7 @@ const MEMBER_LABELS: Record<string, string> = {
   brief: 'Today',
   tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People',
   village: 'Village', home: 'Home', upkeep: 'Upkeep', reference: 'Reference',
-  places: 'Places', 'places-trips': 'Trips', 'places-info': 'Info',
+  places: 'Places', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
   smarthome: 'Controls',
 }
 
