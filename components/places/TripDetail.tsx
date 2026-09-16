@@ -137,9 +137,8 @@ function NewItineraryRow({ onAdd }: {
 
 type BundleBudget = import('@/lib/hooks/useTripBundle').BudgetItem
 
-function BudgetTableRow({ item, currency, onUpdate, onRemove }: {
+function BudgetTableRow({ item, onUpdate, onRemove }: {
   item: BundleBudget
-  currency: string
   onUpdate: (id: string, fields: Partial<Pick<BundleBudget, 'label' | 'category' | 'amount' | 'paid'>>) => void
   onRemove: (id: string) => void
 }) {
@@ -338,7 +337,7 @@ export default function TripDetail({ trip, open, onClose }: {
               </thead>
               <tbody>
                 {bundle.budget.map(b => (
-                  <BudgetTableRow key={b.id} item={b} currency={trip.currency} onUpdate={bundle.updateBudgetItem} onRemove={bundle.removeBudgetItem} />
+                  <BudgetTableRow key={b.id} item={b} onUpdate={bundle.updateBudgetItem} onRemove={bundle.removeBudgetItem} />
                 ))}
                 <NewBudgetRow onAdd={bundle.addBudgetItem} currency={trip.currency} />
                 <tr>
