@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import PlaceKindFields from '@/components/places/PlaceKindFields'
 import ProvenanceBadge from '@/components/places/ProvenanceBadge'
@@ -73,6 +73,31 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
 
   // Reset the per-pin trip-picker state when the sheet swaps to another pin.
   useEffect(() => { setTripPicking(false); setAddedToTrip(null) }, [place?.id])
+
+  // Self-healing address (2026-09-24): a pin with coordinates but no saved
+  // address used to just show the raw "37.7749, -122.4194" pair forever —
+  // nothing ever resolved it into something a person would actually read.
+  // The first time its sheet opens, reverse-geocode once and persist the
+  // result onto the place row, so every other place this pin shows up
+  // (lists, the map panel) benefits too, not just this sheet. `resolvedRef`
+  // stops a second attempt for the same pin within one mount even if the
+  // effect re-runs before updatePlace's result lands.
+  const resolvedRef = useRef<string | null>(null)
+  const [addressLookupFailed, setAddressLookupFailed] = useState(false)
+  useEffect(() => {
+    if (!place || place.address || place.city) return
+    if (place.lat == null || place.lng == null) return
+    if (resolvedRef.current === place.id) return
+    resolvedRef.current = place.id
+    setAddressLookupFailed(false)
+    fetch(`/api/places/reverse-geocode?lat=${place.lat}&lng=${place.lng}`)
+      .then(r => r.json())
+      .then(geo => {
+        if (geo.found) updatePlace(place.id, { address: geo.address, city: geo.city, country: geo.country })
+        else setAddressLookupFailed(true)
+      })
+      .catch(() => setAddressLookupFailed(true))
+  }, [place?.id, place?.lat, place?.lng, place?.address, place?.city])
 
   if (!place) return <PlacesSheet open={open} onClose={onClose} title="Place">{null}</PlacesSheet>
 
@@ -411,10 +436,14 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
                 opacity: place.address || place.city ? 0.9 : 0.6, fontFamily: 'var(--font-body)', lineHeight: 1.6,
               }}
             >
+              {/* Never raw coordinates — this either shows a real address,
+                  says so while the reverse-geocode above is in flight, or
+                  (only once that's genuinely failed/there are no
+                  coordinates at all) asks for one by hand. */}
               {place.address || place.city
                 ? [place.address, place.city, place.country].filter(Boolean).join(', ')
-                : place.lat != null
-                  ? `${place.lat.toFixed(4)}, ${place.lng?.toFixed(4)}`
+                : place.lat != null && !addressLookupFailed
+                  ? 'Looking up address…'
                   : 'add an address'}
               <ProvenanceBadge source={place.provenance?.address} verifiedAt={place.verified_at} />
             </button>

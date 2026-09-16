@@ -66,13 +66,23 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
   }, [withLocation, origin])
 
   // "Mark a pin here" — the quick path, not the full Add Place form
-  // (AddPlacePanel geocodes a typed address; this uses the coordinates we
-  // already have from locate() above, so it's one field, not several).
+  // (AddPlacePanel geocodes a TYPED address; this already has real
+  // coordinates from locate() above, so it reverse-geocodes instead — one
+  // field to fill in, but the saved pin still gets a real address, never a
+  // bare lat/lng pair standing in for one). A failed/slow lookup still saves
+  // the pin — coordinates are always there for PlaceSheet to resolve later
+  // (see its own self-healing effect), so a flaky geocoder is never the
+  // reason "drop pin" doesn't work.
   async function markHere() {
     if (!origin || !markingName.trim()) return
     setMarking(true)
+    const geo = await fetch(`/api/places/reverse-geocode?lat=${origin.lat}&lng=${origin.lng}`)
+      .then(r => r.json()).catch(() => ({ found: false }))
     const { error: e } = await addPlace(
-      { name: markingName.trim(), lat: origin.lat, lng: origin.lng, shared: markShared },
+      {
+        name: markingName.trim(), lat: origin.lat, lng: origin.lng, shared: markShared,
+        ...(geo.found ? { address: geo.address, city: geo.city, country: geo.country } : {}),
+      },
       spaceId,
     )
     setMarking(false)
