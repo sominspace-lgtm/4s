@@ -1869,12 +1869,12 @@ export default function VillageScene({
           then; the school thins and stills at night. */}
       {!arranging && (() => { const p = decorPos('pond'); return (
         <>
-          <PondLife cx={p.x} cy={p.y - 1} timeOfDay={v.timeOfDay} frozen={isFrozen} />
+          <PondLife cx={p.x} cy={p.y + 2} timeOfDay={v.timeOfDay} frozen={isFrozen} />
           {crumbs.map(c => (
-            <circle key={c.id} cx={p.x + c.dx} cy={p.y - 2} r={1} fill="var(--gold)" className="village-crumb" pointerEvents="none" />
+            <circle key={c.id} cx={p.x + c.dx} cy={p.y + 2} r={1} fill="var(--gold)" className="village-crumb" pointerEvents="none" />
           ))}
           {koiFed && (
-            <ellipse cx={p.x} cy={p.y - 2} rx={10} ry={4} fill="none"
+            <ellipse cx={p.x} cy={p.y + 2} rx={10} ry={4} fill="none"
               stroke="var(--slate)" strokeWidth={0.5} className="village-ripple" pointerEvents="none" />
           )}
         </>
@@ -1887,7 +1887,7 @@ export default function VillageScene({
         const p = decorPos('pond')
         return (
           <g pointerEvents="none">
-            <ellipse cx={p.x} cy={p.y - 2} rx={dark ? 28 : 36} ry={dark ? 12 : 16}
+            <ellipse cx={p.x} cy={p.y + 1} rx={dark ? 28 : 36} ry={dark ? 12 : 16}
               fill="var(--amber)" opacity={Math.min(dark ? 0.44 : 0.32, allSparks.length * (dark ? 0.026 : 0.018))}
               filter="url(#vglow)" />
             {allSparks.slice(-80).map((s, i) => {
@@ -1895,7 +1895,7 @@ export default function VillageScene({
               const dx = (hashPos(s.id + 'fx') - 0.5) * (dark ? 36 : 62)
               const dy = (hashPos(s.id + 'fy') - 0.5) * (dark ? 14 : 26)
               return (
-                <circle key={s.id} cx={p.x + dx} cy={p.y - 4 + dy} r={1.3}
+                <circle key={s.id} cx={p.x + dx} cy={p.y - 1 + dy} r={1.3}
                   fill="var(--amber)" filter="url(#vglow)"
                   className={`village-firefly village-firefly-${(i % 2) + 1}`}
                   style={{ animationDelay: `${(hashPos(s.id) * 6).toFixed(2)}s` }} />

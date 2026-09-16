@@ -344,11 +344,16 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
 }) {
   const night = timeOfDay === 'night'
   const brisk = timeOfDay === 'dawn' || timeOfDay === 'dusk'
-  const koiN = night ? 4 : brisk ? 8 : 6
-  const duckN = night ? 0 : brisk ? 2 : 1
+  // Trimmed back (2026-09-15, "too many fishes, buggy") — a pond this size
+  // reads as crowded/jittery past 3-4 fish, especially with three source
+  // frames repeating.
+  const koiN = night ? 1 : brisk ? 4 : 3
+  const duckN = night ? 0 : brisk ? 1 : 1
   const koiFrames = [0, 1, 2].map(i => ({ src: `/village-assets/koi-${i}.png`, aspect: 176 / 258 }))
-  // The water's rough extent around (cx, cy) at the current pond size.
-  const RW = 34, RH = 13
+  // The water's real extent around (cx, cy), measured from pond-base.png's
+  // actual blue-pixel bounding box (2026-09-15) — margin pulled in from the
+  // measured 43×15 so nothing swims onto the grassy bank.
+  const RW = 36, RH = 12
   // Sky glint on the water (2026-09-09) — a soft mirror of what's overhead,
   // its colour and height shifting with the day. Very low opacity so it
   // reads as sheen, not a second light source.
@@ -361,10 +366,19 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
     <g pointerEvents="none">
       <ellipse cx={cx - 6} cy={cy + glint.cyOff} rx={glint.rx} ry={glint.ry}
         fill={glint.fill} opacity={glint.op} />
+      {/* Slot placement, not raw hashPos (2026-09-15, "too many fishes,
+          buggy") — hashPos is a cheap rolling hash, and seed strings that
+          differ by one digit in the middle ("koi0x" vs "koi1x") hash to
+          nearly the same value, so the whole school clustered on top of
+          itself instead of spreading. Giving each fish its own angular
+          slot around the pond guarantees separation regardless of hash
+          quality; hashPos only adds jitter within a slot, plus rotation/
+          frame variety where a collision costs nothing. */}
       {/* lily pads on the water, toward the near edge */}
-      {[0, 1, 2].map(i => {
-        const lx = cx + (hashPos('lily' + i + 'x') - 0.5) * RW * 1.4
-        const ly = cy + RH * 0.4 + (hashPos('lily' + i + 'y') - 0.4) * RH
+      {[0, 1].map(i => {
+        const angle = (i + 0.5) / 2 * Math.PI + Math.PI * 0.5
+        const lx = cx + Math.cos(angle) * RW * 0.7
+        const ly = cy + RH * 0.35 + Math.sin(angle) * RH * 0.3
         return (
           <g key={'lp' + i} transform={`translate(${lx} ${ly})`}>
             <ellipse cx={0} cy={0} rx={3.4} ry={2} fill="var(--sage, var(--slate))" opacity={0.55} />
@@ -373,11 +387,25 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
         )
       })}
       {Array.from({ length: koiN }).map((_, i) => {
-        const dx = (hashPos('koi' + i + 'x') - 0.5) * 50
-        const dy = (hashPos('koi' + i + 'y') - 0.5) * 16
-        // Gentle spread of headings, half of them turned to face the other
-        // way — a full random rotation just reads as a diagonal smear.
-        const angle = Math.round((hashPos('koi' + i + 'r') - 0.5) * 80 + (hashPos('koi' + i + 'f') > 0.5 ? 180 : 0))
+        // Even angular slots around the water, each with a little jitter and
+        // its own radius fraction so the school reads as swimming loosely,
+        // not lined up on a ring — but two fish can never land on the same
+        // spot the way pure hashPos did.
+        const slot = (i + 0.5) / koiN
+        const jitter = (hashPos('koij' + i) - 0.5) * (Math.PI / koiN) * 1.1
+        const angle2 = slot * Math.PI * 2 + jitter
+        const radFrac = 0.35 + hashPos('koir' + i) * 0.5
+        const dx = Math.cos(angle2) * RW * radFrac
+        const dy = Math.sin(angle2) * RH * radFrac
+        // A narrow heading spread, half turned to face the other way — the
+        // sprite is pixel art at a tiny size, and any real rotation angle
+        // (not just 0/180) scales into visible jagged edges under
+        // `imageRendering: pixelated`. Kept small enough to read as "facing
+        // slightly differently," not enough to alias.
+        const angle = Math.round((hashPos('koia' + i) - 0.5) * 24 + (hashPos('koif' + i) > 0.5 ? 180 : 0))
+        // A little size variety (11-14 units tall) so the school doesn't
+        // read as one fish stamped three times.
+        const h = 11 + hashPos('koih' + i) * 3
         const drift = `village-koi-${i % 2}${night ? ' village-koi-slow' : ''}`
         return (
           // outer: place + face; middle: the slow drift wiggle; inner: the
@@ -388,15 +416,16 @@ export function PondLife({ cx, cy, timeOfDay = 'day', frozen = false }: {
               className={night ? undefined : drift} />
             <g transform={`rotate(${angle})`}>
               <g className={night ? undefined : drift}>
-                <SpriteCycle frames={koiFrames} x={0} y={6} height={13} periodSec={night ? 2.4 : 1.3} opacity={0.92} />
+                <SpriteCycle frames={koiFrames} x={0} y={h / 2} height={h} periodSec={night ? 2.4 : 1.1 + hashPos('koip' + i) * 0.5} opacity={0.92} />
               </g>
             </g>
           </g>
         )
       })}
       {Array.from({ length: duckN }).map((_, i) => {
-        const dx = (hashPos('duck' + i + 'x') - 0.5) * 24
-        const dy = (hashPos('duck' + i + 'y') - 0.5) * 7
+        const dAngle = (i + 0.5) / Math.max(1, duckN) * Math.PI * 2 + Math.PI
+        const dx = Math.cos(dAngle) * RW * 0.5
+        const dy = Math.sin(dAngle) * RH * 0.5
         return (
           <g key={i} transform={`translate(${cx + dx} ${cy + dy})`} className={`village-koi-${(i + 1) % 2}`}>
             <ellipse cx={0} cy={0} rx={2.8} ry={1.7} fill="var(--surface)" opacity={0.85} />
