@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import { useTrips, type Trip, type TripStatus } from '@/lib/hooks/useTrips'
 import { useTripBundle, type ItineraryKind, type BudgetCategory } from '@/lib/hooks/useTripBundle'
@@ -20,62 +20,210 @@ const input: React.CSSProperties = {
   padding: '0.45rem 0.65rem', outline: 'none',
 }
 
-// An itinerary item, click-to-schedule (2026-08-25 fix) — before this, an
-// item could only ever be marked done or removed after creation; there was
-// no way to give an "Unscheduled" item (e.g. a whole day's worth of ideas
-// moved in from Date Ideas) an actual date without deleting and re-adding
-// it. That's the real blocker to "easy to plan" here — most items arrive
-// unscheduled and planning IS assigning them to days.
-function ItineraryItemRow({ item, onUpdate, onRemove }: {
-  item: import('@/lib/hooks/useTripBundle').ItineraryItem
-  onUpdate: (id: string, fields: Partial<Pick<import('@/lib/hooks/useTripBundle').ItineraryItem, 'title' | 'item_date' | 'time_label' | 'kind' | 'notes' | 'done'>>) => void
+// Itinerary and Budget as real grids (2026-09-24, replaces click-to-expand
+// rows) — every cell is a live input, not a summary you tap to reveal a
+// popout form. Type a date, tab to time, tab to what's happening: closer to
+// actually planning in a spreadsheet than a checklist with an edit mode.
+// Sort order is the query itself (item_date, then sort_order — see
+// useTripBundle.ts's load()), so the grid is always chronological without a
+// separate day-grouping pass; the date column carries that instead, exactly
+// like a real spreadsheet's repeated column values do.
+const cell: React.CSSProperties = {
+  padding: '0.3rem 0.4rem', borderBottom: '1px solid var(--faint)', verticalAlign: 'middle',
+}
+const cellInput: React.CSSProperties = {
+  width: '100%', background: 'transparent', border: 'none', outline: 'none', boxSizing: 'border-box',
+  color: 'inherit', fontFamily: 'var(--font-body)', fontSize: '0.76rem', padding: '0.2rem',
+  borderRadius: '5px',
+}
+const headCell: React.CSSProperties = {
+  padding: '0.25rem 0.4rem', fontSize: '0.62rem', letterSpacing: '0.05em', textTransform: 'uppercase',
+  color: 'var(--muted)', opacity: 0.68, textAlign: 'left', borderBottom: '1px solid var(--border)',
+}
+
+// A cell's input highlights on focus, same idea as a spreadsheet's active-
+// cell outline — the rest of the grid stays borderless and calm until you're
+// actually in a field.
+function useCellFocusStyle() {
+  return {
+    onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => { e.currentTarget.style.background = 'var(--hover-bg)' },
+    onBlurCapture: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => { e.currentTarget.style.background = 'transparent' },
+  }
+}
+
+type BundleItinerary = import('@/lib/hooks/useTripBundle').ItineraryItem
+
+function ItineraryTableRow({ item, onUpdate, onRemove }: {
+  item: BundleItinerary
+  onUpdate: (id: string, fields: Partial<Pick<BundleItinerary, 'title' | 'item_date' | 'time_label' | 'kind' | 'notes' | 'done'>>) => void
   onRemove: (id: string) => void
 }) {
-  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(item.title)
   const [date, setDate] = useState(item.item_date ?? '')
   const [time, setTime] = useState(item.time_label ?? '')
-  const [kind, setKind] = useState<ItineraryKind>(item.kind)
+  const focusStyle = useCellFocusStyle()
 
-  function save() {
-    onUpdate(item.id, { item_date: date || null, time_label: time.trim() || null, kind })
-    setEditing(false)
+  return (
+    <tr>
+      <td style={{ ...cell, width: '1.6rem', textAlign: 'center' }}>
+        <input type="checkbox" checked={item.done} onChange={() => onUpdate(item.id, { done: !item.done })}
+          style={{ cursor: 'pointer' }} />
+      </td>
+      <td style={{ ...cell, width: '8.5rem' }}>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          onBlur={() => { if (date !== (item.item_date ?? '')) onUpdate(item.id, { item_date: date || null }) }}
+          style={cellInput} {...focusStyle} />
+      </td>
+      <td style={{ ...cell, width: '5.5rem' }}>
+        <input value={time} onChange={e => setTime(e.target.value)} placeholder="—"
+          onBlur={() => { const v = time.trim(); if (v !== (item.time_label ?? '')) onUpdate(item.id, { time_label: v || null }) }}
+          style={cellInput} {...focusStyle} />
+      </td>
+      <td style={cell}>
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          onBlur={() => { const v = title.trim(); if (v && v !== item.title) onUpdate(item.id, { title: v }) }}
+          style={{ ...cellInput, textDecoration: item.done ? 'line-through' : 'none', opacity: item.done ? 0.55 : 1 }} {...focusStyle} />
+      </td>
+      <td style={{ ...cell, width: '6.5rem' }}>
+        <select value={item.kind} onChange={e => onUpdate(item.id, { kind: e.target.value as ItineraryKind })}
+          style={{ ...cellInput, cursor: 'pointer' }} {...focusStyle}>
+          {KIND_OPTIONS.map(k => <option key={k} value={k}>{KIND_ICON[k]} {k}</option>)}
+        </select>
+      </td>
+      <td style={{ ...cell, width: '1.8rem', textAlign: 'center' }}>
+        <IconButton label={`Remove ${item.title}`} onClick={() => onRemove(item.id)} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
+      </td>
+    </tr>
+  )
+}
+
+// The always-present blank row at the bottom — type a title and it saves,
+// leaving a fresh blank row ready for the next one, the same "just keep
+// typing" feel as adding a row at the bottom of a sheet.
+function NewItineraryRow({ onAdd }: {
+  onAdd: (fields: { title: string; item_date?: string | null; time_label?: string | null; kind?: ItineraryKind }) => void
+}) {
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [kind, setKind] = useState<ItineraryKind>('activity')
+  const focusStyle = useCellFocusStyle()
+
+  function commit() {
+    const v = title.trim()
+    if (!v) return
+    onAdd({ title: v, item_date: date || null, time_label: time.trim() || null, kind })
+    setTitle(''); setDate(''); setTime(''); setKind('activity')
   }
 
   return (
-    <div style={{ padding: '0.3rem 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <button onClick={() => onUpdate(item.id, { done: !item.done })} className="press" style={{
-          width: 14, height: 14, borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-          background: item.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-        }} />
-        <span aria-hidden style={{ fontSize: '0.7rem', opacity: 0.6, flexShrink: 0 }}>{KIND_ICON[item.kind]}</span>
-        <button onClick={() => setEditing(v => !v)} className="press" style={{
-          flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-          fontSize: '0.76rem', color: 'var(--text)', opacity: item.done ? 0.5 : 1, textDecoration: item.done ? 'line-through' : 'none',
-        }}>
-          {item.title}{item.time_label && <span style={{ color: 'var(--muted)' }}> · {item.time_label}</span>}
-          <span style={{ color: 'var(--gold)', opacity: 0.6, fontSize: '0.62rem', marginLeft: '0.4rem' }}>{editing ? '▾' : (item.item_date ? 'edit' : '▸ set date')}</span>
-        </button>
-        <IconButton label={`Remove ${item.title}`} onClick={() => onRemove(item.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
-      </div>
+    <tr>
+      <td style={cell} />
+      <td style={cell}><input type="date" value={date} onChange={e => setDate(e.target.value)} style={cellInput} {...focusStyle} /></td>
+      <td style={cell}><input value={time} onChange={e => setTime(e.target.value)} placeholder="Time" style={cellInput} {...focusStyle} /></td>
+      <td style={cell}>
+        <input value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commit() }} onBlur={commit}
+          placeholder="+ Add a row…" style={{ ...cellInput, color: title ? 'var(--text)' : 'var(--muted)' }} {...focusStyle} />
+      </td>
+      <td style={cell}>
+        <select value={kind} onChange={e => setKind(e.target.value as ItineraryKind)} style={{ ...cellInput, cursor: 'pointer' }} {...focusStyle}>
+          {KIND_OPTIONS.map(k => <option key={k} value={k}>{KIND_ICON[k]} {k}</option>)}
+        </select>
+      </td>
+      <td style={cell} />
+    </tr>
+  )
+}
 
-      {editing && (
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.35rem', marginLeft: '1.6rem' }}>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem' }} />
-          <input value={time} onChange={e => setTime(e.target.value)} placeholder="Time (optional)" style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem', width: '100px' }} />
-          <select value={kind} onChange={e => setKind(e.target.value as ItineraryKind)} style={{ ...input, fontSize: '0.68rem', padding: '0.3rem 0.5rem', cursor: 'pointer' }}>
-            {KIND_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
+type BundleBudget = import('@/lib/hooks/useTripBundle').BudgetItem
+
+function BudgetTableRow({ item, currency, onUpdate, onRemove }: {
+  item: BundleBudget
+  currency: string
+  onUpdate: (id: string, fields: Partial<Pick<BundleBudget, 'label' | 'category' | 'amount' | 'paid'>>) => void
+  onRemove: (id: string) => void
+}) {
+  const isEstimate = item.source === 'ai-estimate'
+  const [label, setLabel] = useState(item.label)
+  const [amount, setAmount] = useState(String(item.amount))
+  const focusStyle = useCellFocusStyle()
+
+  return (
+    <tr style={{ opacity: isEstimate ? 0.65 : 1 }}>
+      <td style={{ ...cell, width: '1.6rem', textAlign: 'center' }}>
+        <input type="checkbox" checked={item.paid} disabled={isEstimate} title={isEstimate ? 'Estimates can\'t be marked paid' : 'Paid'}
+          onChange={() => onUpdate(item.id, { paid: !item.paid })} style={{ cursor: isEstimate ? 'default' : 'pointer' }} />
+      </td>
+      <td style={cell}>
+        {isEstimate ? (
+          <span style={{ fontSize: '0.76rem' }}>est. {item.label}</span>
+        ) : (
+          <input value={label} onChange={e => setLabel(e.target.value)}
+            onBlur={() => { const v = label.trim(); if (v && v !== item.label) onUpdate(item.id, { label: v }) }}
+            style={cellInput} {...focusStyle} />
+        )}
+      </td>
+      <td style={{ ...cell, width: '7rem' }}>
+        {isEstimate ? (
+          <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>{item.category}</span>
+        ) : (
+          <select value={item.category} onChange={e => onUpdate(item.id, { category: e.target.value as BudgetCategory })}
+            style={{ ...cellInput, cursor: 'pointer' }} {...focusStyle}>
+            {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <button onClick={save} className="btn btn-ghost press" style={{ fontSize: '0.64rem', padding: '0.25rem 0.5rem' }}>Save</button>
-          {date && (
-            <button onClick={() => { setDate(''); onUpdate(item.id, { item_date: null }) }} className="press"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.62rem' }}>
-              Clear date
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </td>
+      <td style={{ ...cell, width: '6rem', textAlign: 'right' }}>
+        {isEstimate ? (
+          <span style={{ fontSize: '0.76rem' }}>{item.currency} {Number(item.amount).toFixed(2)}</span>
+        ) : (
+          <input type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
+            onBlur={() => { const n = Number(amount); if (Number.isFinite(n) && n >= 0 && n !== Number(item.amount)) onUpdate(item.id, { amount: n }); else setAmount(String(item.amount)) }}
+            style={{ ...cellInput, textAlign: 'right' }} {...focusStyle} />
+        )}
+      </td>
+      <td style={{ ...cell, width: '1.8rem', textAlign: 'center' }}>
+        {!isEstimate && <IconButton label={`Remove ${item.label}`} onClick={() => onRemove(item.id)} size={9} style={{ opacity: 0.35 }}>✕</IconButton>}
+      </td>
+    </tr>
+  )
+}
+
+function NewBudgetRow({ onAdd, currency }: {
+  onAdd: (fields: { label: string; category?: BudgetCategory; amount: number; currency?: string }) => void
+  currency: string
+}) {
+  const [label, setLabel] = useState('')
+  const [category, setCategory] = useState<BudgetCategory>('other')
+  const [amount, setAmount] = useState('')
+  const focusStyle = useCellFocusStyle()
+
+  function commit() {
+    const n = Number(amount)
+    if (!label.trim() || !Number.isFinite(n) || n <= 0) return
+    onAdd({ label: label.trim(), category, amount: n, currency })
+    setLabel(''); setCategory('other'); setAmount('')
+  }
+
+  return (
+    <tr>
+      <td style={cell} />
+      <td style={cell}>
+        <input value={label} onChange={e => setLabel(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commit() }} onBlur={commit}
+          placeholder="+ Add a cost…" style={{ ...cellInput, color: label ? 'var(--text)' : 'var(--muted)' }} {...focusStyle} />
+      </td>
+      <td style={cell}>
+        <select value={category} onChange={e => setCategory(e.target.value as BudgetCategory)} style={{ ...cellInput, cursor: 'pointer' }} {...focusStyle}>
+          {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </td>
+      <td style={cell}>
+        <input type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') commit() }} onBlur={commit}
+          placeholder="0.00" style={{ ...cellInput, textAlign: 'right' }} {...focusStyle} />
+      </td>
+      <td style={cell} />
+    </tr>
   )
 }
 
@@ -99,28 +247,7 @@ export default function TripDetail({ trip, open, onClose }: {
   // partner's shared ideas or vice versa.
   const { ideas: dateIdeas } = useDateIdeas(trip?.space_id ?? null)
 
-  const [addingItem, setAddingItem] = useState(false)
-  const [itemTitle, setItemTitle] = useState('')
-  const [itemDate, setItemDate] = useState('')
-  const [itemTime, setItemTime] = useState('')
-  const [itemKind, setItemKind] = useState<ItineraryKind>('activity')
-
-  const [addingBudget, setAddingBudget] = useState(false)
-  const [budgetLabel, setBudgetLabel] = useState('')
-  const [budgetAmount, setBudgetAmount] = useState('')
-  const [budgetCategory, setBudgetCategory] = useState<BudgetCategory>('other')
-
   const [addingShortlist, setAddingShortlist] = useState(false)
-
-  const byDay = useMemo(() => {
-    const groups = new Map<string, typeof bundle.itinerary>()
-    for (const item of bundle.itinerary) {
-      const key = item.item_date ?? 'Unscheduled'
-      if (!groups.has(key)) groups.set(key, [])
-      groups.get(key)!.push(item)
-    }
-    return [...groups.entries()].sort(([a], [b]) => (a === 'Unscheduled' ? 1 : b === 'Unscheduled' ? -1 : a.localeCompare(b)))
-  }, [bundle.itinerary])
 
   const shortlistedIds = new Set(bundle.shortlist.map(s => s.place_id))
   const availableForShortlist = places.filter(p => !shortlistedIds.has(p.id))
@@ -130,21 +257,6 @@ export default function TripDetail({ trip, open, onClose }: {
   // Captured as a const so closures below narrow to non-null — `trip` the
   // prop can't be re-narrowed inside a nested function declaration.
   const currentTrip = trip
-
-  async function submitItem(e: React.FormEvent) {
-    e.preventDefault()
-    if (!itemTitle.trim()) return
-    await bundle.addItineraryItem({ title: itemTitle.trim(), item_date: itemDate || null, time_label: itemTime.trim() || null, kind: itemKind })
-    setItemTitle(''); setItemDate(''); setItemTime(''); setItemKind('activity'); setAddingItem(false)
-  }
-
-  async function submitBudget(e: React.FormEvent) {
-    e.preventDefault()
-    const amount = Number(budgetAmount)
-    if (!budgetLabel.trim() || !Number.isFinite(amount) || amount <= 0) return
-    await bundle.addBudgetItem({ label: budgetLabel.trim(), amount, category: budgetCategory, currency: currentTrip.currency })
-    setBudgetLabel(''); setBudgetAmount(''); setBudgetCategory('other'); setAddingBudget(false)
-  }
 
   return (
     <PlacesSheet open={open} onClose={onClose} title={trip.title}>
@@ -184,80 +296,74 @@ export default function TripDetail({ trip, open, onClose }: {
           />
         </section>
 
-        {/* Itinerary */}
+        {/* Itinerary — a real grid: click any cell, type, tab to the next. */}
         <section>
           <div className="t-card" style={{ marginBottom: '0.5rem' }}>Itinerary</div>
-          {bundle.itinerary.length === 0 && !bundle.loading && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75, marginBottom: '0.5rem' }}>
-              Nothing scheduled yet.
-            </div>
-          )}
-          {byDay.map(([day, items]) => (
-            <div key={day} style={{ marginBottom: '0.7rem' }}>
-              <div style={{ fontSize: '0.62rem', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>{day}</div>
-              {items.map(item => (
-                <ItineraryItemRow key={item.id} item={item} onUpdate={bundle.updateItineraryItem} onRemove={bundle.removeItineraryItem} />
-              ))}
-            </div>
-          ))}
-
-          {addingItem ? (
-            <form onSubmit={submitItem} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
-              <input value={itemTitle} onChange={e => setItemTitle(e.target.value)} placeholder="What's happening" style={input} autoFocus />
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <input type="date" value={itemDate} onChange={e => setItemDate(e.target.value)} style={input} />
-                <input value={itemTime} onChange={e => setItemTime(e.target.value)} placeholder="Time (optional)" style={{ ...input, width: '110px' }} />
-                <select value={itemKind} onChange={e => setItemKind(e.target.value as ItineraryKind)} style={input}>
-                  {KIND_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
-                </select>
-                <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-                <button type="button" onClick={() => setAddingItem(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <button onClick={() => setAddingItem(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>+ Add to itinerary</button>
-          )}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={headCell}></th>
+                  <th style={headCell}>Date</th>
+                  <th style={headCell}>Time</th>
+                  <th style={headCell}>What</th>
+                  <th style={headCell}>Kind</th>
+                  <th style={headCell}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {bundle.itinerary.map(item => (
+                  <ItineraryTableRow key={item.id} item={item} onUpdate={bundle.updateItineraryItem} onRemove={bundle.removeItineraryItem} />
+                ))}
+                <NewItineraryRow onAdd={bundle.addItineraryItem} />
+              </tbody>
+            </table>
+          </div>
         </section>
 
-        {/* Budget */}
+        {/* Budget — same grid, with a totals row standing in for a
+            spreadsheet's SUM row. */}
         <section>
-          <div className="t-card" style={{ marginBottom: '0.3rem' }}>Budget</div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.5rem' }}>
-            {trip.currency} {bundle.spentTotal.toFixed(2)} paid of {bundle.plannedTotal.toFixed(2)} planned
-            {trip.budget_total != null && ` · target ${trip.budget_total}`}
+          <div className="t-card" style={{ marginBottom: '0.5rem' }}>Budget</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={headCell}></th>
+                  <th style={headCell}>Item</th>
+                  <th style={headCell}>Category</th>
+                  <th style={{ ...headCell, textAlign: 'right' }}>Amount</th>
+                  <th style={headCell}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {bundle.budget.map(b => (
+                  <BudgetTableRow key={b.id} item={b} currency={trip.currency} onUpdate={bundle.updateBudgetItem} onRemove={bundle.removeBudgetItem} />
+                ))}
+                <NewBudgetRow onAdd={bundle.addBudgetItem} currency={trip.currency} />
+                <tr>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                  <td style={{ ...cell, borderBottom: 'none', fontSize: '0.68rem', color: 'var(--muted)' }}>
+                    Planned{trip.budget_total != null && ` · target ${trip.currency} ${trip.budget_total}`}
+                  </td>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                  <td style={{ ...cell, borderBottom: 'none', textAlign: 'right', fontSize: '0.76rem', color: 'var(--text)', fontWeight: 500 }}>
+                    {trip.currency} {bundle.plannedTotal.toFixed(2)}
+                  </td>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                </tr>
+                <tr>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                  <td style={{ ...cell, borderBottom: 'none', fontSize: '0.68rem', color: 'var(--muted)' }}>Paid</td>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                  <td style={{ ...cell, borderBottom: 'none', textAlign: 'right', fontSize: '0.76rem', color: 'var(--emerald)', fontWeight: 500 }}>
+                    {trip.currency} {bundle.spentTotal.toFixed(2)}
+                  </td>
+                  <td style={{ ...cell, borderBottom: 'none' }} />
+                </tr>
+              </tbody>
+            </table>
           </div>
-          {bundle.budget.map(b => (
-            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
-              <button onClick={() => bundle.updateBudgetItem(b.id, { paid: !b.paid })} disabled={b.source === 'ai-estimate'} className="press" style={{
-                width: 14, height: 14, borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                background: b.paid ? 'var(--emerald)' : 'transparent', cursor: b.source === 'ai-estimate' ? 'default' : 'pointer', padding: 0,
-              }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '0.76rem', color: 'var(--text)', opacity: b.source === 'ai-estimate' ? 0.6 : 1 }}>
-                  {b.source === 'ai-estimate' && 'est. '}{b.label}
-                </span>
-                <span style={{ fontSize: '0.6rem', color: 'var(--muted)', marginLeft: '0.4rem' }}>{b.category}</span>
-              </div>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text)', flexShrink: 0 }}>{b.currency} {Number(b.amount).toFixed(2)}</span>
-              {b.source === 'user' && (
-                <IconButton label={`Remove ${b.label}`} onClick={() => bundle.removeBudgetItem(b.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
-              )}
-            </div>
-          ))}
-
-          {addingBudget ? (
-            <form onSubmit={submitBudget} style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <input value={budgetLabel} onChange={e => setBudgetLabel(e.target.value)} placeholder="What for" style={{ ...input, flex: 1, minWidth: '120px' }} autoFocus />
-              <input type="number" min="0" step="0.01" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="Amount" style={{ ...input, width: '90px' }} />
-              <select value={budgetCategory} onChange={e => setBudgetCategory(e.target.value as BudgetCategory)} style={input}>
-                {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-              <button type="button" onClick={() => setAddingBudget(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.68rem', cursor: 'pointer' }}>Cancel</button>
-            </form>
-          ) : (
-            <button onClick={() => setAddingBudget(true)} className="btn btn-secondary press" style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>+ Add cost</button>
-          )}
         </section>
 
         {/* Shortlist — places already saved that might belong on this trip */}
