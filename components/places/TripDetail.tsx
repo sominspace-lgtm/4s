@@ -7,6 +7,7 @@ import { useTripBundle, type ItineraryKind, type BudgetCategory } from '@/lib/ho
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import IconButton from '@/components/ui/IconButton'
+import LinksSection from '@/components/ui/LinksSection'
 
 const STATUS_OPTIONS: TripStatus[] = ['dreaming', 'planning', 'booked', 'travelling', 'done', 'cancelled']
 const KIND_OPTIONS: ItineraryKind[] = ['activity', 'travel', 'stay', 'food', 'note']
@@ -88,7 +89,7 @@ export default function TripDetail({ trip, open, onClose }: {
   open: boolean
   onClose: () => void
 }) {
-  const { updateTrip, removeTrip } = useTrips()
+  const { updateTrip, removeTrip, addLink, removeLink } = useTrips()
   const bundle = useTripBundle(trip?.id ?? null, trip?.space_id ?? null)
   const { places } = usePlaces()
   // Located date ideas, surfaced as one-click shortlist adds (2026-08-25) —
@@ -170,6 +171,18 @@ export default function TripDetail({ trip, open, onClose }: {
             style={{ ...input, fontSize: '0.72rem' }}
           />
         </div>
+
+        {/* Links — a flight deal, an Instagram reel of the destination,
+            anything (2026-09-24). Separate from the single photo album link
+            above: that one field is THE album; this is everywhere else. */}
+        <section>
+          <div className="t-card" style={{ marginBottom: '0.5rem' }}>Links</div>
+          <LinksSection
+            links={trip.links}
+            onAdd={(url, title, image) => addLink(currentTrip, url, title, image).then(() => undefined)}
+            onRemove={linkId => removeLink(currentTrip, linkId)}
+          />
+        </section>
 
         {/* Itinerary */}
         <section>

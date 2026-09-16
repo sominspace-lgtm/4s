@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { newSavedLink, type SavedLink } from '@/lib/types/savedLink'
 
 export type TripStatus = 'dreaming' | 'planning' | 'booked' | 'travelling' | 'done' | 'cancelled'
 
@@ -18,6 +19,9 @@ export interface Trip {
   photo_album_url: string | null
   budget_total: number | null
   currency: string
+  /** Links pasted from anywhere — a flight deal, an Instagram reel of the
+   *  destination, a hotel's own site (2026-09-24). See lib/types/savedLink.ts. */
+  links: SavedLink[]
   created_at: string
   updated_at: string
 }
@@ -82,7 +86,7 @@ export function useTrips() {
   }
 
   async function updateTrip(id: string, fields: Partial<Pick<Trip,
-    'title' | 'destination' | 'start_date' | 'end_date' | 'status' | 'notes' | 'photo_album_url' | 'budget_total'
+    'title' | 'destination' | 'start_date' | 'end_date' | 'status' | 'notes' | 'photo_album_url' | 'budget_total' | 'links'
   >>) {
     const { error: e } = await supabase.from('trips')
       .update({ ...fields, updated_at: new Date().toISOString() })
@@ -97,5 +101,14 @@ export function useTrips() {
     await load(); notify(); return { error: null }
   }
 
-  return { trips, loading, error, addTrip, updateTrip, removeTrip }
+  /** title/image are best-effort — see app/api/link-preview. */
+  async function addLink(trip: Trip, url: string, title: string | null, image: string | null) {
+    return await updateTrip(trip.id, { links: [...trip.links, newSavedLink(url, title, image)] })
+  }
+
+  async function removeLink(trip: Trip, linkId: string) {
+    return await updateTrip(trip.id, { links: trip.links.filter(l => l.id !== linkId) })
+  }
+
+  return { trips, loading, error, addTrip, updateTrip, removeTrip, addLink, removeLink }
 }

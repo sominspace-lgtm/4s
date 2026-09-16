@@ -13,6 +13,7 @@ import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
 import PlaceBathroomCode from '@/components/places/PlaceBathroomCode'
+import LinksSection from '@/components/ui/LinksSection'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
   idea: 'Want to go', good: 'Good, go again', hmm: 'No strong opinion', bad: 'Not again', archived: 'Archived',
@@ -38,7 +39,7 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
   /** Trips this pin can be added to (2026-09-09). */
   trips?: Trip[]
 }) {
-  const { updatePlace, removePlace, addPhoto, removePhoto } = usePlaces()
+  const { updatePlace, removePlace, addPhoto, removePhoto, addLink, removeLink } = usePlaces()
   const addToTrip = useAddToTrip()
   const [tripPicking, setTripPicking] = useState(false)
   const [addedToTrip, setAddedToTrip] = useState<string | null>(null)
@@ -317,6 +318,18 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
             </button>
           )
         )}
+
+        {/* Links — Instagram, TikTok, a blog, anything (2026-09-24). */}
+        <div>
+          <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.4rem' }}>
+            Links
+          </div>
+          <LinksSection
+            links={place.links}
+            onAdd={(url, title, image) => addLink(place, url, title, image).then(() => undefined)}
+            onRemove={linkId => removeLink(place, linkId)}
+          />
+        </div>
 
         {/* Photos */}
         <div>

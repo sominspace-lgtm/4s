@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { uploadPlacePhoto, deletePlacePhoto } from '@/lib/storage/placePhotos'
+import { newSavedLink, type SavedLink } from '@/lib/types/savedLink'
 
 export type PlaceStatus = 'idea' | 'hmm' | 'good' | 'bad' | 'archived'
 export type PlaceProvenanceSource = 'user' | 'lookup' | 'ai'
@@ -33,6 +34,9 @@ export interface Place {
   details: Record<string, unknown>
   provenance: Record<string, PlaceProvenanceSource>
   photo_paths: string[]
+  /** Links pasted from anywhere — Instagram, TikTok, a blog, the place's own
+   *  site (2026-09-24). See lib/types/savedLink.ts. */
+  links: SavedLink[]
   first_visited_on: string | null
   created_at: string
   updated_at: string
@@ -108,7 +112,7 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'kinds' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'first_visited_on' | 'space_id'
+    'name' | 'kind' | 'kinds' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'links' | 'first_visited_on' | 'space_id'
   >>) {
     // First time a place is marked good/hmm/bad, stamp today as the visit
     // date automatically — but never overwrite one already set (manual edits
@@ -151,11 +155,21 @@ export function usePlaces() {
     return await updatePlace(place.id, { photo_paths: place.photo_paths.filter(p => p !== path) })
   }
 
+  /** title/image are best-effort — see app/api/link-preview; a null title
+   *  just means the saved link shows its bare URL instead of a headline. */
+  async function addLink(place: Place, url: string, title: string | null, image: string | null) {
+    return await updatePlace(place.id, { links: [...place.links, newSavedLink(url, title, image)] })
+  }
+
+  async function removeLink(place: Place, linkId: string) {
+    return await updatePlace(place.id, { links: place.links.filter(l => l.id !== linkId) })
+  }
+
   const withLocation = places.filter(p => p.lat != null && p.lng != null)
   const withoutLocation = places.filter(p => p.lat == null || p.lng == null)
 
   return {
     places, withLocation, withoutLocation, loading, error,
-    addPlace, updatePlace, removePlace, addPhoto, removePhoto,
+    addPlace, updatePlace, removePlace, addPhoto, removePhoto, addLink, removeLink,
   }
 }
