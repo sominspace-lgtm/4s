@@ -162,6 +162,16 @@ export function kindSpec(kind: string): KindSpec {
   return PLACE_KINDS[kind] ?? PLACE_KINDS.place
 }
 
+// Shared between NearbyTab's local search and the global ⌘K search
+// (useSearch.ts) — a query this close to "bathroom" counts as bathroom
+// intent, so a saved code surfaces even on a pin categorized as something
+// else entirely (a cafe whose bathroom you noted the code for), not only a
+// pin actually kind=bathroom.
+const BATHROOM_WORDS = ['bathroom', 'restroom', 'toilet', 'washroom', 'wc']
+export function isBathroomIntent(q: string): boolean {
+  return q.length >= 3 && BATHROOM_WORDS.some(w => w.includes(q) || q.includes(w))
+}
+
 // Order used by the kind picker and the filter chips — most-used first,
 // 'place' last since it's the "none of these" option.
 export const KIND_ORDER = [

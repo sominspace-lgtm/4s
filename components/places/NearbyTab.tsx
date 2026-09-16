@@ -6,17 +6,8 @@ import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
 import { useLists } from '@/lib/hooks/useLists'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { haversineKm, formatDistance } from '@/lib/utils/geo'
-import { kindSpec } from '@/lib/constants/placeKinds'
+import { kindSpec, isBathroomIntent } from '@/lib/constants/placeKinds'
 import PlaceSheet from '@/components/places/PlaceSheet'
-
-// A query this close to "bathroom" counts as bathroom-intent, so a saved
-// code surfaces even on a pin categorized as something else (a cafe whose
-// bathroom you happened to note the code for) — matching the "and saved
-// ones too" ask, not just pins actually kind=bathroom.
-const BATHROOM_WORDS = ['bathroom', 'restroom', 'toilet', 'washroom', 'wc']
-function isBathroomIntent(q: string): boolean {
-  return q.length >= 3 && BATHROOM_WORDS.some(w => w.includes(q) || q.includes(w))
-}
 
 const PlaceMap = dynamic(() => import('@/components/places/PlaceMap'), {
   ssr: false,

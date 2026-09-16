@@ -11,12 +11,14 @@ const TYPE_ICON: Record<string, string> = {
   wishlist: '✦',
   habit:    '◉',
   note:     '□',
+  place:    '◇',
 }
 const TYPE_COLOR: Record<string, string> = {
   work:     'var(--gold)',
   wishlist: 'var(--amber)',
   habit:    'var(--emerald)',
   note:     'var(--purple)',
+  place:    'var(--slate)',
 }
 
 interface Command {
@@ -53,7 +55,7 @@ function goTo(sectionId: string) {
 // the fallback, kept pointing at the real section ids so it stays correct
 // if that ever changes.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
-  work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes',
+  work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes', place: 'places',
 }
 
 interface Props {
