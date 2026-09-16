@@ -3,10 +3,20 @@
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
+import { useLists } from '@/lib/hooks/useLists'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { haversineKm, formatDistance } from '@/lib/utils/geo'
 import { kindSpec } from '@/lib/constants/placeKinds'
 import PlaceSheet from '@/components/places/PlaceSheet'
+
+// A query this close to "bathroom" counts as bathroom-intent, so a saved
+// code surfaces even on a pin categorized as something else (a cafe whose
+// bathroom you happened to note the code for) — matching the "and saved
+// ones too" ask, not just pins actually kind=bathroom.
+const BATHROOM_WORDS = ['bathroom', 'restroom', 'toilet', 'washroom', 'wc']
+function isBathroomIntent(q: string): boolean {
+  return q.length >= 3 && BATHROOM_WORDS.some(w => w.includes(q) || q.includes(w))
+}
 
 const PlaceMap = dynamic(() => import('@/components/places/PlaceMap'), {
   ssr: false,
@@ -37,6 +47,16 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
     [allWithLocation, sharedOnly],
   )
 
+  // Which pins already have a saved bathroom code (PlaceBathroomCode.tsx
+  // writes into this exact list) — used both to surface them on a bathroom-
+  // intent search and to show the same 🚻 tag on the row without searching.
+  const { lists } = useLists(spaceId)
+  const codedPlaceIds = useMemo(() => {
+    const codeList = lists.find(l => l.name.trim().toLowerCase() === 'bathroom codes')
+    return new Set((codeList?.items ?? []).filter(i => i.place_id).map(i => i.place_id as string))
+  }, [lists])
+
+  const [query, setQuery] = useState('')
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,13 +77,26 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
     )
   }
 
-  const nearest = useMemo(() => {
+  const sortedByDistance = useMemo(() => {
     if (!origin) return []
     return withLocation
       .map(p => ({ place: p, km: haversineKm(origin, { lat: p.lat as number, lng: p.lng as number }) }))
       .sort((a, b) => a.km - b.km)
-      .slice(0, 20)
   }, [withLocation, origin])
+
+  const nearest = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return sortedByDistance.slice(0, 20)
+    // Searching looks across every pin with a location, not just the
+    // closest 20 — a match three streets further out shouldn't be hidden by
+    // the default cap the way plain browsing is.
+    const bathroomIntent = isBathroomIntent(q)
+    return sortedByDistance.filter(({ place }) =>
+      place.name.toLowerCase().includes(q) ||
+      kindSpec(place.kind).label.toLowerCase().includes(q) ||
+      (bathroomIntent && codedPlaceIds.has(place.id)),
+    )
+  }, [sortedByDistance, query, codedPlaceIds])
 
   // "Mark a pin here" — the quick path, not the full Add Place form
   // (AddPlacePanel geocodes a TYPED address; this already has real
@@ -132,15 +165,26 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
 
           <div>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.35rem' }}>
-              <span className="t-label">Closest first</span>
+              <span className="t-label">{query.trim() ? 'Matching' : 'Closest first'}</span>
               <button onClick={locate} disabled={locating} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.66rem', padding: 0 }}>
                 {locating ? 'Refreshing…' : 'Refresh'}
               </button>
             </div>
 
+            {/* Search by name, kind ("bathroom" finds every pin categorized
+                that way), or a saved bathroom code on any pin at all. */}
+            <input
+              value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Search nearby — try “bathroom”" style={{
+                width: '100%', boxSizing: 'border-box', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
+                padding: '0.45rem 0.65rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.76rem', outline: 'none',
+                marginBottom: '0.5rem',
+              }}
+            />
+
             {nearest.length === 0 && (
               <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                Nothing pinned near here yet — mark one above.
+                {query.trim() ? `Nothing nearby matches "${query.trim()}".` : 'Nothing pinned near here yet — mark one above.'}
               </div>
             )}
 
@@ -158,6 +202,9 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
                 <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {place.name}
                 </span>
+                {codedPlaceIds.has(place.id) && (
+                  <span title="Bathroom code saved" style={{ fontSize: '0.72rem', flexShrink: 0 }}>🚻</span>
+                )}
                 <span style={{ fontSize: '0.66rem', color: 'var(--muted)', flexShrink: 0 }}>{formatDistance(km)}</span>
               </button>
             ))}

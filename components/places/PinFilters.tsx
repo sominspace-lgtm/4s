@@ -231,7 +231,14 @@ export function applyPinFilters<T extends { name: string; kind: string; status: 
     if (filters.kind && p.kind !== filters.kind) return false
     if (filters.status && p.status !== filters.status) return false
     if (filters.tags.length > 0 && !filters.tags.some(t => p.tags.includes(t))) return false
-    if (q && !p.name.toLowerCase().includes(q) && !(p.note ?? '').toLowerCase().includes(q) && !(p.city ?? '').toLowerCase().includes(q)) return false
+    // Kind label included (2026-09-24) so typing "bathroom" finds every pin
+    // categorized as one, not only a pin whose name/note happens to say the
+    // word — the kind picker uses the same label, so this is one shared
+    // vocabulary rather than two.
+    if (
+      q && !p.name.toLowerCase().includes(q) && !(p.note ?? '').toLowerCase().includes(q) &&
+      !(p.city ?? '').toLowerCase().includes(q) && !kindSpec(p.kind).label.toLowerCase().includes(q)
+    ) return false
     if (radius) {
       if (p.lat == null || p.lng == null) return false
       if (haversineKm({ lat: p.lat, lng: p.lng }, radius) > radius.km) return false

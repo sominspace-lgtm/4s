@@ -121,6 +121,15 @@ export const PLACE_KINDS: Record<string, KindSpec> = {
       { key: 'sells', label: 'Sells', type: 'text' },
     ],
   },
+  // A public/usable restroom worth remembering on its own, not attached to
+  // any particular business (2026-09-24) — the code for one still lives on
+  // its pin via PlaceBathroomCode.tsx, same as a bathroom code saved on a
+  // cafe or restaurant pin. Same 🚻 glyph as that widget, for one visual
+  // language across "this pin has a bathroom" and "this pin has its code".
+  bathroom: {
+    label: 'Bathroom', icon: '🚻', color: '--slate',
+    fields: [],
+  },
   activity: {
     label: 'Activity', icon: '✳', color: '--purple',
     fields: [
@@ -157,5 +166,5 @@ export function kindSpec(kind: string): KindSpec {
 // 'place' last since it's the "none of these" option.
 export const KIND_ORDER = [
   'place', 'restaurant', 'cafe', 'bar', 'date-idea', 'court', 'gym', 'park', 'beach', 'trail',
-  'hotel', 'shop', 'activity',
+  'hotel', 'shop', 'bathroom', 'activity',
 ]
