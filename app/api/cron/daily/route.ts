@@ -11,6 +11,26 @@ async function safePush(admin: SupabaseClient, userId: string, payload: PushPayl
   catch (e) { console.error('[cron/daily] push failed', { userId, err: e instanceof Error ? e.message : e }); return 0 }
 }
 
+// Every own-or-space table (household_lists, goals, itinerary_items via
+// trips) needs the same "which spaces can this user see" resolution to
+// query correctly from the admin client, which has no RLS to do it for free.
+// Was inlined three times over; extracted once kind #4 was about to make it
+// four.
+async function resolveSpaceIds(admin: SupabaseClient, userId: string): Promise<string[]> {
+  const [{ data: ownedSpaces }, { data: memberRows }] = await Promise.all([
+    admin.from('shared_spaces').select('id').eq('owner_id', userId),
+    admin.from('shared_space_members').select('space_id').eq('member_id', userId).eq('status', 'accepted'),
+  ])
+  return [...new Set([...(ownedSpaces ?? []).map(s => s.id as string), ...(memberRows ?? []).map(m => m.space_id as string)])]
+}
+
+/** Own-or-space filter for a `.or()` clause, given the ids from
+ *  resolveSpaceIds — the same shape household_lists' query already built by
+ *  hand, now shared so the two new kinds below don't retype it. */
+function ownOrSpaceFilter(userId: string, spaceIds: string[]): string {
+  return `user_id.eq.${userId}${spaceIds.length ? `,space_id.in.(${spaceIds.join(',')})` : ''}`
+}
+
 // A scheduled server nudge (Vercel Cron, daily at 04:00 UTC — see
 // vercel.json). Overdue tasks and a subscription renewing tomorrow. The
 // weekly check-in nudge lives in its own cron now (/api/cron/checkin).
@@ -22,7 +42,13 @@ async function safePush(admin: SupabaseClient, userId: string, payload: PushPayl
 // Still the product's promise: named, never counted; nothing alarmist;
 // nothing that follows you around out of guilt.
 
-type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder'
+type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder' | 'goalStale' | 'tripItem'
+
+// Must match STALE_AFTER_DAYS in lib/hooks/useGoals.ts — duplicated rather
+// than imported because that file is 'use client' and this is a server
+// route; if the in-app threshold for "gone quiet" ever changes, this needs
+// the same edit.
+const GOAL_STALE_AFTER_DAYS = 21
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -94,17 +120,16 @@ export async function GET(request: Request) {
     // Tasks/subscriptions already get, to the free-form Lists feature (the
     // point of the whole notify generalization this was added alongside —
     // see components/household/HouseholdCustomLists.tsx).
+    // household_lists/goals/trips can all be personal (space_id null) or
+    // shared; this cron runs on the admin client (no RLS), so space
+    // membership is resolved by hand once and reused by kinds 3-5.
+    const spaceIds = (on('listReminder') || on('goalStale') || on('tripItem'))
+      ? await resolveSpaceIds(admin, userId)
+      : []
+
     if (on('listReminder')) {
-      // household_lists can be personal (space_id null) or shared; this
-      // cron runs on the admin client (no RLS), so space membership is
-      // checked by hand rather than relying on the table's own policy.
-      const [{ data: ownedSpaces }, { data: memberRows }] = await Promise.all([
-        admin.from('shared_spaces').select('id').eq('owner_id', userId),
-        admin.from('shared_space_members').select('space_id').eq('member_id', userId).eq('status', 'accepted'),
-      ])
-      const spaceIds = [...new Set([...(ownedSpaces ?? []).map(s => s.id as string), ...(memberRows ?? []).map(m => m.space_id as string)])]
       const { data: lists } = await admin.from('household_lists').select('id, name, items')
-        .or(`user_id.eq.${userId}${spaceIds.length ? `,space_id.in.(${spaceIds.join(',')})` : ''}`)
+        .or(ownOrSpaceFilter(userId, spaceIds))
       for (const list of lists ?? []) {
         const items = (list.items as { id: string; label: string; done?: boolean; remind_at?: string | null }[]) ?? []
         for (const item of items) {
@@ -114,6 +139,60 @@ export async function GET(request: Request) {
           if (sent[key] !== undefined) continue
           await safePush(admin, userId, { title: list.name as string, body: item.label, url: '/dashboard' })
           fresh[key] = today
+          notified++
+        }
+      }
+    }
+
+    // 4. A goal that's gone quiet — the same STALE_AFTER_DAYS threshold
+    // GoalsSection.tsx's in-app banner uses, pushed instead of waiting for
+    // someone to happen to open Goals (2026-09-24). Keyed on the goal's own
+    // last_touched_at, same idiom as a subscription's renewal_date above:
+    // touching the goal (in-app "still on it", or a new next_action) changes
+    // that timestamp, which naturally opens up a fresh notification the next
+    // time it goes quiet, rather than permanently silencing that one goal
+    // after its first nudge.
+    if (on('goalStale')) {
+      const { data: activeGoals } = await admin.from('goals').select('id, title, last_touched_at')
+        .eq('status', 'active').or(ownOrSpaceFilter(userId, spaceIds))
+      const staleCutoffMs = GOAL_STALE_AFTER_DAYS * 86_400_000
+      for (const g of activeGoals ?? []) {
+        const touchedAt = g.last_touched_at as string
+        if (now.getTime() - Date.parse(touchedAt) < staleCutoffMs) continue
+        const key = `goal:${g.id}:${touchedAt}`
+        if (sent[key] !== undefined) continue
+        await safePush(admin, userId, { title: '4S', body: `Still choosing "${g.title}"? It's been quiet a while.`, url: '/dashboard' })
+        fresh[key] = today
+        notified++
+      }
+    }
+
+    // 5. Itinerary items happening today — "flight today", "dinner
+    // reservation today" (2026-09-24). One push per trip, not per item, same
+    // batching as overdue tasks above; keyed on the item's own item_date so
+    // rescheduling it naturally opens a fresh notification for the new date.
+    if (on('tripItem')) {
+      const { data: items } = await admin.from('itinerary_items').select('id, trip_id, title, item_date, done')
+        .eq('item_date', today).eq('done', false).or(ownOrSpaceFilter(userId, spaceIds))
+      const due = (items ?? []).filter(i => sent[`tripitem:${i.id}:${i.item_date}`] === undefined)
+      if (due.length > 0) {
+        const tripIds = [...new Set(due.map(i => i.trip_id as string))]
+        const { data: trips } = await admin.from('trips').select('id, title').in('id', tripIds)
+        const tripTitle = new Map((trips ?? []).map(t => [t.id as string, t.title as string]))
+        const byTrip = new Map<string, typeof due>()
+        for (const item of due) {
+          const list = byTrip.get(item.trip_id as string) ?? []
+          list.push(item)
+          byTrip.set(item.trip_id as string, list)
+        }
+        for (const [tripId, tripItems] of byTrip) {
+          const first = tripItems[0]
+          await safePush(admin, userId, {
+            title: tripTitle.get(tripId) ?? 'Trip',
+            body: tripItems.length === 1 ? `Today: ${first.title}` : `Today: ${first.title} and ${tripItems.length - 1} more`,
+            url: '/dashboard',
+          })
+          for (const item of tripItems) fresh[`tripitem:${item.id}:${item.item_date}`] = today
           notified++
         }
       }

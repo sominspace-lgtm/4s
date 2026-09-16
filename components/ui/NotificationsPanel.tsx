@@ -10,6 +10,12 @@ import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 const KINDS: { key: string; label: string; hint: string }[] = [
   { key: 'overdueTasks', label: 'Overdue tasks', hint: 'Once a day, if something is past due' },
   { key: 'subRenewal', label: 'Subscription renewals', hint: 'The day before one renews' },
+  // Was missing from this list even though the cron has sent it since
+  // 2026-09-22 — the "missing key means on" default just never showed the
+  // toggle for it (2026-09-24 fix).
+  { key: 'listReminder', label: 'List reminders', hint: 'When a reminder on any list arrives' },
+  { key: 'goalStale', label: 'Goals gone quiet', hint: 'If a goal hasn’t been touched in a few weeks' },
+  { key: 'tripItem', label: 'Trip items today', hint: 'Whatever is on the itinerary for today' },
   { key: 'checkinNudge', label: 'Weekly check-in', hint: 'Sunday, if you haven’t done it yet' },
 ]
 

@@ -66,6 +66,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // tab between Home and Reference.
   { id: 'upkeep',   label: 'Upkeep',   hidden: false },
   { id: 'reference', label: 'Reference', hidden: false },
+  { id: 'mail',       label: 'Mail',      hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill
   // row under the Places icon like Household's own.
   { id: 'places',   label: 'Places',   hidden: false },
