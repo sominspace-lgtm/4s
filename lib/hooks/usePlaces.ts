@@ -37,6 +37,10 @@ export interface Place {
   /** Links pasted from anywhere — Instagram, TikTok, a blog, the place's own
    *  site (2026-09-24). See lib/types/savedLink.ts. */
   links: SavedLink[]
+  /** True there's a bathroom here, independent of whether a code is saved
+   *  for it (2026-09-17) — PlaceBathroomCode.tsx sets this automatically
+   *  when a code is saved, but it can be true with no code at all. */
+  has_bathroom: boolean
   first_visited_on: string | null
   created_at: string
   updated_at: string
@@ -112,7 +116,7 @@ export function usePlaces() {
   }
 
   async function updatePlace(id: string, fields: Partial<Pick<Place,
-    'name' | 'kind' | 'kinds' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'links' | 'first_visited_on' | 'space_id'
+    'name' | 'kind' | 'kinds' | 'note' | 'status' | 'tags' | 'address' | 'city' | 'country' | 'lat' | 'lng' | 'details' | 'photo_paths' | 'links' | 'has_bathroom' | 'first_visited_on' | 'space_id'
   >>) {
     // First time a place is marked good/hmm/bad, stamp today as the visit
     // date automatically — but never overwrite one already set (manual edits

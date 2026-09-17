@@ -13,6 +13,7 @@ import { getPlacePhotoUrls } from '@/lib/storage/placePhotos'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
 import PlaceBathroomCode from '@/components/places/PlaceBathroomCode'
+import PlaceHasBathroom from '@/components/places/PlaceHasBathroom'
 import LinksSection from '@/components/ui/LinksSection'
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
@@ -399,11 +400,14 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
           )}
         </div>
 
-        {/* Bathroom code — the other direction of Places → Info's Bathroom
-            codes list (2026-09-23): save or check one right on the pin it's
-            for, not on a separate list screen. Same household_lists row
-            either way; see PlaceBathroomCode.tsx. */}
-        <PlaceBathroomCode spaceId={spaceId ?? null} placeId={place.id} placeName={place.name} />
+        {/* Bathroom — a plain "there's one here" checkbox (no code required),
+            plus the fuller save-a-code widget below it. Checking the box
+            never needs a code; saving a code checks the box automatically.
+            See PlaceHasBathroom.tsx / PlaceBathroomCode.tsx. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <PlaceHasBathroom place={place} />
+          <PlaceBathroomCode spaceId={spaceId ?? null} placeId={place.id} placeName={place.name} />
+        </div>
 
         <div>
           <div style={{ fontSize: '0.68rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.75, marginBottom: '0.4rem' }}>

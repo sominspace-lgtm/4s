@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { kindSpec, KIND_ORDER } from '@/lib/constants/placeKinds'
+import { kindSpec, KIND_ORDER, isBathroomIntent } from '@/lib/constants/placeKinds'
 import type { Place, PlaceStatus } from '@/lib/hooks/usePlaces'
 import type { PlaceFilter } from '@/lib/hooks/usePlaceFilters'
 import { haversineKm } from '@/lib/utils/geo'
@@ -223,7 +223,7 @@ export default function PinFilters({ filters, kindsInUse, tagsInUse, onChange, s
   )
 }
 
-export function applyPinFilters<T extends { name: string; kind: string; status: PlaceStatus; note: string | null; city: string | null; lat: number | null; lng: number | null; tags: string[] }>(
+export function applyPinFilters<T extends { name: string; kind: string; status: PlaceStatus; note: string | null; city: string | null; lat: number | null; lng: number | null; tags: string[]; has_bathroom: boolean }>(
   places: T[], filters: PinFilterState, radius: { lat: number; lng: number; km: number } | null = null,
 ): T[] {
   const q = filters.query.trim().toLowerCase()
@@ -234,11 +234,14 @@ export function applyPinFilters<T extends { name: string; kind: string; status: 
     // Kind label included (2026-09-24) so typing "bathroom" finds every pin
     // categorized as one, not only a pin whose name/note happens to say the
     // word — the kind picker uses the same label, so this is one shared
-    // vocabulary rather than two.
-    if (
-      q && !p.name.toLowerCase().includes(q) && !(p.note ?? '').toLowerCase().includes(q) &&
-      !(p.city ?? '').toLowerCase().includes(q) && !kindSpec(p.kind).label.toLowerCase().includes(q)
-    ) return false
+    // vocabulary rather than two. has_bathroom (2026-09-17) adds a third
+    // way in: a pin flagged as having a bathroom without being kind=bathroom
+    // itself (a cafe, a park) surfaces on a bathroom-intent query too.
+    const textMatch =
+      !q || p.name.toLowerCase().includes(q) || (p.note ?? '').toLowerCase().includes(q) ||
+      (p.city ?? '').toLowerCase().includes(q) || kindSpec(p.kind).label.toLowerCase().includes(q) ||
+      (isBathroomIntent(q) && p.has_bathroom)
+    if (!textMatch) return false
     if (radius) {
       if (p.lat == null || p.lng == null) return false
       if (haversineKm({ lat: p.lat, lng: p.lng }, radius) > radius.km) return false

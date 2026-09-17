@@ -85,7 +85,7 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
     return sortedByDistance.filter(({ place }) =>
       place.name.toLowerCase().includes(q) ||
       kindSpec(place.kind).label.toLowerCase().includes(q) ||
-      (bathroomIntent && codedPlaceIds.has(place.id)),
+      (bathroomIntent && (place.has_bathroom || codedPlaceIds.has(place.id))),
     )
   }, [sortedByDistance, query, codedPlaceIds])
 
@@ -193,8 +193,8 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
                 <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {place.name}
                 </span>
-                {codedPlaceIds.has(place.id) && (
-                  <span title="Bathroom code saved" style={{ fontSize: '0.72rem', flexShrink: 0 }}>🚻</span>
+                {(place.has_bathroom || codedPlaceIds.has(place.id)) && (
+                  <span title={codedPlaceIds.has(place.id) ? 'Bathroom code saved' : 'Has a bathroom'} style={{ fontSize: '0.72rem', flexShrink: 0 }}>🚻</span>
                 )}
                 <span style={{ fontSize: '0.66rem', color: 'var(--muted)', flexShrink: 0 }}>{formatDistance(km)}</span>
               </button>

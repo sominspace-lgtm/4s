@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useLists } from '@/lib/hooks/useLists'
+import { usePlaces } from '@/lib/hooks/usePlaces'
 
 // The other direction of the Bathroom codes list (2026-09-23): Places → Info
 // is where you go to browse every code across every place; this is where you
@@ -19,6 +20,7 @@ export default function PlaceBathroomCode({ spaceId, placeId, placeName }: {
   placeName: string
 }) {
   const { lists, loading, addList, addItem, updateItem } = useLists(spaceId)
+  const { updatePlace } = usePlaces()
   const list = lists.find(l => l.name.trim().toLowerCase() === 'bathroom codes')
   const item = list?.items.find(i => i.place_id === placeId)
 
@@ -41,6 +43,11 @@ export default function PlaceBathroomCode({ spaceId, placeId, placeName }: {
       const listId = list?.id ?? (await addList('Bathroom codes')).id
       if (listId) await addItem(listId, placeName, { note: code, place_id: placeId })
     }
+    // A saved code implies a bathroom exists — keep the plain checkbox
+    // (PlaceHasBathroom.tsx) in sync rather than leaving it unchecked next
+    // to a code that says otherwise. One-directional: unchecking that box
+    // later must never delete the code, it's just a lighter, independent flag.
+    await updatePlace(placeId, { has_bathroom: true })
     setSaving(false)
     setEditing(false)
   }

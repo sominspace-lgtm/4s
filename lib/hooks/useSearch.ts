@@ -44,8 +44,15 @@ export function useSearch() {
     const codeListLookup = bathroomIntent
       ? supabase.from('household_lists').select('items').ilike('name', 'Bathroom codes')
       : Promise.resolve({ data: [] as { items: { place_id?: string | null }[] }[] })
+    // has_bathroom (2026-09-17) — a place flagged as having a bathroom
+    // without being kind=bathroom itself (a park, a store). Unlike the codes
+    // list above this is a plain column, so it's one direct query, no
+    // second id-lookup round trip needed.
+    const bathroomFlaggedLookup = bathroomIntent
+      ? supabase.from('places').select('id, name, kind, city').eq('has_bathroom', true).limit(5)
+      : Promise.resolve({ data: [] as { id: string; name: string; kind: string; city: string | null }[] })
 
-    const [work, wishlist, habits, notes, places, codeLists] = await Promise.all([
+    const [work, wishlist, habits, notes, places, codeLists, bathroomFlagged] = await Promise.all([
       supabase.from('work_items').select('id, title, status, project').ilike('title', term).limit(5),
       supabase.from('wishlist_items').select('id, name, category').ilike('name', term).limit(5),
       supabase.from('habits').select('id, name, category').ilike('name', term).limit(4),
@@ -56,6 +63,7 @@ export function useSearch() {
       // search and PinFilters' (applyPinFilters).
       supabase.from('places').select('id, name, kind, city').or(`name.ilike.${term},kind.ilike.${term}`).limit(5),
       codeListLookup,
+      bathroomFlaggedLookup,
     ])
 
     const out: SearchResult[] = []
@@ -70,6 +78,11 @@ export function useSearch() {
       out.push({ id: r.id, type: 'place', title: r.name, subtitle: kindSpec(r.kind).label + (r.city ? ` · ${r.city}` : '') })
     }
     if (bathroomIntent) {
+      for (const r of bathroomFlagged.data ?? []) {
+        if (placeIds.has(r.id)) continue
+        placeIds.add(r.id)
+        out.push({ id: r.id, type: 'place', title: r.name, subtitle: `🚻 ${kindSpec(r.kind).label}` })
+      }
       const codedIds = (codeLists.data ?? []).flatMap(l => l.items).map(i => i.place_id).filter((id): id is string => !!id && !placeIds.has(id))
       if (codedIds.length > 0) {
         const { data: coded } = await supabase.from('places').select('id, name, kind, city').in('id', codedIds).limit(5)
