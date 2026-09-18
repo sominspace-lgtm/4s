@@ -15,6 +15,10 @@ export interface CalendarEvent {
    *  duration anywhere, so a timed event renders as a single marker at its
    *  start time, not a block. */
   event_time: string | null
+  /** Optional (2026-09-17, see supabase/migrations/events_end_date.sql) —
+   *  the last day of a multi-day event, inclusive. Null for a single-day
+   *  event, same as always. */
+  end_date: string | null
   notes: string | null
   space_id: string | null
   created_at: string
@@ -62,11 +66,11 @@ export function useEvents() {
 
   function notifyChanged() { window.dispatchEvent(new CustomEvent('4s:events-changed')) }
 
-  async function add(title: string, event_date: string, notes: string | null = null, event_time: string | null = null) {
+  async function add(title: string, event_date: string, notes: string | null = null, event_time: string | null = null, end_date: string | null = null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('events')
-      .insert({ user_id: user.id, title, event_date, notes, event_time, space_id: spaceId })
+      .insert({ user_id: user.id, title, event_date, notes, event_time, end_date, space_id: spaceId })
       .select().single()
     if (error) return { error }
     if (data) setItems(prev => [...prev, data as CalendarEvent].sort((a, b) => a.event_date.localeCompare(b.event_date)))
@@ -87,11 +91,11 @@ export function useEvents() {
   // household" (2026-08-27): an event added from the Household calendar
   // belongs to that space, not privately to whoever clicked Add. Since
   // 2026-09-01 that's just a space_id on the row, no separate share record.
-  async function addShared(title: string, event_date: string, forSpaceId: string, event_time: string | null = null, notes: string | null = null) {
+  async function addShared(title: string, event_date: string, forSpaceId: string, event_time: string | null = null, notes: string | null = null, end_date: string | null = null) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('events')
-      .insert({ user_id: user.id, title, event_date, notes, event_time, space_id: forSpaceId })
+      .insert({ user_id: user.id, title, event_date, notes, event_time, end_date, space_id: forSpaceId })
       .select().single()
     if (error) return { error }
     if (data) setItems(prev => [...prev, data as CalendarEvent].sort((a, b) => a.event_date.localeCompare(b.event_date)))

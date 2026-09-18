@@ -5,7 +5,7 @@ import {
   addMonths, subMonths, format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, isSameMonth, isSameDay, isToday, setHours, setMinutes,
 } from 'date-fns'
-import { useAgendaEntries, AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
+import { useAgendaEntries, AGENDA_TYPE_META, entryOccursOn, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
 import IconButton from '@/components/ui/IconButton'
 
@@ -27,6 +27,26 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
   const [selected, setSelected] = useState<Date | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [newTime, setNewTime] = useState('')
+  const [newEndDate, setNewEndDate] = useState('')
+
+  // Which entry types are hidden from this view (2026-09-17, "hideable if
+  // user wants") — per-viewer, so localStorage rather than user_prefs; two
+  // people sharing a household calendar may not want the same layers on.
+  const [hiddenTypes, setHiddenTypes] = useState<Set<AgendaEntry['type']>>(() => {
+    try {
+      const raw = localStorage.getItem('4s:calendar-hidden-layers')
+      return raw ? new Set(JSON.parse(raw) as AgendaEntry['type'][]) : new Set()
+    } catch { return new Set() }
+  })
+  const toggleType = (t: AgendaEntry['type']) => {
+    setHiddenTypes(prev => {
+      const next = new Set(prev)
+      if (next.has(t)) next.delete(t); else next.add(t)
+      try { localStorage.setItem('4s:calendar-hidden-layers', JSON.stringify([...next])) } catch { /* private window */ }
+      return next
+    })
+  }
+  const visibleEntries = entries.filter(e => !hiddenTypes.has(e.type))
 
   const gridStart = startOfWeek(startOfMonth(month))
   const gridEnd = endOfWeek(endOfMonth(month))
@@ -35,7 +55,7 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
   for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) days.push(d)
 
   const entriesOn = (day: Date): AgendaEntry[] =>
-    entries.filter(e => isSameDay(e.date, day)).sort((a, b) => +a.date - +b.date)
+    visibleEntries.filter(e => entryOccursOn(e, day)).sort((a, b) => +a.date - +b.date)
 
   const selectedEntries = selected ? entriesOn(selected) : []
   const monthHasEntries = days.some(d => isSameMonth(d, month) && entriesOn(d).length > 0)
@@ -60,6 +80,32 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
           )}
         </div>
         <button onClick={() => { setMonth(m => addMonths(m, 1)); setSelected(null) }} style={navBtn} aria-label="Next month">→</button>
+      </div>
+
+      {/* Layer toggles — hide a type's dots without losing the underlying
+          data (a hidden habit still runs, it just stops cluttering here). */}
+      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+        {(Object.keys(AGENDA_TYPE_META) as AgendaEntry['type'][]).map(t => {
+          const meta = AGENDA_TYPE_META[t]
+          const hidden = hiddenTypes.has(t)
+          return (
+            <button
+              key={t}
+              onClick={() => toggleType(t)}
+              className="press"
+              style={{
+                fontSize: '0.62rem', padding: '0.22rem 0.55rem', borderRadius: '999px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.3em',
+                border: `1px solid ${hidden ? 'var(--border)' : 'color-mix(in srgb, ' + meta.color + ' 40%, var(--border))'}`,
+                background: hidden ? 'transparent' : `color-mix(in srgb, ${meta.color} 12%, transparent)`,
+                color: hidden ? 'var(--muted)' : meta.color, opacity: hidden ? 0.55 : 1,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: hidden ? 'var(--muted)' : meta.color, flexShrink: 0 }} />
+              {meta.label}s
+            </button>
+          )
+        })}
       </div>
 
       {/* Weekday header */}
@@ -133,6 +179,11 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
                 <span style={{ flex: 1, minWidth: 0, fontSize: '0.76rem', color: 'var(--text)', fontWeight: 300 }}>
                   {e.time && <span style={{ color: 'var(--muted)', marginRight: '0.5em' }}>{formatTime(e.time)}</span>}
                   {e.label}
+                  {e.endDate && (
+                    <span style={{ color: 'var(--muted)', marginLeft: '0.5em', fontSize: '0.68rem' }}>
+                      ({format(e.date, 'MMM d')}–{format(e.endDate, 'MMM d')})
+                    </span>
+                  )}
                 </span>
                 {/* Only standalone events are directly deletable here — a
                     task/renewal/refill/gift row is derived from its own hub
@@ -149,23 +200,26 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
               task/renewal/refill/gift (an appointment, a birthday party).
               Optional time (2026-08-27) — matches week/day view's own
               hour-grid add; leaving it blank still makes an all-day event,
-              same as before this field existed. */}
+              same as before this field existed. Optional end date
+              (2026-09-17) — a trip or a visitor spans more than one day;
+              leaving it blank still makes a single-day event. */}
           <form
             onSubmit={async e => {
               e.preventDefault()
               if (!newTitle.trim() || !selected) return
-              await addEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'), null, newTime || null)
+              await addEvent(newTitle.trim(), format(selected, 'yyyy-MM-dd'), null, newTime || null, newEndDate || null)
               setNewTitle('')
               setNewTime('')
+              setNewEndDate('')
             }}
-            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}
+            style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
           >
             <input
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
               placeholder="+ Add an event to this day"
               style={{
-                flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                flex: 1, minWidth: '9em', background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
                 outline: 'none', fontSize: '0.74rem', color: 'var(--text)', fontFamily: 'var(--font-body)',
                 padding: '0.3rem 0.1rem',
               }}
@@ -179,6 +233,19 @@ export default function CalendarMonth({ userId, spaceId = null }: { userId: stri
                 background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
                 outline: 'none', fontSize: '0.74rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
                 padding: '0.3rem 0.1rem', width: '5.5em',
+              }}
+            />
+            <input
+              type="date"
+              value={newEndDate}
+              onChange={e => setNewEndDate(e.target.value)}
+              min={selected ? format(selected, 'yyyy-MM-dd') : undefined}
+              aria-label="Ends on (optional, for a multi-day event)"
+              title="Ends on (optional)"
+              style={{
+                background: 'transparent', border: 'none', borderBottom: '1px solid var(--faint)',
+                outline: 'none', fontSize: '0.7rem', color: 'var(--muted)', fontFamily: 'var(--font-body)',
+                padding: '0.3rem 0.1rem', width: '8em',
               }}
             />
           </form>

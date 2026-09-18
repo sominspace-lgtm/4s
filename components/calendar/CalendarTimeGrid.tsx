@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { format, isSameDay, isToday, setHours, setMinutes } from 'date-fns'
-import { AGENDA_TYPE_META, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
+import { AGENDA_TYPE_META, entryOccursOn, type AgendaEntry } from '@/lib/hooks/useAgendaEntries'
 import { useEvents } from '@/lib/hooks/useEvents'
 import IconButton from '@/components/ui/IconButton'
 
@@ -31,7 +31,7 @@ export default function CalendarTimeGrid({ days, entries, userId }: { days: Date
     scrollRef.current?.scrollTo({ top: 7 * HOUR_HEIGHT })
   }, [])
 
-  const entriesOn = (day: Date) => entries.filter(e => isSameDay(e.date, day)).sort((a, b) => +a.date - +b.date)
+  const entriesOn = (day: Date) => entries.filter(e => entryOccursOn(e, day)).sort((a, b) => +a.date - +b.date)
   const allDayOn = (day: Date) => entriesOn(day).filter(e => !e.time)
   const timedOn = (day: Date) => entriesOn(day).filter(e => e.time)
 

@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import {
-  addDays, addMonths, subMonths, endOfMonth, endOfWeek, format, isSameDay,
+  addDays, addMonths, subMonths, endOfMonth, endOfWeek, format,
   isSameMonth, isToday, startOfMonth, startOfWeek,
 } from 'date-fns'
-import { useAgendaEntries } from '@/lib/hooks/useAgendaEntries'
+import { useAgendaEntries, entryOccursOn } from '@/lib/hooks/useAgendaEntries'
 import { goToHousehold } from '@/lib/utils/navigate'
 import Icon from '@/components/ui/Icon'
 
@@ -22,12 +22,6 @@ export default function MiniCalendarCard({ spaceId, locked = false, onLockedNavi
   const agenda = useAgendaEntries(spaceId)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
 
-  const marked = useMemo(() => {
-    const s = new Set<string>()
-    for (const e of agenda) s.add(format(e.date, 'yyyy-MM-dd'))
-    return s
-  }, [agenda])
-
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month))
     const end = endOfWeek(endOfMonth(month))
@@ -35,6 +29,12 @@ export default function MiniCalendarCard({ spaceId, locked = false, onLockedNavi
     for (let d = start; d <= end; d = addDays(d, 1)) out.push(d)
     return out
   }, [month])
+
+  const marked = useMemo(() => {
+    const s = new Set<string>()
+    for (const day of days) if (agenda.some(e => entryOccursOn(e, day))) s.add(format(day, 'yyyy-MM-dd'))
+    return s
+  }, [agenda, days])
 
   const open = () => { if (locked) onLockedNavigate?.('Calendar'); else goToHousehold('calendar') }
 
