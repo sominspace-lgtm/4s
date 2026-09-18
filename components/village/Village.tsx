@@ -23,6 +23,7 @@ import { useMemoryLinks } from '@/lib/hooks/useMemoryLinks'
 import { useVillageRings } from '@/lib/hooks/useVillageRings'
 import { useVillageSparks } from '@/lib/hooks/useVillageSparks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
+import { useMail } from '@/lib/hooks/useMail'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
 import { forestSlots, districtSlots, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
@@ -408,13 +409,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // guest ping, a session-authed route instead of the guest token one.
   // 'sylvia' = the space owner, 'harry' = the other accepted member.
   const selfIsOwner = spaces[0]?.owner_id === userId
+  // A typed note is a real message, not a nudge (2026-09-17) — it goes
+  // through Mail (persisted, read receipts, shows up in MailHub) instead of
+  // the ephemeral ping route. A chip ("Come here", "Running late") stays a
+  // one-off nudge — nobody needs "Running late" sitting in their inbox.
+  const mail = useMail(spaces[0]?.id ?? null)
   const pingPartner = (_who: 'sylvia' | 'harry', reason: string, note?: string) => {
+    if (note) { void mail.send(note); return }
     void fetch('/api/village/ping', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      // A free-text errand goes as `note` (the route allows 140 there); a
-      // chip goes as `reason` (clipped to 60).
-      body: JSON.stringify(note ? { note } : { reason }),
+      body: JSON.stringify({ reason }),
     }).catch(() => { /* the card still says "on their way" */ })
   }
   // Is the other partner around? Empty (no rows / no space) = assume yes and

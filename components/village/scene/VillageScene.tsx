@@ -638,6 +638,7 @@ export default function VillageScene({
   // and reasons, see the render below.
   const [pingOpen, setPingOpen] = useState<'sylvia' | 'harry' | null>(null)
   const [pingDone, setPingDone] = useState(false)
+  const [pingDoneWasNote, setPingDoneWasNote] = useState(false)
   const activePing = gathering ? hostPing : partnerPing
   // Tapping your OWN figure never opens the partner-ping card — only the
   // other person's. Guest mode has no "self", every figure is a host.
@@ -3224,7 +3225,7 @@ export default function VillageScene({
                   display: 'flex', flexDirection: 'column', gap: 4,
                 }}>
                   {pingDone ? (
-                    <div style={{ fontSize: 10, textAlign: 'center', margin: 'auto' }}>On their way.</div>
+                    <div style={{ fontSize: 10, textAlign: 'center', margin: 'auto' }}>{pingDoneWasNote ? 'Sent to Mail.' : 'On their way.'}</div>
                   ) : (
                     <PingForm
                       title={isPartner ? `Ping ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'}` : `Call ${pingOpen === 'sylvia' ? 'Sylvia' : 'Harry'} over`}
@@ -3233,6 +3234,7 @@ export default function VillageScene({
                       onSend={(text, isNote) => {
                         if (isPartner && isNote) partnerPing!.onPing(pingOpen, '', text)
                         else activePing.onPing(pingOpen, text)
+                        setPingDoneWasNote(isPartner && isNote)
                         setPingDone(true)
                         setTimeout(close, 1600)
                       }}
