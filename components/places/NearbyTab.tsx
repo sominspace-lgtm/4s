@@ -6,8 +6,14 @@ import { usePlaces, type Place } from '@/lib/hooks/usePlaces'
 import { useLists } from '@/lib/hooks/useLists'
 import type { Trip } from '@/lib/hooks/useTrips'
 import { haversineKm, formatDistance } from '@/lib/utils/geo'
-import { kindSpec, isBathroomIntent } from '@/lib/constants/placeKinds'
+import { kindSpec, isBathroomIntent, KIND_ORDER } from '@/lib/constants/placeKinds'
+import { openState } from '@/lib/utils/placeHours'
 import PlaceSheet from '@/components/places/PlaceSheet'
+
+// A category chip is either one of these two special ones, or a kind id
+// (only kinds actually present nearby get a chip — no point offering
+// "Hotel" when you have none pinned near you right now).
+type Category = 'openNow' | 'bathroom' | string
 
 const PlaceMap = dynamic(() => import('@/components/places/PlaceMap'), {
   ssr: false,
@@ -48,6 +54,7 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
   }, [lists])
 
   const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<Category | null>(null)
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,19 +82,38 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
       .sort((a, b) => a.km - b.km)
   }, [withLocation, origin])
 
+  // Which kinds actually have a nearby pin — the chip row only ever offers
+  // categories that would return something, not the full kind picker.
+  const kindsNearby = useMemo(() => {
+    const seen = new Set(sortedByDistance.map(({ place }) => place.kind))
+    return KIND_ORDER.filter(k => seen.has(k) && k !== 'place')
+  }, [sortedByDistance])
+
   const nearest = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return sortedByDistance.slice(0, 20)
-    // Searching looks across every pin with a location, not just the
-    // closest 20 — a match three streets further out shouldn't be hidden by
-    // the default cap the way plain browsing is.
     const bathroomIntent = isBathroomIntent(q)
-    return sortedByDistance.filter(({ place }) =>
-      place.name.toLowerCase().includes(q) ||
-      kindSpec(place.kind).label.toLowerCase().includes(q) ||
-      (bathroomIntent && (place.has_bathroom || codedPlaceIds.has(place.id))),
-    )
-  }, [sortedByDistance, query, codedPlaceIds])
+    let list = sortedByDistance
+
+    // Category narrows first — "nearest court" is then just "the first row"
+    // once Court is selected, since the list is already distance-sorted.
+    if (category === 'openNow') list = list.filter(({ place }) => openState(place.details) === 'open')
+    else if (category === 'bathroom') list = list.filter(({ place }) => place.has_bathroom || codedPlaceIds.has(place.id))
+    else if (category) list = list.filter(({ place }) => place.kind === category)
+
+    if (q) {
+      // Searching looks across every pin with a location, not just the
+      // closest 20 — a match three streets further out shouldn't be hidden
+      // by the default cap the way plain browsing is.
+      list = list.filter(({ place }) =>
+        place.name.toLowerCase().includes(q) ||
+        kindSpec(place.kind).label.toLowerCase().includes(q) ||
+        (bathroomIntent && (place.has_bathroom || codedPlaceIds.has(place.id))),
+      )
+    } else if (!category) {
+      list = list.slice(0, 20)
+    }
+    return list
+  }, [sortedByDistance, query, category, codedPlaceIds])
 
   // "Mark a pin here" — the quick path, not the full Add Place form
   // (AddPlacePanel geocodes a TYPED address; this already has real
@@ -156,10 +182,35 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
 
           <div>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.35rem' }}>
-              <span className="t-label">{query.trim() ? 'Matching' : 'Closest first'}</span>
+              <span className="t-label">{query.trim() || category ? 'Matching' : 'Closest first'}</span>
               <button onClick={locate} disabled={locating} className="press" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold)', fontSize: '0.66rem', padding: 0 }}>
                 {locating ? 'Refreshing…' : 'Refresh'}
               </button>
+            </div>
+
+            {/* Category chips — a quick "what am I actually looking for"
+                shortcut sitting above the free-text search, not a
+                replacement for it. Only kinds with a pin nearby get a chip. */}
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              {([
+                { id: 'openNow' as const, label: '🕐 Open now' },
+                { id: 'bathroom' as const, label: '🚻 Bathroom' },
+                ...kindsNearby.map(k => ({ id: k, label: `${kindSpec(k).icon} ${kindSpec(k).label}` })),
+              ]).map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setCategory(prev => (prev === c.id ? null : c.id))}
+                  className="press"
+                  style={{
+                    fontSize: '0.68rem', padding: '0.3rem 0.6rem', borderRadius: '999px', cursor: 'pointer',
+                    border: '1px solid var(--border)',
+                    background: category === c.id ? 'color-mix(in srgb, var(--gold) 14%, transparent)' : 'transparent',
+                    color: category === c.id ? 'var(--gold)' : 'var(--muted)',
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
             </div>
 
             {/* Search by name, kind ("bathroom" finds every pin categorized
@@ -175,7 +226,11 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
 
             {nearest.length === 0 && (
               <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                {query.trim() ? `Nothing nearby matches "${query.trim()}".` : 'Nothing pinned near here yet — mark one above.'}
+                {query.trim()
+                  ? `Nothing nearby matches "${query.trim()}".`
+                  : category
+                    ? 'Nothing nearby matches that right now.'
+                    : 'Nothing pinned near here yet — mark one above.'}
               </div>
             )}
 
