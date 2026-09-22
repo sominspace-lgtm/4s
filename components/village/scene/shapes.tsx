@@ -91,11 +91,20 @@ export function seasonTree(kind: TreeKind, season: VillageState['season']) {
 // actually night (VillageScene's `night`), the real art behind round 48's
 // "quiet evenings" beat that until now could only fake bedtime with the
 // couple sitting still on a bench.
-export function SleepwearFigure({ src, aspect, x, y }: { src: string; aspect: number; x: number; y: number }) {
+export function SleepwearFigure({ src, aspect, x, y, onClick }: { src: string; aspect: number; x: number; y: number; onClick?: () => void }) {
   const h = 33
   const w = h * aspect
+  // onClick (2026-09-22, "should be able to tap figure and send message
+  // regardless of time") — asleep still means tappable. Same oversized
+  // hit-circle idiom as every other figure/entity in the scene; the group
+  // itself only goes pointerEvents:'none' when there's genuinely nothing to
+  // tap, so the sleeping pose doesn't eat clicks meant for what's behind it.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <g transform={`translate(${x} ${y})`} pointerEvents="none">
+    <g transform={`translate(${x} ${y})`} pointerEvents={onClick ? undefined : 'none'}
+      className={onClick ? 'village-entity' : undefined}
+      style={{ cursor: onClick ? 'pointer' : undefined }} onClick={handleClick}>
+      {onClick && <ellipse cx={0} cy={-h / 2} rx={Math.max(14, w / 2 + 4)} ry={h / 2 + 4} fill="transparent" style={{ pointerEvents: 'all' }} />}
       <ellipse cx={0} cy={1} rx={w / 2.4} ry={1.6} fill="var(--text)" opacity={0.15} />
       <image href={src} x={-w / 2} y={-h} width={w} height={h}
         style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
@@ -1057,12 +1066,18 @@ export function CoupleInteraction({ x, y, poseIndex = 0, outfit = 'default' }: {
 // `quiet` block): round 48 could only fake "two figures sit on a bench"
 // with plain stillness since no seated art existed yet; this is that real
 // pose, finally.
-export function CoupleBenchShape({ x, y }: { x: number; y: number }) {
+export function CoupleBenchShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
   const h = 34
   const w = h * (346 / 323)
+  // onClick (2026-09-22) — the dusk reading-bench pose used to be a dead
+  // end to tap, same gap as SleepwearFigure above.
+  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   return (
-    <image href="/village-assets/sh-int-bench.png" x={x - w / 2} y={y - h} width={w} height={h}
-      style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+    <g onClick={handleClick} className={onClick ? 'village-entity' : undefined} style={{ cursor: onClick ? 'pointer' : undefined }}>
+      {onClick && <ellipse cx={x} cy={y - h / 2} rx={w / 2 + 4} ry={h / 2 + 4} fill="transparent" style={{ pointerEvents: 'all' }} />}
+      <image href="/village-assets/sh-int-bench.png" x={x - w / 2} y={y - h} width={w} height={h}
+        style={{ imageRendering: 'pixelated' }} preserveAspectRatio="none" />
+    </g>
   )
 }
 

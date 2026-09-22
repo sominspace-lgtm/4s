@@ -2941,14 +2941,27 @@ export default function VillageScene({
           couple-cycle block above. */}
       {!arranging && settledNight && !sceneHidesFigures && (() => {
         const sp = decorPos('sylvia'), hp = decorPos('harry')
+        // Same tap → ping / lock-navigate logic the daytime figures use
+        // (2026-09-22, "should be able to tap figure and send message
+        // regardless of time") — asleep or reading on the bench, a figure
+        // is still tappable, it just isn't wandering.
+        const tapFigure = (who: 'sylvia' | 'harry') => {
+          if (activePing && !isSelfFigure(who)) { setPingOpen(who); return }
+          if (locked) openFigureOrToggle(who)()
+        }
         if (nightish) return (
           <>
-            <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} />
-            <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={149 / 281} x={hp.x} y={hp.y} />
+            <SleepwearFigure src="/village-assets/sylvia-pajama.png" aspect={144 / 289} x={sp.x} y={sp.y} onClick={() => tapFigure('sylvia')} />
+            <SleepwearFigure src="/village-assets/harry-pajama.png" aspect={149 / 281} x={hp.x} y={hp.y} onClick={() => tapFigure('harry')} />
           </>
         )
         const midX = (sp.x + hp.x) / 2, midY = (sp.y + hp.y) / 2
-        return <CoupleBenchShape x={midX} y={midY} />
+        // The bench pose is the couple together, not one figure — same
+        // "ping whoever isn't you" the daytime together-pose card uses.
+        return (
+          <CoupleBenchShape x={midX} y={midY}
+            onClick={activePing ? () => setPingOpen(partnerPing && !gathering && partnerPing.selfIsOwner ? 'harry' : 'sylvia') : undefined} />
+        )
       })()}
       {/* Moved next to Sylvia and shrunk (round 26, 2026-08-27, "put somi
           next to sylvia and make smaller") — was at (480, GROUND_Y+30,
