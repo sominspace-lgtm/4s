@@ -8,12 +8,13 @@ import { addDays } from 'date-fns'
 import { useBuyItems, runoutDate, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useEvents, useSharedEvents } from '@/lib/hooks/useEvents'
 import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
+import { useGoogleStatus, useGoogleEvents } from '@/lib/hooks/useGoogle'
 
 export interface AgendaEntry {
   key: string
   date: Date
   label: string
-  type: 'task' | 'renewal' | 'refill' | 'gift' | 'event' | 'habit'
+  type: 'task' | 'renewal' | 'refill' | 'gift' | 'event' | 'habit' | 'google'
   id?: string   // raw row id — only 'event' entries are directly editable/deletable from the calendar
   /** 'HH:MM', only ever set on 'event' entries (see useEvents' own comment
    *  on why nothing else in the app has a time). Week/day views use this to
@@ -34,6 +35,7 @@ export const AGENDA_TYPE_META: Record<AgendaEntry['type'], { label: string; colo
   gift:    { label: 'gift',    color: 'var(--blush)' },
   event:   { label: 'event',   color: 'var(--purple)' },
   habit:   { label: 'habit',   color: 'var(--slate)' },
+  google:  { label: 'google',  color: 'var(--rose)' },
 }
 
 // Does this entry occur on `day`? A plain date match for everything except
@@ -68,6 +70,8 @@ export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
   const { items: ownEvents } = useEvents()
   const { items: sharedEvents } = useSharedEvents(spaceId)
   const { habits, completions } = useHabits()
+  const google = useGoogleStatus().status
+  const googleEvents = useGoogleEvents(google.connected && !!google.calendar)
   // De-duped by id — the space's own owner sees their event via both
   // useEvents (they own it) and useSharedEvents (RLS also grants it to
   // accepted members, which the owner usually also is), so without this a
@@ -101,6 +105,20 @@ export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
       key: `event-${e.id}`, id: e.id, date: parseISO(e.event_date), label: e.title, type: 'event',
       time: e.event_time ?? undefined,
       endDate: e.end_date ? parseISO(e.end_date) : undefined,
+    })
+  }
+  // Google Calendar events (2026-10-05) — a read layer, never stored in 4S.
+  // An event made in 4S and also sent to Google would show twice, so a
+  // Google event matching a 4S one (same title, day and time) is dropped.
+  for (const g of googleEvents) {
+    const day = parseISO(g.start.slice(0, 10))
+    const time = g.allDay ? undefined : format(parseISO(g.start), 'HH:mm')
+    if (events.some(e => e.title.trim().toLowerCase() === g.title.trim().toLowerCase() && e.event_date === g.start.slice(0, 10) && (e.event_time ?? undefined) === time)) continue
+    // All-day end dates are exclusive in Google; show through the last real day.
+    const last = g.allDay ? addDays(parseISO(g.end.slice(0, 10)), -1) : undefined
+    entries.push({
+      key: `google-${g.id}-${g.start}`, date: day, label: g.title, type: 'google', time,
+      endDate: last && last > day ? last : undefined,
     })
   }
   for (const h of habits) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import CalendarRoutines from '@/components/calendar/CalendarRoutines'
 import {
   addDays, addMonths, subMonths, format, isSameDay, isWithinInterval, parseISO,
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameMonth, isToday,
@@ -64,7 +65,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
 }) {
   // Month by default (2026-08-25) — same as CalendarEmbed, so every
   // calendar in the app opens on the same view.
-  const [view, setView] = useState<'agenda' | 'month'>(defaultView)
+  const [view, setView] = useState<'agenda' | 'month' | 'routines'>(defaultView)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const { items: sharedTasks } = useSharedWorkItems(spaceId)
@@ -156,7 +157,7 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
   return (
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
-        <div className="t-card">{view === 'agenda' ? 'The next two weeks' : format(month, 'MMMM yyyy')}</div>
+        <div className="t-card">{view === 'agenda' ? 'The next two weeks' : view === 'routines' ? 'Routines' : format(month, 'MMMM yyyy')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
           <div className="t-meta" style={{ display: 'flex', gap: '0.5rem 0.7rem', flexWrap: 'wrap' }}>
             {(['chore', 'meal', 'routine', 'trip', 'task', 'event', 'checkin'] as const).map(k => (
@@ -169,12 +170,15 @@ export default function HouseholdCalendar({ chores, meals, routines = [], trips 
           <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem' }}>
             <button className="press" onClick={() => setView('agenda')} style={toggleBtn(view === 'agenda')}>Agenda</button>
             <button className="press" onClick={() => setView('month')} style={toggleBtn(view === 'month')}>Month</button>
+            <button className="press" onClick={() => setView('routines')} style={toggleBtn(view === 'routines')}>Routines</button>
           </div>
         </div>
       </div>
 
       {view === 'agenda' ? (
         <AgendaView today={today} entriesFor={entriesFor} />
+      ) : view === 'routines' ? (
+        <CalendarRoutines spaceId={spaceId} />
       ) : (
         <MonthView
           month={month} setMonth={setMonth} selected={selected} setSelected={setSelected}

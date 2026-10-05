@@ -259,6 +259,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
+  // Back from Google's sign-in (?google=…) — open Connect so the result shows.
+  // GoogleConnect clears the param itself once it has read it.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('google')) setConnectOpen(true)
+  }, [])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [mailOpen, setMailOpen] = useState(false)
   // Just for the header's unread badge — MailPanel resolves its own space

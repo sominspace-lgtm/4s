@@ -6,6 +6,7 @@ import CalendarMonth from './CalendarMonth'
 import CalendarWeek from './CalendarWeek'
 import CalendarDay from './CalendarDay'
 import CalendarQuickAdd from './CalendarQuickAdd'
+import CalendarRoutines from './CalendarRoutines'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 // 4S's own calendar. The Google Calendar iframe that used to sit below this
@@ -25,7 +26,7 @@ export default function CalendarEmbed({ userId }: { userId: string }) {
   // for that view to be the month grid. Week/day added 2026-08-27,
   // "inspired off Google Calendar" — an hourly grid with an all-day band,
   // see CalendarTimeGrid.
-  const [view, setView] = useState<'agenda' | 'month' | 'week' | 'day'>('month')
+  const [view, setView] = useState<'agenda' | 'month' | 'week' | 'day' | 'routines'>('month')
   // Private by default; events shared into (or made directly in) the
   // household space also show here (2026-08-27) — see useAgendaEntries'
   // own header comment. spaces[0] matches every other "the household
@@ -49,7 +50,7 @@ export default function CalendarEmbed({ userId }: { userId: string }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, color: 'var(--text)' }}>
-            {view === 'agenda' ? 'Today & Upcoming' : view === 'month' ? 'This Month' : view === 'week' ? 'This Week' : 'Today'}
+            {view === 'agenda' ? 'Today & Upcoming' : view === 'month' ? 'This Month' : view === 'week' ? 'This Week' : view === 'routines' ? 'Routines' : 'Today'}
           </span>
           <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.8, letterSpacing: '0.04em' }}>
             tasks, renewals, refills, gifts &amp; events
@@ -61,6 +62,7 @@ export default function CalendarEmbed({ userId }: { userId: string }) {
             <button className="press" onClick={() => setView('month')} style={toggleBtn(view === 'month')}>Month</button>
             <button className="press" onClick={() => setView('week')} style={toggleBtn(view === 'week')}>Week</button>
             <button className="press" onClick={() => setView('day')} style={toggleBtn(view === 'day')}>Day</button>
+            <button className="press" onClick={() => setView('routines')} style={toggleBtn(view === 'routines')}>Routines</button>
           </div>
           {/* One-click add from anywhere in the calendar (2026-08-27) —
               every view already lets you add something, but each requires
@@ -74,6 +76,7 @@ export default function CalendarEmbed({ userId }: { userId: string }) {
       {view === 'month' && <CalendarMonth userId={userId} spaceId={spaceId} />}
       {view === 'week' && <CalendarWeek userId={userId} spaceId={spaceId} />}
       {view === 'day' && <CalendarDay userId={userId} spaceId={spaceId} />}
+      {view === 'routines' && <CalendarRoutines spaceId={spaceId} />}
     </div>
   )
 }

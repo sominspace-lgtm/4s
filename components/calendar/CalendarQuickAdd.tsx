@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { useEvents } from '@/lib/hooks/useEvents'
+import { useGoogleStatus, createGoogleEvent } from '@/lib/hooks/useGoogle'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 
 // One always-visible "+ Add" button for the whole calendar (2026-08-27) —
@@ -27,6 +28,10 @@ export default function CalendarQuickAdd() {
   const titleRef = useRef<HTMLInputElement>(null)
 
   const { add: addEvent } = useEvents()
+  // Also put an event on Google Calendar (2026-10-05) when it is connected.
+  const google = useGoogleStatus().status
+  const canGoogle = google.connected && !!google.calendar
+  const [toGoogle, setToGoogle] = useState(true)
   const { add: addTask } = useWorkItems()
 
   useEffect(() => {
@@ -56,6 +61,10 @@ export default function CalendarQuickAdd() {
     if (kind === 'event') {
       const { error } = await addEvent(title.trim(), date, null, time || null)
       if (error) { setErr(error.message); setSaving(false); return }
+      if (canGoogle && toGoogle) {
+        const gErr = await createGoogleEvent({ title: title.trim(), date, time: time || null })
+        if (gErr) { setErr(`Saved in 4S. ${gErr}`); setSaving(false); return }
+      }
     } else {
       const error = await addTask({ title: title.trim(), notes: null, due_date: date, energy: null, domain: null, recur_days: null })
       if (error) { setErr(error); setSaving(false); return }
@@ -139,6 +148,13 @@ export default function CalendarQuickAdd() {
               />
             )}
           </div>
+
+          {kind === 'event' && canGoogle && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.66rem', color: 'var(--muted)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={toGoogle} onChange={e => setToGoogle(e.target.checked)} />
+              Also add to Google Calendar
+            </label>
+          )}
 
           {err && <div style={{ fontSize: '0.64rem', color: 'var(--rose)' }}>{err}</div>}
 
