@@ -126,16 +126,20 @@ export function useWorkItems() {
   async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'energy' | 'domain' | 'recur_days'>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
-    const { data, error } = await supabase.from('work_items')
-      .insert({ ...fields, user_id: user.id, status: 'todo', space_id: spaceId })
-      .select().single()
+    const row = { ...fields, user_id: user.id, status: 'todo' }
+    // Plain insert, no `.select().single()` chained on (2026-10-05, "adding
+    // tasks is broken"): when the row-return is blocked by an RLS SELECT
+    // policy gap, `.single()` errors with "no rows" even though the insert
+    // landed, so the form showed a failure and the task never appeared.
+    let { error } = await supabase.from('work_items').insert({ ...row, space_id: spaceId })
+    // A household space the policy won't accept (stale membership, space
+    // not yet accepted) shouldn't block a personal task — retry unscoped.
+    if (error && spaceId) {
+      ;({ error } = await supabase.from('work_items').insert({ ...row, space_id: null }))
+    }
     if (error) return error.message
-    // Re-fetch from the DB instead of trusting the insert's .select() return —
-    // if that row-return is ever blocked (e.g. by an RLS SELECT policy gap),
-    // splicing local state with `data` would silently omit the new task even
-    // though the insert itself succeeded. A full reload is the source of truth.
-    if (data) setItems(prev => sortWorkItems([...prev, data as WorkItem]))
-    else await load()
+    // Re-fetch from the DB as the source of truth.
+    await load()
     notifyChanged()
     return null
   }

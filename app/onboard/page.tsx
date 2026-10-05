@@ -121,8 +121,10 @@ export default function OnboardPage() {
   const onPhilosophy = step < PANELS.length
   const TOTAL_STEPS = PANELS.length + 1
 
+  // Onboarding stays the cream front door (see login) even though the app
+  // itself now defaults dark — it saves DEFAULT_THEME on finish.
   return (
-    <ThemeProvider theme={DEFAULT_THEME}>
+    <ThemeProvider theme="bloom">
       <div style={{
         // Cream on every device (see login) — pin the browser chrome to light.
         colorScheme: 'light',

@@ -247,11 +247,14 @@ export const LEGACY_THEME_MAP: Record<string, string> = {
   solar: 'sage',   // bright light → Sage (Bloom is warmer/cream; Sage is the cooler light option)
 }
 
-// Bloom is the default (2026-08-07) — 4S and BloomScan are meant to read as
-// one world, and the cream/sage paper feel is that world's look. Only
-// affects accounts with no stored theme: anyone who has ever picked one
-// keeps it, since a stored value short-circuits the fallback below.
-export const DEFAULT_THEME = 'bloom'
+// Moonlight (dark) is the default (2026-10-05) — it was Bloom's cream/sage
+// paper from 2026-08-07 so 4S and BloomScan read as one world, but the app
+// is lived in after dark far more than at a desk, so a new account now opens
+// dark. Bloom is still a stored-value theme and the Village scene itself is
+// always drawn in Bloom regardless. Only affects accounts with no stored
+// theme (and "reset to default"): anyone who has ever picked one keeps it,
+// since a stored value short-circuits the fallback below.
+export const DEFAULT_THEME = 'moonlight'
 
 export function normalizeTheme(raw: string | null | undefined): string {
   // 'custom' isn't a THEMES key — it's a distinct third option alongside "a
