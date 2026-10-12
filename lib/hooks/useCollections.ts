@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export type PropType = 'text' | 'number' | 'date' | 'checkbox' | 'select' | 'url'
+// 'place' (a Places pin) and 'image' exist only for the built-in Reference
+// collections (date ideas); they are not offered when adding your own column.
+export type PropType = 'text' | 'number' | 'date' | 'checkbox' | 'select' | 'url' | 'place' | 'image'
 
 export interface CollectionProp {
   id: string
@@ -22,6 +24,9 @@ export interface Collection {
   props: CollectionProp[]
   view: 'table' | 'board'
   board_prop: string | null
+  /** Set for the built-in Reference collections (date ideas, movies, games). */
+  system_key?: string | null
+  guest_visible?: boolean
   created_at: string
 }
 

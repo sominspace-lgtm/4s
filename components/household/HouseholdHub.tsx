@@ -14,7 +14,7 @@ import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
 import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
-import HouseholdDateIdeas from './HouseholdDateIdeas'
+import ReferenceCollections from './ReferenceCollections'
 import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import CheckinCard from '@/components/checkin/CheckinCard'
@@ -850,9 +850,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         </div>
       )}
 
-      {/* Date Ideas — split out of the generic Lists checklist (2026-08-22),
-          see HouseholdDateIdeas's own header comment for why. */}
-      {tab === 'reference' && <HouseholdDateIdeas spaceId={spaceId} />}
+      {/* Date ideas, movies and shows, games, and any shared collection — one
+          Collections section (2026-10-12), replacing the separate Date Ideas
+          and game/watch list blocks. See ReferenceCollections. */}
+      {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} />}
 
       {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 

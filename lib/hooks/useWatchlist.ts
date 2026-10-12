@@ -13,6 +13,8 @@ export interface WatchlistItem {
   title: string
   subtype: string | null
   status: WatchlistStatus
+  /** Values for columns you added yourself in the collection view (2026-10-12). */
+  extras?: Record<string, string | number | boolean | null>
   created_at: string
   updated_at: string
 }
@@ -41,11 +43,11 @@ export function useWatchlist(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addItem(domain: WatchlistDomain, title: string, subtype?: string): Promise<string | null> {
+  async function addItem(domain: WatchlistDomain, title: string, subtype?: string, more?: { status?: WatchlistStatus; extras?: WatchlistItem['extras'] }): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('household_watchlist')
-      .insert({ user_id: user.id, space_id: spaceId, domain, title, subtype: subtype || null })
+      .insert({ user_id: user.id, space_id: spaceId, domain, title, subtype: subtype || null, ...more })
       .select().single()
     if (error) return error.message
     setItems(prev => [...prev, data as WatchlistItem])
@@ -58,10 +60,16 @@ export function useWatchlist(spaceId: string | null) {
     if (!error) setItems(prev => prev.map(i => (i.id === id ? { ...i, status } : i)))
   }
 
+  async function update(id: string, fields: Partial<Pick<WatchlistItem, 'title' | 'subtype' | 'status' | 'extras'>>) {
+    const { error } = await supabase.from('household_watchlist')
+      .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
+    if (!error) setItems(prev => prev.map(i => (i.id === id ? { ...i, ...fields } : i)))
+  }
+
   async function removeItem(id: string) {
     await supabase.from('household_watchlist').delete().eq('id', id)
     setItems(prev => prev.filter(i => i.id !== id))
   }
 
-  return { items, loading, addItem, setStatus, removeItem }
+  return { items, loading, addItem, setStatus, update, removeItem }
 }

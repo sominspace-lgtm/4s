@@ -37,6 +37,8 @@ export interface DateIdea {
   category: DateIdeaCategory | null
   /** Set when the idea is marked done — the list becomes an album. */
   photo_path: string | null
+  /** Values for columns you added yourself in the collection view (2026-10-12). */
+  extras?: Record<string, string | number | boolean | null>
   created_at: string
   updated_at: string
 }
@@ -65,7 +67,7 @@ export function useDateIdeas(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags' | 'indoor_outdoor' | 'category'>>): Promise<string | null> {
+  async function addIdea(title: string, extra?: Partial<Pick<DateIdea, 'area' | 'energy' | 'price_range' | 'place_id' | 'notes' | 'tags' | 'indoor_outdoor' | 'category' | 'status' | 'extras'>>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
     const { data, error } = await supabase.from('date_ideas')
@@ -76,7 +78,7 @@ export function useDateIdeas(spaceId: string | null) {
     return null
   }
 
-  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range' | 'indoor_outdoor' | 'category' | 'photo_path'>>) {
+  async function update(id: string, fields: Partial<Pick<DateIdea, 'title' | 'status' | 'energy' | 'place_id' | 'tags' | 'notes' | 'area' | 'price_range' | 'indoor_outdoor' | 'category' | 'photo_path' | 'extras'>>) {
     const { error } = await supabase.from('date_ideas')
       .update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
     if (!error) setIdeas(prev => prev.map(i => (i.id === id ? { ...i, ...fields } : i)))
