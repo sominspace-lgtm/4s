@@ -29,6 +29,7 @@ import TasksTab from '@/components/work/TasksTab'
 import HabitsTab from '@/components/habits/HabitsTab'
 import NotesHub from '@/components/notes/NotesHub'
 import MailHub from '@/components/mail/MailHub'
+import VaultHub from '@/components/vault/VaultHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
@@ -154,6 +155,7 @@ const SECTION_GROUPS: Record<string, string> = {
   notes:     'mine',
   money:     'mine',
   people:    'mine',
+  vault:     'mine',
   village:   'your world',
   places:    'ours',
   'places-trips': 'ours',
@@ -209,7 +211,7 @@ const SECTION_GROUPS: Record<string, string> = {
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
@@ -516,7 +518,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
-      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang), mail: t('Mail', lang),
+      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -551,6 +553,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'mail':     return <MailHub key="mail" userId={userId} />
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
+        case 'vault':    return <VaultHub key="vault" userId={userId} />
         // Places (2026-09-09) — the map carries a docked pin list, so it's
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />

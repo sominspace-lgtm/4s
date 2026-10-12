@@ -6,7 +6,7 @@ import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 describe('sharedSectionVisible', () => {
   const GUEST_SAFE = ['reference', 'village', 'places', 'places-nearby']
   const PLAIN_SHARED_EXTRA = ['home', 'upkeep', 'places-trips', 'mail']
-  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'smarthome']
+  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'smarthome']
 
   describe('plain shared view (no gathering)', () => {
     it('shows the household surfaces + village + places + trips', () => {
