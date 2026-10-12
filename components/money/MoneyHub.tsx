@@ -5,11 +5,11 @@ import { format, parseISO } from 'date-fns'
 import SubsCard from '@/components/subscriptions/SubsCard'
 import GiftsCard from '@/components/subscriptions/GiftsCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
-import WishlistCard from '@/components/watchlist/WishlistCard'
+import WishlistHub from '@/components/watchlist/WishlistHub'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useBuyItems, daysUntilDue } from '@/lib/hooks/useBuyItems'
-import { useWatchItems } from '@/lib/hooks/useWatchItems'
+import { useWishlist } from '@/lib/hooks/useWishlist'
 
 type MoneyTab = 'overview' | 'wishlist' | 'gifts' | 'renewals' | 'buyagain'
 
@@ -38,7 +38,8 @@ export default function MoneyHub({ userId }: { userId: string }) {
   const { subs, total } = useSubscriptions()
   const giftItems = useGiftOccasions()
   const { items: buyItems } = useBuyItems()
-  const { items: wishItems } = useWatchItems()
+  const { wishes } = useWishlist()
+  const wishItems = wishes.filter(w => w.status === 'wanted')
 
   const nextRenewal = [...subs].filter(s => s.renewal_date).sort((a, b) => (a.renewal_date ?? '').localeCompare(b.renewal_date ?? ''))[0]
   const nextGift = giftItems[0]
@@ -86,7 +87,7 @@ export default function MoneyHub({ userId }: { userId: string }) {
         </div>
       )}
 
-      {tab === 'wishlist' && <WishlistCard userId={userId} />}
+      {tab === 'wishlist' && <WishlistHub userId={userId} />}
       {tab === 'gifts'    && <GiftsCard />}
       {tab === 'renewals' && <SubsCard />}
       {tab === 'buyagain' && <BuylistCard userId={userId} />}

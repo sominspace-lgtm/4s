@@ -54,7 +54,7 @@ export function useSearch() {
 
     const [work, wishlist, habits, notes, places, codeLists, bathroomFlagged] = await Promise.all([
       supabase.from('work_items').select('id, title, status, project').ilike('title', term).limit(5),
-      supabase.from('wishlist_items').select('id, name, category').ilike('name', term).limit(5),
+      supabase.from('wish_items').select('id, name, list').eq('status', 'wanted').ilike('name', term).limit(5),
       supabase.from('habits').select('id, name, category').ilike('name', term).limit(4),
       // Title OR body — quick notes (⌘K) are body-only.
       supabase.from('notes').select('id, title, body, pinned').or(`title.ilike.${term},body.ilike.${term}`).limit(5),
@@ -68,7 +68,7 @@ export function useSearch() {
 
     const out: SearchResult[] = []
     for (const r of work.data ?? []) out.push({ id: r.id, type: 'work', title: r.title, subtitle: r.project ? `${r.project} · ${r.status}` : r.status })
-    for (const r of wishlist.data ?? []) out.push({ id: r.id, type: 'wishlist', title: r.name, subtitle: r.category ?? 'Wishlist' })
+    for (const r of wishlist.data ?? []) out.push({ id: r.id, type: 'wishlist', title: r.name, subtitle: r.list ?? 'Wishlist' })
     for (const r of habits.data ?? []) out.push({ id: r.id, type: 'habit', title: r.name, subtitle: r.category ?? 'Habit' })
     for (const r of notes.data ?? []) out.push({ id: r.id, type: 'note', title: noteTitle(r), subtitle: r.pinned ? 'Pinned note' : 'Note' })
 

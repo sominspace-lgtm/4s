@@ -37,10 +37,18 @@ export async function GET(request: Request) {
 
     const title = meta('og:title') ?? head.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? null
     const image = meta('og:image')
+    // A shop page often publishes its price for the same reason it publishes
+    // a title: so link unfurlers can show it. Meta tags first, then JSON-LD.
+    const rawPrice = meta('product:price:amount') ?? meta('og:price:amount')
+      ?? head.match(/"price"\s*:\s*"?([0-9]+(?:[.,][0-9]{1,2})?)"?/)?.[1] ?? null
+    const price = rawPrice ? Number(rawPrice.replace(',', '.')) : null
+    const siteName = meta('og:site_name')
 
     return NextResponse.json({
       title: title ? decodeHtmlEntities(title.trim()).slice(0, 200) : null,
       image,
+      price: price != null && Number.isFinite(price) && price > 0 && price < 1_000_000 ? price : null,
+      siteName: siteName ? decodeHtmlEntities(siteName.trim()).slice(0, 80) : null,
     })
   } catch {
     return NextResponse.json({ title: null, image: null })

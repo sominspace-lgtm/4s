@@ -7,7 +7,7 @@ import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
 import { useGiftOccasions, usePeople, daysSinceContact } from '@/lib/hooks/usePeople'
 import { useNotes } from '@/lib/hooks/useNotes'
-import { useWatchItems } from '@/lib/hooks/useWatchItems'
+import { useWishlist } from '@/lib/hooks/useWishlist'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
 import { useFocusItems } from '@/lib/hooks/useFocusItems'
 import { plantFor } from '@/lib/village/state'
@@ -99,7 +99,8 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const giftItems = useGiftOccasions()
   const { people } = usePeople()
   const { notes } = useNotes(null)
-  const { items: wishItems } = useWatchItems()
+  const { wishes } = useWishlist()
+  const wishItems = wishes.filter(w => w.status === 'wanted')
   const { items: buyItems } = useBuyItems()
 
   // A whisper is dismissible for the day, so it never nags.
