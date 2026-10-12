@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from 'react'
 import { useVault, type VaultEntry } from '@/lib/hooks/useVault'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { DEFAULT_GEN, generatePassword, strengthOf, type GenOptions } from '@/lib/vault/crypto'
 import IconButton from '@/components/ui/IconButton'
 
 // Passwords (2026-10-12). Everything here is encrypted on this device before
 // it is saved; 4S cannot read it and cannot reset it. See lib/vault/crypto.ts.
 
-const CATEGORIES = ['Login', 'Email', 'Bank', 'Shopping', 'Work', 'Home & Wi-Fi', 'Other']
+const CATEGORIES = ['Login', 'Email', 'Bank', 'Shopping', 'Streaming', 'Utilities', 'Home & Wi-Fi', 'Work', 'Travel', 'Other']
 const YEAR_MS = 365 * 86_400_000
 
 const field: React.CSSProperties = {
@@ -39,18 +40,44 @@ function StrengthBar({ pw }: { pw: string }) {
   )
 }
 
+// Two vaults (2026-10-12): Mine (only you, your own passphrase) and Household
+// (both of you, one shared passphrase you agree on in person). Each is
+// encrypted separately, so unlocking one never opens the other.
 export default function VaultHub({ userId }: { userId: string }) {
-  const vault = useVault(userId)
+  const { spaces, members } = useSharedSpaces(userId)
+  const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? null
+  const [scope, setScope] = useState<'mine' | 'household'>(spaceId ? 'household' : 'mine')
+  const seg = (active: boolean): React.CSSProperties => ({
+    fontSize: '0.7rem', padding: '0.3em 0.9em', borderRadius: '7px', cursor: 'pointer', border: 'none',
+    fontFamily: 'var(--font-body)', background: active ? 'var(--surface)' : 'transparent', color: active ? 'var(--text)' : 'var(--muted)',
+  })
+  const active = scope === 'household' && spaceId ? 'household' : 'mine'
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+      {spaceId && (
+        <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem', width: 'fit-content' }}>
+          <button className="press" onClick={() => setScope('household')} style={seg(active === 'household')}>Household</button>
+          <button className="press" onClick={() => setScope('mine')} style={seg(active === 'mine')}>Only me</button>
+        </div>
+      )}
+      <VaultScope key={active} userId={userId} spaceId={active === 'household' ? spaceId : null} />
+    </div>
+  )
+}
+
+function VaultScope({ userId, spaceId }: { userId: string; spaceId: string | null }) {
+  const vault = useVault(userId, spaceId)
+  const household = !!spaceId
 
   if (vault.status === 'loading') return <div style={muted}>Opening…</div>
-  if (vault.status === 'none') return <Setup vault={vault} />
-  if (vault.status === 'locked') return <Locked vault={vault} />
-  return <Unlocked vault={vault} />
+  if (vault.status === 'none') return <Setup vault={vault} household={household} />
+  if (vault.status === 'locked') return <Locked vault={vault} household={household} />
+  return <Unlocked vault={vault} household={household} />
 }
 
 type Vault = ReturnType<typeof useVault>
 
-function Setup({ vault }: { vault: Vault }) {
+function Setup({ vault, household }: { vault: Vault; household: boolean }) {
   const [pass, setPass] = useState('')
   const [again, setAgain] = useState('')
   const [ack, setAck] = useState(false)
@@ -67,10 +94,13 @@ function Setup({ vault }: { vault: Vault }) {
 
   return (
     <div style={{ ...card, maxWidth: '30rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)' }}>Set up your password vault</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)' }}>{household ? 'Set up the household vault' : 'Set up your password vault'}</div>
       <div style={muted}>
-        Pick one passphrase. Everything you save is scrambled on this device with it before it reaches the server, so
-        nobody else can read it, not even us. The tradeoff is that <strong style={{ color: 'var(--text)' }}>if you forget it, the vault cannot be recovered</strong>.
+        {household
+          ? 'Wi-Fi, streaming accounts, utilities, the things you both need. Pick one passphrase and tell your partner in person: you both type the same one to open it. '
+          : 'Pick one passphrase. '}
+        Everything you save is scrambled on this device with it before it reaches the server, so
+        nobody else can read it, not even us. The tradeoff is that <strong style={{ color: 'var(--text)' }}>if it is forgotten, the vault cannot be recovered</strong>.
       </div>
       <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Vault passphrase" autoComplete="new-password" style={field} />
       <StrengthBar pw={pass} />
@@ -85,12 +115,12 @@ function Setup({ vault }: { vault: Vault }) {
   )
 }
 
-function Locked({ vault }: { vault: Vault }) {
+function Locked({ vault, household }: { vault: Vault; household: boolean }) {
   const [pass, setPass] = useState('')
   return (
     <form onSubmit={e => { e.preventDefault(); vault.unlock(pass) }} style={{ ...card, maxWidth: '26rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)' }}>Vault locked</div>
-      <input type="password" autoFocus value={pass} onChange={e => setPass(e.target.value)} placeholder="Vault passphrase" autoComplete="current-password" style={field} />
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)' }}>{household ? 'Household vault locked' : 'Vault locked'}</div>
+      <input type="password" autoFocus value={pass} onChange={e => setPass(e.target.value)} placeholder={household ? 'Household passphrase' : 'Vault passphrase'} autoComplete="current-password" style={field} />
       {vault.error && <div style={{ ...muted, color: 'var(--rose)' }}>{vault.error}</div>}
       <div><button disabled={!pass || vault.busy} className="btn btn-primary press" style={{ fontSize: '0.76rem' }}>{vault.busy ? 'Unlocking…' : 'Unlock'}</button></div>
       <div style={muted}>It locks itself after 5 minutes without use.</div>
@@ -100,7 +130,7 @@ function Locked({ vault }: { vault: Vault }) {
 
 type Filter = 'all' | 'weak' | 'reused' | 'old' | 'favorite'
 
-function Unlocked({ vault }: { vault: Vault }) {
+function Unlocked({ vault, household }: { vault: Vault; household: boolean }) {
   const { entries } = vault
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('All')
@@ -176,7 +206,7 @@ function Unlocked({ vault }: { vault: Vault }) {
         />
       )}
 
-      {entries.length === 0 && !editing && <div style={{ ...muted, fontStyle: 'italic', textAlign: 'center', padding: '1.2rem 0' }}>Nothing saved yet. Add your first one.</div>}
+      {entries.length === 0 && !editing && <div style={{ ...muted, fontStyle: 'italic', textAlign: 'center', padding: '1.2rem 0' }}>{household ? 'Nothing saved yet. Start with the Wi-Fi and the streaming accounts.' : 'Nothing saved yet. Add your first one.'}</div>}
       {entries.length > 0 && shown.length === 0 && <div style={{ ...muted, textAlign: 'center', padding: '1rem 0' }}>No matches.</div>}
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
