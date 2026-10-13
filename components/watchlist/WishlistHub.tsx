@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
-import { useWishlist, atTarget, WISH_LISTS, type Wish, type WishDraft } from '@/lib/hooks/useWishlist'
+import { useWishlist, useWishShares, atTarget, WISH_LISTS, type Wish, type WishDraft } from '@/lib/hooks/useWishlist'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
 // The wishlist (2026-10-12): paste a link and the picture, name, store and
@@ -36,6 +36,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
   const [quick, setQuick] = useState('')
   const [fetching, setFetching] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [sharing, setSharing] = useState(false)
 
   const wanted = wishes.filter(w => w.status === 'wanted')
   const bought = wishes.filter(w => w.status === 'bought')
@@ -94,6 +95,13 @@ export default function WishlistHub({ userId }: { userId: string }) {
         {hits > 0 && <Stat label="at your price" value={String(hits)} accent />}
         {bought.length > 0 && <Stat label="got so far" value={`${bought.length} · ${money(spent) || '$0'}`} />}
       </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={() => setSharing(s => !s)} className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}>{sharing ? 'Close sharing' : 'Share this wishlist'}</button>
+      </div>
+      {sharing && <SharePanel lists={lists.filter(l => l !== 'All')} spaceId={spaceId} mineWanted={wanted.filter(w => w.user_id === me)} onShareAll={async () => {
+        for (const w of wanted.filter(x => x.user_id === me && !x.space_id)) await update(w.id, { space_id: spaceId })
+      }} />}
 
       {/* quick add */}
       <form onSubmit={e => { e.preventDefault(); quickAdd() }} style={{ display: 'flex', gap: '0.5rem' }}>
@@ -207,13 +215,13 @@ function Card({ w, me, onEdit, onDelete, onBought, onBack, onChecked, onClaim }:
 
         {/* claim: a partner marks a shared wish as theirs to buy. The wisher only sees that it is taken, not by whom. */}
         {!mine && w.status === 'wanted' && (
-          w.reserved_by == null
+          w.reserved_by == null && !w.claimed_name
             ? <button style={btn} onClick={() => onClaim(true)}>I&apos;ll get this</button>
             : w.reserved_by === me
               ? <button style={{ ...btn, color: 'var(--emerald)' }} onClick={() => onClaim(false)}>You&apos;re getting this (undo)</button>
               : <span style={muted}>Someone is getting this</span>
         )}
-        {mine && w.reserved_by && w.status === 'wanted' && <span style={{ ...muted, color: 'var(--emerald)' }}>Someone has this covered</span>}
+        {mine && (w.reserved_by || w.claimed_name) && w.status === 'wanted' && <span style={{ ...muted, color: 'var(--emerald)' }}>Someone has this covered</span>}
 
         {mine && (
           <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.3rem' }}>
@@ -303,6 +311,80 @@ function Editor({ initial, seed, spaceId, onSave, onCancel }: {
         <button onClick={save} disabled={saving} className="btn btn-primary press" style={{ fontSize: '0.74rem' }}>{saving ? 'Saving…' : 'Save'}</button>
         <button onClick={onCancel} className="btn btn-ghost press" style={{ fontSize: '0.74rem' }}>Cancel</button>
       </div>
+    </div>
+  )
+}
+
+// Share the list (2026-10-12): two ways. With your household, where your
+// partner sees it inside 4S and can claim a gift. With anyone else, by a link
+// that needs no account: they see the list (or one list), and can tell you
+// something is covered. You only ever see "covered", not who.
+function SharePanel({ lists, spaceId, mineWanted, onShareAll }: {
+  lists: string[]; spaceId: string | null; mineWanted: Wish[]; onShareAll: () => Promise<void>
+}) {
+  const { shares, create, stop } = useWishShares()
+  const [scope, setScope] = useState('')
+  const [title, setTitle] = useState('')
+  const [note, setNote] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const urlFor = (token: string) => `${window.location.origin}/w/${token}`
+  const unsharedCount = mineWanted.filter(w => !w.space_id).length
+
+  async function make() {
+    setBusy(true); setNote(null)
+    const r = await create(scope || null, title)
+    setBusy(false)
+    if (r.error) { setNote(r.error); return }
+    setTitle('')
+    await copy(urlFor(r.token!))
+  }
+  async function copy(url: string) {
+    try { await navigator.clipboard.writeText(url); setNote('Link copied.') } catch { setNote(url) }
+  }
+
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+      {spaceId && (
+        <div>
+          <div style={{ fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.3rem' }}>With your household</div>
+          <div style={{ ...muted, marginBottom: '0.4rem' }}>Your partner sees these in 4S and can quietly claim one as a gift. You can also do it one wish at a time when you edit it.</div>
+          <button className="btn btn-secondary press" style={{ fontSize: '0.7rem' }} disabled={unsharedCount === 0} onClick={onShareAll}>
+            {unsharedCount === 0 ? 'Everything is already shared' : `Share ${unsharedCount} wish${unsharedCount === 1 ? '' : 'es'} with the household`}
+          </button>
+        </div>
+      )}
+
+      <div>
+        <div style={{ fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.3rem' }}>With anyone, by link</div>
+        <div style={{ ...muted, marginBottom: '0.5rem' }}>No account needed. They see the picture, price, link and your notes, and can tap &ldquo;I&rsquo;ll get this&rdquo;. You only see that it is covered.</div>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <select value={scope} onChange={e => setScope(e.target.value)} style={{ ...field, width: 'auto' }}>
+            <option value="">Everything I want</option>
+            {lists.map(l => <option key={l} value={l}>Just {l}</option>)}
+          </select>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (optional)" style={{ ...field, maxWidth: '14rem' }} />
+          <button className="btn btn-primary press" style={{ fontSize: '0.72rem' }} disabled={busy} onClick={make}>{busy ? '…' : 'Make a link'}</button>
+        </div>
+      </div>
+
+      {note && <div style={muted}>{note}</div>}
+
+      {shares.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          {shares.map(sh => (
+            <div key={sh.token} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.74rem' }}>
+              <span style={{ flex: 1, minWidth: '8rem' }}>{sh.title}<span style={{ color: 'var(--muted)' }}> · {sh.list ?? 'everything'}</span></span>
+              <button style={{ fontSize: '0.64rem', padding: '0.2em 0.6em', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer' }} onClick={() => copy(urlFor(sh.token))}>Copy link</button>
+              {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <button style={{ fontSize: '0.64rem', padding: '0.2em 0.6em', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer' }}
+                  onClick={() => navigator.share({ title: sh.title, url: urlFor(sh.token) }).catch(() => {})}>Send</button>
+              )}
+              <button style={{ fontSize: '0.64rem', padding: '0.2em 0.6em', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--rose)', cursor: 'pointer' }}
+                onClick={async () => { if (window.confirm('Turn this link off? Anyone who has it will see a not-found page.')) setNote(await stop(sh.token)) }}>Stop sharing</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

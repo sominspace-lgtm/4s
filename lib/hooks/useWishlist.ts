@@ -24,6 +24,8 @@ export interface Wish {
   bought_at: string | null
   bought_price: number | null
   reserved_by: string | null
+  /** Set when someone claimed it through a shared link. The owner is never shown who. */
+  claimed_name?: string | null
   last_checked: string
   created_at: string
 }
@@ -102,4 +104,45 @@ export function useWishlist() {
   }
 
   return { wishes, loading, userId, error, add, update, remove, claim }
+}
+
+export interface WishShare { token: string; list: string | null; title: string; created_at: string }
+
+const newToken = () => {
+  const b = new Uint8Array(18)
+  crypto.getRandomValues(b)
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+// Share links (2026-10-12): anyone with the link can see the list (all your
+// wishes, or one list) and tell you something is covered. You can stop a link
+// any time.
+export function useWishShares() {
+  const supabase = createClient()
+  const [shares, setShares] = useState<WishShare[]>([])
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('wish_shares').select('token, list, title, created_at').order('created_at', { ascending: false })
+    setShares((data as WishShare[] | null) ?? [])
+  }, [supabase])
+  useEffect(() => { load() }, [load])
+
+  async function create(list: string | null, title: string): Promise<{ token: string | null; error: string | null }> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { token: null, error: 'Not signed in' }
+    const token = newToken()
+    const { error } = await supabase.from('wish_shares').insert({ token, user_id: user.id, list, title: title.trim() || (list ?? 'My wishlist') })
+    if (error) return { token: null, error: error.message }
+    await load()
+    return { token, error: null }
+  }
+
+  async function stop(token: string): Promise<string | null> {
+    const { error } = await supabase.from('wish_shares').delete().eq('token', token)
+    if (error) return error.message
+    await load()
+    return null
+  }
+
+  return { shares, create, stop }
 }

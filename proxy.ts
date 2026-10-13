@@ -51,6 +51,10 @@ export async function proxy(request: NextRequest) {
     || pathname.startsWith('/api/g/')
     // Shared keepsake page — public read-only, resolved by unguessable token.
     || pathname.startsWith('/keepsake/')
+    // A wishlist shared by link (2026-10-12): the page and its "I'll get this"
+    // route resolve by token against the admin client, like /g and /keepsake.
+    || pathname.startsWith('/w/')
+    || pathname.startsWith('/api/w/')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each
     // does its own PIN check (or none, for pin-status's read-only lookup)
