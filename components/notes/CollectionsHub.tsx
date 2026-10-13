@@ -128,7 +128,7 @@ export default function CollectionsHub({ userId }: { userId: string }) {
 
 export function CollectionCards({ collections, onOpen }: { collections: Collection[]; onOpen: (id: string) => void }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(12rem, 1fr))', gap: '0.7rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', gap: '0.7rem' }}>
       {collections.map(c => (
         <button key={c.id} onClick={() => onOpen(c.id)} className="press" style={{
           textAlign: 'left', cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px',

@@ -111,7 +111,7 @@ export default function MealPlanner({ h, book, onBuildList, onOpenRecipe }: {
       </div>
       {note && <div style={{ ...muted, color: 'var(--text)' }}>{note}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(10rem, 1fr))', gap: '0.7rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(10rem, 100%), 1fr))', gap: '0.7rem' }}>
         {days.map(d => {
           const cal = dayCalories(d)
           const isToday = isSameDay(d, today)

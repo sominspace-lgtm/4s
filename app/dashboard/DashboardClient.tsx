@@ -39,6 +39,7 @@ import PlacesHub from '@/components/places/PlacesHub'
 import UnlockPanel from '@/components/ui/UnlockPanel'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
+import ShareInbox from '@/components/share/ShareInbox'
 import { scrollToAnchor, goToSection } from '@/lib/utils/navigate'
 import { ignoreShortcut } from '@/lib/utils/shortcuts'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
@@ -564,12 +565,12 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // into the Tasks section 2026-09-03 (see TasksTab).
         case 'tasks':    return <TasksTab key="tasks" userId={userId} />
         case 'habits':   return <HabitsTab key="habits" userId={userId} />
-        case 'notes':    return <NotesHub key="notes" userId={userId} />
+        case 'notes':    return <div key="notes" className="roomy"><NotesHub userId={userId} /></div>
         case 'mail':     return <MailHub key="mail" userId={userId} />
-        case 'money':    return <MoneyHub key="money" userId={userId} />
+        case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
         case 'people':   return <PeopleHub key="people" />
-        case 'vault':    return <VaultHub key="vault" userId={userId} />
-        case 'kitchen':  return <KitchenHub key="kitchen" userId={userId} sharedMode={sharedMode} />
+        case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
+        case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
         // Places (2026-09-09) — the map carries a docked pin list, so it's
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />
@@ -632,6 +633,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} userId={userId} accountCreatedAt={accountCreatedAt} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
+      {!sharedMode && <ShareInbox />}
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
       <MailPanel open={mailOpen} userId={userId} onClose={() => setMailOpen(false)} />
       <NotificationsPanel open={notificationsOpen} prefs={notifyPrefs} onChange={changeNotifyPrefs} onClose={() => setNotificationsOpen(false)} />

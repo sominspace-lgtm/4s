@@ -7,6 +7,7 @@ import { useRecipes } from '@/lib/hooks/useRecipes'
 import { useHousehold } from '@/lib/hooks/useHousehold'
 import { useFoodLog } from '@/lib/hooks/useFoodLog'
 import RecipeBook from './RecipeBook'
+import { RECIPE_URL_KEY } from '@/lib/share/parse'
 import { INCOMING_KEY, decodeIncoming, draftFromBlocks, type Incoming } from '@/lib/recipes/bookmarklet'
 import type { RecipeDraft } from '@/lib/recipes/types'
 import MealPlanner from './MealPlanner'
@@ -36,6 +37,8 @@ export default function KitchenHub({ userId, sharedMode = false }: { userId: str
   const [openId, setOpenId] = useState<string | null>(null)
   const [week, setWeek] = useState<string | null>(null)
   // A recipe sent over by the "Save from any page" bookmarklet.
+  // A link or words sent from the phone's share sheet, to read straight away.
+  const [shared, setShared] = useState<{ url: string | null; text: string } | null>(null)
   const [incoming, setIncoming] = useState<{ draft: RecipeDraft | null; text: string | null; url: string } | null>(null)
 
   // Another screen (the village, Today) can ask for a particular recipe.
@@ -43,6 +46,10 @@ export default function KitchenHub({ userId, sharedMode = false }: { userId: str
     try {
       const id = sessionStorage.getItem(KITCHEN_OPEN_KEY)
       if (id) { sessionStorage.removeItem(KITCHEN_OPEN_KEY); setOpenId(id); setTab('recipes') }
+    } catch { /* private mode */ }
+    try {
+      const sh = sessionStorage.getItem(RECIPE_URL_KEY)
+      if (sh) { sessionStorage.removeItem(RECIPE_URL_KEY); setShared(JSON.parse(sh)); setTab('recipes') }
     } catch { /* private mode */ }
     try {
       const raw = sessionStorage.getItem(INCOMING_KEY)
@@ -72,7 +79,7 @@ export default function KitchenHub({ userId, sharedMode = false }: { userId: str
 
       {book.error && <div style={muted}>{book.error}</div>}
 
-      {tab === 'recipes' && <RecipeBook book={book} h={h} food={food} spaceId={spaceId} openId={openId} onOpen={setOpenId} incoming={incoming} onIncomingHandled={() => setIncoming(null)} />}
+      {tab === 'recipes' && <RecipeBook book={book} h={h} food={food} spaceId={spaceId} openId={openId} onOpen={setOpenId} shared={shared} onSharedHandled={() => setShared(null)} incoming={incoming} onIncomingHandled={() => setIncoming(null)} />}
       {tab === 'plan' && <MealPlanner h={h} book={book} onBuildList={w => { setWeek(w); setTab('groceries') }} onOpenRecipe={id => { setOpenId(id); setTab('recipes') }} />}
       {tab === 'groceries' && <GroceryBuilder h={h} book={book} weekStart={week} />}
       {tab === 'calories' && !sharedMode && <CalorieTracker userId={userId} book={book} h={h} />}

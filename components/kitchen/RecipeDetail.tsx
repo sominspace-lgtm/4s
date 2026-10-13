@@ -8,6 +8,7 @@ import { minutesLabel } from '@/lib/recipes/time'
 import type { useHousehold, Meal } from '@/lib/hooks/useHousehold'
 import type { useFoodLog, FoodSlot } from '@/lib/hooks/useFoodLog'
 import CookMode from './CookMode'
+import RecipeShare from './RecipeShare'
 import { card, field, label, muted, small } from './ui'
 
 // One recipe (2026-10-13): scale it, tick ingredients as you gather them, cook
@@ -26,7 +27,7 @@ export default function RecipeDetail({ r, h, food, canShare, shared, onBack, onE
   const [servings, setServings] = useState(r.servings)
   const [ticked, setTicked] = useState<Set<string>>(new Set())
   const [cooking, setCooking] = useState(false)
-  const [panel, setPanel] = useState<'plan' | 'log' | null>(null)
+  const [panel, setPanel] = useState<'plan' | 'log' | 'send' | null>(null)
   const [planDay, setPlanDay] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [planSlot, setPlanSlot] = useState<Meal['slot']>('dinner')
   const [logSlot, setLogSlot] = useState<FoodSlot>('dinner')
@@ -110,8 +111,10 @@ export default function RecipeDetail({ r, h, food, canShare, shared, onBack, onE
         <button className="btn btn-ghost press" style={{ fontSize: '0.74rem' }} onClick={() => setPanel(panel === 'plan' ? null : 'plan')}>Put on the plan</button>
         <button className="btn btn-ghost press" style={{ fontSize: '0.74rem' }} onClick={() => setPanel(panel === 'log' ? null : 'log')}>Log what we ate</button>
         <button className="btn btn-ghost press" style={{ fontSize: '0.74rem' }} onClick={onCooked}>We made this</button>
+        <button className="btn btn-ghost press" style={{ fontSize: '0.74rem' }} onClick={() => setPanel(panel === 'send' ? null : 'send')}>Send to someone</button>
       </div>
       {note && <div style={{ ...muted, color: 'var(--text)' }}>{note}</div>}
+      {panel === 'send' && <RecipeShare recipeId={r.id} title={r.title} />}
 
       {panel === 'plan' && (
         <div style={{ ...card, display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>

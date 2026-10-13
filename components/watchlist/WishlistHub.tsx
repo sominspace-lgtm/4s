@@ -150,7 +150,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(11.5rem, 1fr))', gap: '0.8rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr))', gap: '0.8rem' }}>
         {shown.map(w => (
           <Card key={w.id} w={w} me={me}
             onEdit={() => { setSeed(null); setEditing(w) }}

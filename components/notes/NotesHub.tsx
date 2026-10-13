@@ -203,7 +203,7 @@ function NotesList({ userId }: { userId: string }) {
         <div style={{ textAlign: 'center', padding: '1.2rem 0', fontSize: '0.75rem', color: 'var(--muted)' }}>No notes match.</div>
       )}
 
-      <div className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.7rem' }}>
+      <div className="grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: '0.7rem' }}>
         {shown.map(n => {
           const progress = checklistProgress(n.body)
           return (

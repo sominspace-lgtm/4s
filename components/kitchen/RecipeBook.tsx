@@ -16,12 +16,15 @@ import { card, chip, field, muted } from './ui'
 
 type Sort = 'new' | 'fav' | 'cooked' | 'quick'
 
-export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, incoming, onIncomingHandled }: {
+export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, incoming, onIncomingHandled, shared, onSharedHandled }: {
   book: ReturnType<typeof useRecipes>; h: ReturnType<typeof useHousehold>; food: ReturnType<typeof useFoodLog>
   spaceId: string | null; openId: string | null; onOpen: (id: string | null) => void
   /** Sent from the bookmarklet: a ready draft, or page text to read. */
   incoming?: { draft: RecipeDraft | null; text: string | null; url: string } | null
   onIncomingHandled?: () => void
+  /** Sent from the phone's share sheet: read it straight away. */
+  shared?: { url: string | null; text: string } | null
+  onSharedHandled?: () => void
 }) {
   const { recipes, loading } = book
   const [q, setQ] = useState('')
@@ -42,6 +45,14 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
     onIncomingHandled?.()
   // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per incoming recipe
   }, [incoming])
+
+  const [auto, setAuto] = useState<{ url: string | null; text: string } | null>(null)
+  useEffect(() => {
+    if (!shared) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hand the share to the importer once
+    setAuto(shared); setAdding(true); onSharedHandled?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per share
+  }, [shared])
 
   const open = recipes.find(r => r.id === openId) ?? null
   const tags = useMemo(() => {
@@ -112,7 +123,7 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
       </div>
 
       {adding && (
-        <RecipeImport prefill={prefill} onClose={() => { setAdding(false); setPrefill(null) }} onWrite={() => { setAdding(false); setDraft({ d: null, via: 'manual' }) }}
+        <RecipeImport prefill={prefill} auto={auto} onClose={() => { setAdding(false); setPrefill(null); setAuto(null) }} onWrite={() => { setAdding(false); setDraft({ d: null, via: 'manual' }) }}
           onDraft={(d, via) => { setAdding(false); setDraft({ d, via }) }} />
       )}
       {notice && <div style={muted}>{notice}</div>}
@@ -130,7 +141,7 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
       )}
       {recipes.length > 0 && shown.length === 0 && <div style={{ ...muted, textAlign: 'center', padding: '1rem 0' }}>No recipes match.</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(11.5rem, 1fr))', gap: '0.8rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr))', gap: '0.8rem' }}>
         {shown.map(r => <RecipeCard key={r.id} r={r} onOpen={() => onOpen(r.id)} />)}
       </div>
     </div>

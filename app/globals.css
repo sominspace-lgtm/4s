@@ -316,6 +316,14 @@ select, option {
   .btn { min-height: 40px; font-size: max(0.75rem, 1em) !important; }
   .card-interactive { padding: 1rem !important; }
 
+  /* The Kitchen, Vault, Notes and Money screens use many small inline-styled
+     buttons; on a phone every one of them gets a thumb-sized target and a
+     readable size, and tick boxes get bigger. */
+  .roomy button { min-height: 40px; min-width: 40px; }
+  .roomy button:not(.btn) { font-size: max(0.8rem, 1em) !important; padding-left: 0.8em; padding-right: 0.8em; }
+  .roomy input[type="checkbox"], .roomy input[type="radio"] { width: 22px; height: 22px; min-height: 0; }
+  .roomy { overflow-wrap: anywhere; }
+
   /* Respacing pass: match the 1rem side padding used everywhere else,
      tighten the rhythm between stacked sections, and left-align controls
      that wrap instead of hugging the right edge. */

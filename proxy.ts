@@ -54,6 +54,8 @@ export async function proxy(request: NextRequest) {
     // A wishlist shared by link (2026-10-12): the page and its "I'll get this"
     // route resolve by token against the admin client, like /g and /keepsake.
     || pathname.startsWith('/w/')
+    // A recipe sent by link (2026-10-13): read-only, resolved by token.
+    || pathname.startsWith('/r/')
     || pathname.startsWith('/api/w/')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each

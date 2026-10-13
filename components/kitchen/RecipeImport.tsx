@@ -25,16 +25,18 @@ async function shrink(file: File): Promise<{ data: string; mime: string }> {
   return { data: url.split(',')[1], mime: 'image/jpeg' }
 }
 
-export default function RecipeImport({ onDraft, onWrite, onClose, prefill }: {
+export default function RecipeImport({ onDraft, onWrite, onClose, prefill, auto }: {
   onDraft: (d: RecipeDraft, via: string) => void
   onWrite: () => void
   onClose: () => void
   /** Page text sent by the bookmarklet, ready to be read. */
   prefill?: { text: string; url: string } | null
+  /** Shared from the phone: a link to read right away, or words to read. */
+  auto?: { url: string | null; text: string } | null
 }) {
-  const [mode, setMode] = useState<Mode>(prefill ? 'text' : 'link')
-  const [url, setUrl] = useState('')
-  const [text, setText] = useState(prefill?.text ?? '')
+  const [mode, setMode] = useState<Mode>(prefill || (auto && !auto.url) ? 'text' : 'link')
+  const [url, setUrl] = useState(auto?.url ?? '')
+  const [text, setText] = useState(prefill?.text ?? (auto && !auto.url ? auto.text : ''))
   const [bookmarklet, setBookmarklet] = useState(false)
   const linkRef = useRef<HTMLAnchorElement>(null)
   // A javascript: link is set on the element directly: React refuses to render one from props.
@@ -56,6 +58,15 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill }: {
     } catch { setErr({ message: 'Could not reach the server. Check your connection and try again.' }) }
     finally { setBusy(false) }
   }
+
+  // A link shared from the phone is read the moment this opens.
+  const started = useRef(false)
+  useEffect(() => {
+    if (started.current || !auto?.url) return
+    started.current = true
+    void send({ url: auto.url })
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once
+  }, [])
 
   async function photo(file: File | null) {
     if (!file) return
@@ -116,7 +127,9 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill }: {
             <div>Some sites block automatic reading. This button reads the page in your own browser instead, so it works on any site you can open, and sends it here.</div>
             <div>On a computer: drag this to your bookmarks bar, then click it on any recipe page.</div>
             <a ref={linkRef} onClick={e => e.preventDefault()} draggable className="btn btn-secondary press" style={{ alignSelf: 'flex-start', fontSize: '0.74rem', cursor: 'grab' }}>Save to 4S</a>
-            <div>On a phone, bookmarklets are fiddly. Instead, open the page, tap and hold to select all, copy, then use Paste text. Or take a screenshot and use Photo.</div>
+            <div>On an Android phone: open 4S in Chrome, tap the menu, then Install app. After that, 4S shows up in the Share menu of every app. Share a recipe link to 4S and pick what it is.</div>
+            <div>On an iPhone: open Shortcuts, make a new shortcut, and turn on Show in Share Sheet. Add the action Open URLs with this address, using the shared link at the end: <span style={{ color: 'var(--text)', wordBreak: 'break-all' }}>{typeof window !== 'undefined' ? window.location.origin : ''}/share-target?url=</span> Name it 4S. It then appears when you tap Share in Safari, TikTok or Instagram.</div>
+            <div>Or open the page, copy the text, and use Paste text. A screenshot works too.</div>
             <button style={{ ...small, alignSelf: 'flex-start' }} onClick={() => { try { navigator.clipboard.writeText(buildBookmarklet(window.location.origin)) } catch { /* no clipboard */ } }}>Copy the bookmark code</button>
           </div>
         )}
