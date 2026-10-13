@@ -223,6 +223,54 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // filterable map, the same refactor todayBlocks.ts already did for Today's
   // own content. Each renderer closes over the local state/handlers above.
   const homeBlockRenderers: Record<HomeBlockId, () => React.ReactNode> = {
+    glance: () => <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} />,
+
+    // Today's meals, straight from the Kitchen plan (2026-10-13).
+    tonight: () => {
+      const today = h.meals.filter(m => isSameDay(parseISO(m.meal_date), new Date())).sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot])
+      const openRecipe = (id: string | null | undefined) => {
+        if (id) { try { sessionStorage.setItem('4s:kitchen-open', id) } catch { /* private mode */ } }
+        goToSection('kitchen')
+      }
+      return (
+        <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>Kitchen today</div>
+          {today.length === 0
+            ? <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Nothing planned for today.</div>
+            : today.map(m => (
+              <button key={m.id} className="press" onClick={() => openRecipe(m.recipe_id)} style={{ display: 'flex', gap: '0.6rem', alignItems: 'baseline', textAlign: 'left', background: 'none', border: 'none', padding: '0.2rem 0', cursor: 'pointer', color: 'var(--text)', fontSize: '0.88rem', fontFamily: 'var(--font-body)' }}>
+                <span style={{ fontSize: '0.64rem', color: 'var(--muted)', minWidth: '4.5rem', textTransform: 'capitalize' }}>{m.kind === 'eating_out' ? m.slot + ' out' : m.slot}</span>
+                <span>{m.title}</span>
+              </button>
+            ))}
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary press" style={{ fontSize: '0.74rem' }} onClick={() => openRecipe(null)}>Open Kitchen</button>
+          </div>
+        </section>
+      )
+    },
+
+    shortcuts: () => (
+      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>Shortcuts</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(8rem, 100%), 1fr))', gap: '0.5rem' }}>
+          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Lists', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes']] as const).map(([label, id]) => (
+            <button key={id} className="press" onClick={() => goToSection(id)} style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: '0.84rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{label}</button>
+          ))}
+        </div>
+      </section>
+    ),
+
+    notes: () => <HouseholdNotes spaceId={spaceId} />,
+
+    smartHome: () => (
+      <button onClick={openSmartHome} className="press" style={{
+        alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+        color: 'var(--muted)', fontSize: '0.8rem', padding: '0.5rem 0', minHeight: 44,
+        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+      }}><Icon name="gear" size={12} /> Smart Home</button>
+    ),
+
     // The household calendar — its own section until 2026-09-02, a Home
     // block again now (calendar isn't a place you live in, it's something
     // you check). Routines removed from Household 2026-09-08.
@@ -765,26 +813,15 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
       {tab === 'home' && (
         <>
-          {/* Fixed, not part of homeBlocks — this is the one section meant
-              to always be first, so it isn't reorderable or hideable like
-              the blocks below it (2026-08-21). */}
-          <HouseholdAtAGlance spaceId={spaceId} chores={h.chores} meals={h.meals} shopping={h.shopping} />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={() => setHomeCustomizeOpen(true)} title="Customize Home" className="press" style={{
-              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.5, fontSize: '0.68rem', padding: '0.2rem',
-              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-            }}><Icon name="gear" size={11} /> arrange</button>
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.8rem', padding: '0.5rem 0.2rem', minHeight: 44,
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            }}><Icon name="gear" size={13} /> Choose what shows here</button>
           </div>
           {homeBlocks.filter(b => !b.hidden).map(b => (
             <div key={b.id}>{homeBlockRenderers[b.id as HomeBlockId]()}</div>
           ))}
-          {/* Smart Home lost its Home-Bar pill 2026-09-03 — keep a way in
-              here for a phone-only user who never taps the Village cottage. */}
-          <button onClick={openSmartHome} className="press" style={{
-            alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--muted)', opacity: 0.6, fontSize: '0.7rem', padding: '0.3rem 0',
-            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-          }}><Icon name="gear" size={11} /> Smart Home</button>
         </>
       )}
 
