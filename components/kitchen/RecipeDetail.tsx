@@ -105,6 +105,12 @@ export default function RecipeDetail({ r, h, food, canShare, shared, onBack, onE
         </div>
       </div>
 
+      {link && r.ingredients.length === 0 && r.steps.length === 0 && (
+        <a href={link} target="_blank" rel="noopener noreferrer" className="btn btn-primary press" style={{ alignSelf: 'flex-start', minHeight: 44, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+          Open the recipe ↗
+        </a>
+      )}
+
       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button className="btn btn-primary press" style={{ fontSize: '0.74rem' }} disabled={r.steps.length === 0} onClick={() => setCooking(true)}>Cook it</button>
         <button className="btn btn-secondary press" style={{ fontSize: '0.74rem' }} onClick={toShoppingList}>Add to shopping list</button>

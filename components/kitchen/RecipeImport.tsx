@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import type { RecipeDraft } from '@/lib/recipes/types'
+import { EMPTY_DRAFT, type RecipeDraft } from '@/lib/recipes/types'
 import { buildBookmarklet } from '@/lib/recipes/bookmarklet'
 import { card, field, label, muted, small, chip } from './ui'
 
@@ -68,6 +68,22 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill, auto 
   // eslint-disable-next-line react-hooks/exhaustive-deps -- once
   }, [])
 
+  // Keep just the link: a recipe you want to find again, with nothing pulled from it.
+  async function saveLink() {
+    const u = url.trim()
+    if (!/^https?:\/\//i.test(u)) { setErr({ message: 'Paste a link that starts with http.' }); return }
+    setBusy(true); setErr(null)
+    let title = '', image: string | null = null
+    try {
+      const r = await fetch(`/api/link-preview?url=${encodeURIComponent(u)}`)
+      if (r.ok) { const j = await r.json() as { title?: string | null; image?: string | null }; title = j.title ?? ''; image = j.image ?? null }
+    } catch { /* the link alone is enough */ }
+    setBusy(false)
+    let host = ''
+    try { host = new URL(u).hostname.replace(/^www\./, '') } catch { /* keep blank */ }
+    onDraft({ ...EMPTY_DRAFT, title: title || host || 'Saved recipe', source_url: u, source_name: host || null, image_url: image, tags: ['saved link'] }, 'link')
+  }
+
   async function photo(file: File | null) {
     if (!file) return
     setBusy(true); setErr(null)
@@ -94,8 +110,8 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill, auto 
       {mode === 'link' && (
         <form onSubmit={e => { e.preventDefault(); if (url.trim()) send({ url }) }} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Paste a recipe link, a YouTube video, a TikTok or Instagram post" style={field} autoFocus />
-          <div style={muted}>Recipe sites import exactly. Social posts are read from the caption.</div>
-          <div><button disabled={busy || !url.trim()} className="btn btn-primary press" style={{ fontSize: '0.74rem' }}>{busy ? 'Reading…' : 'Import'}</button></div>
+          <div style={muted}>Recipe sites import exactly. Social posts are read from the caption. Or keep only the link and open it when you cook.</div>
+          <div><button disabled={busy || !url.trim()} className="btn btn-primary press" style={{ fontSize: '0.74rem' }}>{busy ? 'Reading…' : 'Import'}</button> <button type="button" disabled={busy || !url.trim()} onClick={saveLink} className="btn btn-secondary press" style={{ fontSize: '0.74rem', marginLeft: '0.4rem' }}>Just save the link</button></div>
         </form>
       )}
 
@@ -137,7 +153,7 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill, auto 
 
       {err && (
         <div style={{ ...muted, color: err.code === 'not-configured' ? 'var(--muted)' : 'var(--rose)' }}>
-          {err.message}
+          {err.message}{url.trim() && <> <button type="button" onClick={saveLink} style={{ ...small, marginLeft: '0.3rem' }}>Save the link instead</button></>}
         </div>
       )}
     </div>
