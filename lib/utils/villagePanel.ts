@@ -11,7 +11,7 @@ import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 
 export type VillagePanelBlockId =
   | 'house'      // scenes + device toggles (ScenesCard)
-  | 'shortcuts'  // tab jump tiles + Kitchen / Home Cheat Sheet
+  | 'shortcuts'  // tab jump tiles
   | 'progress'   // garden growth, habits today, streak, projects
   | 'calendar'   // a compact month with a dot per dated day
   | 'todos'      // household checklists (useLists) with check-off + add
@@ -21,7 +21,7 @@ export type VillagePanelBlockId =
 
 export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: string; hint: string }> = {
   house:     { label: 'House controls', hint: 'Scenes and every light, lock, plug' },
-  shortcuts: { label: 'Shortcuts',      hint: 'Jump to any tab, plus the cheat sheets' },
+  shortcuts: { label: 'Shortcuts',      hint: 'Jump to any tab' },
   progress:  { label: 'Progress',       hint: 'The garden, habits today, your streak' },
   calendar:  { label: 'Calendar',       hint: 'The month, with a dot on every dated day' },
   todos:     { label: 'To-do lists',    hint: 'Household checklists you can tick off here' },

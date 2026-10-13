@@ -34,6 +34,10 @@ export interface Meal {
   // at the restaurant's real pin instead of storing its name a second time.
   kind: 'cooking' | 'eating_out'
   place_id: string | null
+  /** The saved recipe this meal cooks, if any (2026-10-13). Optional, a meal can stay just a title. */
+  recipe_id?: string | null
+  /** How many servings are being made. null = the recipe's own. */
+  servings?: number | null
 }
 
 export interface ShoppingItem {
@@ -178,7 +182,7 @@ export function useHousehold(spaceId: string | null) {
 
   async function addMeal(
     meal_date: string, slot: Meal['slot'], title: string, cook: string | null,
-    extra?: { kind?: Meal['kind']; place_id?: string | null },
+    extra?: { kind?: Meal['kind']; place_id?: string | null; recipe_id?: string | null; servings?: number | null },
   ) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Not signed in' }
@@ -186,7 +190,23 @@ export function useHousehold(spaceId: string | null) {
       .insert({
         user_id: user.id, space_id: spaceId, meal_date, slot, title, cook,
         kind: extra?.kind ?? 'cooking', place_id: extra?.place_id ?? null,
+        ...(extra?.recipe_id ? { recipe_id: extra.recipe_id } : {}),
+        ...(extra?.servings ? { servings: extra.servings } : {}),
       })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  // Several meals at once (copy a week, fill the week from favorites): one
+  // insert and one reload instead of one of each per meal.
+  async function addMeals(rows: { meal_date: string; slot: Meal['slot']; title: string; recipe_id?: string | null; servings?: number | null; kind?: Meal['kind'] }[]) {
+    if (rows.length === 0) return { error: null }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in' }
+    const { error } = await supabase.from('household_meals').insert(rows.map(r => ({
+      user_id: user.id, space_id: spaceId, meal_date: r.meal_date, slot: r.slot, title: r.title,
+      kind: r.kind ?? 'cooking', ...(r.recipe_id ? { recipe_id: r.recipe_id } : {}), ...(r.servings ? { servings: r.servings } : {}),
+    })))
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
   }
@@ -197,7 +217,7 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
-  async function updateMeal(id: string, fields: Partial<Pick<Meal, 'notes' | 'recipe_url' | 'kind' | 'place_id' | 'title'>>) {
+  async function updateMeal(id: string, fields: Partial<Pick<Meal, 'notes' | 'recipe_url' | 'kind' | 'place_id' | 'title' | 'recipe_id' | 'servings' | 'cook' | 'meal_date' | 'slot'>>) {
     const { error } = await supabase.from('household_meals').update(fields).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }
@@ -295,11 +315,22 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
+  // Many list items in one go (a recipe's ingredients): one insert, one reload.
+  async function addShoppingMany(items: { name: string; qty: string | null; category: string | null }[]) {
+    if (items.length === 0) return { error: null }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not signed in' }
+    const { error } = await supabase.from('household_shopping')
+      .insert(items.map(i => ({ user_id: user.id, space_id: spaceId, name: i.name, qty: i.qty, category: i.category })))
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
   return {
     chores, meals, shopping, rules, moveinItems, loading, error,
     addChore, markChoreDone, removeChore, setChoreFolder,
-    addMeal, removeMeal, updateMeal,
-    addShopping, toggleGot, clearGot, removeShopping,
+    addMeal, addMeals, removeMeal, updateMeal,
+    addShopping, addShoppingMany, toggleGot, clearGot, removeShopping,
     addRule, updateRule, toggleRuleActive, removeRule,
     addMoveinItem, toggleMoveinGot, removeMoveinItem,
   }

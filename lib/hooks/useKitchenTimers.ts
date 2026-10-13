@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // Small kitchen timers for the village's Kitchen overlay (2026-09-03).
 // Per-device, localStorage only — a timer is a "this oven, right now"
 // thing, not shared household state. A short beep on zero (WebAudio, same
-// approach as Kitchen Cheat Sheet's Timers view).
+// approach the old cheat-sheet timers used).
 
 export interface KitchenTimer {
   id: string

@@ -463,7 +463,7 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   people: { x: 627, y: 317 },
   places: { x: 512, y: 209 },
   // Kitchen (2026-09-07) — the pantry/kitchen stall, back as its own
-  // district holding both cheat sheets. Right-of-centre foreground pocket.
+  // district for the kitchen (recipes, the meal plan, groceries). Right-of-centre foreground pocket.
   references: { x: 540, y: 300 },
   // Notice board (2026-09-06) — calendar, notes and house info, in the
   // open pocket left of centre. Hitbox non-overlap verified.

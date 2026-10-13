@@ -30,6 +30,7 @@ import HabitsTab from '@/components/habits/HabitsTab'
 import NotesHub from '@/components/notes/NotesHub'
 import MailHub from '@/components/mail/MailHub'
 import VaultHub from '@/components/vault/VaultHub'
+import KitchenHub from '@/components/kitchen/KitchenHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
@@ -169,6 +170,7 @@ const SECTION_GROUPS: Record<string, string> = {
   home:      'ours',
   reference: 'ours',
   mail:      'ours',
+  kitchen:   'ours',
 }
 
 // The Home Bar's contexts (2026-08-25, made universal 2026-08-25) — one nav
@@ -215,7 +217,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'reference', 'mail'] },
+  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
@@ -265,6 +267,19 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // GoogleConnect clears the param itself once it has read it.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has('google')) setConnectOpen(true)
+  }, [])
+  // A recipe sent from the "Save from any page" bookmarklet (?recipe=…): hand it to
+  // the Kitchen and go there. It stays in session storage, not the address bar.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const r = url.searchParams.get('recipe')
+    if (!r) return
+    try { sessionStorage.setItem('4s:recipe-import', r) } catch { /* private mode */ }
+    url.searchParams.delete('recipe')
+    window.history.replaceState({}, '', url.toString())
+    // After this effect pass, so the 4s:navigate listener (registered further down) is there to hear it.
+    setTimeout(() => goToSection('kitchen'), 60)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, [])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [mailOpen, setMailOpen] = useState(false)
@@ -518,7 +533,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
-      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang),
+      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -554,6 +569,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <MoneyHub key="money" userId={userId} />
         case 'people':   return <PeopleHub key="people" />
         case 'vault':    return <VaultHub key="vault" userId={userId} />
+        case 'kitchen':  return <KitchenHub key="kitchen" userId={userId} sharedMode={sharedMode} />
         // Places (2026-09-09) — the map carries a docked pin list, so it's
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
         case 'places':       return <PlacesHub key="places" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="map" />

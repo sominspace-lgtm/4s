@@ -15,7 +15,7 @@
 // guest-safe below, same tier as Upkeep — it's correspondence between the
 // two of you, not a lookup a party guest's device should be able to read.
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
-  'home', 'upkeep', 'reference', 'village', 'places', 'places-trips', 'places-nearby', 'mail',
+  'home', 'upkeep', 'kitchen', 'reference', 'village', 'places', 'places-trips', 'places-nearby', 'mail',
 ])
 
 // Nearby is in GUEST_MODE_IDS deliberately (2026-09-22, tab renamed from

@@ -120,8 +120,7 @@ function renderBody(district: LandmarkId, d: DistrictPreviewData) {
     return (
       <>
         <Line mark="·" tone="idle" label={d.dinner ? `Tonight: ${d.dinner}` : 'No dinner planned'} meta="" />
-        <Line mark="·" tone="idle" label="Recipes, conversions, substitutions" meta="cheat sheet" />
-        <Line mark="·" tone="idle" label="Home know-how" meta="cheat sheet" />
+        <Line mark="·" tone="idle" label="Recipes, the meal plan, groceries" meta="kitchen" />
       </>
     )
   }

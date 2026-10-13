@@ -5,7 +5,7 @@ import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 // live, and open back up when it ends.
 describe('sharedSectionVisible', () => {
   const GUEST_SAFE = ['reference', 'village', 'places', 'places-nearby']
-  const PLAIN_SHARED_EXTRA = ['home', 'upkeep', 'places-trips', 'mail']
+  const PLAIN_SHARED_EXTRA = ['home', 'upkeep', 'kitchen', 'places-trips', 'mail']
   const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'smarthome']
 
   describe('plain shared view (no gathering)', () => {

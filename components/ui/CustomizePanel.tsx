@@ -66,6 +66,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Upkeep (2026-09-08) — chores, routines, and care (Somi + house) in one
   // tab between Home and Reference.
   { id: 'upkeep',   label: 'Upkeep',   hidden: false },
+  // Kitchen (2026-10-13) — recipes, the meal plan, groceries, calories.
+  { id: 'kitchen',  label: 'Kitchen',  hidden: false },
   { id: 'reference', label: 'Reference', hidden: false },
   { id: 'mail',       label: 'Mail',      hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill

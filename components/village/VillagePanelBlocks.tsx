@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
-import { kitchenLookup, openExternal } from '@/lib/utils/cheatSheets'
+import { KITCHEN_OPEN_KEY } from '@/components/kitchen/KitchenHub'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import type { VillageState } from '@/lib/village/state'
 import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
@@ -187,10 +187,11 @@ function TonightCard({ spaceId, onInteract }: { spaceId: string | null; onIntera
         <>
           <Line>{tonight.title}</Line>
           <div style={{ display: 'flex', gap: '0.5rem', margin: '0.1rem 0 0.3rem' }}>
-            {tonight.recipe_url && (
-              <button onClick={() => openExternal(tonight.recipe_url!)} style={mealLink}>Recipe ↗</button>
-            )}
-            <button onClick={() => openExternal(kitchenLookup(tonight.title))} style={mealLink}>Look it up ↗</button>
+            {tonight.recipe_id ? (
+              <button onClick={() => { try { sessionStorage.setItem(KITCHEN_OPEN_KEY, tonight.recipe_id!) } catch { /* private mode */ } goToSection('kitchen') }} style={mealLink}>Open the recipe</button>
+            ) : tonight.recipe_url && /^https?:\/\//i.test(tonight.recipe_url) ? (
+              <button onClick={() => window.open(tonight.recipe_url!, '_blank', 'noopener')} style={mealLink}>Recipe ↗</button>
+            ) : null}
           </div>
         </>
       ) : <Line dim italic>No dinner planned yet.</Line>}
@@ -223,7 +224,7 @@ function MealsCard({ spaceId }: { spaceId: string | null }) {
             <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, width: '2.1rem', flexShrink: 0 }}>{format(day, 'EEE')}</span>
             <span style={{ fontSize: '0.74rem', color: dinner.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)' }}>{dinner.title}</span>
             {isToday && (
-              <button onClick={e => { e.stopPropagation(); openExternal(dinner.recipe_url || kitchenLookup(dinner.title)) }} style={mealLink}>↗</button>
+              <button onClick={e => { e.stopPropagation(); if (dinner.recipe_id) { try { sessionStorage.setItem(KITCHEN_OPEN_KEY, dinner.recipe_id) } catch { /* private mode */ } goToSection('kitchen') } else if (dinner.recipe_url && /^https?:\/\//i.test(dinner.recipe_url)) window.open(dinner.recipe_url, '_blank', 'noopener') }} style={mealLink}>↗</button>
             )}
           </div>
         )

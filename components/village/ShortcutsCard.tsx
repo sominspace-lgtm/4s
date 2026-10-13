@@ -1,16 +1,12 @@
 'use client'
 
 import { goToSection, goToPersonal, goToHousehold } from '@/lib/utils/navigate'
-import { KITCHEN_URL, HOME_URL } from '@/lib/utils/cheatSheets'
 import Icon, { type IconName } from '@/components/ui/Icon'
 
-// Jump tiles for the Village home panel — every tab one tap away, plus the
-// two external cheat sheets. In locked (wall) mode an in-app tile asks for
+// Jump tiles for the Village home panel — every tab one tap away. In locked (wall) mode an in-app tile asks for
 // the PIN first, exactly like a district tap does (onLockedNavigate).
 
-type Tile =
-  | { kind: 'section'; label: string; icon: IconName; go: () => void }
-  | { kind: 'external'; label: string; icon: IconName; href: string }
+type Tile = { kind: 'section'; label: string; icon: IconName; go: () => void }
 
 const TILES: Tile[] = [
   { kind: 'section', label: 'Today',     icon: 'today',     go: () => goToSection('brief') },
@@ -22,8 +18,7 @@ const TILES: Tile[] = [
   { kind: 'section', label: 'Household', icon: 'household', go: () => goToHousehold('home') },
   { kind: 'section', label: 'Calendar',  icon: 'calendar',  go: () => goToHousehold('calendar') },
   { kind: 'section', label: 'Places',    icon: 'places',    go: () => goToSection('places') },
-  { kind: 'external', label: 'Kitchen',  icon: 'plate', href: KITCHEN_URL },
-  { kind: 'external', label: 'Home',     icon: 'household', href: HOME_URL },
+  { kind: 'section', label: 'Kitchen',   icon: 'plate',     go: () => goToSection('kitchen') },
 ]
 
 export default function ShortcutsCard({ locked = false, onLockedNavigate, onInteract }: {
@@ -54,12 +49,6 @@ export default function ShortcutsCard({ locked = false, onLockedNavigate, onInte
             background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
             padding: '0.55rem 0.3rem', cursor: 'pointer', color: 'var(--text)',
             fontFamily: 'inherit', textDecoration: 'none',
-          }
-          if (t.kind === 'external') {
-            return (
-              <a key={t.label} href={t.href} target="_blank" rel="noreferrer" className="press" style={style}
-                onClick={() => onInteract?.()}>{inner}</a>
-            )
           }
           return (
             <button key={t.label} className="press" style={style}

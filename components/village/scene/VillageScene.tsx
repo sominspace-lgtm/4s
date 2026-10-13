@@ -9,7 +9,6 @@ import type { SeasonPalette } from '@/lib/village/palette'
 import type { Celestial as CelestialData } from '@/lib/village/sky'
 import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
-import { HOME_URL } from '@/lib/utils/cheatSheets'
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { randomFortune } from '@/lib/village/fortunes'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
@@ -344,7 +343,7 @@ export default function VillageScene({
   // reflection archive, and contacts are all personal). Non-landmark navs
   // (Mailbox, the Trips signpost, the date-idea memory markers) pass their
   // own lock intent explicitly.
-  // Kitchen (cheat sheets), the notice board (calendar + house info),
+  // Kitchen (recipes + the meal plan), the notice board (calendar + house info),
   // Places and Memories (shared photo albums) are household-facing → open
   // in shared mode. Forest/Projects/Archive stay locked — habits,
   // projects and the reflection archive are personal.
@@ -798,13 +797,13 @@ export default function VillageScene({
       ],
       actionLabel: 'Go to the Archive', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')),
     },
-    // Kitchen (2026-09-07) — the pantry stall holds both cheat sheets.
+    // Kitchen (2026-09-07) — the pantry stall is the kitchen.
     // Household-facing, so it stays open in shared mode.
     references: {
       title: 'Kitchen',
-      lines: ['Recipes, timings, and home know-how'],
-      actionLabel: 'Go to the Kitchen sheet', go: () => onOpenKitchen?.(),
-      secondary: { label: 'Home Cheat Sheet', go: () => window.open(HOME_URL, '_blank', 'noopener') },
+      lines: ['Recipes, the meal plan, and groceries'],
+      actionLabel: 'Open the kitchen', go: () => onOpenKitchen?.(),
+      secondary: { label: 'Recipes and the meal plan', go: () => goToSection('kitchen') },
     },
     // Notice board (2026-09-07) — the household's shared board: what's on
     // the calendar, the wifi and house info, and a jump to Notes. Notes is

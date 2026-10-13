@@ -1552,7 +1552,7 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
         </g>
       )
     case 'shelf': // Kitchen — kitchen.png, the pantry/kitchen stall from
-      // village-community-pantry-kitchen-garden-alpha.png. Holds both cheat sheets.
+      // village-community-pantry-kitchen-garden-alpha.png. The kitchen stall.
       return (
         <g>
           <ellipse cx={0} cy={2} rx={17} ry={2.6} fill="var(--text)" opacity={0.17} />

@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { useHousehold, dinnerFor } from '@/lib/hooks/useHousehold'
 import { useKitchenTimers } from '@/lib/hooks/useKitchenTimers'
-import { KITCHEN_URL, kitchenLookup, kitchenView, openExternal } from '@/lib/utils/cheatSheets'
+import { goToSection } from '@/lib/utils/navigate'
+import { KITCHEN_OPEN_KEY } from '@/components/kitchen/KitchenHub'
 
 // A focused cooking screen you open from the village (the ⋯ menu or the
-// reference nook in the scene). Tonight's meal, a one-tap add to the
-// shopping list, a couple of timers, and quick lookups into Kitchen
-// Cheat Sheet. Its own warm look (cream + serif, brick-red accent),
-// echoing the cheat sheet app rather than the 4S dashboard.
+// kitchen stall in the scene). Tonight's meal, a one-tap add to the
+// shopping list, and a couple of timers, with the full kitchen (recipes, the
+// meal plan, groceries, calories) one tap away. The two external cheat-sheet
+// apps it used to link to are gone (2026-10-13); this is all in 4S now.
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -20,7 +21,6 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
 
   const [item, setItem] = useState('')
   const [added, setAdded] = useState(false)
-  const [look, setLook] = useState('')
   const [tLabel, setTLabel] = useState('')
   const [tMin, setTMin] = useState('')
 
@@ -53,12 +53,11 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
             <div>
               <div style={S.big}>{dinner.title}</div>
               {dinner.cook && <div style={S.sub}>{dinner.cook} is cooking</div>}
-              {dinner.recipe_url && (
-                <button onClick={() => openExternal(dinner.recipe_url!)} style={S.link}>Recipe ↗</button>
-              )}
-              <button onClick={() => openExternal(kitchenLookup(dinner.title))} style={{ ...S.link, marginLeft: dinner.recipe_url ? 12 : 0 }}>
-                Look it up ↗
-              </button>
+              {dinner.recipe_id ? (
+                <button onClick={() => { try { sessionStorage.setItem(KITCHEN_OPEN_KEY, dinner.recipe_id!) } catch { /* private mode */ } onClose(); goToSection('kitchen') }} style={S.link}>Open the recipe</button>
+              ) : dinner.recipe_url && /^https?:\/\//i.test(dinner.recipe_url) ? (
+                <button onClick={() => window.open(dinner.recipe_url!, '_blank', 'noopener')} style={S.link}>Recipe ↗</button>
+              ) : null}
             </div>
           ) : (
             <div style={S.sub}>No dinner planned yet.</div>
@@ -105,24 +104,7 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
           </div>
         </section>
 
-        <section style={S.block}>
-          <div style={S.h}>Look it up</div>
-          <div style={S.row}>
-            <input
-              value={look} onChange={e => setLook(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && look.trim()) openExternal(kitchenLookup(look)) }}
-              placeholder="tbsp in a cup, sub for buttermilk…" style={S.input}
-            />
-            <button onClick={() => look.trim() && openExternal(kitchenLookup(look))} style={S.btn}>Ask</button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-            {(['convert', 'swaps', 'timers', 'cookbook'] as const).map(v => (
-              <button key={v} onClick={() => openExternal(kitchenView(v))} style={S.chip}>{v}</button>
-            ))}
-          </div>
-        </section>
-
-        <button onClick={() => openExternal(KITCHEN_URL)} style={S.footer}>Open Kitchen Cheat Sheet ↗</button>
+        <button onClick={() => { onClose(); goToSection('kitchen') }} style={S.footer}>Open the kitchen</button>
       </div>
     </div>
   )
@@ -168,7 +150,6 @@ const S: Record<string, React.CSSProperties> & { accent: React.CSSProperties } =
   },
   mini: { background: '#f2e7dd', border: '1px solid #e0d8cf', borderRadius: 8, padding: '0.2rem 0.45rem', fontSize: '0.68rem', color: '#6d5f4c', cursor: 'pointer', fontFamily: 'inherit' },
   link: { background: 'none', border: 'none', padding: 0, marginTop: 6, color: ACCENT, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit', display: 'inline-block' },
-  chip: { background: '#f2e7dd', border: '1px solid #e0d8cf', borderRadius: 999, padding: '0.3rem 0.7rem', fontSize: '0.74rem', color: '#6d5f4c', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' },
   footer: {
     marginTop: '0.2rem', background: 'none', border: '1px solid #e0d8cf', borderRadius: 10,
     padding: '0.6rem', fontSize: '0.8rem', color: '#6d5f4c', cursor: 'pointer', fontFamily: 'inherit',
