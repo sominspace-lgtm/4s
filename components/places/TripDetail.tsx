@@ -8,6 +8,9 @@ import { usePlaces } from '@/lib/hooks/usePlaces'
 import { useDateIdeas } from '@/lib/hooks/useDateIdeas'
 import IconButton from '@/components/ui/IconButton'
 import LinksSection from '@/components/ui/LinksSection'
+import NamedList from '@/components/household/NamedList'
+import { tripWhen } from '@/lib/trips/when'
+import { format, parseISO, differenceInCalendarDays } from 'date-fns'
 
 const STATUS_OPTIONS: TripStatus[] = ['dreaming', 'planning', 'booked', 'travelling', 'done', 'cancelled']
 const KIND_OPTIONS: ItineraryKind[] = ['activity', 'travel', 'stay', 'food', 'note']
@@ -247,6 +250,7 @@ export default function TripDetail({ trip, open, onClose }: {
   const { ideas: dateIdeas } = useDateIdeas(trip?.space_id ?? null)
 
   const [addingShortlist, setAddingShortlist] = useState(false)
+  const [itinView, setItinView] = useState<'days' | 'grid'>('days')
 
   const shortlistedIds = new Set(bundle.shortlist.map(s => s.place_id))
   const availableForShortlist = places.filter(p => !shortlistedIds.has(p.id))
@@ -262,13 +266,36 @@ export default function TripDetail({ trip, open, onClose }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
         {/* Status + dates + destination — the "where is this trip at" strip */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <select value={trip.status} onChange={e => updateTrip(trip.id, { status: e.target.value as TripStatus })} style={{ ...input, width: 'fit-content' }}>
+          {(() => {
+            const w = tripWhen(trip.start_date, trip.end_date)
+            return w.phase !== 'undated' && (
+              <div style={{ fontSize: '0.95rem', color: 'var(--gold)' }}>
+                {w.label}{w.nights ? ` · ${w.nights} night${w.nights === 1 ? '' : 's'}` : ''}
+              </div>
+            )
+          })()}
+          <select value={trip.status} onChange={e => updateTrip(trip.id, { status: e.target.value as TripStatus })} style={{ ...input, width: 'fit-content', minHeight: 40 }}>
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
-            {trip.destination ?? 'No destination set'}
-            {trip.start_date && ` · ${trip.start_date}${trip.end_date ? ` – ${trip.end_date}` : ''}`}
+          {/* Everything about the trip is editable in place (2026-10-16). */}
+          <input key={`t-${trip.id}-${trip.title}`} defaultValue={trip.title} aria-label="Trip name"
+            onBlur={e => { const v = e.target.value.trim(); if (v && v !== currentTrip.title) updateTrip(currentTrip.id, { title: v }) }}
+            style={{ ...input, fontSize: '0.9rem' }} />
+          <input key={`d-${trip.id}-${trip.destination}`} defaultValue={trip.destination ?? ''} placeholder="Where" aria-label="Destination"
+            onBlur={e => { const v = e.target.value.trim() || null; if (v !== currentTrip.destination) updateTrip(currentTrip.id, { destination: v }) }}
+            style={input} />
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <input type="date" key={`s-${trip.id}-${trip.start_date}`} defaultValue={trip.start_date ?? ''} aria-label="Start date"
+              onChange={e => { const v = e.target.value || null; if (v !== currentTrip.start_date) updateTrip(currentTrip.id, { start_date: v }) }}
+              style={{ ...input, flex: '1 1 9rem' }} />
+            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>to</span>
+            <input type="date" key={`e-${trip.id}-${trip.end_date}`} defaultValue={trip.end_date ?? ''} aria-label="End date" min={trip.start_date ?? undefined}
+              onChange={e => { const v = e.target.value || null; if (v !== currentTrip.end_date) updateTrip(currentTrip.id, { end_date: v }) }}
+              style={{ ...input, flex: '1 1 9rem' }} />
           </div>
+          <textarea key={`n-${trip.id}`} defaultValue={trip.notes ?? ''} placeholder="Notes: the vibe, must-dos, who to see" rows={3}
+            onBlur={e => { const v = e.target.value.trim() || null; if (v !== currentTrip.notes) updateTrip(currentTrip.id, { notes: v }) }}
+            style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
           {/* Photo album link (2026-09-08) — a trip with one set shows a
               tappable postcard on the village rack. */}
           <input
@@ -297,8 +324,48 @@ export default function TripDetail({ trip, open, onClose }: {
 
         {/* Itinerary — a real grid: click any cell, type, tab to the next. */}
         <section>
-          <div className="t-card" style={{ marginBottom: '0.5rem' }}>Itinerary</div>
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <div className="t-card">Itinerary</div>
+            <div style={{ display: 'flex', gap: '0.3rem' }}>
+              {(['days', 'grid'] as const).map(v => (
+                <button key={v} onClick={() => setItinView(v)} className="press" style={{
+                  fontSize: '0.72rem', minHeight: 34, padding: '0 0.8em', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  border: `1px solid ${itinView === v ? 'var(--gold)' : 'var(--border)'}`, background: 'transparent', color: itinView === v ? 'var(--gold)' : 'var(--muted)',
+                }}>{v === 'days' ? 'By day' : 'Edit'}</button>
+              ))}
+            </div>
+          </div>
+          {/* By day (2026-10-16): the plan as you would read it on the trip,
+              one card per day; tap a line to tick it off. Edit is the grid. */}
+          {itinView === 'days' && (() => {
+            const groups = new Map<string, BundleItinerary[]>()
+            for (const it of bundle.itinerary) { const k = it.item_date ?? ''; groups.set(k, [...(groups.get(k) ?? []), it]) }
+            if (groups.size === 0) return <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Nothing planned yet. Tap Edit to add the first thing.</div>
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                {[...groups.entries()].map(([day, items]) => (
+                  <div key={day || 'undated'} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '0.6rem 0.8rem' }}>
+                    <div style={{ fontSize: '0.72rem', letterSpacing: '0.04em', color: 'var(--gold)', marginBottom: '0.3rem' }}>
+                      {day
+                        ? `${trip.start_date ? `Day ${differenceInCalendarDays(parseISO(day), parseISO(trip.start_date)) + 1} · ` : ''}${format(parseISO(day), 'EEE, MMM d')}`
+                        : 'Any day'}
+                    </div>
+                    {items.map(it => (
+                      <button key={it.id} onClick={() => bundle.updateItineraryItem(it.id, { done: !it.done })} className="press" style={{
+                        display: 'flex', gap: '0.6rem', alignItems: 'baseline', width: '100%', minHeight: 40, background: 'none', border: 'none',
+                        padding: '0.2rem 0', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)', color: 'var(--text)',
+                      }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--muted)', minWidth: '3.6rem' }}>{it.time_label ?? ''}</span>
+                        <span aria-hidden style={{ color: 'var(--muted)' }}>{KIND_ICON[it.kind]}</span>
+                        <span style={{ fontSize: '0.88rem', textDecoration: it.done ? 'line-through' : 'none', opacity: it.done ? 0.5 : 1 }}>{it.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+          {itinView === 'grid' && <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -317,13 +384,24 @@ export default function TripDetail({ trip, open, onClose }: {
                 <NewItineraryRow onAdd={bundle.addItineraryItem} />
               </tbody>
             </table>
-          </div>
+          </div>}
         </section>
 
         {/* Budget — same grid, with a totals row standing in for a
             spreadsheet's SUM row. */}
         <section>
           <div className="t-card" style={{ marginBottom: '0.5rem' }}>Budget</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem', fontSize: '0.78rem', color: 'var(--muted)' }}>
+            Target {trip.currency}
+            <input type="number" min={0} key={`b-${trip.id}-${trip.budget_total}`} defaultValue={trip.budget_total ?? ''} placeholder="none" aria-label="Budget target"
+              onBlur={e => { const n = e.target.value ? Number(e.target.value) : null; if (n !== currentTrip.budget_total && (n === null || Number.isFinite(n))) updateTrip(currentTrip.id, { budget_total: n }) }}
+              style={{ ...input, width: '7rem' }} />
+          </div>
+          {trip.budget_total ? (
+            <div style={{ height: 8, borderRadius: 99, background: 'var(--surface2)', overflow: 'hidden', marginBottom: '0.6rem' }}>
+              <div style={{ height: '100%', width: `${Math.min(100, (bundle.plannedTotal / trip.budget_total) * 100)}%`, background: bundle.plannedTotal > trip.budget_total ? 'var(--rose)' : 'var(--emerald)' }} />
+            </div>
+          ) : null}
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
@@ -363,6 +441,13 @@ export default function TripDetail({ trip, open, onClose }: {
               </tbody>
             </table>
           </div>
+        </section>
+
+        {/* Packing (2026-10-16): an ordinary household list named after the
+            trip, so it also shows up in Lists. */}
+        <section>
+          <div className="t-card" style={{ marginBottom: '0.5rem' }}>Packing</div>
+          <NamedList spaceId={trip.space_id} name={`Packing for ${trip.title}`} startLabel="+ Start a packing list" />
         </section>
 
         {/* Shortlist — places already saved that might belong on this trip */}
@@ -418,7 +503,7 @@ export default function TripDetail({ trip, open, onClose }: {
         </section>
 
         <button
-          onClick={() => { removeTrip(trip.id); onClose() }}
+          onClick={() => { if (window.confirm(`Delete "${trip.title}"?`)) { removeTrip(trip.id); onClose() } }}
           style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.66rem', cursor: 'pointer', alignSelf: 'flex-start' }}
         >
           Delete trip
