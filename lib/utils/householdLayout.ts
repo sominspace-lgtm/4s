@@ -18,7 +18,7 @@ export type HouseholdTabId = 'home' | 'upkeep' | 'smarthome' | 'reference'
 // the same day; `chores`/`routines` moved to Reference 2026-08-25.
 // mergeHomeBlocks drops unknown saved ids, so a layout that still names any
 // of these is cleaned up automatically.
-export type HomeBlockId = 'glance' | 'tonight' | 'shortcuts' | 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'meals' | 'rules' | 'moveIn' | 'notes' | 'smartHome'
+export type HomeBlockId = 'glance' | 'tonight' | 'shortcuts' | 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'meals' | 'rules' | 'moveIn' | 'notes' | 'smartHome' | 'settle'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // Every part of Home is a block you can move or hide (2026-10-13). The
@@ -41,12 +41,13 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   rules:    { label: 'House rules',        hint: 'What we agreed on' },
   // Folded in from the retired Move-In tab (2026-08-25) — the overview card
   // (address + spreadsheet link) and Near Our New Home. Last by default.
+  settle:    { label: 'Dice and coin',      hint: 'Flip a coin or roll dice to settle it' },
   notes:     { label: 'Household notes',   hint: 'Notes the two of you share' },
   smartHome: { label: 'Smart Home',        hint: 'The device and status list' },
   moveIn:   { label: 'Move-in',            hint: 'The Millton — what’s around it, and the buy-list sheet' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['glance', 'tonight', 'shortcuts', 'calendar', 'thisWeek', 'checkin', 'shopping', 'meals', 'rules', 'notes', 'moveIn', 'smartHome'] as HomeBlockId[])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['glance', 'tonight', 'shortcuts', 'calendar', 'thisWeek', 'checkin', 'shopping', 'meals', 'rules', 'settle', 'notes', 'moveIn', 'smartHome'] as HomeBlockId[])
   .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: id === 'notes' }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {

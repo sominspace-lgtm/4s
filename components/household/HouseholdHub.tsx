@@ -17,6 +17,8 @@ import HouseholdUnderstanding from './HouseholdUnderstanding'
 import ReferenceCollections from './ReferenceCollections'
 import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
+import DiceCoin from './DiceCoin'
+import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import CareLog from '@/components/care/CareLog'
 import IconButton from '@/components/ui/IconButton'
@@ -171,6 +173,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [showRetiredRules, setShowRetiredRules] = useState(false)
   const [editingRule, setEditingRule] = useState<{ id: string; text: string } | null>(null)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
+  const [editingChore, setEditingChore] = useState<{ id: string; name: string; cadence: string } | null>(null)
 
   const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
 
@@ -254,14 +257,16 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>Shortcuts</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(8rem, 100%), 1fr))', gap: '0.5rem' }}>
-          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Lists', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes']] as const).map(([label, id]) => (
+          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Lists', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes'], ['Trips', 'places-trips']] as const).filter(([, id]) => !sharedMode || sharedSectionVisible(id, guestMode)).map(([label, id]) => (
             <button key={id} className="press" onClick={() => goToSection(id)} style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: '0.84rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{label}</button>
           ))}
         </div>
       </section>
     ),
 
-    notes: () => <HouseholdNotes spaceId={spaceId} />,
+    settle: () => <DiceCoin />,
+
+    notes: () => (sharedMode ? null : <HouseholdNotes spaceId={spaceId} />),
 
     smartHome: () => (
       <button onClick={openSmartHome} className="press" style={{
@@ -277,7 +282,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     calendar: () => (
       <>
         <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />
-        {onSetBoardNote && !guestMode && (
+        {onSetBoardNote && !sharedMode && (
           <div style={{ marginTop: '0.9rem' }}>
             <div className="t-card" style={{ marginBottom: '0.4rem' }}>A line for the notice board</div>
             <input
@@ -305,7 +310,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // The weekly check-in prompt, above the shopping list — shows on Sunday,
     // or any day this week's check-in still isn't done, else a no-op. Same
     // component as Today's CheckinCard (2026-09-03).
-    checkin: () => <CheckinCard userId={userId} />,
+    // The relationship check-in is the two of you, not something a guest
+    // looking at the shared screen should see (2026-10-15).
+    checkin: () => (sharedMode ? null : <CheckinCard userId={userId} />),
 
     // Everything the house has on, in one fortnight view. Separate from
     // the personal calendar in Today by design: that one answers "what do
@@ -625,6 +632,25 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
     function renderChoreRow(c: Chore) {
       const due = dueLabel(c)
+      if (editingChore?.id === c.id) {
+        return (
+          <div key={c.id} style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem', border: '1px solid var(--gold)' }}>
+            <input value={editingChore.name} onChange={e => setEditingChore({ ...editingChore, name: e.target.value })}
+              style={{ ...input, flex: '1 1 10rem' }} autoFocus />
+            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>every</span>
+            <input type="number" min={1} value={editingChore.cadence} onChange={e => setEditingChore({ ...editingChore, cadence: e.target.value })}
+              style={{ ...input, width: '4.5rem' }} />
+            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>days</span>
+            <button className="btn btn-primary press" style={{ minHeight: 40 }} onClick={async () => {
+              const name = editingChore.name.trim()
+              if (!name) return
+              await h.updateChore(c.id, { name, cadence_days: Math.max(1, Number(editingChore.cadence) || c.cadence_days) })
+              setEditingChore(null)
+            }}>Save</button>
+            <button className="btn btn-ghost press" style={{ minHeight: 40 }} onClick={() => setEditingChore(null)}>Cancel</button>
+          </div>
+        )
+      }
       return (
         <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
           display: 'flex', alignItems: 'center', gap: '0.6rem',
@@ -649,7 +675,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             }}
           >✓</button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{c.name}</div>
+            <button onClick={() => setEditingChore({ id: c.id, name: c.name, cadence: String(c.cadence_days) })} title="Edit"
+              style={{ fontSize: '0.78rem', color: 'var(--text)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}>{c.name} <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>✎</span></button>
             {c.last_done_at && nameFor(c.last_done_by) && (
               <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
                 Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
@@ -837,7 +864,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space. */}
-      {tab === 'reference' && !guestMode && <HouseholdNotes spaceId={spaceId} />}
+      {tab === 'reference' && !sharedMode && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
           Chores stay a cadence list; the care logs (Somi + the house) are

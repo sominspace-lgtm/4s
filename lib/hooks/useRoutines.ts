@@ -3,14 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
+import { newItemId, todayKey, itemDone, type RoutineItem } from '@/lib/routines/items'
+export type { RoutineItem }
 
 export type RoutineKind = 'routine' | 'maintenance'
 
-export interface RoutineItem {
-  id: string
-  label: string
-  done: boolean
-}
 
 export interface Routine {
   id: string
@@ -22,10 +19,6 @@ export interface Routine {
   last_done_at: string | null
   last_done_by: string | null
   created_at: string
-}
-
-function newItemId(): string {
-  return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
 }
 
 // Days until due — negative = overdue. Never-done = due now, same
@@ -64,6 +57,13 @@ export function useRoutines(spaceId: string | null) {
     return null
   }
 
+  async function updateRoutine(id: string, patch: { name?: string; cadence_days?: number; items?: RoutineItem[] }): Promise<string | null> {
+    const { error } = await supabase.from('household_routines').update(patch).eq('id', id)
+    if (error) return error.message
+    setRoutines(prev => prev.map(x => (x.id === id ? { ...x, ...patch } : x)))
+    return null
+  }
+
   async function removeRoutine(id: string) {
     await supabase.from('household_routines').delete().eq('id', id)
     setRoutines(prev => prev.filter(r => r.id !== id))
@@ -72,7 +72,9 @@ export function useRoutines(spaceId: string | null) {
   async function toggleRoutineItem(id: string, itemId: string) {
     const r = routines.find(x => x.id === id)
     if (!r) return
-    const items = r.items.map(i => (i.id === itemId ? { ...i, done: !i.done } : i))
+    const items = r.items.map(i => (i.id === itemId
+      ? (itemDone(i, r.cadence_days) ? { ...i, done: false, done_on: null } : { ...i, done: true, done_on: todayKey() })
+      : i))
     const { error } = await supabase.from('household_routines').update({ items }).eq('id', id)
     if (!error) setRoutines(prev => prev.map(x => (x.id === id ? { ...x, items } : x)))
   }
@@ -83,12 +85,12 @@ export function useRoutines(spaceId: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     const r = routines.find(x => x.id === id)
     if (!r || !user) return
-    const items = r.items.map(i => ({ ...i, done: true }))
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayKey()
+    const items = r.items.map(i => (i.note ? i : { ...i, done: true, done_on: today }))
     const { error } = await supabase.from('household_routines')
       .update({ items, last_done_at: today, last_done_by: user.id }).eq('id', id)
     if (!error) setRoutines(prev => prev.map(x => (x.id === id ? { ...x, items, last_done_at: today, last_done_by: user.id } : x)))
   }
 
-  return { routines, loading, addRoutine, removeRoutine, toggleRoutineItem, markRoutineDone }
+  return { routines, loading, addRoutine, updateRoutine, removeRoutine, toggleRoutineItem, markRoutineDone }
 }

@@ -11,11 +11,11 @@
 // ends. The `guestMode` flag itself is `sharedMode && gathering?.phase ===
 // 'live'`, computed in DashboardClient.
 
-// Mail is plain-shared (the household's own device) but deliberately NOT
-// guest-safe below, same tier as Upkeep — it's correspondence between the
-// two of you, not a lookup a party guest's device should be able to read.
+// Mail is never on the shared device (2026-10-15): the shared screen is what
+// a guest sees when they come over, and letters between the two of you are
+// not for that. It needs the PIN like any personal section.
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
-  'home', 'upkeep', 'kitchen', 'reference', 'village', 'places', 'places-trips', 'places-nearby', 'mail',
+  'home', 'upkeep', 'kitchen', 'reference', 'village', 'places', 'places-trips', 'places-nearby',
 ])
 
 // Nearby is in GUEST_MODE_IDS deliberately (2026-09-22, tab renamed from

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
+import { newItemId, todayKey, itemDone, type RoutineItem, type ParsedRoutine } from '@/lib/routines/items'
+export type { RoutineItem }
 
 // Personal routines ("Morning routine", "Night routine") — a checklist done
 // once a cadence period, distinct from a habit's daily tick-box grid. Lives
@@ -16,13 +18,6 @@ import { createClient } from '@/lib/supabase/client'
 // never becomes visible to them — see shared_routine_items.sql for why a
 // mirror is the only correct way to do this under row-level RLS.
 
-export interface RoutineItem {
-  id: string
-  label: string
-  done: boolean
-  /** Mirrored into shared_routine_items when true. Absent/false = private. */
-  shared?: boolean
-}
 
 export interface PersonalRoutine {
   id: string
@@ -39,10 +34,6 @@ export interface SharedFromPartner {
   label: string
   done: boolean
   updated_at: string
-}
-
-function newItemId(): string {
-  return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)
 }
 
 // Days until due — negative = overdue. Same convention as household routines.
@@ -77,15 +68,36 @@ export function usePersonalRoutines(spaceId: string | null) {
 
   useEffect(() => { load() }, [load])
 
-  async function addRoutine(name: string, cadenceDays: number, labels: string[]): Promise<string | null> {
+  async function addRoutine(name: string, cadenceDays: number, labels: string[] | ParsedRoutine['items']): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
-    const items: RoutineItem[] = labels.filter(l => l.trim()).map(label => ({ id: newItemId(), label: label.trim(), done: false }))
+    const items: RoutineItem[] = labels
+      .map(l => (typeof l === 'string' ? { label: l } : l))
+      .filter(l => l.label.trim())
+      .map(l => ({ ...l, id: newItemId(), label: l.label.trim(), done: false }))
     const { data, error } = await supabase.from('household_routines')
       .insert({ user_id: user.id, space_id: null, kind: 'routine', name, cadence_days: cadenceDays, items })
       .select('id, name, cadence_days, items, last_done_at, created_at').single()
     if (error) return error.message
     setRoutines(prev => [...prev, data as PersonalRoutine])
+    return null
+  }
+
+  /** Rename, change how often, or rewrite the steps. A shared step whose
+   *  words change is re-mirrored; one that was removed stops being shared. */
+  async function updateRoutine(id: string, patch: { name?: string; cadence_days?: number; items?: RoutineItem[] }): Promise<string | null> {
+    const before = routines.find(x => x.id === id)
+    const { error } = await supabase.from('household_routines').update(patch).eq('id', id)
+    if (error) return error.message
+    setRoutines(prev => prev.map(x => (x.id === id ? { ...x, ...patch } : x)))
+    if (patch.items && before) {
+      const now = new Set(patch.items.map(i => i.id))
+      await Promise.all([
+        ...before.items.filter(i => i.shared && !now.has(i.id)).map(i =>
+          supabase.from('shared_routine_items').delete().eq('routine_id', id).eq('item_id', i.id)),
+        ...patch.items.filter(i => i.shared).map(i => syncMirror(i, id)),
+      ])
+    }
     return null
   }
 
@@ -111,7 +123,10 @@ export function usePersonalRoutines(spaceId: string | null) {
   async function toggleRoutineItem(routineId: string, itemId: string) {
     const r = routines.find(x => x.id === routineId)
     if (!r) return
-    const items = r.items.map(i => (i.id === itemId ? { ...i, done: !i.done } : i))
+    // A tick from an earlier period no longer counts, so tapping it starts it fresh.
+    const items = r.items.map(i => (i.id === itemId
+      ? (itemDone(i, r.cadence_days) ? { ...i, done: false, done_on: null } : { ...i, done: true, done_on: todayKey() })
+      : i))
     const { error } = await supabase.from('household_routines').update({ items }).eq('id', routineId)
     if (error) return
     setRoutines(prev => prev.map(x => (x.id === routineId ? { ...x, items } : x)))
@@ -123,8 +138,8 @@ export function usePersonalRoutines(spaceId: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     const r = routines.find(x => x.id === id)
     if (!r || !user) return
-    const items = r.items.map(i => ({ ...i, done: true }))
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayKey()
+    const items = r.items.map(i => (i.note ? i : { ...i, done: true, done_on: today }))
     const { error } = await supabase.from('household_routines')
       .update({ items, last_done_at: today, last_done_by: user.id }).eq('id', id)
     if (error) return
@@ -158,6 +173,6 @@ export function usePersonalRoutines(spaceId: string | null) {
 
   return {
     routines, sharedFromPartner, loading,
-    addRoutine, removeRoutine, toggleRoutineItem, markRoutineDone, toggleItemShared,
+    addRoutine, updateRoutine, removeRoutine, toggleRoutineItem, markRoutineDone, toggleItemShared,
   }
 }

@@ -142,6 +142,13 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
+  // Rename a chore or change how often it comes round (2026-10-15).
+  async function updateChore(id: string, patch: { name?: string; cadence_days?: number; folder?: string | null }) {
+    const { error } = await supabase.from('household_chores').update(patch).eq('id', id)
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
   async function setChoreFolder(id: string, folder: string | null) {
     const { error } = await supabase.from('household_chores').update({ folder }).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
@@ -328,7 +335,7 @@ export function useHousehold(spaceId: string | null) {
 
   return {
     chores, meals, shopping, rules, moveinItems, loading, error,
-    addChore, markChoreDone, removeChore, setChoreFolder,
+    addChore, markChoreDone, removeChore, setChoreFolder, updateChore,
     addMeal, addMeals, removeMeal, updateMeal,
     addShopping, addShoppingMany, toggleGot, clearGot, removeShopping,
     addRule, updateRule, toggleRuleActive, removeRule,

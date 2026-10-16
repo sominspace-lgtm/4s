@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { usePersonalRoutines } from '@/lib/hooks/usePersonalRoutines'
 import { useRoutines } from '@/lib/hooks/useRoutines'
 import IconButton from '@/components/ui/IconButton'
+import RoutineEditor from '@/components/routines/RoutineEditor'
+import { countSteps } from '@/lib/routines/items'
 
 // The Routines view of the calendar (2026-10-05). Personal routines and the
 // household's routines/maintenance on one week grid: columns are days, rows
@@ -71,6 +73,7 @@ export default function CalendarRoutines({ spaceId }: { spaceId: string | null }
   const [weekOffset, setWeekOffset] = useState(0)
   const [note, setNote] = useState<string | null>(null)
   const [buckets, setBuckets] = useState<Record<string, Bucket>>({})
+  const [editing, setEditing] = useState<string | null>(null)
 
   const today = startOfDay(new Date())
   const weekStart = addDays(startOfWeek(today, { weekStartsOn: 1 }), weekOffset * 7)
@@ -80,13 +83,13 @@ export default function CalendarRoutines({ spaceId }: { spaceId: string | null }
     const own: Row[] = personal.routines.map(r => ({
       id: r.id, name: r.name, cadence_days: r.cadence_days, last_done_at: r.last_done_at,
       kind: 'personal', bucket: buckets[r.id] ?? (r as unknown as { time_of_day?: Bucket }).time_of_day ?? inferBucket(r.name),
-      steps: r.items.length, stepsDone: r.items.filter(i => i.done).length,
+      steps: countSteps(r.items, r.cadence_days).total, stepsDone: countSteps(r.items, r.cadence_days).done,
     }))
     const shared: Row[] = household.routines.map(r => ({
       id: r.id, name: r.name, cadence_days: r.cadence_days, last_done_at: r.last_done_at,
       kind: r.kind === 'maintenance' ? 'maintenance' : 'household',
       bucket: buckets[r.id] ?? (r as unknown as { time_of_day?: Bucket }).time_of_day ?? inferBucket(r.name),
-      steps: r.items.length, stepsDone: r.items.filter(i => i.done).length,
+      steps: countSteps(r.items, r.cadence_days).total, stepsDone: countSteps(r.items, r.cadence_days).done,
     }))
     return [...own, ...shared]
   }, [personal.routines, household.routines, buckets])
@@ -202,8 +205,26 @@ export default function CalendarRoutines({ spaceId }: { spaceId: string | null }
                 }}>
                   {BUCKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
                 </select>
+                <button className="press" onClick={() => setEditing(editing === r.id ? null : r.id)} style={{
+                  fontSize: '0.7rem', minHeight: 32, padding: '0 0.7em', borderRadius: '6px', border: '1px solid var(--border)',
+                  background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                }}>{editing === r.id ? 'Close' : 'Edit'}</button>
               </div>
             ))}
+            {editing && (() => {
+              const own = personal.routines.find(x => x.id === editing)
+              const shared = household.routines.find(x => x.id === editing)
+              const src = own ?? shared
+              if (!src) return null
+              return (
+                <div style={{ border: '1px solid var(--gold)', borderRadius: 12, padding: '0.8rem', marginTop: '0.4rem' }}>
+                  <RoutineEditor name={src.name} cadenceDays={src.cadence_days} items={src.items}
+                    onCancel={() => setEditing(null)}
+                    onSave={async p => { const e = own ? await personal.updateRoutine(src.id, p) : await household.updateRoutine(src.id, p); if (!e) setEditing(null); return e }}
+                    onDelete={() => { if (window.confirm(`Delete "${src.name}"?`)) { if (own) personal.removeRoutine(src.id); else household.removeRoutine(src.id); setEditing(null) } }} />
+                </div>
+              )
+            })()}
           </div>
           {note && <div style={{ marginTop: '0.5rem', fontSize: '0.66rem', color: 'var(--muted)' }}>{note}</div>}
         </div>

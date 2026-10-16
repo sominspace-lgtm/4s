@@ -1,121 +1,173 @@
 'use client'
 
-import { useState } from 'react'
-import { usePersonalRoutines, routineDue, type RoutineItem } from '@/lib/hooks/usePersonalRoutines'
+import { useEffect, useState } from 'react'
+import { usePersonalRoutines, routineDue } from '@/lib/hooks/usePersonalRoutines'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import { countSteps, parseRoutineText } from '@/lib/routines/items'
+import { MY_ROUTINES } from '@/lib/routines/presets'
+import RoutineEditor from '@/components/routines/RoutineEditor'
+import RoutineChecklist from '@/components/routines/RoutineChecklist'
 
 const input: React.CSSProperties = {
   background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px',
-  color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.78rem',
-  fontWeight: 300, padding: '0.45rem 0.7rem', outline: 'none',
+  color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.85rem',
+  fontWeight: 300, padding: '0.5rem 0.7rem', outline: 'none',
+}
+const MINE_KEY = '4s:my-routines-offer-done'
+
+const smallBtn: React.CSSProperties = {
+  fontSize: '0.78rem', color: 'var(--muted)', background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+  padding: '0 0.9em', minHeight: 40, cursor: 'pointer', fontFamily: 'var(--font-body)',
 }
 
 // Morning routine, night routine — a checklist you run through once a
 // cadence period, not a daily tick-box grid like a habit. Lives above the
 // habit list on purpose: it's the first thing that happens in a day, so it
 // reads first.
+//
+// 2026-10-15: every routine can be edited (name, how often, sections, steps,
+// notes), a routine can be pasted in as text, and ticks reset each period, so
+// a daily routine starts fresh each morning.
 export default function PersonalRoutines({ userId }: { userId: string }) {
   const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
-  const { routines, sharedFromPartner, loading, addRoutine, removeRoutine, toggleRoutineItem, markRoutineDone, toggleItemShared } =
+  const { routines, sharedFromPartner, loading, addRoutine, updateRoutine, removeRoutine, toggleRoutineItem, markRoutineDone, toggleItemShared } =
     usePersonalRoutines(spaceId)
 
-  const [showForm, setShowForm] = useState(false)
-  const [name, setName] = useState('')
-  const [cadence, setCadence] = useState('1')
-  const [steps, setSteps] = useState('')
+  const [mode, setMode] = useState<'none' | 'new' | 'paste'>('none')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const [paste, setPaste] = useState('')
+  const [note, setNote] = useState<string | null>(null)
 
-  async function handleAdd() {
-    if (!name.trim()) return
-    await addRoutine(name.trim(), Number(cadence) || 1, steps.split(',').map(s => s.trim()).filter(Boolean))
-    setName(''); setCadence('1'); setSteps(''); setShowForm(false)
+  // The offer to add your own routines goes away once you add them or say no.
+  const [dismissed, setDismissed] = useState(true)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read a saved choice once
+    try { setDismissed(localStorage.getItem(MINE_KEY) === '1') } catch { setDismissed(false) }
+  }, [])
+  const dismiss = () => { setDismissed(true); try { localStorage.setItem(MINE_KEY, '1') } catch { /* private mode */ } }
+
+  const have = new Set(routines.map(r => r.name.toLowerCase()))
+  const missingMine = dismissed ? [] : MY_ROUTINES.filter(r => !have.has(r.name.toLowerCase()))
+
+  async function addMine() {
+    for (const r of missingMine) {
+      const e = await addRoutine(r.name, 1, r.items)
+      if (e) { setNote(e); return }
+    }
+    setNote(null); dismiss()
   }
 
+  async function addPasted() {
+    const parsed = parseRoutineText(paste)
+    if (parsed.length === 0) { setNote('I could not find any steps. Put each step on its own line starting with a dash.'); return }
+    for (const r of parsed) {
+      const e = await addRoutine(r.name, 1, r.items)
+      if (e) { setNote(e); return }
+    }
+    setPaste(''); setMode('none'); setNote(null)
+  }
+
+  const toggleOpen = (id: string) => setOpen(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.4rem 1.6rem', marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.2rem 1.2rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>Routines</div>
-        <button onClick={() => setShowForm(o => !o)} style={{
-          fontSize: '0.68rem', letterSpacing: '0.06em', color: 'var(--muted)',
-          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '0.3em 0.8em', cursor: 'pointer', fontFamily: 'var(--font-body)',
-        }}>
-          {showForm ? 'cancel' : '+ add routine'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button onClick={() => setMode(m => (m === 'paste' ? 'none' : 'paste'))} style={smallBtn}>{mode === 'paste' ? 'Cancel' : 'Paste a routine'}</button>
+          <button onClick={() => setMode(m => (m === 'new' ? 'none' : 'new'))} style={smallBtn}>{mode === 'new' ? 'Cancel' : '+ New'}</button>
+        </div>
       </div>
 
-      {!loading && routines.length === 0 && !showForm && (
-        <div style={{ textAlign: 'center', padding: '1rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.78 }}>
-          Nothing set up yet. A morning routine, a night routine — whatever starts and ends your day.
+      {missingMine.length > 0 && !loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.9rem', padding: '0.7rem 0.8rem', borderRadius: 10, background: 'color-mix(in srgb, var(--gold) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--gold) 25%, var(--border))' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text)', flex: 1, minWidth: '12rem' }}>Your {missingMine.map(r => r.name.toLowerCase()).join(', ')} are ready to add.</span>
+          <button onClick={addMine} className="btn btn-primary press" style={{ minHeight: 40 }}>Add my routines</button>
+          <button onClick={dismiss} style={{ ...smallBtn, border: 'none' }}>No thanks</button>
+        </div>
+      )}
+
+      {mode === 'paste' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.9rem' }}>
+          <textarea value={paste} onChange={e => setPaste(e.target.value)} rows={8} style={{ ...input, resize: 'vertical', lineHeight: 1.5 }}
+            placeholder={'MORNING ROUTINE\n**6:00 AM — Coffee**\n- Make coffee\n- Drink water'} />
+          <div style={{ fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+            A line on its own is the routine&rsquo;s name. A bold line is a section, with a time before a dash if you like. Each step starts with a dash.
+          </div>
+          <button onClick={addPasted} className="btn btn-primary press" style={{ alignSelf: 'flex-start', minHeight: 40 }}>Add</button>
+        </div>
+      )}
+
+      {mode === 'new' && (
+        <div style={{ marginBottom: '0.9rem' }}>
+          <RoutineEditor name="" cadenceDays={1} items={[]}
+            onCancel={() => setMode('none')}
+            onSave={async p => { const e = await addRoutine(p.name, p.cadence_days, p.items); if (!e) setMode('none'); return e }} />
+        </div>
+      )}
+
+      {note && <div style={{ fontSize: '0.8rem', color: 'var(--rose)', marginBottom: '0.6rem' }}>{note}</div>}
+
+      {!loading && routines.length === 0 && mode === 'none' && missingMine.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '1rem 0', fontSize: '0.8rem', color: 'var(--muted)', opacity: 0.8 }}>
+          Nothing set up yet. A morning routine, a night routine, whatever starts and ends your day.
         </div>
       )}
 
       {routines.map(r => {
         const due = routineDue(r)
-        const done = r.items.filter(i => i.done).length
+        const { done, total } = countSteps(r.items, r.cadence_days)
+        const isOpen = open.has(r.id)
+        if (editing === r.id) {
+          return (
+            <div key={r.id} style={{ border: '1px solid var(--gold)', borderRadius: '12px', padding: '0.8rem', marginBottom: '0.7rem' }}>
+              <RoutineEditor name={r.name} cadenceDays={r.cadence_days} items={r.items}
+                onCancel={() => setEditing(null)}
+                onSave={async p => { const e = await updateRoutine(r.id, p); if (!e) setEditing(null); return e }}
+                onDelete={() => { if (window.confirm(`Delete "${r.name}"?`)) { removeRoutine(r.id); setEditing(null) } }} />
+            </div>
+          )
+        }
         return (
-          <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.8rem', marginBottom: '0.6rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{r.name}</span>
-              <span style={{ fontSize: '0.62rem', color: due < 0 ? 'var(--rose)' : 'var(--muted)' }}>
-                {done}/{r.items.length} · {due < 0 ? `${-due}d overdue` : due === 0 ? 'due' : `in ${due}d`}
+          <div key={r.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '0.4rem 0.8rem', marginBottom: '0.6rem' }}>
+            <button onClick={() => toggleOpen(r.id)} aria-expanded={isOpen} style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', minHeight: 44,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)', textAlign: 'left',
+            }}>
+              <span style={{ fontSize: '0.92rem', color: 'var(--text)' }}>{r.name}</span>
+              <span style={{ fontSize: '0.74rem', color: done === total && total > 0 ? 'var(--emerald)' : due < 0 ? 'var(--rose)' : 'var(--muted)', flexShrink: 0 }}>
+                {total > 0 ? `${done}/${total}` : ''}{r.cadence_days !== 1 ? ` · every ${r.cadence_days}d` : ''} {isOpen ? '▴' : '▾'}
               </span>
-            </div>
-            {r.items.map((i: RoutineItem) => (
-              <div key={i.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
-                <button onClick={() => toggleRoutineItem(r.id, i.id)} className="press" style={{
-                  width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
-                  background: i.done ? 'var(--gold)' : 'transparent', cursor: 'pointer', padding: 0,
-                }} />
-                <span style={{ flex: 1, fontSize: '0.75rem', color: 'var(--text)', opacity: i.done ? 0.45 : 1, textDecoration: i.done ? 'line-through' : 'none' }}>
-                  {i.label}
-                </span>
-                {/* Per-step share, not per-routine — the rest of the routine
-                    stays private no matter how many steps get shared. */}
-                <button
-                  onClick={() => toggleItemShared(r.id, i.id)}
-                  title={i.shared ? 'Shared with partner' : 'Share this step with your partner'}
-                  disabled={!spaceId}
-                  style={{
-                    background: 'none', border: 'none', cursor: spaceId ? 'pointer' : 'default', padding: 0, flexShrink: 0,
-                    fontSize: '0.62rem', color: i.shared ? 'var(--gold)' : 'var(--muted)', opacity: i.shared ? 0.85 : 0.3,
-                  }}
-                >⇆</button>
+            </button>
+            {isOpen && (
+              <div style={{ padding: '0.3rem 0 0.6rem' }}>
+                <RoutineChecklist items={r.items} cadenceDays={r.cadence_days}
+                  onToggle={id => toggleRoutineItem(r.id, id)}
+                  onToggleShared={id => toggleItemShared(r.id, id)} canShare={!!spaceId} />
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.8rem', flexWrap: 'wrap' }}>
+                  <button onClick={() => markRoutineDone(r.id)} className="btn btn-secondary press" style={{ minHeight: 40 }}>All done</button>
+                  <button onClick={() => setEditing(r.id)} style={smallBtn}>Edit</button>
+                </div>
               </div>
-            ))}
-            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-              <button onClick={() => markRoutineDone(r.id)} className="btn btn-secondary press" style={{ fontSize: '0.66rem' }}>Mark whole thing done</button>
-              <button onClick={() => removeRoutine(r.id)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.62rem', cursor: 'pointer' }}>Remove</button>
-            </div>
+            )}
           </div>
         )
       })}
 
-      {showForm && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Routine name (e.g. Morning routine)" style={input} autoFocus />
-          <input value={steps} onChange={e => setSteps(e.target.value)} placeholder="Steps, comma-separated (Make bed, Meditate, Journal...)" style={input} />
-          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Every</span>
-            <input type="number" min="1" value={cadence} onChange={e => setCadence(e.target.value)} style={{ ...input, width: '60px' }} />
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>days</span>
-            <button onClick={handleAdd} className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Save</button>
-          </div>
-        </div>
-      )}
-
       {sharedFromPartner.length > 0 && (
         <div style={{ marginTop: '0.9rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)' }}>
-          <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.65, marginBottom: '0.4rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.66rem', color: 'var(--muted)', opacity: 0.7, marginBottom: '0.4rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             From your partner
           </div>
           {sharedFromPartner.map(s => (
-            <div key={`${s.routine_id}-${s.item_id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
+            <div key={`${s.routine_id}-${s.item_id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.2rem 0' }}>
               <div style={{
-                width: '14px', height: '14px', borderRadius: '4px', border: '1px solid var(--border)', flexShrink: 0,
+                width: '16px', height: '16px', borderRadius: '5px', border: '1px solid var(--border)', flexShrink: 0,
                 background: s.done ? 'var(--gold)' : 'transparent',
               }} />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text)', opacity: s.done ? 0.6 : 1 }}>{s.label}</span>
+              <span style={{ fontSize: '0.84rem', color: 'var(--text)', opacity: s.done ? 0.6 : 1 }}>{s.label}</span>
             </div>
           ))}
         </div>
