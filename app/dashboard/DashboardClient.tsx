@@ -50,6 +50,7 @@ import type { Mode } from '@/lib/constants/modes'
 import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
+import { useWakeLock } from '@/lib/hooks/useWakeLock'
 
 interface Props {
   email: string
@@ -257,6 +258,32 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // everyone-lands-on-Village change: on a phone it was an extra tap to
   // "what do I need to do today").
   const [activeTab, setActiveTab] = useState(sharedMode ? 'village' : 'brief')
+  // "Guests are over" (2026-10-16): a switch on the shared device that shows
+  // only the village and the guest-safe pages, the same set a live gathering
+  // uses, without having to start one. Kept on this device only.
+  const [guestView, setGuestView] = useState(false)
+  useEffect(() => {
+    if (!sharedMode) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read this device's saved switch once
+    try { setGuestView(localStorage.getItem('4s:guest-view') === '1') } catch { /* private mode */ }
+  }, [sharedMode])
+  const toggleGuestView = () => {
+    const next = !guestView
+    setGuestView(next)
+    try { localStorage.setItem('4s:guest-view', next ? '1' : '0') } catch { /* private mode */ }
+    if (next) setActiveTab('village')
+  }
+  useWakeLock(sharedMode)
+  // A link straight to one page (?go=kitchen), for home-screen shortcuts and
+  // iPhone Shortcuts widgets.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const go = url.searchParams.get('go')
+    if (!go) return
+    url.searchParams.delete('go')
+    window.history.replaceState({}, '', url.toString())
+    setTimeout(() => goToSection(go), 60)
+  }, [])
   // Non-null = the unlock prompt is open. The value is what they tried to
   // reach ("Growth Forest") so the prompt can say why it's asking; an empty
   // string opens it with no specific destination (the header's own entry).
@@ -446,7 +473,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // tested). guestMode = a gathering is actually live on this shared
   // device — it clamps the reachable sections down to the guest-safe set
   // until the gathering ends.
-  const guestMode = sharedMode && gathering.gathering?.phase === 'live'
+  const guestMode = sharedMode && (gathering.gathering?.phase === 'live' || guestView)
 
   const visible = sections.filter(s =>
     !s.hidden
@@ -512,6 +539,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // the wall iPad shouldn't dim mid-gathering.
   const [idleAmbient, resetIdleTimer] = useIdleAmbient(sharedMode, gathering.gathering ? 300_000 : undefined)
   const ambient = idleAmbient && currentTab === 'village'
+  // Left on another page for five minutes, the shared screen goes back to the
+  // village (2026-10-16), so a guest walking up sees the picture, not a list.
+  // Not from the Kitchen: a recipe can sit open for a long time while cooking.
+  const [awayIdle] = useIdleAmbient(sharedMode && currentTab !== 'village' && currentTab !== 'kitchen', 300_000)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- an idle timer firing is an outside event
+    if (awayIdle) setActiveTab('village')
+  }, [awayIdle])
 
   // The other half of the same privacy story (2026-08-25) — useIdleAmbient
   // above only ever arms in sharedMode. This arms the opposite case: once
@@ -622,13 +657,16 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           onNotifications={() => setNotificationsOpen(true)}
           onMail={() => setMailOpen(true)}
           mailUnread={mailUnreadList.length}
+          guestView={guestMode} onToggleGuestView={gathering.gathering?.phase === 'live' ? undefined : toggleGuestView}
         />
       )}
 
-      <QuickNote />
+      {/* A quick note lands in the backing account's own notes, and search
+          reaches personal data, so neither is on the shared screen. */}
+      {!sharedMode && <QuickNote />}
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
 
-      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {!sharedMode && <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />}
       <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} userId={userId} accountCreatedAt={accountCreatedAt} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />

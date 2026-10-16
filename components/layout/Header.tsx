@@ -34,6 +34,10 @@ interface HeaderProps {
   onConnect: () => void
   onNotifications: () => void
   onMail: () => void
+  /** Shared mode: guests are over, so only the village and guest-safe pages show. */
+  guestView?: boolean
+  /** Shared mode: turn guest view on or off. Absent while a gathering is live (it decides). */
+  onToggleGuestView?: () => void
   /** Unread mail count — shown as a small badge next to the menu item.
    *  0/undefined means no badge, same "absent, not zero" convention as
    *  Needs Attention on the Brief. */
@@ -96,7 +100,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread, guestView = false, onToggleGuestView }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -235,7 +239,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
               border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',
               borderRadius: '20px', padding: '0.15em 0.7em', textTransform: 'none',
             }}>
-              Shared view
+              {guestView ? 'Guest view' : 'Shared view'}
             </span>
           )}
         </div>
@@ -245,16 +249,16 @@ export default function Header({ email, userId, initialName, sharedMode = false,
         {/* Desktop's only visible entry to Quick Note used to be ⌘K —
             real, but undiscoverable. This is the same trigger MobileNav's
             FAB already uses one level down. */}
-        <button onClick={onCapture} title="Quick note" aria-label="Quick note" style={{
+        {!sharedMode && <button onClick={onCapture} title="Quick note" aria-label="Quick note" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>✎</button>
-        <button onClick={onSearch} title="Search everything" aria-label="Search" style={{
+        }}>✎</button>}
+        {!sharedMode && <button onClick={onSearch} title="Search everything" aria-label="Search" style={{
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
-        }}>⌕</button>
+        }}>⌕</button>}
         {/* Theme is a personal preference stored on the backing account
             (user_prefs.theme) — changing it from a shared-device session
             would silently change that person's real profile the next time
@@ -274,6 +278,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
         <MoreMenu items={sharedMode ? [
           // The shared view is deliberately read-mostly; this is the way out
           // of it without signing out and back in.
+          ...(onToggleGuestView ? [{ icon: '◎', label: guestView ? 'Guests have left' : 'Guests are over', onClick: onToggleGuestView }] : []),
           ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '⇄', label: 'Switch account', onClick: signOut },
