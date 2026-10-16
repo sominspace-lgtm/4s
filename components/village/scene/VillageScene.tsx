@@ -160,7 +160,7 @@ export default function VillageScene({
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
   onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
-  scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview,
+  scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview, lite = false,
   sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
 }: {
@@ -240,6 +240,10 @@ export default function VillageScene({
    *  letterboxing (round 67). null everywhere else = the curated default
    *  window. */
   containerAspect?: number | null
+  /** Older iPads (2026-10-16): no grain texture over the whole scene. The
+   *  wrapper's .village-lite class also stills the decorative animations, so
+   *  the glows are drawn once instead of every frame. */
+  lite?: boolean
   /** Shared-mode: the scene is visible, but the districts lead into personal
    *  spaces, so tapping one asks for a PIN instead of navigating. */
   locked?: boolean
@@ -3529,7 +3533,7 @@ export default function VillageScene({
           def comment. Drawn last, over everything, at a low enough opacity
           it reads as texture rather than noise; multiply blend so it can
           only darken, never wash the scene out or shift its hue. */}
-      <rect width="800" height="440" filter="url(#vgrain)" opacity={0.05} pointerEvents="none" style={{ mixBlendMode: 'multiply' }} />
+      {!lite && <rect width="800" height="440" filter="url(#vgrain)" opacity={0.05} pointerEvents="none" style={{ mixBlendMode: 'multiply' }} />}
     </svg>
   )
 }

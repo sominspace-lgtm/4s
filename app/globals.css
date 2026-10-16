@@ -912,3 +912,12 @@ select, option {
 }
 .places-map .maplibregl-ctrl-attrib a { color: var(--muted); }
 .places-map .maplibregl-canvas { outline: none; }
+
+/* Older iPads (2026-10-16) — the village's lite mode. Every decorative loop
+   (water shimmer, smoke, swaying grass, twinkle) stops, so the scene is drawn
+   once and then just sits, instead of the browser repainting the blurred
+   glows sixty times a second. Taps, pings and the clock still work. */
+.village-lite svg *, .village-lite svg *::before, .village-lite svg *::after {
+  animation: none !important;
+  transition: none !important;
+}

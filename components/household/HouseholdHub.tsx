@@ -12,7 +12,6 @@ import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
-import HouseholdWatchlist from './HouseholdWatchlist'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
 import ReferenceCollections from './ReferenceCollections'
 import HouseholdReferenceMemories from './HouseholdReferenceMemories'
@@ -20,7 +19,6 @@ import HouseholdSmartHome from './HouseholdSmartHome'
 import DiceCoin from './DiceCoin'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import CheckinCard from '@/components/checkin/CheckinCard'
-import CareLog from '@/components/care/CareLog'
 import IconButton from '@/components/ui/IconButton'
 import CheckinForm from '@/components/checkin/CheckinForm'
 import CheckinPhoto from '@/components/checkin/CheckinPhoto'
@@ -76,6 +74,27 @@ function VibeBadge({ emoji }: { emoji: string }) {
     </span>
   )
 }
+
+const STARTER_CHORES: { folder: string; label: string; chores: { name: string; every: number }[] }[] = [
+  { folder: 'Somi', label: "Add Somi's chores", chores: [
+    { name: "Clean Somi's litter", every: 1 },
+    { name: 'Fresh water and food bowls', every: 1 },
+    { name: "Deep-clean Somi's litter box", every: 14 },
+    { name: "Trim Somi's nails", every: 14 },
+    { name: "Brush Somi", every: 7 },
+    { name: 'Flea and tick treatment', every: 30 },
+    { name: 'Bathe Somi', every: 60 },
+    { name: 'Vet checkup', every: 365 },
+  ] },
+  { folder: 'House', label: 'Add house upkeep', chores: [
+    { name: 'Water the plants', every: 3 },
+    { name: 'Change the HVAC filter', every: 90 },
+    { name: 'Replace the water filter', every: 60 },
+    { name: 'Test the smoke detectors', every: 180 },
+    { name: 'Clean the gutters', every: 180 },
+    { name: 'Pest control', every: 90 },
+  ] },
+]
 
 export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, onLockedNavigate, forcedTab, boardNote = '', onSetBoardNote }: {
   userId: string
@@ -180,7 +199,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // Somi's care moved to the care log (2026-09-08) — chores in a "Somi"
   // folder don't belong under Chores any more. They're kept until the user
   // clears them (a button in the Somi care section), just not listed here.
-  const somiChores = h.chores.filter(c => /somi/i.test(c.folder ?? ''))
   // Soonest-due first — the list orders itself by what actually needs doing,
   // so nobody has to scan for it.
   const sortedChores = [...h.chores].filter(c => !/somi/i.test(c.folder ?? '')).sort((a, b) => choreDue(a) - choreDue(b))
@@ -620,6 +638,23 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     )
   }
 
+  // Starter chores (2026-10-16): Somi's care and the house's upkeep, offered
+  // once per folder until that folder has something in it.
+  function renderStarterChores() {
+    const missing = STARTER_CHORES.filter(g => !h.chores.some(c => (c.folder ?? '').toLowerCase() === g.folder.toLowerCase()))
+    if (missing.length === 0 || h.loading || guestMode) return null
+    return (
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {missing.map(g => (
+          <button key={g.folder} className="btn btn-secondary press" style={{ minHeight: 40 }}
+            onClick={async () => { for (const c of g.chores) await h.addChore(c.name, c.every, g.folder) }}>
+            + {g.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   function renderChores() {
     // Folders (2026-08-26) — a free-text grouping a person names as they go
     // ("Somi", "Car", "Seasonal"), not a fixed taxonomy like Shopping's
@@ -707,7 +742,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     }
 
     return (
-      <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
+      <details open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
         <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Chores</span>
           <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{sortedChores.length}</span>
@@ -867,8 +902,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {tab === 'reference' && !sharedMode && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
-          Chores stay a cadence list; the care logs (Somi + the house) are
-          "tap what you did, tracked by day". Routines were removed. */}
+          Just chores since 2026-10-16: Somi's care and the house's upkeep
+          are chores too (folders "Somi" and "House"), not a separate log. */}
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -879,38 +914,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
               }}>Track habits →</button>
             </div>
             {renderChores()}
+            {renderStarterChores()}
           </section>
 
-          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-            <div className="t-card">Care</div>
-            <details open style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>Somi&rsquo;s care</summary>
-              <div style={{ marginTop: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {somiChores.length > 0 && (
-                  <div style={{
-                    fontSize: '0.68rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
-                    background: 'color-mix(in srgb, var(--gold) 8%, var(--surface))', border: '1px solid color-mix(in srgb, var(--gold) 22%, var(--border))',
-                    borderRadius: '8px', padding: '0.45rem 0.6rem',
-                  }}>
-                    <span style={{ flex: 1 }}>
-                      {somiChores.length} old Somi chore{somiChores.length === 1 ? '' : 's'} ({somiChores.map(c => c.name).join(', ')}). Care is logged here now, not on a cadence.
-                    </span>
-                    <button onClick={() => { somiChores.forEach(c => h.removeChore(c.id)) }} className="press" style={{
-                      flexShrink: 0, background: 'none', border: '1px solid var(--border)', borderRadius: '7px',
-                      padding: '0.25rem 0.55rem', fontSize: '0.64rem', color: 'var(--muted)', cursor: 'pointer',
-                    }}>Clear them</button>
-                  </div>
-                )}
-                <CareLog subject="somi" compact />
-              </div>
-            </details>
-            <details style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem 0.9rem' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text)' }}>The house</summary>
-              <div style={{ marginTop: '0.7rem' }}>
-                <CareLog subject="home" compact />
-              </div>
-            </details>
-          </section>
         </div>
       )}
 
@@ -919,7 +925,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           and game/watch list blocks. See ReferenceCollections. */}
       {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} />}
 
-      {tab === 'reference' && <HouseholdWatchlist spaceId={spaceId} />}
 
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
       {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} />}

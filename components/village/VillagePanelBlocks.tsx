@@ -13,7 +13,6 @@ import ScenesCard from './ScenesCard'
 import ShortcutsCard from './ShortcutsCard'
 import ProgressCard from './ProgressCard'
 import MiniCalendarCard from './MiniCalendarCard'
-import TodosCard from './TodosCard'
 import GuestWallActions from './GuestWallActions'
 import MusicCard from './MusicCard'
 
@@ -55,7 +54,6 @@ export default function VillagePanelBlocks(props: VillagePanelProps) {
           case 'shortcuts': return <ShortcutsCard key={b.id} locked={locked} onLockedNavigate={onLockedNavigate} onInteract={onInteract} />
           case 'progress':  return <ProgressCard key={b.id} village={village} />
           case 'calendar':  return <MiniCalendarCard key={b.id} spaceId={spaceId} locked={locked} onLockedNavigate={onLockedNavigate} />
-          case 'todos':     return <TodosCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'tonight':   return <TonightCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'meals':     return <MealsCard key={b.id} spaceId={spaceId} />
           case 'shopping':  return <ShoppingCard key={b.id} spaceId={spaceId} onInteract={onInteract} />

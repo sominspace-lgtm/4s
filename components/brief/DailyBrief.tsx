@@ -15,8 +15,6 @@ import TodayHouseholdNeeds from '@/components/brief/TodayHouseholdNeeds'
 import DailyThread from '@/components/brief/DailyThread'
 import IconButton from '@/components/ui/IconButton'
 import CheckinCard from '@/components/checkin/CheckinCard'
-import { useCareLog } from '@/lib/hooks/useCareLog'
-import { careTypeLabel } from '@/lib/utils/careTypes'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
@@ -94,7 +92,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   const { items } = useWorkItems()
   const { items: focusItems, snooze: snoozeFocusItem } = useFocusItems()
   const { habits, completions } = useHabits()
-  const { gentleHints: somiCareHints, typicalIntervalByKind: somiTypical } = useCareLog('somi')
   const { subs, total: monthlyTotal } = useSubscriptions()
   const giftItems = useGiftOccasions()
   const { people } = usePeople()
@@ -252,13 +249,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
       return dormantHabits.length === 1
         ? `${dormantHabits[0].name} has gone quiet. It's still yours whenever you come back to it.`
         : `${dormantHabits.length} habits have gone quiet. Still yours, whenever.`
-    }
-    if (somiCareHints.length > 0) {
-      const hint = somiCareHints[0]
-      const label = careTypeLabel('somi', hint.kind).toLowerCase()
-      const t = somiTypical[hint.kind]
-      const every = t >= 12 ? `every ${Math.round(t / 7)} weeks` : t === 1 ? 'about daily' : `every ${t} days`
-      return `${label} is usually ${every}. Worth a look.`
     }
     if (overdue > 0) return 'A few things slipped. No need to fix them all at once.'
     return null

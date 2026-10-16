@@ -6,6 +6,7 @@ import {
   type Collection, type CollectionProp, type CollectionRow, type CellValue, type PropType,
 } from '@/lib/hooks/useCollections'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
+import RecipesToKitchen from './RecipesToKitchen'
 import type { Place } from '@/lib/hooks/usePlaces'
 
 // Collections (2026-10-12): small databases you shape yourself. Pick a
@@ -150,6 +151,8 @@ export function UserCollectionView({ c, me, spaceId, backLabel, onBack, update, 
   const source = useCollectionRows(c.id)
   const boardProp = c.props.find(p => p.id === c.board_prop && p.type === 'select') ?? c.props.find(p => p.type === 'select') ?? null
   return (
+    <>
+    {/recipe/i.test(c.name) && <RecipesToKitchen props={c.props} rows={source.rows} spaceId={spaceId} />}
     <CollectionViewGeneric
       name={c.name} props={c.props} view={c.view} boardPropId={boardProp?.id ?? null} locked={new Set()}
       source={source} canShare={!!spaceId && c.user_id === me} shared={!!c.space_id} canDelete={c.user_id === me} canRename
@@ -161,6 +164,7 @@ export function UserCollectionView({ c, me, spaceId, backLabel, onBack, update, 
         toggleShare: () => { update(c.id, { space_id: c.space_id ? null : spaceId }) },
         remove: onDelete,
       }} />
+    </>
   )
 }
 

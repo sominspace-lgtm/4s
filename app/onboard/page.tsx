@@ -209,12 +209,6 @@ export default function OnboardPage() {
               }} />
             ))}
           </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <a href="/guide" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.75 }}>
-              Want the full tour? Open the guide →
-            </a>
-          </div>
         </div>
       </div>
     </ThemeProvider>

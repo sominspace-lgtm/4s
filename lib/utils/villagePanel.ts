@@ -14,7 +14,6 @@ export type VillagePanelBlockId =
   | 'shortcuts'  // tab jump tiles
   | 'progress'   // garden growth, habits today, streak, projects
   | 'calendar'   // a compact month with a dot per dated day
-  | 'todos'      // household checklists (useLists) with check-off + add
   | 'tonight'    // tonight's dinner + chores due
   | 'meals'      // this week's dinners
   | 'shopping'   // the shopping list + quick-add
@@ -24,7 +23,6 @@ export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: stri
   shortcuts: { label: 'Shortcuts',      hint: 'Jump to any tab' },
   progress:  { label: 'Progress',       hint: 'The garden, habits today, your streak' },
   calendar:  { label: 'Calendar',       hint: 'The month, with a dot on every dated day' },
-  todos:     { label: 'To-do lists',    hint: 'Household checklists you can tick off here' },
   tonight:   { label: 'Tonight',        hint: "Dinner and what's due" },
   meals:     { label: "This week's meals", hint: "What we're eating" },
   shopping:  { label: 'Shopping list',  hint: 'What to buy, add from here' },
@@ -37,10 +35,10 @@ export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: stri
 // Calendar / to-dos stay opt-in (the option to add them, not on by
 // default).
 const DEFAULT_ORDER: VillagePanelBlockId[] = [
-  'house', 'shortcuts', 'progress', 'calendar', 'todos',
+  'house', 'shortcuts', 'progress', 'calendar',
   'tonight', 'meals', 'shopping',
 ]
-const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar', 'todos'])
+const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar'])
 
 export const DEFAULT_VILLAGE_PANEL_BLOCKS: SectionConfig[] = DEFAULT_ORDER.map(id => ({
   id,

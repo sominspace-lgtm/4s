@@ -85,11 +85,6 @@ export const COLLECTION_TEMPLATES: CollectionTemplate[] = [
     id: 'workouts', label: 'Workout log', icon: '', view: 'table',
     props: [{ name: 'Workout', type: 'text' }, { name: 'Date', type: 'date' }, { name: 'Minutes', type: 'number' }, { name: 'Notes', type: 'text' }],
   },
-  {
-    id: 'recipes', label: 'Recipes to try', icon: '', view: 'table',
-    props: [{ name: 'Recipe', type: 'text' }, { name: 'Source', type: 'url' },
-      { name: 'Cuisine', type: 'select', options: ['Italian', 'Mexican', 'Asian', 'American', 'Other'] }, { name: 'Made it', type: 'checkbox' }],
-  },
 ]
 
 // Your collections plus anything shared into the household (RLS decides).

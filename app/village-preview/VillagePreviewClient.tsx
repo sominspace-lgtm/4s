@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import VillageScene, { GROUND_Y } from '@/components/village/scene/VillageScene'
 import { type VillageState, type Plant, type Building } from '@/lib/village/state'
 import { forestSlots, districtSlots } from '@/lib/village/layout'
@@ -64,6 +64,13 @@ export default function VillagePreviewClient() {
   const themeVars = THEMES[theme] ?? {}
   const isLight = themeVars['--scheme'] === 'light'
   const [sparks, setSparks] = useState<{ id: string; glyph: string }[]>([])
+  // ?one shows just the big scene at full width (one village is far lighter to screenshot).
+  const [one, setOne] = useState(false)
+  // ?aspect=1.33 draws it the way a landscape iPad's fullscreen does; ?lite turns on the older-iPad mode.
+  const [aspect, setAspect] = useState<number | null>(null)
+  const [lite, setLite] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- read the address once
+  useEffect(() => { const q = new URLSearchParams(window.location.search); setOne(q.has('one')); setAspect(q.get('aspect') ? Number(q.get('aspect')) : null); setLite(q.has('lite')) }, [])
   // One big interactive scene at the top for guest-mode work — pass a fake
   // token so pond/well writes take the guest path (the POST 404s, the
   // optimistic firefly still shows).
@@ -83,16 +90,16 @@ export default function VillagePreviewClient() {
         ))}
       </div>
 
-      <div style={{ maxWidth: 760, marginBottom: '1.6rem' }}>
+      <div style={{ maxWidth: one ? 'none' : 760, marginBottom: '1.6rem' }}>
         <div style={{ color: 'var(--text)', fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
           guest-mode scene ({sparks.length} fireflies)
         </div>
-        <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)' }}>
+        <div className={lite ? 'village-lite' : undefined} style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)', ...(aspect ? { aspectRatio: String(aspect) } : {}) }}>
           <VillageScene
             village={bigV} live palette={seasonPalette('summer', isLight)}
             celestial={celestialOf(new Date(2026, 6, 15, 19))}
             plantSlots={bigSlots.plantSlots} buildingSlots={bigSlots.buildingSlots}
-            gathering guestToken="preview-fake-token"
+            gathering guestToken="preview-fake-token" containerAspect={aspect} lite={lite}
             sparks={sparks}
             onThisDay={{ text: 'You had people over: Alex, Sam, Jo.', yearsAgo: 1 }}
             somi={{ name: 'Somi', ageText: '1 year old', birthdayLabel: 'Born July 11, 2025', snack: 'Churu', tricks: ['sit', 'spin'], notes: 'Please don’t feed her from the table.', photoUrl: 'https://placecats.com/80/80' }}
@@ -104,6 +111,7 @@ export default function VillagePreviewClient() {
         </button>
       </div>
 
+      {!one && <>
       {/* Density: growth has to stay visible past the old caps rather than
           silently stopping. Last one is deliberately over the cap. */}
       <div style={{ marginBottom: '1.4rem' }}>
@@ -157,6 +165,7 @@ export default function VillagePreviewClient() {
           </div>
         </div>
       ))}
+      </>}
     </div>
   )
 }

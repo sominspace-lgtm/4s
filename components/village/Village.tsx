@@ -54,6 +54,7 @@ import VillageHomeSheet from './VillageHomeSheet'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEFAULT_VILLAGE_PANEL_BLOCKS } from '@/lib/utils/villagePanel'
 import { goToSection } from '@/lib/utils/navigate'
+import { useVillageLite } from '@/lib/hooks/useVillageLite'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -321,7 +322,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // ipad/mobile") — a CSS pseudo-fullscreen (fixed inset:0) rather than the
   // Fullscreen API, which iOS Safari only supports for <video>. Escape
   // exits; body scroll is locked while it's on.
-  const [expanded, setExpanded] = useState(false)
+  // On the shared screen (`locked`) the village always opens full screen
+  // (2026-10-16): it is the picture on the wall. The ✕ steps out to the rest
+  // of the app; coming back to the Village tab, or going idle, brings it back.
+  const [expanded, setExpanded] = useState(locked && !compact)
+  const villageLite = useVillageLite(!compact)
   // Fullscreen when idle (round 62, "fullscreen when idle") — on the
   // wall-mounted iPad "Shared" login, once the scene goes ambient
   // (useIdleAmbient, ~60s untouched) it also fills the screen so it reads as
@@ -767,7 +772,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   const card = (
       <div
-        className="lift organic"
+        className={villageLite.lite ? 'lift organic village-lite' : 'lift organic'}
         style={{
           // Scopes every custom property the scene reads (--emerald, --gold,
           // --surface, --bg, the aurora washes, even --radius-organic) to
@@ -846,6 +851,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             guestInfo={guestInfo}
             soloFigure={!bothHome && !guestActive}
             containerAspect={fullscreen ? viewportAspect : null}
+            lite={villageLite.lite}
             plantSlots={plantSlots} buildingSlots={buildingSlots}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
@@ -1053,6 +1059,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                       { label: 'Reset zoom', on: () => setZoom(1), keepOpen: true },
                     ] : []),
                     { label: 'View fullscreen', on: () => setExpanded(true) },
+                    // Older iPads: still the animations so the scene stays smooth.
+                    {
+                      label: villageLite.setting === 'auto' ? `Older iPad mode: auto (${villageLite.lite ? 'on' : 'off'})` : `Older iPad mode: ${villageLite.setting}`,
+                      on: () => villageLite.setSetting(villageLite.setting === 'auto' ? 'on' : villageLite.setting === 'on' ? 'off' : 'auto'),
+                      keepOpen: true,
+                    },
                   ] as { label: string; on: () => void; keepOpen?: boolean; disabled?: boolean }[]).map(item => (
                     <button key={item.label} role="menuitem" className="press" disabled={item.disabled}
                       onClick={() => { item.on(); if (!item.keepOpen) setMenuOpen(false) }}

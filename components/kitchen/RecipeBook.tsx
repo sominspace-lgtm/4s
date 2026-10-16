@@ -29,6 +29,8 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
   const { recipes, loading } = book
   const [q, setQ] = useState('')
   const [tag, setTag] = useState<string | null>(null)
+  // Recipes to try (2026-10-16): the ones you have saved but not made yet.
+  const [toTry, setToTry] = useState(false)
   const [sort, setSort] = useState<Sort>('new')
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState<{ d: RecipeDraft | null; via: string } | null>(null)
@@ -63,6 +65,7 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
 
   const shown = recipes.filter(r => {
     if (tag && !r.tags.includes(tag)) return false
+    if (toTry && r.times_cooked > 0) return false
     const n = q.trim().toLowerCase()
     return !n || r.title.toLowerCase().includes(n) || r.tags.some(t => t.includes(n)) || r.ingredients.some(i => i.name.toLowerCase().includes(n))
   }).sort((a, b) => {
@@ -128,8 +131,9 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
       )}
       {notice && <div style={muted}>{notice}</div>}
 
-      {tags.length > 0 && (
+      {recipes.length > 0 && (
         <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+          <button className="press" style={chip(toTry)} onClick={() => setToTry(v => !v)}>To try ({recipes.filter(r => r.times_cooked === 0).length})</button>
           {tags.map(t => <button key={t} className="press" style={chip(tag === t)} onClick={() => setTag(tag === t ? null : t)}>#{t}</button>)}
         </div>
       )}

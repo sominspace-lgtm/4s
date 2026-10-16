@@ -280,7 +280,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           // of it without signing out and back in.
           ...(onToggleGuestView ? [{ icon: '◎', label: guestView ? 'Guests have left' : 'Guests are over', onClick: onToggleGuestView }] : []),
           ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
-          { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },
         ] : [
@@ -294,7 +293,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           { icon: '⊹', label: 'Customize layout', onClick: onCustomize },
           { icon: '◻', label: 'Archive', onClick: onArchive },
           { divider: true, icon: '', label: '' },
-          { icon: '↗', label: 'Guide', href: '/guide' },
           { icon: '○', label: 'Account', href: '/account' },
           // Same tiled-profile login every device uses — picking a different
           // tile there IS switching accounts, so this just clears the
