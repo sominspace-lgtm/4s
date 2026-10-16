@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import type { CareSubject } from '@/lib/utils/careTypes'
+import { mergeCareTasks, type CareSubject, type CareTask, type CareTaskRow } from '@/lib/utils/careTypes'
 
 export interface CareEntry {
   id: string
@@ -30,6 +30,9 @@ export function useCareLog(subject: CareSubject) {
 
   const [entries, setEntries] = useState<CareEntry[]>([])
   const [loading, setLoading] = useState(true)
+  // The editable task list (care_tasks). null = that table is not there yet,
+  // so the buttons stay the built-in ones and editing is unavailable.
+  const [taskRows, setTaskRows] = useState<CareTaskRow[] | null>(null)
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -39,7 +42,10 @@ export function useCareLog(subject: CareSubject) {
     // Personal ('self') stays strictly this user's; 'somi' reads by space
     // so a partner's entries show too (RLS allows both, this narrows it).
     q = shared && spaceId ? q.eq('space_id', spaceId) : q.eq('user_id', user.id).is('space_id', null)
-    const { data, error } = await q
+    let tq = supabase.from('care_tasks').select('id, subject, kind, label, detail, every_days, position, hidden').eq('subject', subject)
+    tq = shared && spaceId ? tq.eq('space_id', spaceId) : tq.eq('user_id', user.id).is('space_id', null)
+    const [{ data, error }, tasks] = await Promise.all([q, tq])
+    setTaskRows(tasks.error ? null : ((tasks.data as CareTaskRow[] | null) ?? []))
     if (error) { setEntries([]); setLoading(false); return } // table missing = migration not run
     setEntries((data as CareEntry[] | null) ?? [])
     setLoading(false)
@@ -79,6 +85,30 @@ export function useCareLog(subject: CareSubject) {
     if (error) { setEntries(prev); return }
     window.dispatchEvent(new CustomEvent('4s:care-changed'))
   }, [supabase, entries])
+
+  const tasks: CareTask[] = useMemo(() => mergeCareTasks(subject, taskRows ?? [], entries.map(e => e.kind)), [subject, taskRows, entries])
+
+  /** Save the whole list as edited: names, rhythm, order. A removed task is
+   *  kept as a hidden row rather than deleted, because its past log entries
+   *  would otherwise bring its button straight back. */
+  const saveTasks = useCallback(async (list: CareTask[], removed: CareTask[]): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 'Not signed in'
+    if (shared && !spaceId) return 'Set up a shared space first'
+    const base = { user_id: user.id, space_id: shared ? spaceId : null, subject }
+    const all = [...list, ...removed.map(t => ({ ...t, hidden: true }))]
+    for (let i = 0; i < all.length; i++) {
+      const t = all[i]
+      const row = { kind: t.kind, label: t.label.trim() || t.kind, detail: t.detail?.trim() || null, every_days: t.every_days && t.every_days > 0 ? Math.round(t.every_days) : null, position: i, hidden: t.hidden }
+      const { error } = t.id
+        ? await supabase.from('care_tasks').update(row).eq('id', t.id)
+        : await supabase.from('care_tasks').insert({ ...base, ...row })
+      if (error) return error.message
+    }
+    await load()
+    window.dispatchEvent(new CustomEvent('4s:care-changed'))
+    return null
+  }, [supabase, shared, spaceId, subject, load])
 
   // Most recent entry per kind, which kinds were logged today (local), the
   // typical gap between entries of each kind, and — from that — a couple of
@@ -120,5 +150,5 @@ export function useCareLog(subject: CareSubject) {
     return { lastByKind: last, doneToday: today, typicalIntervalByKind: typical, gentleHints: hints.slice(0, 2) }
   }, [entries])
 
-  return { entries, loading, log, remove, lastByKind, doneToday, typicalIntervalByKind, gentleHints, canShare: !shared || !!spaceId }
+  return { entries, loading, log, remove, tasks, canEditTasks: taskRows !== null, saveTasks, lastByKind, doneToday, typicalIntervalByKind, gentleHints, canShare: !shared || !!spaceId }
 }

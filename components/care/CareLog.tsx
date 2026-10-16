@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/ui/IconButton'
 import { useCareLog } from '@/lib/hooks/useCareLog'
-import { CARE_TYPES, careTypeLabel, careSubjectName, type CareSubject } from '@/lib/utils/careTypes'
+import { CARE_TYPES, careSubjectName, careDue, type CareSubject, type CareTask } from '@/lib/utils/careTypes'
 
 // The care log for one subject — Somi (household) or yourself (personal).
 // A row of quick-log buttons, a one-line "today" summary, and the history
@@ -14,8 +14,11 @@ export default function CareLog({ subject, compact = false }: {
   /** Home-block use: drop the heading, the parent block already has one. */
   compact?: boolean
 }) {
-  const { entries, loading, log, remove, doneToday, lastByKind, gentleHints, canShare } = useCareLog(subject)
+  const { entries, loading, log, remove, tasks, canEditTasks, saveTasks, doneToday, lastByKind, gentleHints, canShare } = useCareLog(subject)
   const presets = CARE_TYPES[subject]
+  const labelOf = (kind: string) => tasks.find(t => t.kind === kind)?.label ?? kind
+  const [editing, setEditing] = useState<{ list: CareTask[]; removed: CareTask[]; adding: string } | null>(null)
+  const [editErr, setEditErr] = useState<string | null>(null)
   const [pending, setPending] = useState<{ kind: string; label: string; detail: string } | null>(null)
   const [custom, setCustom] = useState('')
 
@@ -44,12 +47,9 @@ export default function CareLog({ subject, compact = false }: {
   // Custom actions (2026-09-08, "we should be able to add more") — any kind
   // you've logged before that isn't a preset becomes its own reusable
   // button. Adding one is just: type it in the free-text box once.
-  const presetKinds = new Set(presets.map(t => t.kind))
-  const customKinds = [...new Set(entries.map(e => e.kind).filter(k => !presetKinds.has(k)))]
-  const types = [
-    ...presets,
-    ...customKinds.map(k => ({ kind: k, label: k, custom: true as const })),
-  ]
+  // Since 2026-10-16 the list itself is editable (care_tasks): renamed,
+  // reordered, hidden, or given an "every N days" rhythm like a chore.
+  const types = tasks.filter(t => !t.hidden)
 
   // Care is tracked by day, not by the minute (2026-09-08) — a rough
   // "when was this last done" is all that's useful.
@@ -117,16 +117,93 @@ export default function CareLog({ subject, compact = false }: {
         </div>
       )}
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="press" onClick={() => { setEditErr(null); setEditing(editing ? null : { list: tasks.filter(t => !t.hidden), removed: [], adding: '' }) }}
+          style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.74rem', cursor: 'pointer', minHeight: 36, padding: '0 0.3rem', fontFamily: 'inherit' }}>
+          {editing ? 'Cancel' : '✎ Edit tasks'}
+        </button>
+      </div>
+
+      {editing && (() => {
+        const setList = (list: CareTask[]) => setEditing({ ...editing, list })
+        const patch = (i: number, p: Partial<CareTask>) => setList(editing.list.map((t, k) => (k === i ? { ...t, ...p } : t)))
+        const move = (i: number, by: number) => {
+          const j = i + by
+          if (j < 0 || j >= editing.list.length) return
+          const l = [...editing.list]; [l[i], l[j]] = [l[j], l[i]]; setList(l)
+        }
+        const hiddenNow = [...tasks.filter(t => t.hidden && !editing.list.some(x => x.kind === t.kind)), ...editing.removed]
+        const field: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.45rem 0.55rem', fontSize: '0.85rem', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', minWidth: 0 }
+        const sq: React.CSSProperties = { minWidth: 36, minHeight: 36, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }
+        const addNew = () => {
+          const label = editing.adding.trim()
+          if (!label || editing.list.some(t => t.label.toLowerCase() === label.toLowerCase())) return
+          setEditing({ ...editing, list: [...editing.list, { id: null, kind: label, label, detail: null, every_days: null, hidden: false, builtin: false }], adding: '' })
+        }
+        if (!canEditTasks) {
+          return <div style={{ fontSize: '0.8rem', color: 'var(--muted)', lineHeight: 1.5 }}>Editing care tasks needs one more step on the server first (the care_tasks SQL). Until then the built-in list stays as it is.</div>
+        }
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+            {editing.list.map((t, i) => (
+              <div key={t.kind} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center', padding: '0.45rem', border: '1px solid var(--border)', borderRadius: 10 }}>
+                <input value={t.label} onChange={e => patch(i, { label: e.target.value })} style={{ ...field, flex: '1 1 10rem' }} aria-label="Name" />
+                <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>every</span>
+                <input type="number" min={1} value={t.every_days ?? ''} placeholder="–" onChange={e => patch(i, { every_days: e.target.value ? Number(e.target.value) : null })}
+                  style={{ ...field, width: '4rem' }} aria-label="Every how many days" />
+                <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>days</span>
+                <button type="button" style={sq} aria-label="Move up" onClick={() => move(i, -1)}>↑</button>
+                <button type="button" style={sq} aria-label="Move down" onClick={() => move(i, 1)}>↓</button>
+                <button type="button" style={{ ...sq, color: 'var(--rose)' }} aria-label={`Remove ${t.label}`}
+                  onClick={() => setEditing({ ...editing, list: editing.list.filter((_, k) => k !== i), removed: [...editing.removed, t] })}>✕</button>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <input value={editing.adding} onChange={e => setEditing({ ...editing, adding: e.target.value })}
+                onKeyDown={e => { if (e.key === 'Enter') addNew() }} placeholder="Add a care task" style={{ ...field, flex: 1 }} />
+              <button type="button" className="btn btn-secondary press" style={{ minHeight: 40 }} onClick={addNew}>Add</button>
+            </div>
+            {hiddenNow.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center', fontSize: '0.74rem', color: 'var(--muted)' }}>
+                Hidden:
+                {hiddenNow.map(t => (
+                  <button key={t.kind} type="button" className="press" style={{ ...pill(false), minHeight: 32 }}
+                    onClick={() => setEditing({ ...editing, list: [...editing.list, { ...t, hidden: false }], removed: editing.removed.filter(x => x.kind !== t.kind) })}>
+                    + {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>Give a task a number of days and it shows when it is due, like a chore. Leave it blank to just log it whenever.</div>
+            {editErr && <div style={{ fontSize: '0.78rem', color: 'var(--rose)' }}>{editErr}</div>}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button type="button" className="btn btn-primary press" style={{ minHeight: 44 }}
+                onClick={async () => {
+                  const e = await saveTasks(editing.list, editing.removed.filter(r => !editing.list.some(t => t.kind === r.kind)))
+                  if (e) setEditErr(e); else setEditing(null)
+                }}>Save</button>
+              <button type="button" className="btn btn-ghost press" style={{ minHeight: 44 }} onClick={() => setEditing(null)}>Cancel</button>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Quick-log buttons — each shows when it was last done; tapping logs
           it now and resets that to "today". */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+      {!editing && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
         {types.map(t => (
-          <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, 'detail' in t ? t.detail : undefined)} style={pill(doneToday.has(t.kind))}>
+          <button key={t.kind} className="press" onClick={() => quickLog(t.kind, t.label, t.detail ?? undefined)} style={pill(doneToday.has(t.kind))}>
             {t.label}
             <span style={{ opacity: 0.6, marginLeft: '0.3em' }}>· {lastLabel(t.kind)}</span>
+            {(() => {
+              const d = careDue(t.every_days, lastByKind[t.kind]?.logged_at)
+              if (d === null || doneToday.has(t.kind)) return null
+              const text = d < 0 ? `${-d}d overdue` : d === 0 ? 'due today' : `due in ${d}d`
+              return <span style={{ marginLeft: '0.3em', color: d < 0 ? 'var(--rose)' : d === 0 ? 'var(--amber)' : 'var(--muted)' }}>· {text}</span>
+            })()}
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Undo the tap you just made */}
       {undo && (
@@ -149,7 +226,7 @@ export default function CareLog({ subject, compact = false }: {
         <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
           {(() => {
             const hint = gentleHints[0]
-            const label = careTypeLabel(subject, hint.kind)
+            const label = labelOf(hint.kind)
             const more = gentleHints.length > 1 ? `, and ${gentleHints.length - 1} more` : ''
             return `${label} is usually ${everyPhrase(hint.typical)}. Last done ${agoPhrase(hint.elapsed)}${more}.`
           })()}
@@ -189,7 +266,7 @@ export default function CareLog({ subject, compact = false }: {
               if (e.key === 'Enter') { void doLog(pending.kind, pending.label, { detail: pending.detail }); setPending(null) }
               if (e.key === 'Escape') setPending(null)
             }}
-            placeholder={CARE_TYPES[subject].find(t => t.kind === pending.kind)?.detail}
+            placeholder={tasks.find(t => t.kind === pending.kind)?.detail ?? undefined}
             style={{
               flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--border)',
               borderRadius: 6, padding: '0.25rem 0.45rem', fontSize: '0.72rem', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
@@ -216,7 +293,7 @@ export default function CareLog({ subject, compact = false }: {
               </div>
               {g.items.map(e => (
                 <div key={e.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', padding: '0.12rem 0', fontSize: '0.74rem' }}>
-                  <span style={{ color: 'var(--text)' }}>{careTypeLabel(subject, e.kind)}</span>
+                  <span style={{ color: 'var(--text)' }}>{labelOf(e.kind)}</span>
                   {e.detail && <span style={{ color: 'var(--muted)' }}>{e.detail}</span>}
                   <div style={{ flex: 1 }} />
                   <IconButton label="Remove" onClick={() => remove(e.id)} size={10} style={{ opacity: 0.35 }}>✕</IconButton>

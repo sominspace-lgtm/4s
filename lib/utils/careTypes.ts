@@ -55,3 +55,58 @@ const SUBJECT_NAME: Record<CareSubject, string> = { somi: 'Somi', self: 'You', h
 export function careSubjectName(subject: CareSubject): string {
   return SUBJECT_NAME[subject] ?? subject
 }
+
+// ── Editable care tasks (2026-10-16) ──────────────────────────────────────
+// A row in care_tasks overrides the built-in task with the same kind (new
+// name, a rhythm, hidden). Kinds you have logged by hand that have no row
+// still show, as before. Order: saved rows by position, then built-ins not
+// yet saved, then hand-logged kinds.
+
+export interface CareTaskRow {
+  id: string
+  subject: string
+  kind: string
+  label: string
+  detail: string | null
+  every_days: number | null
+  position: number
+  hidden: boolean
+}
+
+export interface CareTask {
+  /** Saved row id, or null for a built-in or hand-logged task with no row yet. */
+  id: string | null
+  kind: string
+  label: string
+  detail: string | null
+  every_days: number | null
+  hidden: boolean
+  builtin: boolean
+}
+
+export function mergeCareTasks(subject: CareSubject, rows: CareTaskRow[], loggedKinds: string[]): CareTask[] {
+  const presets = CARE_TYPES[subject]
+  const builtin = new Set(presets.map(p => p.kind))
+  const saved = [...rows].sort((a, b) => a.position - b.position)
+  const have = new Set(saved.map(r => r.kind))
+  const out: CareTask[] = saved.map(r => ({
+    id: r.id, kind: r.kind, label: r.label, detail: r.detail, every_days: r.every_days, hidden: r.hidden, builtin: builtin.has(r.kind),
+  }))
+  for (const p of presets) {
+    if (!have.has(p.kind)) out.push({ id: null, kind: p.kind, label: p.label, detail: p.detail ?? null, every_days: null, hidden: false, builtin: true })
+  }
+  for (const k of new Set(loggedKinds)) {
+    if (!have.has(k) && !builtin.has(k)) out.push({ id: null, kind: k, label: k, detail: null, every_days: null, hidden: false, builtin: false })
+  }
+  return out
+}
+
+/** Days until a task with a rhythm is due (negative = overdue). null when it has no rhythm. Never done = due now. */
+export function careDue(everyDays: number | null, lastIso: string | null | undefined, now: Date = new Date()): number | null {
+  if (!everyDays) return null
+  if (!lastIso) return 0
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const since = Math.round((startOf(now) - startOf(new Date(lastIso))) / 86_400_000)
+  return everyDays - since
+}
+
