@@ -17,6 +17,7 @@ import ReferenceCollections from './ReferenceCollections'
 import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import DiceCoin from './DiceCoin'
+import DateNightPicker from './DateNightPicker'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import IconButton from '@/components/ui/IconButton'
@@ -283,6 +284,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     ),
 
     settle: () => <DiceCoin />,
+
+    datenight: () => <DateNightPicker spaceId={spaceId} readOnly={guestMode} />,
 
     notes: () => (sharedMode ? null : <HouseholdNotes spaceId={spaceId} />),
 
