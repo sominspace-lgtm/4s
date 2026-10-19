@@ -7,6 +7,7 @@ import {
 } from '@/lib/hooks/useCollections'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import RecipesToKitchen from './RecipesToKitchen'
+import RowSendMenu from './RowSendMenu'
 import type { Place } from '@/lib/hooks/usePlaces'
 
 // Collections (2026-10-12): small databases you shape yourself. Pick a
@@ -359,7 +360,7 @@ function Table({ v, rows, sort, setSort, places, addOption }: {
                 </div>
               </th>
             ))}
-            <th style={{ width: '2rem', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }} />
+            <th style={{ width: '4rem', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }} />
           </tr>
         </thead>
         <tbody>
@@ -371,7 +372,8 @@ function Table({ v, rows, sort, setSort, places, addOption }: {
                     onChange={val => source.setCell(r.id, p.id, val)} onAddOption={o => addOption(p, o)} />
                 </td>
               ))}
-              <td style={{ borderBottom: '1px solid var(--faint)', textAlign: 'center' }}>
+              <td style={{ borderBottom: '1px solid var(--faint)', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                <RowSendMenu props={props} row={r} />
                 <button title="Delete row" style={{ ...small, border: 'none', opacity: 0.45 }} onClick={() => source.remove(r.id)}>✕</button>
               </td>
             </tr>
@@ -431,6 +433,7 @@ function Board({ v, rows, boardProp, titleProp, places }: {
                     style={{ ...small, padding: '0.1em 0.3em' }} aria-label="Move to">
                     <option value="">-</option>{(boardProp.options ?? []).map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
+                  <RowSendMenu props={props} row={r} />
                   <button style={{ ...small, border: 'none', opacity: 0.5 }} onClick={() => source.remove(r.id)}>Delete</button>
                 </div>
               </div>

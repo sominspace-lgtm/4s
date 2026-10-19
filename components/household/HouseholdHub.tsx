@@ -917,7 +917,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {/* Date ideas, movies and shows, games, and any shared collection — one
           Collections section (2026-10-12), replacing the separate Date Ideas
           and game/watch list blocks. See ReferenceCollections. */}
-      {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} />}
+      {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} sharedMode={sharedMode} />}
 
 
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}

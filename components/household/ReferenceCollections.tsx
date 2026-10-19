@@ -5,6 +5,7 @@ import { useCollections, COLLECTION_TEMPLATES, type CollectionProp } from '@/lib
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { SYSTEM_SPECS, SYSTEM_KEYS, type SystemKey } from '@/lib/collections/system'
 import { useSystemDef, useDateIdeaSource, useWatchSource } from '@/lib/hooks/useSystemCollection'
+import { RowSendAllowed } from '@/components/notes/RowSendMenu'
 import { CollectionViewGeneric, UserCollectionView, CollectionCards, type RowSource } from '@/components/notes/CollectionsHub'
 
 // The household's Reference lists, as collections (2026-10-12): date ideas,
@@ -15,7 +16,17 @@ import { CollectionViewGeneric, UserCollectionView, CollectionCards, type RowSou
 
 const muted: React.CSSProperties = { fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }
 
-export default function ReferenceCollections({ spaceId, userId, guestMode = false }: {
+export default function ReferenceCollections(props: {
+  spaceId: string | null; userId: string; guestMode?: boolean; sharedMode?: boolean
+}) {
+  return (
+    <RowSendAllowed.Provider value={!props.sharedMode}>
+      <ReferenceCollectionsInner {...props} />
+    </RowSendAllowed.Provider>
+  )
+}
+
+function ReferenceCollectionsInner({ spaceId, userId, guestMode = false }: {
   spaceId: string | null; userId: string; guestMode?: boolean
 }) {
   const hub = useCollections()
