@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { aiNutrition } from '@/lib/recipes/ai'
+import { aiConfigured } from '@/lib/ai/provider'
 
 // A rough per-serving calorie and macro estimate for a recipe (2026-10-13).
 // It is an estimate from typical values, and the app says so.
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'Estimating needs AI, which is not set up on the server yet.', code: 'not-configured' }, { status: 503 })
+  if (!aiConfigured()) return NextResponse.json({ error: 'Estimating needs AI, which is not set up on the server yet.', code: 'not-configured' }, { status: 503 })
 
   const b = await request.json().catch(() => ({})) as { title?: string; servings?: number; ingredients?: string[] }
   const ingredients = (Array.isArray(b.ingredients) ? b.ingredients : []).filter(x => typeof x === 'string').map(x => x.trim()).filter(Boolean).slice(0, 60)

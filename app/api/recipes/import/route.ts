@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { safeFetchHtml } from '@/lib/recipes/safeFetch'
 import { parseRecipeJsonLd, metaContent, htmlToText, youtubeDescription, isSocialUrl } from '@/lib/recipes/import'
 import { aiRecipe } from '@/lib/recipes/ai'
+import { aiConfigured } from '@/lib/ai/provider'
 import type { RecipeDraft } from '@/lib/recipes/types'
 
 // Save a recipe from a link, pasted text, or a photo (2026-10-13). Links try
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({})) as { url?: string; text?: string; image?: string; mime?: string }
   const url = typeof body.url === 'string' ? body.url.trim() : ''
-  const aiReady = !!process.env.ANTHROPIC_API_KEY
+  const aiReady = aiConfigured()
   const notReady = () => NextResponse.json({ error: 'Reading recipes with AI is not set up on the server yet.', code: 'not-configured' }, { status: 503 })
   const done = (draft: RecipeDraft, via: string) => NextResponse.json({ draft, via })
 
