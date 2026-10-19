@@ -15,7 +15,7 @@
 // Household's needs panel, the area index, and the calendar. 'selfcare'
 // (a personal care log — "Looking after yourself") was removed 2026-09-09;
 // self care logging lives with the other care logs, not on Today.
-export type TodayBlockId = 'thread' | 'budget' | 'checkin' | 'areas' | 'calendar' | 'household'
+export type TodayBlockId = 'routine' | 'thread' | 'budget' | 'checkin' | 'areas' | 'calendar' | 'household'
 
 export interface TodayBlockConfig {
   id: TodayBlockId
@@ -23,6 +23,8 @@ export interface TodayBlockConfig {
 }
 
 export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: string }> = {
+  // The routine for right now (2026-10-19): morning, the day's "Don't wait to", then night.
+  routine:    { label: 'Routine now',    hint: 'Morning routine, then the night routine after dinner' },
   // The day in order (2026-09-08) — check-in, care, meals, chores, events,
   // merge-sorted by time. A timeline, read morning and night. See DailyThread.
   thread:     { label: 'Daily thread',   hint: 'The day in order — check-in, care, meals, what’s due' },
@@ -43,13 +45,14 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
 // different component entirely, so its position here is cosmetic (see
 // DEFAULT_TODAY_BLOCKS below) — it always renders last regardless. These
 // three are true siblings in the render tree and can be reordered.
-export const REORDERABLE: Set<TodayBlockId> = new Set(['thread', 'checkin', 'areas', 'household'])
+export const REORDERABLE: Set<TodayBlockId> = new Set(['routine', 'thread', 'checkin', 'areas', 'household'])
 
 // Order here is the default order — not enforced at render time, so a
 // reorder in the customize panel actually changes what you see. Areas sits
 // last among the reorderable group, Calendar trails the whole list (matching
 // where it actually renders — see REORDERABLE's own comment).
 export const DEFAULT_TODAY_BLOCKS: TodayBlockConfig[] = [
+  { id: 'routine',    hidden: false },
   { id: 'thread',     hidden: false },
   { id: 'budget',     hidden: false },
   { id: 'checkin',    hidden: false },
@@ -67,6 +70,9 @@ export function mergeTodayBlocks(saved: TodayBlockConfig[] | null | undefined): 
   const known = new Set(DEFAULT_TODAY_BLOCKS.map(b => b.id))
   const cleaned = saved.filter(b => known.has(b.id))
   const have = new Set(cleaned.map(b => b.id))
-  const missing = DEFAULT_TODAY_BLOCKS.filter(b => !have.has(b.id))
-  return [...cleaned, ...missing]
+  // A block added later goes where it sits by default, not at the end
+  // (2026-10-19, so Routine now lands at the top for existing layouts).
+  const out = [...cleaned]
+  DEFAULT_TODAY_BLOCKS.forEach((b, i) => { if (!have.has(b.id)) out.splice(Math.min(i, out.length), 0, b) })
+  return out
 }

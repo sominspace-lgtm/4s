@@ -5,6 +5,7 @@ import { usePersonalRoutines, routineDue } from '@/lib/hooks/usePersonalRoutines
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { countSteps, parseRoutineText } from '@/lib/routines/items'
 import { MY_ROUTINES } from '@/lib/routines/presets'
+import { routineStreak } from '@/lib/routines/streak'
 import RoutineEditor from '@/components/routines/RoutineEditor'
 import RoutineChecklist from '@/components/routines/RoutineChecklist'
 
@@ -138,7 +139,7 @@ export default function PersonalRoutines({ userId }: { userId: string }) {
             }}>
               <span style={{ fontSize: '0.92rem', color: 'var(--text)' }}>{r.name}</span>
               <span style={{ fontSize: '0.74rem', color: done === total && total > 0 ? 'var(--emerald)' : due < 0 ? 'var(--rose)' : 'var(--muted)', flexShrink: 0 }}>
-                {total > 0 ? `${done}/${total}` : ''}{r.cadence_days !== 1 ? ` · every ${r.cadence_days}d` : ''} {isOpen ? '▴' : '▾'}
+                {total > 0 ? `${done}/${total}` : ''}{(() => { const st = routineStreak(r.done_days ?? []); return st.days > 1 ? ` · ${st.days} days${st.paused ? ', paused' : ''}` : '' })()}{r.cadence_days !== 1 ? ` · every ${r.cadence_days}d` : ''} {isOpen ? '▴' : '▾'}
               </span>
             </button>
             {isOpen && (

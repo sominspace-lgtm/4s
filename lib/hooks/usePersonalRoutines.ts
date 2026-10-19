@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { differenceInCalendarDays } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import { newItemId, todayKey, itemDone, type RoutineItem, type ParsedRoutine } from '@/lib/routines/items'
+import { newItemId, todayKey, itemDone, countSteps, type RoutineItem, type ParsedRoutine } from '@/lib/routines/items'
+import { withToday } from '@/lib/routines/streak'
 export type { RoutineItem }
 
 // Personal routines ("Morning routine", "Night routine") — a checklist done
@@ -26,6 +27,8 @@ export interface PersonalRoutine {
   items: RoutineItem[]
   last_done_at: string | null
   created_at: string
+  /** Days it was finished, newest first (gentle streaks, 2026-10-19). Absent until routine_streaks.sql runs. */
+  done_days?: string[]
 }
 
 export interface SharedFromPartner {
@@ -52,8 +55,10 @@ export function usePersonalRoutines(spaceId: string | null) {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     const [own, partner] = await Promise.all([
+      // '*' rather than a column list, so a column added later (done_days)
+      // comes through once it exists and nothing breaks before then.
       supabase.from('household_routines')
-        .select('id, name, cadence_days, items, last_done_at, created_at')
+        .select('*')
         .is('space_id', null).eq('kind', 'routine').order('created_at'),
       spaceId && user
         ? supabase.from('shared_routine_items')
@@ -101,6 +106,16 @@ export function usePersonalRoutines(spaceId: string | null) {
     return null
   }
 
+  /** Mark today as a finished day for the streak. Its own update, so a
+   *  database without the done_days column only loses the streak. */
+  async function recordDay(id: string) {
+    const r = routines.find(x => x.id === id)
+    if (!r) return
+    const done_days = withToday(r.done_days)
+    const { error } = await supabase.from('household_routines').update({ done_days }).eq('id', id)
+    if (!error) setRoutines(prev => prev.map(x => (x.id === id ? { ...x, done_days } : x)))
+  }
+
   async function removeRoutine(id: string) {
     // Cascades to shared_routine_items via its own FK, so a removed routine
     // also stops being visible to a partner, not just to you.
@@ -132,6 +147,9 @@ export function usePersonalRoutines(spaceId: string | null) {
     setRoutines(prev => prev.map(x => (x.id === routineId ? { ...x, items } : x)))
     const changed = items.find(i => i.id === itemId)
     if (changed?.shared) await syncMirror(changed, routineId)
+    // Ticking the last step finishes the day.
+    const c = countSteps(items, r.cadence_days)
+    if (c.total > 0 && c.done === c.total) await recordDay(routineId)
   }
 
   async function markRoutineDone(id: string) {
@@ -144,6 +162,7 @@ export function usePersonalRoutines(spaceId: string | null) {
       .update({ items, last_done_at: today, last_done_by: user.id }).eq('id', id)
     if (error) return
     setRoutines(prev => prev.map(x => (x.id === id ? { ...x, items, last_done_at: today } : x)))
+    await recordDay(id)
     // Every shared step gets marked done in the mirror too — otherwise
     // "mark the whole routine done" would silently desync from what the
     // partner sees.

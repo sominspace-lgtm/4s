@@ -22,6 +22,7 @@ import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
 import { MODES, type Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import AttentionBudget from '@/components/brief/AttentionBudget'
+import TodayRoutine from './TodayRoutine'
 import { REORDERABLE, type TodayBlockId, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import Breathing from '@/components/focus/Breathing'
 
@@ -456,6 +457,7 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
     {tailOrder.map(id => {
       // The day in order (2026-09-08) — see DailyThread. Renders at the top
       // of the reorderable group by default.
+      if (id === 'routine') return <TodayRoutine key="routine" userId={userId} />
       if (id === 'thread') return <DailyThread key="thread" userId={userId} />
       // The weekly relationship check-in — self-hides except near the
       // weekend / once someone's answered (2026-09-01).
