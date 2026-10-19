@@ -587,7 +587,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // overlay-only, never a tab (see SmartHomeOverlay).
       home: t('Home', lang),
       upkeep: t('Upkeep', lang),
-      reference: t('Reference', lang),
+      // Renamed from Reference (2026-10-19): it is the household's collections,
+      // shared notes, and the two of you.
+      reference: t('Collections', lang),
     }
 
     return { label: LABELS[id] ?? id, group }

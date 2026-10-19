@@ -77,8 +77,10 @@ export default function CollectionsHub({ userId }: { userId: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  // The built-in Reference lists have their own home in Household → Reference.
-  const mine = hub.collections.filter(c => !c.system_key)
+  // Yours only (2026-10-19 cleanup). Shared collections and the built-in
+  // date ideas, movies and games live in Household → Collections, so nothing
+  // shows in two places.
+  const mine = hub.collections.filter(c => !c.system_key && !c.space_id)
   const open = mine.find(c => c.id === openId) ?? null
 
   if (hub.error) return <div style={muted}>{hub.error}</div>
@@ -94,7 +96,7 @@ export default function CollectionsHub({ userId }: { userId: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-        <div style={muted}>Track anything: books, gifts, projects, workouts. You choose the columns. Date ideas, movies and games are in Household, Reference.</div>
+        <div style={muted}>Your own collections: books, gifts, projects, workouts. You choose the columns. Shared ones, date ideas, movies and games are in Household, Collections.</div>
         <button onClick={() => setCreating(c => !c)} className="btn btn-primary press" style={{ fontSize: '0.72rem' }}>+ New collection</button>
       </div>
       {err && <div style={{ ...muted, color: 'var(--rose)' }}>{err}</div>}

@@ -56,7 +56,7 @@ export default function DateNightPicker({ spaceId, readOnly = false }: { spaceId
     <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>Date night</div>
       {ideas.length === 0 ? (
-        <div style={{ fontSize: '0.84rem', color: 'var(--muted)' }}>Add a few date ideas in Reference and this picks one for you.</div>
+        <div style={{ fontSize: '0.84rem', color: 'var(--muted)' }}>Add a few date ideas in Household, Collections, and this picks one for you.</div>
       ) : (
         <>
           <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>{BUDGETS.map(b => <button key={b.key} style={chip(budget === b.key)} onClick={() => { setBudget(b.key); setPick(null) }}>{b.label}</button>)}</div>

@@ -30,6 +30,7 @@ export default function MoneyGlance({ spaceId, userId, sharedMode = false }: { s
     if (b.error || p.error) { setReady('missing'); return }
     setBills((b.data ?? []) as HouseholdBill[]); setPayments((p.data ?? []) as HouseholdPayment[]); setReady('ok')
   }, [supabase, spaceId])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- load from the server on mount
   useEffect(() => { void load() }, [load])
 
   if (!spaceId || ready === 'loading') return null

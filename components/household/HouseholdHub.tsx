@@ -277,7 +277,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>Shortcuts</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(8rem, 100%), 1fr))', gap: '0.5rem' }}>
-          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Lists', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes'], ['Trips', 'places-trips']] as const).filter(([, id]) => !sharedMode || sharedSectionVisible(id, guestMode)).map(([label, id]) => (
+          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Collections', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes'], ['Trips', 'places-trips']] as const).filter(([, id]) => !sharedMode || sharedSectionVisible(id, guestMode)).map(([label, id]) => (
             <button key={id} className="press" onClick={() => goToSection(id)} style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: '0.84rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{label}</button>
           ))}
         </div>
@@ -899,7 +899,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
       {/* Notes — the space-shared Notes feature (2026-08-21), same table
           Personal's Notes tab writes to, scoped to this household's space. */}
-      {tab === 'reference' && !sharedMode && <HouseholdNotes spaceId={spaceId} />}
 
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
           Just chores since 2026-10-16: Somi's care and the house's upkeep
@@ -924,6 +923,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           Collections section (2026-10-12), replacing the separate Date Ideas
           and game/watch list blocks. See ReferenceCollections. */}
       {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} sharedMode={sharedMode} />}
+
+      {/* Notes the two of you share, after the collections (2026-10-19). */}
+      {tab === 'reference' && !sharedMode && <HouseholdNotes spaceId={spaceId} />}
 
 
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
