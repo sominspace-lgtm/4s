@@ -5,6 +5,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
 import GoogleConnect from '@/components/ui/GoogleConnect'
+import ShortcutConnect from '@/components/ui/ShortcutConnect'
 import IconButton from '@/components/ui/IconButton'
 
 // One place for every external connection (2026-08-11): Discord and Alexa
@@ -70,6 +71,11 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
         <div style={sectionStyle}>
           <div style={sectionLabel}>Google</div>
           <GoogleConnect />
+        </div>
+
+        <div style={sectionStyle}>
+          <div style={sectionLabel}>iPhone Shortcut</div>
+          <ShortcutConnect />
         </div>
 
         <div style={sectionStyle}>

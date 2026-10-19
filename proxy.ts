@@ -56,6 +56,9 @@ export async function proxy(request: NextRequest) {
     || pathname.startsWith('/w/')
     // A recipe sent by link (2026-10-13): read-only, resolved by token.
     || pathname.startsWith('/r/')
+    // iPhone Shortcut quick add (2026-10-19): authenticates by the person's own
+    // key inside the route, not a browser session.
+    || pathname === '/api/quick-add'
     || pathname.startsWith('/api/w/')
     || (pathname.startsWith('/api/household') && !householdBrowserRoutes.some(p => pathname.startsWith(p)))
     // Called from the login page before any session cookie exists — each
