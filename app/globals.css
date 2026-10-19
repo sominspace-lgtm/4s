@@ -921,3 +921,9 @@ select, option {
   animation: none !important;
   transition: none !important;
 }
+
+/* Jarvis button (2026-10-18): bottom right on a computer; on a phone it sits
+   just above the gold + button, which is itself above the bottom nav. */
+.jarvis-fab { bottom: 1.5rem; }
+@media (max-width: 768px) { .jarvis-fab { bottom: calc(5rem + 52px + 0.8rem); } }
+@media (min-width: 769px) { .jarvis-sheet { margin: 0 1.25rem 1.25rem 0 !important; border-radius: 18px !important; } }

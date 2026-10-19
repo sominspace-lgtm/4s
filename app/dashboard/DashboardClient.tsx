@@ -40,6 +40,7 @@ import UnlockPanel from '@/components/ui/UnlockPanel'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
 import ShareInbox from '@/components/share/ShareInbox'
+import Jarvis from '@/components/jarvis/Jarvis'
 import { scrollToAnchor, goToSection } from '@/lib/utils/navigate'
 import { ignoreShortcut } from '@/lib/utils/shortcuts'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
@@ -672,6 +673,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       {!sharedMode && <ShareInbox />}
+      {!sharedMode && !ambient && <Jarvis />}
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
       <MailPanel open={mailOpen} userId={userId} onClose={() => setMailOpen(false)} />
       <NotificationsPanel open={notificationsOpen} prefs={notifyPrefs} onChange={changeNotifyPrefs} onClose={() => setNotificationsOpen(false)} />
