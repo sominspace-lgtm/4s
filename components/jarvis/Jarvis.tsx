@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import PhotoToAnything from '@/components/capture/PhotoToAnything'
 
 // Jarvis (2026-10-18): one chat, reachable from every page, that can look at
 // your calendar, tasks, email, documents, the weather and food data. Anything
@@ -112,6 +113,8 @@ export default function Jarvis() {
                 Ask about your calendar, tasks, email, documents, the weather, or what is in a food. I will ask before changing anything.
               </div>
               {SUGGESTIONS.map(s => <button key={s} onClick={() => ask(s)} style={suggestBtn}>{s}</button>)}
+              <div style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: '0.6rem' }}>Or snap a receipt, a bill, an event or a label:</div>
+              <PhotoToAnything />
             </div>
           )}
           {msgs.map((m, mi) => (
