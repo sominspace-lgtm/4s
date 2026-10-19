@@ -15,5 +15,8 @@ export async function GET() {
     calendar: scopes.includes('/auth/calendar'),
     gmail: scopes.includes('gmail.readonly'),
     send: scopes.includes('gmail.send'),
+    tasks: scopes.includes('/auth/tasks'),
+    drive: scopes.includes('drive.readonly'),
+    drafts: scopes.includes('gmail.compose'),
   })
 }

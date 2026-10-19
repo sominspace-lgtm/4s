@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
-import { TOOLS, toolByName, contextLine, ToolInputError } from '@/lib/jarvis/tools'
+import { TOOLS, toolByName, contextLine, isPlainError } from '@/lib/jarvis/tools'
 import { signAction } from '@/lib/jarvis/actions'
 import { GoogleError } from '@/lib/google/calendar'
 
@@ -49,7 +49,7 @@ function cleanTurns(raw: unknown): Turn[] | null {
 }
 
 function errorText(e: unknown): string {
-  if (e instanceof GoogleError || e instanceof ToolInputError) return e.message
+  if (e instanceof GoogleError || isPlainError(e)) return e.message
   return 'That did not work. The service may be down; try again in a bit.'
 }
 

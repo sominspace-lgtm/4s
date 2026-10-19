@@ -1,33 +1,16 @@
 import { NextResponse } from 'next/server'
 import { googleFetch, requireGoogleUser } from '@/lib/google/server'
+import { header, textOf, type Msg } from '@/lib/google/gmail'
 
 // Gmail (2026-10-05). GET lists/searches (metadata only) or, with ?id=, reads
 // one message body. POST sends. Read uses gmail.readonly, send uses
 // gmail.send; nothing here can delete or relabel mail.
 const BASE = 'https://gmail.googleapis.com/gmail/v1/users/me'
 
-interface Part { mimeType?: string; body?: { data?: string }; parts?: Part[] }
-interface Msg { id: string; threadId: string; snippet?: string; internalDate?: string; labelIds?: string[]; payload?: Part & { headers?: { name: string; value: string }[] } }
-
 function fail(e: unknown) {
   if (e instanceof Error && e.message === 'not-connected') return NextResponse.json({ error: 'not-connected' }, { status: 409 })
   return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
 }
-const header = (m: Msg, name: string) => m.payload?.headers?.find(h => h.name.toLowerCase() === name)?.value ?? ''
-const decode = (d: string) => Buffer.from(d.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
-
-function textOf(p: Part | undefined): string {
-  if (!p) return ''
-  if (p.mimeType === 'text/plain' && p.body?.data) return decode(p.body.data)
-  for (const c of p.parts ?? []) { const t = textOf(c); if (t) return t }
-  if (p.mimeType === 'text/html' && p.body?.data) {
-    return decode(p.body.data).replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<br\s*\/?>|<\/p>|<\/div>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-      .replace(/\n{3,}/g, '\n\n').trim()
-  }
-  return ''
-}
-
 export async function GET(request: Request) {
   const who = await requireGoogleUser()
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })

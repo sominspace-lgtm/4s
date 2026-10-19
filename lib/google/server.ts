@@ -13,6 +13,10 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
+  // Jarvis (2026-10-18): Google Tasks, read-only Drive, and saving Gmail drafts.
+  'https://www.googleapis.com/auth/tasks',
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/gmail.compose',
 ]
 
 export const STATE_COOKIE = '4s-google-state'

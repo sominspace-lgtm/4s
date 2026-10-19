@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { toolByName, ToolInputError } from '@/lib/jarvis/tools'
+import { toolByName, isPlainError } from '@/lib/jarvis/tools'
 import { verifyAction } from '@/lib/jarvis/actions'
 import { GoogleError } from '@/lib/google/calendar'
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const result = await tool.run({ userId: user.id, supabase }, action.input)
     return NextResponse.json({ ok: true, summary: action.summary, result })
   } catch (e) {
-    const message = e instanceof GoogleError || e instanceof ToolInputError ? e.message : 'That may not have gone through. Check before trying again.'
+    const message = e instanceof GoogleError || isPlainError(e) ? e.message : 'That may not have gone through. Check before trying again.'
     return NextResponse.json({ ok: false, error: message }, { status: 502 })
   }
 }

@@ -79,6 +79,8 @@ export default function Jarvis() {
       const j = await res.json() as { ok?: boolean; error?: string; result?: { link?: string | null } }
       if (res.ok && j.ok) {
         setPending(mi, pi, { state: 'done', link: j.result?.link ?? null })
+        // Let open screens show the new task right away.
+        window.dispatchEvent(new CustomEvent('4s:work-items-changed'))
         // A plain note in the conversation, so Jarvis knows it happened.
         setMsgs(m => [...m, { role: 'assistant', content: `Done: ${p.summary}.` }])
       } else setPending(mi, pi, { state: 'failed', note: j.error ?? 'That did not go through.' })

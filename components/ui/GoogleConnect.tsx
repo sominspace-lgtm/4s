@@ -56,10 +56,13 @@ export default function GoogleConnect() {
           <div style={muted}>
             Connected{status.email ? ` as ${status.email}` : ''}.
             <br />
-            {[status.calendar && 'Calendar', status.gmail && 'Gmail (read)', status.send && 'Gmail (send)'].filter(Boolean).join(' · ') || 'No permissions granted'}
+            {[status.calendar && 'Calendar', status.gmail && 'Gmail (read)', status.send && 'Gmail (send)', status.drafts && 'Gmail drafts', status.tasks && 'Tasks', status.drive && 'Drive (read)'].filter(Boolean).join(' · ') || 'No permissions granted'}
           </div>
           {!(status.calendar && status.gmail && status.send) && (
             <div style={muted}>Some permissions were not granted. Connect again and tick every box.</div>
+          )}
+          {status.calendar && !(status.tasks && status.drive && status.drafts) && (
+            <div style={muted}>Jarvis can now use Google Tasks, read your Drive, and save Gmail drafts. Tap Reconnect to allow them.</div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <Btn onClick={connect}>Reconnect</Btn>
@@ -69,7 +72,7 @@ export default function GoogleConnect() {
       ) : (
         <>
           <div style={muted}>
-            Bring Google Calendar into the calendar, read your inbox, and send mail, all inside 4S. You can disconnect any time.
+            Bring Google Calendar into the calendar, read your inbox and send mail inside 4S, and let Jarvis use your calendar, Google Tasks, Gmail drafts and Drive (read only). You can disconnect any time.
           </div>
           <div><Btn onClick={connect}>Connect Google</Btn></div>
         </>

@@ -15,6 +15,9 @@ export interface GoogleStatus {
   calendar?: boolean
   gmail?: boolean
   send?: boolean
+  tasks?: boolean
+  drive?: boolean
+  drafts?: boolean
   /** Shared mode: Google is deliberately unavailable. */
   blocked?: boolean
 }
