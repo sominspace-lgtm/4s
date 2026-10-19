@@ -134,6 +134,13 @@ export default function MealPlanner({ h, book, onBuildList, onOpenRecipe }: {
                           {r
                             ? <button onClick={() => onOpenRecipe(r.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--gold)', fontFamily: 'inherit', fontSize: 'inherit', textAlign: 'left', flex: 1 }}>{m.title}</button>
                             : <span style={{ flex: 1 }}>{m.kind === 'eating_out' ? `Out: ${m.title}` : m.title}</span>}
+                          {s === 'dinner' && m.kind !== 'eating_out' && (
+                            // Who cooks (2026-10-19): one tap cycles through, and the wall shows it.
+                            <button onClick={() => h.updateMeal(m.id, { cook: nextCook(m.cook) })} title="Who cooks"
+                              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 999, padding: '0 0.45rem', minHeight: 24, cursor: 'pointer', color: m.cook ? 'var(--text)' : 'var(--muted)', fontFamily: 'inherit', fontSize: '0.6rem' }}>
+                              {m.cook ?? 'who?'}
+                            </button>
+                          )}
                           <button onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
                         </div>
                       )
@@ -153,6 +160,12 @@ export default function MealPlanner({ h, book, onBuildList, onOpenRecipe }: {
       </div>
     </div>
   )
+}
+
+const COOKS = ['Sylvia', 'Harry', 'Together']
+function nextCook(c: string | null): string | null {
+  const i = c ? COOKS.indexOf(c) : -1
+  return i + 1 < COOKS.length ? COOKS[i + 1] : null
 }
 
 function AddMeal({ recipes, onAdd, onCancel }: {

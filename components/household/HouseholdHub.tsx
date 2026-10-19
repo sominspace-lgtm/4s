@@ -297,30 +297,24 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // The household calendar — its own section until 2026-09-02, a Home
     // block again now (calendar isn't a place you live in, it's something
     // you check). Routines removed from Household 2026-09-08.
-    calendar: () => (
-      <>
-        <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />
-        {onSetBoardNote && !sharedMode && (
-          <div style={{ marginTop: '0.9rem' }}>
-            <div className="t-card" style={{ marginBottom: '0.4rem' }}>A line for the notice board</div>
-            <input
-              key={`boardnote-${boardNote}`}
-              defaultValue={boardNote}
-              onBlur={e => { const v = e.target.value.trim(); if (v !== boardNote) onSetBoardNote(v) }}
-              placeholder="Leave a line for the other"
-              maxLength={160}
-              style={{
-                width: '100%', padding: '0.5rem 0.65rem', fontSize: '0.8rem',
-                fontFamily: 'var(--font-body)', color: 'var(--text)',
-                background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, outline: 'none',
-              }}
-            />
-            <div style={{ fontSize: '0.66rem', color: 'var(--muted)', marginTop: '0.3rem' }}>
-              Shows on the village notice board at home. Guests never see it.
-            </div>
-          </div>
-        )}
-      </>
+    calendar: () => <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />,
+
+    // A note for the other one (2026-10-19, its own block so it is easy to
+    // reach from a phone): it shows on the village notice board at home.
+    board: () => (!onSetBoardNote || sharedMode) ? null : (
+      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
+        <div className="t-card" style={{ marginBottom: '0.5rem' }}>Note on the board</div>
+        <form onSubmit={e => { e.preventDefault(); const v = String(new FormData(e.currentTarget).get('note') ?? '').trim(); if (v !== boardNote) onSetBoardNote(v) }}
+          style={{ display: 'flex', gap: '0.4rem' }}>
+          <input key={`boardnote-${boardNote}`} name="note" defaultValue={boardNote} maxLength={160} placeholder="Leave a line for the other"
+            onBlur={e => { const v = e.target.value.trim(); if (v !== boardNote) onSetBoardNote(v) }}
+            style={{ flex: 1, minWidth: 0, minHeight: 44, padding: '0 0.7rem', fontSize: '0.9rem', fontFamily: 'var(--font-body)', color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, outline: 'none' }} />
+          <button type="submit" className="btn btn-primary press" style={{ minHeight: 44 }}>Post</button>
+        </form>
+        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
+          {boardNote ? 'On the board now. Clear it to take it down.' : 'Shows on the village notice board at home. Guests never see it.'}
+        </div>
+      </section>
     ),
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,

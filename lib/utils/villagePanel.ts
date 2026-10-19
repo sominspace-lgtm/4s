@@ -10,6 +10,7 @@ import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 // which renders a fixed visuals-plus-guest-actions set instead.
 
 export type VillagePanelBlockId =
+  | 'week'       // week at a glance: tonight, chores due, next trip, Somi's vet
   | 'house'      // scenes + device toggles (ScenesCard)
   | 'shortcuts'  // tab jump tiles
   | 'progress'   // garden growth, habits today, streak, projects
@@ -19,6 +20,7 @@ export type VillagePanelBlockId =
   | 'shopping'   // the shopping list + quick-add
 
 export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: string; hint: string }> = {
+  week:      { label: 'This week',      hint: 'Tonight, chores due, the next trip, Somi\'s vet' },
   house:     { label: 'House controls', hint: 'Scenes and every light, lock, plug' },
   shortcuts: { label: 'Shortcuts',      hint: 'Jump to any tab' },
   progress:  { label: 'Progress',       hint: 'The garden, habits today, your streak' },
@@ -35,7 +37,7 @@ export const VILLAGE_PANEL_BLOCK_META: Record<VillagePanelBlockId, { label: stri
 // Calendar / to-dos stay opt-in (the option to add them, not on by
 // default).
 const DEFAULT_ORDER: VillagePanelBlockId[] = [
-  'house', 'shortcuts', 'progress', 'calendar',
+  'week', 'house', 'shortcuts', 'progress', 'calendar',
   'tonight', 'meals', 'shopping',
 ]
 const DEFAULT_HIDDEN = new Set<VillagePanelBlockId>(['calendar'])
@@ -52,6 +54,8 @@ export function mergeVillagePanelBlocks(saved: SectionConfig[] | null | undefine
   const known = new Set(DEFAULT_VILLAGE_PANEL_BLOCKS.map(s => s.id))
   const cleaned = saved.filter(s => known.has(s.id))
   const have = new Set(cleaned.map(s => s.id))
-  const missing = DEFAULT_VILLAGE_PANEL_BLOCKS.filter(s => !have.has(s.id))
-  return [...cleaned, ...missing]
+  // A block added later goes in its default place (This week leads, 2026-10-19).
+  const out = [...cleaned]
+  DEFAULT_VILLAGE_PANEL_BLOCKS.forEach((b, i) => { if (!have.has(b.id)) out.splice(Math.min(i, out.length), 0, b) })
+  return out
 }

@@ -1,25 +1,32 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { DEVICE_EVENT, DEVICE_KEYS, readDevice, writeDevice } from '@/lib/utils/deviceSettings'
 
 // Older-iPad mode for the village (2026-10-16). "auto" watches the first few
 // seconds of drawing: if the device cannot keep near 60 frames a second, the
 // decorative animations stop and the grain layer goes, so the scene is drawn
 // once and sits still. "on" and "off" are a person's own choice on this
-// device, kept in this browser only.
+// device, kept in this browser only. The iPad settings panel changes it too
+// (2026-10-19), so this listens for that.
 export type LiteSetting = 'auto' | 'on' | 'off'
-const KEY = '4s:village-lite'
+const KEY = DEVICE_KEYS.lite
+
+function readSetting(): LiteSetting {
+  const v = readDevice(KEY)
+  return v === 'on' || v === 'off' ? v : 'auto'
+}
 
 export function useVillageLite(enabled: boolean) {
   const [setting, setSettingState] = useState<LiteSetting>('auto')
   const [slow, setSlow] = useState(false)
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- read this device's choice once
-      if (v === 'on' || v === 'off') setSettingState(v)
-    } catch { /* private mode */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read this device's choice once
+    setSettingState(readSetting())
+    const on = (e: Event) => { if ((e as CustomEvent).detail === KEY) setSettingState(readSetting()) }
+    window.addEventListener(DEVICE_EVENT, on)
+    return () => window.removeEventListener(DEVICE_EVENT, on)
   }, [])
 
   // Measure only while on "auto". Two seconds after a short settle, average
@@ -41,7 +48,7 @@ export function useVillageLite(enabled: boolean) {
 
   const setSetting = useCallback((next: LiteSetting) => {
     setSettingState(next)
-    try { if (next === 'auto') localStorage.removeItem(KEY); else localStorage.setItem(KEY, next) } catch { /* private mode */ }
+    writeDevice(KEY, next === 'auto' ? null : next)
   }, [])
 
   const lite = setting === 'on' || (setting === 'auto' && slow)

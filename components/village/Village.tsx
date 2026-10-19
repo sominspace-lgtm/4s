@@ -55,6 +55,7 @@ import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCu
 import { DEFAULT_VILLAGE_PANEL_BLOCKS } from '@/lib/utils/villagePanel'
 import { goToSection } from '@/lib/utils/navigate'
 import { useVillageLite } from '@/lib/hooks/useVillageLite'
+import { DEVICE_EVENT, DEVICE_KEYS, readDevice } from '@/lib/utils/deviceSettings'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -72,7 +73,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', panelBlocks = [], onChangePanelBlocks, milestonesSeen = [], onAckMilestone, guestView = false }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -89,6 +90,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
    *  shared mode; hides the arrange controls and the arrival/text blocks so
    *  the scene stands alone as a picture frame. */
   ambient?: boolean
+  /** Shared screen in guest view (no gathering running): the panel shows the guest card. */
+  guestView?: boolean
   /** Resets the idle timer — passed through to VillageHomeSheet so a drag
    *  gesture counts as interaction (see useIdleAmbient's own comment on why
    *  its window listeners alone don't cover a pointermove-only gesture). */
@@ -327,6 +330,20 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // of the app; coming back to the Village tab, or going idle, brings it back.
   const [expanded, setExpanded] = useState(locked && !compact)
   const villageLite = useVillageLite(!compact)
+  // Bedtime (2026-10-19): on the shared screen, from 10pm to 5:30am the
+  // village dims and goes still, matching the night routine.
+  const [bedtime, setBedtime] = useState(false)
+  useEffect(() => {
+    if (!locked) return
+    const check = () => {
+      const d = new Date(); const m = d.getHours() * 60 + d.getMinutes()
+      setBedtime(readDevice(DEVICE_KEYS.bedtime) !== '0' && (m >= 22 * 60 || m < 5 * 60 + 30))
+    }
+    check()
+    const t = setInterval(check, 60_000)
+    window.addEventListener(DEVICE_EVENT, check)
+    return () => { clearInterval(t); window.removeEventListener(DEVICE_EVENT, check) }
+  }, [locked])
   // Fullscreen when idle (round 62, "fullscreen when idle") — on the
   // wall-mounted iPad "Shared" login, once the scene goes ambient
   // (useIdleAmbient, ~60s untouched) it also fills the screen so it reads as
@@ -698,8 +715,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
     week.sort((a, b) => a.sort.localeCompare(b.sort))
 
-    return { calendar, week: week.slice(0, 3).map(({ kind, text, when }) => ({ kind, text, when })), note: boardNote }
-  }, [calendarEvents, trips, people, boardNote])
+    return { calendar, week: week.slice(0, 3).map(({ kind, text, when }) => ({ kind, text, when })), note: guestView ? '' : boardNote }
+  }, [calendarEvents, trips, people, boardNote, guestView])
 
   // Life pulse (2026-09-07) — a district touched in the last few days glows
   // warmer; one left alone for weeks fades and desaturates. Not a number or
@@ -772,7 +789,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   const card = (
       <div
-        className={villageLite.lite ? 'lift organic village-lite' : 'lift organic'}
+        className={['lift organic', villageLite.lite ? 'village-lite' : '', bedtime ? 'village-lite village-bedtime' : ''].filter(Boolean).join(' ')}
         style={{
           // Scopes every custom property the scene reads (--emerald, --gold,
           // --surface, --bg, the aurora washes, even --radius-organic) to
@@ -1287,6 +1304,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             guestUrl={guestUrl}
             qrDataUri={qrDataUri}
             guestInfo={guestInfo}
+            petInfo={petInfo}
+            visitor={guestView && !guestLive}
           />
         )}
 

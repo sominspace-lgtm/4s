@@ -7,7 +7,7 @@ import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { KITCHEN_OPEN_KEY } from '@/components/kitchen/KitchenHub'
 import { goToSection, goToHousehold } from '@/lib/utils/navigate'
 import type { VillageState } from '@/lib/village/state'
-import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestInfo, PetInfo } from '@/lib/hooks/useGathering'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import ScenesCard from './ScenesCard'
 import ShortcutsCard from './ShortcutsCard'
@@ -15,6 +15,8 @@ import ProgressCard from './ProgressCard'
 import MiniCalendarCard from './MiniCalendarCard'
 import GuestWallActions from './GuestWallActions'
 import MusicCard from './MusicCard'
+import WeekGlanceCard from './WeekGlanceCard'
+import GuestCard from './GuestCard'
 
 // The Village home panel's content, block by block. The two shells
 // (VillageHomeSheet on the wall, VillageWidgets on the personal dock) own the
@@ -29,7 +31,8 @@ import MusicCard from './MusicCard'
 
 export interface VillagePanelProps {
   blocks: SectionConfig[]
-  variant: 'wall' | 'dock' | 'guest'
+  /** 'visitor': guests are over but no gathering is running (guest view). */
+  variant: 'wall' | 'dock' | 'guest' | 'visitor'
   spaceId: string | null
   userId: string
   village?: VillageState | null
@@ -40,16 +43,25 @@ export interface VillagePanelProps {
   guestUrl?: string | null
   qrDataUri?: string | null
   guestInfo?: GuestInfo
+  petInfo?: PetInfo
 }
 
 export default function VillagePanelBlocks(props: VillagePanelProps) {
   if (props.variant === 'guest') return <GuestSet {...props} />
+  if (props.variant === 'visitor') return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+      <GuestCard spaceId={props.spaceId} guestInfo={props.guestInfo} petInfo={props.petInfo} />
+      <ProgressCard village={props.village} guest />
+      <MusicCard spaceId={props.spaceId} compact readOnly />
+    </div>
+  )
 
   const { blocks, spaceId, locked, onLockedNavigate, onInteract, village } = props
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       {blocks.filter(b => !b.hidden).map(b => {
         switch (b.id) {
+          case 'week':      return <WeekGlanceCard key={b.id} spaceId={spaceId} />
           case 'house':     return <ScenesCard key={b.id} spaceId={spaceId} onInteract={onInteract} />
           case 'shortcuts': return <ShortcutsCard key={b.id} locked={locked} onLockedNavigate={onLockedNavigate} onInteract={onInteract} />
           case 'progress':  return <ProgressCard key={b.id} village={village} />
@@ -199,7 +211,7 @@ function TonightCard({ spaceId, onInteract }: { spaceId: string | null; onIntera
             width: 17, height: 17, flexShrink: 0, borderRadius: 5, border: '1.5px solid var(--border)',
             background: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.7rem', lineHeight: 1,
           }}>✓</button>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text)' }}>{c.name}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text)' }}>{c.name}{choreDue(c) < 0 && <span style={{ color: 'var(--rose)' }}> · {-choreDue(c)}d late</span>}</span>
         </div>
       ))}
     </Card>

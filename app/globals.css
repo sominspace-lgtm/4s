@@ -927,3 +927,7 @@ select, option {
 .jarvis-fab { bottom: 1.5rem; }
 @media (max-width: 768px) { .jarvis-fab { bottom: calc(5rem + 52px + 0.8rem); } }
 @media (min-width: 769px) { .jarvis-sheet { margin: 0 1.25rem 1.25rem 0 !important; border-radius: 18px !important; } }
+
+/* Bedtime on the shared screen (2026-10-19): 10pm to 5:30am the village
+   dims and stills (it also carries .village-lite, so nothing animates). */
+.village-bedtime svg { filter: brightness(0.62) saturate(0.8); transition: filter 2s ease; }

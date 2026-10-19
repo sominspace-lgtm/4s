@@ -38,6 +38,8 @@ interface HeaderProps {
   guestView?: boolean
   /** Shared mode: turn guest view on or off. Absent while a gathering is live (it decides). */
   onToggleGuestView?: () => void
+  /** Shared mode: opens the iPad settings page. */
+  onOpenSharedSettings?: () => void
   /** Unread mail count — shown as a small badge next to the menu item.
    *  0/undefined means no badge, same "absent, not zero" convention as
    *  Needs Attention on the Brief. */
@@ -100,7 +102,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread, guestView = false, onToggleGuestView }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread, guestView = false, onToggleGuestView, onOpenSharedSettings }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -279,6 +281,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           // The shared view is deliberately read-mostly; this is the way out
           // of it without signing out and back in.
           ...(onToggleGuestView ? [{ icon: '◎', label: guestView ? 'Guests have left' : 'Guests are over', onClick: onToggleGuestView }] : []),
+          ...(onOpenSharedSettings ? [{ icon: '⚙', label: 'iPad settings', onClick: onOpenSharedSettings }] : []),
           ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },

@@ -52,6 +52,8 @@ import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import { useWakeLock } from '@/lib/hooks/useWakeLock'
+import SharedSettings from '@/components/layout/SharedSettings'
+import { DEVICE_EVENT, DEVICE_KEYS, readDevice, writeDevice } from '@/lib/utils/deviceSettings'
 
 interface Props {
   email: string
@@ -263,18 +265,27 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // only the village and the guest-safe pages, the same set a live gathering
   // uses, without having to start one. Kept on this device only.
   const [guestView, setGuestView] = useState(false)
+  // Screen stays on in shared mode unless turned off in iPad settings (2026-10-19).
+  const [keepAwake, setKeepAwake] = useState(true)
+  const [sharedSettingsOpen, setSharedSettingsOpen] = useState(false)
   useEffect(() => {
     if (!sharedMode) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- read this device's saved switch once
-    try { setGuestView(localStorage.getItem('4s:guest-view') === '1') } catch { /* private mode */ }
+    const read = () => {
+      setGuestView(readDevice(DEVICE_KEYS.guestView) === '1')
+      setKeepAwake(readDevice(DEVICE_KEYS.keepAwake) !== '0')
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read this device's saved settings once
+    read()
+    window.addEventListener(DEVICE_EVENT, read)
+    return () => window.removeEventListener(DEVICE_EVENT, read)
   }, [sharedMode])
   const toggleGuestView = () => {
     const next = !guestView
     setGuestView(next)
-    try { localStorage.setItem('4s:guest-view', next ? '1' : '0') } catch { /* private mode */ }
+    writeDevice(DEVICE_KEYS.guestView, next ? '1' : '0')
     if (next) setActiveTab('village')
   }
-  useWakeLock(sharedMode)
+  useWakeLock(sharedMode && keepAwake)
   // A link straight to one page (?go=kitchen), for home-screen shortcuts and
   // iPhone Shortcuts widgets.
   useEffect(() => {
@@ -596,7 +607,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
-        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onOpenDoors={gathering.openDoors} onUpdatePrep={gathering.updatePrep} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} onSetMenu={gathering.setMenu} onSetAgenda={gathering.setAgenda} onSetPinnedContribution={gathering.setPinnedContribution} onSetPinnedNote={gathering.setPinnedNote} petInfo={gathering.petInfo} onSetPetInfo={gathering.setPetInfo} boardNote={gathering.boardNote} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} />
+        case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onOpenDoors={gathering.openDoors} onUpdatePrep={gathering.updatePrep} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} onSetMenu={gathering.setMenu} onSetAgenda={gathering.setAgenda} onSetPinnedContribution={gathering.setPinnedContribution} onSetPinnedNote={gathering.setPinnedNote} petInfo={gathering.petInfo} onSetPetInfo={gathering.setPetInfo} boardNote={gathering.boardNote} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} guestView={sharedMode && guestView} />
         // Personal areas — one section id each (2026-09-01). Goals folded
         // into the Tasks section 2026-09-03 (see TasksTab).
         case 'tasks':    return <TasksTab key="tasks" userId={userId} />
@@ -659,6 +670,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           onMail={() => setMailOpen(true)}
           mailUnread={mailUnreadList.length}
           guestView={guestMode} onToggleGuestView={gathering.gathering?.phase === 'live' ? undefined : toggleGuestView}
+          onOpenSharedSettings={() => setSharedSettingsOpen(true)}
         />
       )}
 
@@ -673,6 +685,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
       <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       {!sharedMode && <ShareInbox />}
+      {sharedMode && (
+        <SharedSettings open={sharedSettingsOpen} onClose={() => setSharedSettingsOpen(false)}
+          guestView={guestMode} onToggleGuestView={gathering.gathering?.phase === 'live' ? undefined : toggleGuestView}
+          panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} />
+      )}
       {!sharedMode && !ambient && <Jarvis />}
       <ConnectPanel open={connectOpen} userId={userId} userEmail={email} onClose={() => setConnectOpen(false)} />
       <MailPanel open={mailOpen} userId={userId} onClose={() => setMailOpen(false)} />

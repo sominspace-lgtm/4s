@@ -6,7 +6,7 @@ import type { VillageState } from '@/lib/village/state'
 import Icon from '@/components/ui/Icon'
 import NowNext from './NowNext'
 import VillagePanelBlocks from './VillagePanelBlocks'
-import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
+import type { Gathering, GuestInfo, PetInfo } from '@/lib/hooks/useGathering'
 
 // The wall / kiosk counterpart to VillageWidgets — a swipe-up sheet over the
 // Village scene. Content comes from VillagePanelBlocks:
@@ -18,7 +18,7 @@ import type { Gathering, GuestInfo } from '@/lib/hooks/useGathering'
 // Only mounted when `locked` (shared mode) — see Village.tsx.
 export default function VillageHomeSheet({
   userId, spaceId, ambient, onInteract, gathering, onStartGathering,
-  village, panelBlocks = [], onLockedNavigate, guestUrl = null, qrDataUri = null, guestInfo,
+  village, panelBlocks = [], onLockedNavigate, guestUrl = null, qrDataUri = null, guestInfo, petInfo, visitor = false,
 }: {
   userId: string
   spaceId: string | null
@@ -32,8 +32,11 @@ export default function VillageHomeSheet({
   guestUrl?: string | null
   qrDataUri?: string | null
   guestInfo?: GuestInfo
+  petInfo?: PetInfo
+  /** Guest view on the shared screen: the panel shows the guest card and starts open. */
+  visitor?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(visitor)
   const [dragY, setDragY] = useState<number | null>(null)
   const startY = useRef(0)
   const dragging = useRef(false)
@@ -136,7 +139,7 @@ export default function VillageHomeSheet({
       <div style={{ padding: '0.2rem 1rem 1.1rem', overflowY: 'auto' }}>
         <VillagePanelBlocks
           blocks={panelBlocks}
-          variant={guestLive ? 'guest' : 'wall'}
+          variant={guestLive ? 'guest' : visitor ? 'visitor' : 'wall'}
           spaceId={spaceId}
           userId={userId}
           village={village}
@@ -147,6 +150,7 @@ export default function VillageHomeSheet({
           guestUrl={guestUrl}
           qrDataUri={qrDataUri}
           guestInfo={guestInfo}
+          petInfo={petInfo}
         />
       </div>
     </div>
