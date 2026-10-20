@@ -4,6 +4,7 @@ import { addDays, format } from 'date-fns'
 import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { tripWhen } from '@/lib/trips/when'
+import { panelCard, panelTitle } from './panelStyle'
 
 // Week at a glance on the wall (2026-10-19): who cooks what tonight, chores
 // due or late, the next trip, and Somi's next vet visit, in one card you can
@@ -30,11 +31,8 @@ export default function WeekGlanceCard({ spaceId }: { spaceId: string | null }) 
     .map(d => ({ d, m: dinnerFor(h.meals, d) })).filter(x => x.m)
 
   return (
-    <div className="organic" style={{
-      background: 'color-mix(in srgb, var(--gold) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--gold) 22%, var(--border))',
-      borderRadius: 14, padding: '0.8rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.45rem',
-    }}>
-      <div style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text)' }}>This week</div>
+    <div className="organic" style={panelCard}>
+      <div style={panelTitle}>This week</div>
       <div style={row}>
         <span style={label}>Tonight</span>
         <span style={{ color: tonight ? 'var(--text)' : 'var(--muted)' }}>

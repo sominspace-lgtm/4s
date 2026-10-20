@@ -1669,8 +1669,8 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
           :hover it can't produce. An inline style always wins over the
           stylesheet rule here. */}
       {!quiet && (
-        <text className="village-district-name" style={draggable || selected ? { opacity: 0.85 } : undefined}
-          textAnchor="middle" fontSize={8} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
+        <text className="village-district-name" style={{ fontFamily: 'var(--font-display)', ...(draggable || selected ? { opacity: 0.85 } : {}) }}
+          textAnchor="middle" fontSize={8.5} fill="var(--muted)" stroke="var(--surface)" strokeWidth={2.2} paintOrder="stroke" strokeLinejoin="round" letterSpacing="0.02em" y={13}>{label}</text>
       )}
       {!quiet && (
         <text className="village-district-count" style={draggable || selected ? { opacity: 0.85 } : undefined}

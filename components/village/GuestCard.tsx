@@ -2,6 +2,7 @@
 
 import { useHousehold } from '@/lib/hooks/useHousehold'
 import type { GuestInfo, PetInfo } from '@/lib/hooks/useGathering'
+import { panelCard, panelTitle } from './panelStyle'
 
 // What a guest needs on the wall (2026-10-19): the wifi, the house rules, and
 // how to be with Somi. Shown when the shared screen is in guest view. The
@@ -18,11 +19,8 @@ export default function GuestCard({ spaceId, guestInfo, petInfo }: { spaceId: st
 
   const head: React.CSSProperties = { fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.2rem' }
   return (
-    <div className="organic" style={{
-      background: 'color-mix(in srgb, var(--emerald) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--emerald) 24%, var(--border))',
-      borderRadius: 14, padding: '0.9rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.7rem',
-    }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--text)' }}>Welcome in</div>
+    <div className="organic" style={{ ...panelCard, gap: '0.75rem', padding: '1rem 1.1rem' }}>
+      <div style={{ ...panelTitle, fontSize: '1.2rem' }}>Welcome in</div>
       {(guestInfo?.wifiName || guestInfo?.wifiPassword) ? (
         <div>
           <div style={head}>Wifi</div>

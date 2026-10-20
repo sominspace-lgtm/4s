@@ -1445,8 +1445,19 @@ export default function VillageScene({
               Also: reach eased in from 75% (see the r attribute above is
               unchanged, but the stop offsets below now cover less of the
               canvas — 68% is where darkening starts instead of 55%. */}
-          <stop offset="68%" stopColor="#000" stopOpacity="0" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0.22" />
+          {/* Warm umber instead of black (2026-10-19, "elegant but cozy"):
+              still only ever darkens, but the edges go the brown of an old
+              painting's frame rather than grey. */}
+          <stop offset="62%" stopColor="#2b1d14" stopOpacity="0" />
+          <stop offset="100%" stopColor="#2b1d14" stopOpacity="0.28" />
+        </radialGradient>
+        {/* Hearth light (2026-10-19): a soft warm glow around the cottage, so
+            home is the warm centre of the picture. Gentle by day, fuller at
+            dusk and after dark. */}
+        <radialGradient id="vhearth" cx="50%" cy="47%" r="42%">
+          <stop offset="0%" stopColor="#ffcf8a" stopOpacity="1" />
+          <stop offset="45%" stopColor="#ffb870" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#ffb870" stopOpacity="0" />
         </radialGradient>
         {/* Party glow — a warm wash centred on the cottage while a gathering
             is on, so the wall reads as "a party is happening" and not just
@@ -3532,6 +3543,8 @@ export default function VillageScene({
       {/* Vignette — pulls the eye to the middle of the scene. Drawn in
           SVG rather than as a CSS overlay so it can't intercept the
           clicks on the district labels underneath it. */}
+      <rect width="800" height="440" fill="url(#vhearth)" pointerEvents="none"
+        opacity={v.timeOfDay === 'night' ? 0.2 : v.timeOfDay === 'dusk' ? 0.16 : v.timeOfDay === 'dawn' ? 0.1 : 0.06} />
       <rect width="800" height="440" fill="url(#vvignette)" pointerEvents="none" />
       {/* Grain (round 8 atmosphere pass, 2026-08-27) — see vgrain's own
           def comment. Drawn last, over everything, at a low enough opacity

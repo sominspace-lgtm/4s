@@ -817,7 +817,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           // reads by name, which is exactly what THEMES.bloom already is.
           ...THEMES.bloom,
           position: 'relative', overflow: 'hidden',
-          border: '1px solid var(--border)', boxShadow: 'var(--elev-3)',
+          // Framed like a small print (2026-10-19, 'elegant but cozy'): a warm
+          // hairline, a cream mat, then a soft shadow underneath.
+          border: '1px solid color-mix(in srgb, var(--border) 55%, #c9a97a 45%)',
+          boxShadow: fullscreen ? 'none' : '0 0 0 5px color-mix(in srgb, var(--surface) 82%, #f3e3c8 18%), 0 0 0 6px color-mix(in srgb, var(--border) 60%, #c9a97a 40%), 0 22px 44px -26px rgba(60, 40, 20, 0.5)',
           background: 'var(--surface)',
           // aspect-ratio, not a fixed height (2026-08-25 fix) — a fixed px
           // height cropped from the TOP of the 800×440 scene, and the

@@ -17,6 +17,7 @@ import GuestWallActions from './GuestWallActions'
 import MusicCard from './MusicCard'
 import WeekGlanceCard from './WeekGlanceCard'
 import GuestCard from './GuestCard'
+import { panelCard, panelTitle } from './panelStyle'
 
 // The Village home panel's content, block by block. The two shells
 // (VillageHomeSheet on the wall, VillageWidgets on the personal dock) own the
@@ -126,23 +127,15 @@ function Card({ icon, tint, title, count, onOpen, children }: {
     <Wrapper
       onClick={onOpen}
       className={onOpen ? 'press organic' : 'organic'}
-      style={{
-        textAlign: 'left', cursor: onOpen ? 'pointer' : 'default', fontFamily: 'var(--font-body)', width: '100%',
-        background: `color-mix(in srgb, ${tint} 9%, var(--surface2))`,
-        border: `1px solid color-mix(in srgb, ${tint} 22%, var(--border))`,
-        borderRadius: 14, padding: '0.7rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.35rem',
-      }}
+      style={{ ...panelCard, textAlign: 'left', cursor: onOpen ? 'pointer' : 'default', fontFamily: 'var(--font-body)', width: '100%' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span aria-hidden style={{ display: 'inline-flex', color: tint }}><Icon name={icon} size={16} /></span>
-          <span style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text)' }}>{title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span aria-hidden style={{ display: 'inline-flex', color: tint, opacity: 0.75 }}><Icon name={icon} size={15} /></span>
+          <span style={panelTitle}>{title}</span>
         </div>
         {count !== undefined && count > 0 && (
-          <span style={{
-            fontSize: '0.62rem', fontWeight: 600, color: tint,
-            background: `color-mix(in srgb, ${tint} 16%, transparent)`, borderRadius: 999, padding: '0.1rem 0.5rem',
-          }}>{count}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
         )}
       </div>
       {children}
