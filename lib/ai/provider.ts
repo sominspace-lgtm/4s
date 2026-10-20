@@ -15,15 +15,19 @@ function openAiLike(id: 'groq' | 'gemini'): OpenAiLike | null {
     const key = process.env.GROQ_API_KEY
     return key ? {
       id, key, base: 'https://api.groq.com/openai/v1',
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      visionModel: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+      // Checked against Groq's own model list 2026-10-19. Groq has no picture
+      // model by default, so photos go to Gemini (set GROQ_VISION_MODEL to change).
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      visionModel: process.env.GROQ_VISION_MODEL || '',
     } : null
   }
   const key = process.env.GEMINI_API_KEY
   return key ? {
     id, key, base: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-    visionModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    // The "latest" alias follows Google's current Flash model, so a retired
+    // version name never breaks 4S (2.5 Flash was closed to new keys).
+    model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+    visionModel: process.env.GEMINI_MODEL || 'gemini-flash-latest',
   } : null
 }
 
@@ -39,6 +43,12 @@ const ANTHROPIC_MODEL = process.env.AI_MODEL ?? 'claude-haiku-4-5'
 
 export class AiError extends Error {
   constructor(message: string, public retryable: boolean) { super(message) }
+}
+
+/** Today's free models think before answering; that thinking counts against
+ *  max_tokens. Ask for light reasoning and leave room for the answer. */
+function budget(answerTokens: number) {
+  return { max_tokens: Math.max(4000, answerTokens * 3), reasoning_effort: 'low' }
 }
 
 async function postJson(p: OpenAiLike, body: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -94,6 +104,7 @@ export function parseLooseJson(text: string): unknown {
 }
 
 async function jsonOpenAi(p: OpenAiLike, r: JsonRequest): Promise<unknown> {
+  if (r.image && !p.visionModel) throw new AiError(`${p.id} cannot read pictures`, true)
   const system = `${r.system ?? ''}\n\nAnswer with one JSON object and nothing else. It must follow this JSON Schema exactly, using null where a value is unknown:\n${JSON.stringify(r.schema)}`.trim()
   const user = r.image
     ? [{ type: 'text', text: r.text || 'Read this image.' }, { type: 'image_url', image_url: { url: `data:${r.image.mime};base64,${r.image.data}` } }]
@@ -101,7 +112,7 @@ async function jsonOpenAi(p: OpenAiLike, r: JsonRequest): Promise<unknown> {
   const j = await postJson(p, {
     model: r.image ? p.visionModel : p.model,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-    max_tokens: r.maxTokens ?? 1200, temperature: 0.2,
+    ...budget(r.maxTokens ?? 1200), temperature: 0.2,
     response_format: { type: 'json_object' },
   })
   const content = ((j.choices as { message?: { content?: string } }[] | undefined)?.[0]?.message?.content) ?? ''
@@ -155,7 +166,7 @@ function openAiSession(p: OpenAiLike, system: string, turns: { role: 'user' | 'a
   return {
     provider: p.id,
     async next() {
-      const j = await postJson(p, { model: p.model, messages, tools: fns, tool_choice: 'auto', max_tokens: 1200, temperature: 0.3 })
+      const j = await postJson(p, { model: p.model, messages, tools: fns, tool_choice: 'auto', ...budget(1200), temperature: 0.3 })
       const msg = ((j.choices as { message?: Record<string, unknown> }[] | undefined)?.[0]?.message) ?? {}
       const raw = (msg.tool_calls as { id: string; function: { name: string; arguments: string } }[] | undefined) ?? []
       // With tool calls the text is often empty; send null, which every OpenAI-style API accepts.
