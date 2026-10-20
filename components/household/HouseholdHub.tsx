@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { addDays, differenceInCalendarDays, differenceInMinutes, format, isSameDay, parseISO } from 'date-fns'
+import { differenceInCalendarDays, differenceInMinutes, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useTrips } from '@/lib/hooks/useTrips'
@@ -18,25 +18,20 @@ import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
 import DiceCoin from './DiceCoin'
 import DateNightPicker from './DateNightPicker'
-import MoneyGlance from './MoneyGlance'
-import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import IconButton from '@/components/ui/IconButton'
 import CheckinForm from '@/components/checkin/CheckinForm'
 import CheckinPhoto from '@/components/checkin/CheckinPhoto'
 import { openSmartHome, goToSection } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
-import Icon, { type IconName } from '@/components/ui/Icon'
+import Icon from '@/components/ui/Icon'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
 /** The Millton, Redwood City CA — the move-in address the Move-In block is about. */
 const NEW_HOME = { label: 'The Millton', city: 'Redwood City, CA' }
 
-const SLOTS = ['breakfast', 'lunch', 'dinner'] as const
-// slot was captured on every meal from the start but never shown or sorted
-// by (2026-08-21) — breakfast could render below dinner in the day's list.
-const SLOT_ORDER: Record<typeof SLOTS[number], number> = { breakfast: 0, lunch: 1, dinner: 2 }
-const SLOT_ICON: Record<typeof SLOTS[number], IconName> = { breakfast: 'sunrise', lunch: 'today', dinner: 'moon' }
+// Breakfast before lunch before dinner when listing a day's meals.
+const SLOT_ORDER: Record<'breakfast' | 'lunch' | 'dinner', number> = { breakfast: 0, lunch: 1, dinner: 2 }
 
 type HouseholdTab = HouseholdTabId
 
@@ -175,16 +170,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // visit, same as everything else in this tab that isn't worth a settings
   // row.
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set())
-  const [mealDay, setMealDay] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [mealSlot, setMealSlot] = useState<typeof SLOTS[number]>('dinner')
-  const [mealTitle, setMealTitle] = useState('')
-  // "Eating out" as a first-class option (2026-08-24) — previously the only
-  // way to record a night out was to type it as if it were a recipe.
-  const [mealKind, setMealKind] = useState<'cooking' | 'eating_out'>('cooking')
-  const [selectedMealId, setSelectedMealId] = useState<string | null>(null)
-  const [mealNotesDraft, setMealNotesDraft] = useState('')
-  const [mealRecipeDraft, setMealRecipeDraft] = useState('')
-  const selectedMeal = h.meals.find(m => m.id === selectedMealId) ?? null
   const [justDone, setJustDone] = useState<string | null>(null)
   const [shopName, setShopName] = useState('')
   const [shopQty, setShopQty] = useState('')
@@ -196,7 +181,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
   const [editingChore, setEditingChore] = useState<{ id: string; name: string; cadence: string } | null>(null)
 
-  const week = [...Array(7)].map((_, i) => addDays(new Date(), i))
 
   // Somi's care moved to the care log (2026-09-08) — chores in a "Somi"
   // folder don't belong under Chores any more. They're kept until the user
@@ -273,22 +257,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       )
     },
 
-    shortcuts: () => (
-      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>Shortcuts</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(8rem, 100%), 1fr))', gap: '0.5rem' }}>
-          {([['Kitchen', 'kitchen'], ['Passwords', 'vault'], ['Wishlist', 'wishlist'], ['Collections', 'reference'], ['Chores', 'upkeep'], ['Notes', 'notes'], ['Trips', 'places-trips']] as const).filter(([, id]) => !sharedMode || sharedSectionVisible(id, guestMode)).map(([label, id]) => (
-            <button key={id} className="press" onClick={() => goToSection(id)} style={{ minHeight: 44, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: '0.84rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{label}</button>
-          ))}
-        </div>
-      </section>
-    ),
-
     settle: () => <DiceCoin />,
 
     datenight: () => <DateNightPicker spaceId={spaceId} readOnly={guestMode} />,
-
-    money: () => (guestMode ? null : <MoneyGlance spaceId={spaceId} userId={userId} sharedMode={sharedMode} />),
 
     notes: () => (sharedMode ? null : <HouseholdNotes spaceId={spaceId} />),
 
@@ -435,97 +406,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       </section>
     ),
 
-    meals: () => (
-      <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)', marginBottom: '0.6rem' }}>
-          This week&rsquo;s meals
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem' }}>
-          {week.map(day => {
-            const dayMeals = [...h.meals.filter(m => isSameDay(parseISO(m.meal_date), day))]
-              .sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot])
-            const isToday = isSameDay(day, new Date())
-            return (
-              <div key={+day} style={{
-                border: `1px solid ${isToday ? 'color-mix(in srgb, var(--gold) 40%, var(--border))' : 'var(--border)'}`,
-                background: isToday ? 'color-mix(in srgb, var(--gold) 5%, transparent)' : 'transparent',
-                borderRadius: '9px', padding: '0.5rem', minHeight: '64px',
-              }}>
-                <div style={{ fontSize: '0.6rem', color: isToday ? 'var(--gold)' : 'var(--muted)', opacity: isToday ? 1 : 0.7, marginBottom: '0.3rem' }}>
-                  {format(day, 'EEE d')}
-                </div>
-                {dayMeals.length === 0 && <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.35, fontStyle: 'italic' }}>—</div>}
-                {dayMeals.map(m => (
-                  <div key={m.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.15rem' }}>
-                    {/* An eating-out night is marked by its own glyph rather
-                        than the slot's (2026-08-24) — the useful thing to see
-                        scanning the week is "we're not cooking that night",
-                        which the meal-time icon can't say. */}
-                    <span title={m.kind === 'eating_out' ? `${m.slot} · eating out` : m.slot} aria-hidden
-                      style={{ flexShrink: 0, opacity: 0.8, display: 'inline-flex' }}>
-                      <Icon name={m.kind === 'eating_out' ? 'plate' : SLOT_ICON[m.slot]} size={11} />
-                    </span>
-                    <button
-                      onClick={() => {
-                        setSelectedMealId(m.id)
-                        setMealNotesDraft(m.notes ?? '')
-                        setMealRecipeDraft(m.recipe_url ?? '')
-                      }}
-                      className="press"
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0,
-                        fontSize: '0.7rem', flex: 1, minWidth: 0,
-                        color: m.kind === 'eating_out' ? 'var(--amber)' : 'var(--text)',
-                        fontStyle: m.kind === 'eating_out' ? 'italic' : 'normal',
-                        textDecoration: (m.notes || m.recipe_url) ? 'underline' : 'none',
-                        textDecorationColor: 'var(--faint)', textUnderlineOffset: '2px',
-                      }}
-                    >{m.title}</button>
-                    <IconButton label={`Remove ${m.title}`} onClick={() => h.removeMeal(m.id)} size={9} style={{ opacity: 0.35 }}>✕</IconButton>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-        </div>
-
-        <form
-          onSubmit={async e => {
-            e.preventDefault()
-            const eatingOut = mealKind === 'eating_out'
-            // Eating out doesn't need a title — "Eating out" IS the plan. A
-            // typed one still wins, so "Eating out — that ramen place" works.
-            const title = mealTitle.trim() || (eatingOut ? 'Eating out' : '')
-            if (!title) return
-            // "Who cooks" removed entirely (2026-08-24) — was tracked for
-            // both meal kinds, now tracked for neither.
-            await h.addMeal(mealDay, mealSlot, title, null, { kind: mealKind })
-            setMealTitle('')
-          }}
-          style={{ display: 'flex', gap: '0.4rem', marginTop: '0.7rem', flexWrap: 'wrap' }}
-        >
-          <input type="date" value={mealDay} onChange={e => setMealDay(e.target.value)} style={input} />
-          <select value={mealSlot} onChange={e => setMealSlot(e.target.value as typeof SLOTS[number])} style={{ ...input, cursor: 'pointer' }}>
-            {SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select value={mealKind} onChange={e => setMealKind(e.target.value as 'cooking' | 'eating_out')} style={{ ...input, cursor: 'pointer' }}>
-            <option value="cooking">Cooking</option>
-            <option value="eating_out">Eating out</option>
-          </select>
-          <input value={mealTitle} onChange={e => setMealTitle(e.target.value)}
-            placeholder={mealKind === 'eating_out' ? 'Where? (optional)' : "What's cooking?"}
-            style={{ ...input, flex: 1, minWidth: '130px' }} />
-          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-        </form>
-      </section>
-    ),
-
-    // Folded in from the retired Move-In tab (2026-08-25) — the overview
-    // card (address + spreadsheet link) and Near Our New Home. House Rules,
-    // the third piece Move-In used to carry, stays canonical in the
-    // Reference tab only rather than becoming a third copy of the same
-    // editable list.
     moveIn: () => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -1095,58 +975,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
         onClose={() => setHomeCustomizeOpen(false)}
       />
 
-      {/* Meal detail sheet (2026-08-21) — notes and a recipe link, the thing
-          a meal title alone never had room for. Opens from clicking any meal
-          in the week grid above. */}
-      {selectedMeal && (
-        <div onClick={() => setSelectedMealId(null)} style={{
-          position: 'fixed', inset: 0, zIndex: 500, display: 'flex',
-          alignItems: 'center', justifyContent: 'center', padding: '1rem',
-          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-        }}>
-          <div onClick={e => e.stopPropagation()} className="organic" style={{
-            width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 18, padding: '1.3rem 1.4rem', boxShadow: 'var(--elev-3)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.2rem' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', color: 'var(--text)' }}>{selectedMeal.title}</span>
-              <IconButton label="Close" onClick={() => setSelectedMealId(null)} size={13}>✕</IconButton>
-            </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginBottom: '1rem' }}>
-              {selectedMeal.slot} · {format(parseISO(selectedMeal.meal_date), 'EEEE d MMM')}
-            </div>
-
-            <label style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: '0.3rem' }}>Recipe link</label>
-            <input
-              value={mealRecipeDraft} onChange={e => setMealRecipeDraft(e.target.value)}
-              placeholder="https://…" style={{ ...input, width: '100%', marginBottom: '0.8rem' }}
-            />
-            {selectedMeal.recipe_url && (
-              <a href={selectedMeal.recipe_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.7rem', color: 'var(--gold)', display: 'block', marginTop: '-0.55rem', marginBottom: '0.8rem' }}>
-                Open recipe ↗
-              </a>
-            )}
-
-            <label style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: '0.3rem' }}>Notes</label>
-            <textarea
-              value={mealNotesDraft} onChange={e => setMealNotesDraft(e.target.value)}
-              placeholder="Substitutions, timing, whatever's worth remembering…" rows={3}
-              style={{ ...input, width: '100%', resize: 'vertical', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}
-            />
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button onClick={() => setSelectedMealId(null)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '0.75rem', cursor: 'pointer' }}>Cancel</button>
-              <button
-                onClick={async () => {
-                  await h.updateMeal(selectedMeal.id, { notes: mealNotesDraft.trim() || null, recipe_url: mealRecipeDraft.trim() || null })
-                  setSelectedMealId(null)
-                }}
-                className="btn btn-primary press" style={{ fontSize: '0.75rem' }}
-              >Save</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

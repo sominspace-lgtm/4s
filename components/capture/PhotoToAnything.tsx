@@ -14,7 +14,7 @@ interface Suggestion {
 type State = 'idle' | 'saving' | 'saved' | 'failed'
 
 const WHERE: Record<Suggestion['type'], string> = {
-  expense: 'Add to who paid', bill: 'Add as a shared bill', event: 'Add to the calendar', shopping: 'Add to shopping', task: 'Add to Tasks',
+  expense: 'Save as a note', bill: 'Add a task to pay it', event: 'Add to the calendar', shopping: 'Add to shopping', task: 'Add to Tasks',
 }
 
 async function shrink(file: File): Promise<string> {
@@ -59,13 +59,15 @@ export default function PhotoToAnything({ compact = false }: { compact?: boolean
     const spaceId = (m?.space_id as string | undefined) ?? null
     let error: { message: string } | null = null
     const title = (s.title || s.label).slice(0, 200)
+    // Money this month was removed (2026-10-19): a receipt is kept as a note,
+    // a bill becomes a task to pay it by its due date.
     if (s.type === 'expense') {
-      if (!spaceId || !s.amount) { set({ state: 'failed', note: !spaceId ? 'Needs a shared space.' : 'No amount was found.' }); return }
-      ;({ error } = await supabase.from('household_payments').insert({ space_id: spaceId, paid_by: user.id, label: title, amount: s.amount, kind: 'expense', paid_on: s.date ?? localToday() }))
+      const body = [`Receipt: ${title}`, s.amount ? `${s.amount}` : null, s.date].filter(Boolean).join(' · ')
+      ;({ error } = await supabase.from('notes').insert({ user_id: user.id, space_id: null, title: '', body }))
+      if (!error) window.dispatchEvent(new CustomEvent('4s:notes-changed'))
     } else if (s.type === 'bill') {
-      if (!spaceId) { set({ state: 'failed', note: 'Needs a shared space.' }); return }
-      const day = s.date ? Number(s.date.slice(8, 10)) : 1
-      ;({ error } = await supabase.from('household_bills').insert({ user_id: user.id, space_id: spaceId, label: title, amount: s.amount, due_day: day || 1 }))
+      ;({ error } = await supabase.from('work_items').insert({ user_id: user.id, title: `Pay ${title}${s.amount ? ` (${s.amount})` : ''}`.slice(0, 200), status: 'todo', due_date: s.date }))
+      if (!error) window.dispatchEvent(new CustomEvent('4s:work-items-changed'))
     } else if (s.type === 'event') {
       if (!s.date) { set({ state: 'failed', note: 'No date was found.' }); return }
       ;({ error } = await supabase.from('events').insert({ user_id: user.id, title, event_date: s.date, event_time: s.time, notes: s.location, space_id: null }))
