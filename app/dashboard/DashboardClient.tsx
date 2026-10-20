@@ -32,6 +32,7 @@ import MailHub from '@/components/mail/MailHub'
 import VaultHub from '@/components/vault/VaultHub'
 import KitchenHub from '@/components/kitchen/KitchenHub'
 import MoneyHub from '@/components/money/MoneyHub'
+import WishlistHub from '@/components/watchlist/WishlistHub'
 import PeopleHub from '@/components/people/PeopleHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
 import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
@@ -90,7 +91,8 @@ interface Props {
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
   'hhtoday',                                          // Household Today tab removed (2026-09-08)
-  'pulse', 'wishlist', 'spending', 'capture',
+  // 'wishlist' is its own section again (2026-10-20), so it is no longer here.
+  'pulse', 'spending', 'capture',
   'relationship', 'shared',                          // → people
   'domains', 'growth',                              // → habits / notes
   'council',                                         // removed entirely (2026-09-01)
@@ -160,6 +162,7 @@ const SECTION_GROUPS: Record<string, string> = {
   habits:    'mine',
   notes:     'mine',
   money:     'mine',
+  wishlist:  'mine',
   people:    'mine',
   vault:     'mine',
   village:   'your world',
@@ -218,7 +221,7 @@ const SECTION_GROUPS: Record<string, string> = {
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault'] },
+  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
@@ -581,7 +584,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
-      notes: t('Notes', lang), money: t('Money', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
+      notes: t('Notes', lang), money: t('Money', lang), wishlist: t('Wishlist', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -617,6 +620,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'notes':    return <div key="notes" className="roomy"><NotesHub userId={userId} /></div>
         case 'mail':     return <MailHub key="mail" userId={userId} />
         case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
+        // Wishlist left Money for its own tab (2026-10-20).
+        case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
         case 'people':   return <PeopleHub key="people" />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>

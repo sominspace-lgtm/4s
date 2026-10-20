@@ -87,7 +87,11 @@ export default function WishlistHub({ userId }: { userId: string }) {
   if (error) return <div style={muted}>{error}</div>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: '0.9rem',
+      background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '16px',
+      padding: 'clamp(0.9rem, 4vw, 1.4rem)', boxShadow: '0 12px 32px var(--shadow)',
+    }}>
       {/* summary */}
       <div style={{ display: 'flex', gap: '1.4rem', flexWrap: 'wrap' }}>
         <Stat label="on the list" value={String(wanted.length)} />
@@ -115,6 +119,16 @@ export default function WishlistHub({ userId }: { userId: string }) {
           key={editing === 'new' ? `new-${seed?.url ?? seed?.name ?? ''}` : editing.id}
           initial={editing === 'new' ? null : editing} seed={seed} spaceId={spaceId}
           onCancel={() => { setEditing(null); setSeed(null) }}
+          onDelete={editing === 'new' ? undefined : async () => {
+            const w = editing
+            if (!window.confirm(`Remove "${w.name}"?`)) return
+            const e = await remove(w.id)
+            setErr(e); if (!e) setEditing(null)
+          }}
+          onChecked={editing === 'new' || editing.status !== 'wanted' ? undefined : async () => {
+            const e = await update(editing.id, { last_checked: format(new Date(), 'yyyy-MM-dd') })
+            setErr(e); if (!e) setEditing(null)
+          }}
           onSave={async d => {
             const e = editing === 'new' ? await add(d) : await update(editing.id, d)
             if (!e) { setEditing(null); setSeed(null) }
@@ -131,7 +145,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
         {tab === 'wanted' && lists.map(l => <button key={l} className="press" onClick={() => setList(l)} style={chip(list === l)}>{l}</button>)}
       </div>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search" style={{ ...field, maxWidth: '14rem' }} />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search" style={{ ...field, flex: '1 1 12rem', width: 'auto', minWidth: 0 }} />
         <select value={who} onChange={e => setWho(e.target.value as typeof who)} style={{ ...field, width: 'auto' }}>
           <option value="all">Everyone&apos;s</option><option value="mine">Mine</option>{spaceId && <option value="ours">Shared</option>}
         </select>
@@ -153,11 +167,9 @@ export default function WishlistHub({ userId }: { userId: string }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr))', gap: '0.8rem' }}>
         {shown.map(w => (
           <Card key={w.id} w={w} me={me}
-            onEdit={() => { setSeed(null); setEditing(w) }}
-            onDelete={async () => { if (window.confirm(`Remove "${w.name}"?`)) setErr(await remove(w.id)) }}
+            onEdit={() => { setSeed(null); setEditing(w); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
             onBought={async price => setErr(await update(w.id, { status: 'bought', bought_at: format(new Date(), 'yyyy-MM-dd'), bought_price: price ?? w.price }))}
             onBack={async () => setErr(await update(w.id, { status: 'wanted', bought_at: null, bought_price: null }))}
-            onChecked={async () => setErr(await update(w.id, { last_checked: format(new Date(), 'yyyy-MM-dd') }))}
             onClaim={async on => setErr(await claim(w.id, on))} />
         ))}
       </div>
@@ -174,16 +186,16 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   )
 }
 
-function Card({ w, me, onEdit, onDelete, onBought, onBack, onChecked, onClaim }: {
+function Card({ w, me, onEdit, onBought, onBack, onClaim }: {
   w: Wish; me: string | null
-  onEdit: () => void; onDelete: () => void; onBought: (price: number | null) => void; onBack: () => void
-  onChecked: () => void; onClaim: (on: boolean) => void
+  onEdit: () => void; onBought: (price: number | null) => void; onBack: () => void
+  onClaim: (on: boolean) => void
 }) {
   const [paying, setPaying] = useState(false)
   const [paid, setPaid] = useState(w.price != null ? String(w.price) : '')
   const mine = w.user_id === me
   const hit = atTarget(w)
-  const btn: React.CSSProperties = { fontSize: '0.62rem', padding: '0.2em 0.55em', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }
+  const btn: React.CSSProperties = { fontSize: '0.7rem', padding: '0.3em 0.7em', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }
   const link = w.url && /^https?:\/\//i.test(w.url) ? w.url : null
   return (
     <div style={{ background: 'var(--surface)', border: `1px solid ${hit ? 'var(--emerald)' : 'var(--border)'}`, borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -196,7 +208,7 @@ function Card({ w, me, onEdit, onDelete, onBought, onBack, onChecked, onClaim }:
         {w.space_id && <span style={{ position: 'absolute', top: 6, right: 6, fontSize: '0.58rem', background: 'color-mix(in srgb, var(--surface) 85%, transparent)', color: 'var(--text)', borderRadius: '999px', padding: '0.15em 0.55em' }}>shared</span>}
       </div>
       <div style={{ padding: '0.6rem 0.7rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.3 }}>
+        <div style={{ fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.3 }}>
           {link ? <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{w.name}</a> : w.name}
         </div>
         <div style={{ ...muted, display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
@@ -226,15 +238,13 @@ function Card({ w, me, onEdit, onDelete, onBought, onBack, onChecked, onClaim }:
         {mine && (
           <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.3rem' }}>
             {w.status === 'wanted' && !paying && <button style={btn} onClick={() => setPaying(true)}>Got it</button>}
-            {w.status === 'wanted' && <button style={btn} onClick={onChecked} title={`Last checked ${w.last_checked}`}>Checked</button>}
             {w.status === 'bought' && <button style={btn} onClick={onBack}>Move back</button>}
             <button style={btn} onClick={onEdit}>Edit</button>
-            <button style={{ ...btn, color: 'var(--rose)' }} onClick={onDelete}>Remove</button>
           </div>
         )}
         {paying && (
           <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-            <input type="number" min="0" step="0.01" value={paid} onChange={e => setPaid(e.target.value)} placeholder="Paid" style={{ ...field, padding: '0.25rem 0.4rem', fontSize: '0.72rem' }} />
+            <input type="number" inputMode="decimal" min="0" step="0.01" value={paid} onChange={e => setPaid(e.target.value)} placeholder="Paid" style={{ ...field, padding: '0.25rem 0.4rem', minWidth: 0 }} />
             <button style={btn} onClick={() => { onBought(paid ? Number(paid) : null); setPaying(false) }}>Save</button>
           </div>
         )}
@@ -243,9 +253,10 @@ function Card({ w, me, onEdit, onDelete, onBought, onBack, onChecked, onClaim }:
   )
 }
 
-function Editor({ initial, seed, spaceId, onSave, onCancel }: {
+function Editor({ initial, seed, spaceId, onSave, onCancel, onDelete, onChecked }: {
   initial: Wish | null; seed: WishDraft | null; spaceId: string | null
   onSave: (d: WishDraft) => Promise<string | null>; onCancel: () => void
+  onDelete?: () => void; onChecked?: () => void
 }) {
   const base: WishDraft = initial ?? seed ?? {}
   const [name, setName] = useState(base.name ?? '')
@@ -288,8 +299,8 @@ function Editor({ initial, seed, spaceId, onSave, onCancel }: {
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(8rem, 1fr))', gap: '0.4rem' }}>
-        <input type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price" style={field} />
-        <input type="number" min="0" step="0.01" value={target} onChange={e => setTarget(e.target.value)} placeholder="Price you would pay" style={field} />
+        <input type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price" style={field} />
+        <input type="number" inputMode="decimal" min="0" step="0.01" value={target} onChange={e => setTarget(e.target.value)} placeholder="Price you would pay" style={field} />
         <input value={store} onChange={e => setStore(e.target.value)} placeholder="Store" style={field} />
         <input value={forWho} onChange={e => setForWho(e.target.value)} placeholder="For (me, mom, us…)" style={field} />
         <input list="wish-lists" value={list} onChange={e => setList(e.target.value)} placeholder="List" style={field} />
@@ -307,9 +318,11 @@ function Editor({ initial, seed, spaceId, onSave, onCancel }: {
         </label>
       )}
       {err && <div style={{ ...muted, color: 'var(--rose)' }}>{err}</div>}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <button onClick={save} disabled={saving} className="btn btn-primary press" style={{ fontSize: '0.74rem' }}>{saving ? 'Saving…' : 'Save'}</button>
         <button onClick={onCancel} className="btn btn-ghost press" style={{ fontSize: '0.74rem' }}>Cancel</button>
+        {onChecked && <button onClick={onChecked} className="btn btn-ghost press" style={{ fontSize: '0.74rem' }} title={initial?.last_checked ? `Last checked ${initial.last_checked}` : undefined}>Checked the price</button>}
+        {onDelete && <button onClick={onDelete} className="btn btn-ghost press" style={{ fontSize: '0.74rem', color: 'var(--rose)', marginLeft: 'auto' }}>Remove</button>}
       </div>
     </div>
   )
@@ -362,7 +375,7 @@ function SharePanel({ lists, spaceId, mineWanted, onShareAll }: {
             <option value="">Everything I want</option>
             {lists.map(l => <option key={l} value={l}>Just {l}</option>)}
           </select>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (optional)" style={{ ...field, maxWidth: '14rem' }} />
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (optional)" style={{ ...field, flex: '1 1 10rem', width: 'auto', minWidth: 0 }} />
           <button className="btn btn-primary press" style={{ fontSize: '0.72rem' }} disabled={busy} onClick={make}>{busy ? '…' : 'Make a link'}</button>
         </div>
       </div>

@@ -5,17 +5,16 @@ import { format, parseISO } from 'date-fns'
 import SubsCard from '@/components/subscriptions/SubsCard'
 import GiftsCard from '@/components/subscriptions/GiftsCard'
 import BuylistCard from '@/components/watchlist/BuylistCard'
-import WishlistHub from '@/components/watchlist/WishlistHub'
+import { goToPersonal } from '@/lib/utils/navigate'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useBuyItems, daysUntilDue } from '@/lib/hooks/useBuyItems'
 import { useWishlist } from '@/lib/hooks/useWishlist'
 
-type MoneyTab = 'overview' | 'wishlist' | 'gifts' | 'renewals' | 'buyagain'
+type MoneyTab = 'overview' | 'gifts' | 'renewals' | 'buyagain'
 
 const TABS: { id: MoneyTab; label: string; helper?: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'wishlist', label: 'Wishlist', helper: 'Things you want later.' },
   { id: 'gifts',    label: 'Gifts',    helper: 'Ideas for people and occasions.' },
   { id: 'renewals', label: 'Renewals', helper: 'Subscriptions and recurring bills.' },
   { id: 'buyagain', label: 'Buy Again', helper: 'Things you purchase repeatedly.' },
@@ -65,7 +64,7 @@ export default function MoneyHub({ userId }: { userId: string }) {
       {tab === 'overview' && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           <OverviewStat label="monthly subs" value={`$${total.toFixed(0)}`} color="var(--gold)" onClick={() => setTab('renewals')} />
-          <OverviewStat label="wishlist items" value={wishItems.length} onClick={() => setTab('wishlist')} />
+          <OverviewStat label="wishlist items" value={wishItems.length} onClick={() => goToPersonal('wishlist')} />
           <OverviewStat
             label={nextGift ? `next: ${nextGift.name}` : 'gifts tracked'}
             value={nextGift ? `${nextGift.days}d` : giftItems.length}
@@ -87,7 +86,6 @@ export default function MoneyHub({ userId }: { userId: string }) {
         </div>
       )}
 
-      {tab === 'wishlist' && <WishlistHub userId={userId} />}
       {tab === 'gifts'    && <GiftsCard />}
       {tab === 'renewals' && <SubsCard />}
       {tab === 'buyagain' && <BuylistCard userId={userId} />}

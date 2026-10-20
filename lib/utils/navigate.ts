@@ -36,7 +36,7 @@ export function scrollToAnchor(id: string, attempt = 0) {
   }, 350)
 }
 
-export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'people' | 'vault'
+export type PersonalTab = 'tasks' | 'goals' | 'habits' | 'notes' | 'money' | 'wishlist' | 'people' | 'vault'
 
 // Tasks/Habits/Notes/Money/People are their own top-level sections now
 // (2026-09-01), so this is mostly just goToSection with a narrower type.

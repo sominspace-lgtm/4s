@@ -47,6 +47,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'habits',   label: 'Habits',   hidden: false },
   { id: 'notes',    label: 'Notes',    hidden: false },
   { id: 'money',    label: 'Money',    hidden: false },
+  { id: 'wishlist', label: 'Wishlist', hidden: false },
   { id: 'people',   label: 'People',   hidden: false },
   { id: 'vault',    label: 'Passwords', hidden: false },
   // The village — your life as a place, not a dashboard.

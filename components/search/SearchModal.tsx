@@ -82,7 +82,8 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-home',      label: 'Go to Home',       icon: '◫', keywords: ['household', 'shared', 'home', 'chore', 'chores', 'meal', 'meals', 'dinner', 'cleaning', 'whose turn', 'roommate', 'this week'], run: () => goTo('home') },
     { id: 'go-reference', label: 'Go to Collections',  icon: '◫', keywords: ['collections', 'reference', 'date ideas', 'movies', 'home brain', 'wifi', 'password', 'serial', 'manual', 'maintenance', 'rules', 'lookup'], run: () => goTo('reference') },
     { id: 'go-places',   label: 'Go to Places',      icon: '◇', keywords: ['places', 'pin', 'pins', 'map', 'trip', 'trips', 'restaurant', 'travel'], run: () => goTo('places') },
-    { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'wishlist', 'gift'], run: () => goToPersonal('money') },
+    { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'gift'], run: () => goToPersonal('money') },
+    { id: 'go-wishlist', label: 'Go to Wishlist',    icon: '✦', keywords: ['wishlist', 'wish', 'want', 'someday', 'save for'], run: () => goToPersonal('wishlist') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },
     { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goToPersonal('people') },
     { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goToPersonal('tasks'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
@@ -123,7 +124,7 @@ export default function SearchModal({ open, onClose }: Props) {
     const r = results[i - matchedCommands.length]
     if (r) {
       if (r.type === 'habit') goToPersonal('habits')
-      else if (r.type === 'wishlist') goToPersonal('money')
+      else if (r.type === 'wishlist') goToPersonal('wishlist')
       else if (r.type === 'work') goToPersonal('tasks')
       else if (r.type === 'note') goToPersonal('notes')
       else goTo(RESULT_SECTION[r.type] ?? 'brief')

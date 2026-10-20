@@ -32,7 +32,7 @@ export interface HomeBarGroup {
 
 const MEMBER_LABELS: Record<string, string> = {
   brief: 'Today',
-  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', people: 'People', vault: 'Passwords',
+  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', wishlist: 'Wishlist', people: 'People', vault: 'Passwords',
   village: 'Village', home: 'Home', upkeep: 'Upkeep', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
   places: 'Places', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
   smarthome: 'Controls',
