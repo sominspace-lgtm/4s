@@ -187,7 +187,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // clears them (a button in the Somi care section), just not listed here.
   // Soonest-due first — the list orders itself by what actually needs doing,
   // so nobody has to scan for it.
-  const sortedChores = [...h.chores].filter(c => !/somi/i.test(c.folder ?? '')).sort((a, b) => choreDue(a) - choreDue(b))
+  // Somi's chores show here again (2026-10-19): her care moved back from the
+  // care log into chores, so the old filter that hid the "Somi" folder is gone.
+  const sortedChores = [...h.chores].sort((a, b) => choreDue(a) - choreDue(b))
 
   async function doneChore(c: Chore) {
     setJustDone(c.id)
@@ -522,7 +524,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // once per folder until that folder has something in it.
   function renderStarterChores() {
     const missing = STARTER_CHORES.filter(g => !h.chores.some(c => (c.folder ?? '').toLowerCase() === g.folder.toLowerCase()))
-    if (missing.length === 0 || h.loading || guestMode) return null
+    // Wait for the household to load, or the chores would be saved with no household.
+    if (!spaceId || missing.length === 0 || h.loading || guestMode) return null
     return (
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {missing.map(g => (

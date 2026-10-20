@@ -23,9 +23,8 @@ export default function HouseholdUpkeep({ userId }: { userId: string }) {
 
   if (!spaceId) return null
 
-  // Somi's chores moved to the care log — don't show them on a cadence here.
+  // Somi's chores are chores again (2026-10-19), so they show here too.
   const rows = chores
-    .filter(c => !/somi/i.test(c.folder ?? ''))
     .map(c => ({ id: c.id, name: c.name, due: choreDue(c), last: c.last_done_at }))
     .sort((a, b) => a.due - b.due)
 
