@@ -55,6 +55,9 @@ import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCu
 import { DEFAULT_VILLAGE_PANEL_BLOCKS } from '@/lib/utils/villagePanel'
 import { goToSection } from '@/lib/utils/navigate'
 import { useVillageLite } from '@/lib/hooks/useVillageLite'
+import { usePersonalRoutines } from '@/lib/hooks/usePersonalRoutines'
+import { routineFor, partOfDay as partOfRoutineDay } from '@/components/brief/TodayRoutine'
+import { countSteps } from '@/lib/routines/items'
 import { DEVICE_EVENT, DEVICE_KEYS, readDevice } from '@/lib/utils/deviceSettings'
 
 const ARRIVAL_KEY = '4s-village-arrival'
@@ -642,17 +645,31 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // active scene). Threaded to the hookless scene as one object.
   const household = useHousehold(spaces[0]?.id ?? null)
   const routinesHook = useRoutines(spaces[0]?.id ?? null)
+  const personalRoutines = usePersonalRoutines(locked ? null : spaces[0]?.id ?? null)
   const homeCard = useMemo(() => {
-    const dinner = dinnerFor(household.meals)?.title ?? null
-    const chore = household.chores.find(c => choreDue(c) <= 0)?.name ?? null
+    const tonight = dinnerFor(household.meals)
+    const dinner = tonight?.title ?? null
+    const due = household.chores.filter(c => choreDue(c) <= 0)
+    const chore = due[0]?.name ?? null
     const routine = routinesHook.routines.filter(r => r.kind === 'routine').find(r => routineDue(r) <= 0)?.name ?? null
     return {
       dinner,
       nextTask: chore ?? routine,
       binLine,
       sceneName: activeScene?.name ?? null,
+      // Matches 4S as it is now (2026-10-19): who cooks from the meal plan,
+      // how many chores are due in Upkeep, and the routine for right now.
+      cook: tonight?.cook ?? null,
+      choresDue: due.length,
+      routineNow: (() => {
+        if (locked) return null
+        const r = routineFor(personalRoutines.routines, partOfRoutineDay())
+        if (!r) return null
+        const c = countSteps(r.items, r.cadence_days)
+        return c.total ? `${r.name} · ${c.done} of ${c.total}` : r.name
+      })(),
     }
-  }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name])
+  }, [household.meals, household.chores, routinesHook.routines, binLine, activeScene?.name, locked, personalRoutines.routines])
 
   // Host checklist auto-signals (2026-09-08) — a few "getting ready" items
   // that answer themselves from real state, shown above the manual list in

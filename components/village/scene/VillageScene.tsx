@@ -310,7 +310,7 @@ export default function VillageScene({
   onOpenKitchen?: () => void
   /** Live lines for the Home cottage tap-card: tonight's dinner, the next
    *  home task, a bins line, the active smart-home scene. */
-  homeCard?: { dinner: string | null; nextTask: string | null; binLine: string | null; sceneName: string | null } | null
+  homeCard?: { dinner: string | null; nextTask: string | null; binLine: string | null; sceneName: string | null; cook?: string | null; choresDue?: number; routineNow?: string | null } | null
   /** "Bins out tonight" / "Bins out this morning", or null — draws the bin prop. */
   binLine?: string | null
   /** From Village.tsx's clock — the bin prop only shows evening/morning. */
@@ -734,8 +734,9 @@ export default function VillageScene({
         // never reaches this content at all, it goes straight to the PIN
         // prompt instead.
         ...(v.plants.length ? [plantSlots.slice(0, 3).map(s => s.plant.name).join(', ')] : []),
+        ...(homeCard?.routineNow ? [homeCard.routineNow] : []),
       ],
-      actionLabel: 'Go to Habits', go: () => goToPersonal('habits'),
+      actionLabel: 'Go to Habits and routines', go: () => goToPersonal('habits'),
     },
     home: {
       title: 'Home',
@@ -743,15 +744,18 @@ export default function VillageScene({
       // the primary entry to the shared household devices, not a personal
       // surface; Today stays reachable via the swipe-up sheet (shared mode)
       // or the Today tab (personal mode), just not through this tap.
-      lines: homeCard && (homeCard.dinner || homeCard.nextTask || homeCard.binLine || homeCard.sceneName)
+      // Home leads to Household Home, the hub (2026-10-19); Smart Home is
+      // one tap further. Chores now live in Upkeep.
+      lines: homeCard && (homeCard.dinner || homeCard.choresDue || homeCard.binLine || homeCard.sceneName)
         ? [
-            homeCard.dinner ? `Tonight · ${homeCard.dinner}` : null,
+            homeCard.dinner ? `Tonight · ${homeCard.dinner}${homeCard.cook ? (homeCard.cook === 'Together' ? ', together' : `, ${homeCard.cook} cooks`) : ''}` : null,
+            homeCard.choresDue ? `${homeCard.choresDue} chore${homeCard.choresDue === 1 ? '' : 's'} due` : null,
             homeCard.binLine,
-            homeCard.nextTask ? `${homeCard.nextTask} due` : null,
             homeCard.sceneName ? `Scene · ${homeCard.sceneName}` : null,
           ].filter(Boolean).slice(0, 3) as string[]
-        : ['Lights, scenes, and more'],
-      actionLabel: 'Go to Smart Home', go: openSmartHome,
+        : ['Dinner, chores, and the house'],
+      actionLabel: 'Go to Household', go: () => goToHousehold('home'),
+      secondary: { label: homeCard?.choresDue ? 'See the chores' : 'Smart Home', go: homeCard?.choresDue ? () => goToHousehold('upkeep') : openSmartHome },
     },
     projects: {
       title: 'Projects',
@@ -844,7 +848,7 @@ export default function VillageScene({
         for (const w of structures?.week ?? []) c.push({ text: `${w.when} · ${w.text}` })
         return c.length ? c : undefined
       })(),
-      actionLabel: gathering ? 'See what’s on' : 'Go to the calendar',
+      actionLabel: gathering ? 'See what’s on' : 'Go to Household',
       go: () => goToHousehold(gathering ? 'reference' : 'calendar'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
@@ -3007,7 +3011,7 @@ export default function VillageScene({
       {tripCount > 0 && (() => { const p = decorPos('signpost'); return (
         <Draggable x={p.x} y={p.y} id="signpost" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('signpost')} r={16}>
           <SignpostShape x={0} y={0} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
-            onClick={nav('Trips', () => goToSection('places'), false)} />
+            onClick={nav('Trips', () => goToSection('places-trips'), false)} />
         </Draggable>
       ) })()}
 

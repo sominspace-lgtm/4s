@@ -79,29 +79,30 @@ export const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#
 // `depth` runs 0..1 from the back of this band to the very front and drives
 // both scale and which GREENS tone gets used, so the layer self-sorts into a
 // gradient of size and darkness instead of being a uniform scatter.
-export const FOREGROUND_COUNT = 50 // denser foreground 2026-09-09 ("fill the empty foreground")
+// Framed, not scattered (2026-10-19, "simple, like a small art piece"): fifty
+// tiny tufts spread evenly across the bottom read as specks of dirt. Now
+// fewer, fuller clumps gather in the two bottom corners like the frame of a
+// painting, and the middle stays open so the eye travels up the path to the
+// cottage. Nearer clumps are bigger and fuller, as before.
+export const FOREGROUND_COUNT = 24
 export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
-  // Round 58 ("fix the random trees and bushes (scale and placement)") —
-  // held to a ~110-unit band (was 172, which flung the near ones almost to
-  // the canvas edge) and a lower scale ceiling.
-  const y = GROUND_Y + 56 + depth * 110
-  const kind = (hashPos(seed + 'k') < 0.42 ? 'bush' : hashPos(seed + 'k') < 0.78 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
-  // Bucketed for a guaranteed minimum spacing (round 7 — overlapping
-  // same-tone clumps fused into a "shapeless mass"), but every 4th item is
-  // pulled toward its neighbour so the meadow has clumps and clearings
-  // instead of one even carpet (round 74).
-  const bucketW = 860 / FOREGROUND_COUNT
-  let x = -30 + i * bucketW + hashPos(seed + 'x') * bucketW * 0.85
-  if (i % 4 === 1) x -= bucketW * 0.55
-  // Scale ceiling lowered from 2.2x to ~1.55x, and flowers capped lower
-  // still — a giant flower cluster read as a magenta block, while a giant
-  // bush at least still reads as "a bush," just an oversized one.
-  const baseScale = 0.55 + depth * 0.72
+  const left = i % 2 === 0
+  // Each corner's clump hugs its edge and widens toward the bottom: the
+  // nearer (lower) an item is, the further in it may reach, so the frame
+  // curves like a vignette instead of a straight hedge.
+  // Inside x 100..700, the part every screen shape shows (an iPad crops the
+  // sides), so the frame is visible everywhere.
+  const reach = 50 + depth * 190
+  const along = hashPos(seed + 'x') * reach
+  const x = left ? 92 + along : 708 - along
+  const y = GROUND_Y + 105 + depth * 85
+  const kind = (hashPos(seed + 'k') < 0.5 ? 'bush' : hashPos(seed + 'k') < 0.8 ? 'grass' : 'flower') as 'bush' | 'grass' | 'flower'
+  const baseScale = 0.9 + depth * 1.05
   return {
     id: seed, x, y, depth, kind,
-    scale: kind === 'flower' ? baseScale * 0.7 : baseScale,
+    scale: kind === 'flower' ? baseScale * 0.75 : baseScale,
     tone: Math.min(GREENS.length - 1, 2 + Math.floor(depth * 4)),
   }
 }).sort((a, b) => a.depth - b.depth)

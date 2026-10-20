@@ -1649,13 +1649,11 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
           standing, tree-rings/months) — a bonus glance, not a replacement
           for the hover text, since some counts are words ("today", "ready
           when you are") with nothing to badge. */}
-      {count.match(/^\d+/) && (
-        <>
-          <circle cx={15} cy={-34} r={7} fill="var(--rose)" stroke="var(--surface)" strokeWidth={1.4} />
-          <text x={15} y={-34} textAnchor="middle" dominantBaseline="central" fontSize={6} fill="#fff" fontWeight={600}>
-            {count.match(/^\d+/)![0]}
-          </text>
-        </>
+      {/* A small warm light (2026-10-19) instead of a red number badge, so the
+          village reads as a picture, not a phone screen. The count itself
+          is in the hover name and the tap panel. */}
+      {count.match(/^[1-9]/) && !quiet && (
+        <circle cx={14} cy={-30} r={2.6} fill="var(--amber)" stroke="var(--surface)" strokeWidth={0.8} opacity={0.9} />
       )}
       {/* Name now hidden until you look too (round three, 2026-08-27 — round
           two only quieted it down and moved the count/detail line to
