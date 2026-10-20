@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { logWin } from '@/lib/household/wins'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import type { Recipe, RecipeDraft } from '@/lib/recipes/types'
@@ -60,7 +61,12 @@ export function useRecipes(spaceId: string | null) {
 
   /** "We made this": bumps the count and the date, so the book shows what you actually cook. */
   async function markCooked(r: Recipe): Promise<string | null> {
-    return update(r.id, { times_cooked: r.times_cooked + 1, last_cooked: format(new Date(), 'yyyy-MM-dd') } as Partial<RecipeDraft>)
+    const err = await update(r.id, { times_cooked: r.times_cooked + 1, last_cooked: format(new Date(), 'yyyy-MM-dd') } as Partial<RecipeDraft>)
+    if (!err && r.space_id) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) void logWin(supabase, r.space_id, user.id, 'meal', `Made ${r.title}`)
+    }
+    return err
   }
 
   return { recipes, loading, error, add, update, remove, markCooked }

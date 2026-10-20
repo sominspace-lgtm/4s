@@ -42,7 +42,7 @@ function ownOrSpaceFilter(userId: string, spaceIds: string[]): string {
 // Still the product's promise: named, never counted; nothing alarmist;
 // nothing that follows you around out of guilt.
 
-type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder' | 'goalStale' | 'tripItem' | 'choresDue'
+type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder' | 'goalStale' | 'tripItem' | 'choresDue' | 'warranty'
 
 // Must match STALE_AFTER_DAYS in lib/hooks/useGoals.ts — duplicated rather
 // than imported because that file is 'use client' and this is a server
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
     // household_lists/goals/trips can all be personal (space_id null) or
     // shared; this cron runs on the admin client (no RLS), so space
     // membership is resolved by hand once and reused by kinds 3-5.
-    const spaceIds = (on('listReminder') || on('goalStale') || on('tripItem') || on('choresDue'))
+    const spaceIds = (on('listReminder') || on('goalStale') || on('tripItem') || on('choresDue') || on('warranty'))
       ? await resolveSpaceIds(admin, userId)
       : []
 
@@ -226,6 +226,29 @@ export async function GET(request: Request) {
           url: '/dashboard?go=upkeep',
         })
         fresh[`chores:${today}`] = today
+        notified++
+      }
+    }
+
+    // 7. Warranties ending (2026-10-20): a quiet heads-up at 30 days and again
+    // at 7 days, so there is still time to use the receipt.
+    if (on('warranty') && spaceIds.length > 0) {
+      const dayMs = 86_400_000
+      const todayMs = Date.parse(`${today}T00:00:00Z`)
+      const { data: things } = await admin.from('household_things').select('id, name, warranty_until')
+        .in('space_id', spaceIds).not('warranty_until', 'is', null)
+      for (const t of things ?? []) {
+        const left = Math.round((Date.parse(`${String(t.warranty_until).slice(0, 10)}T00:00:00Z`) - todayMs) / dayMs)
+        const mark = left <= 7 && left >= 0 ? 7 : left <= 30 && left > 7 ? 30 : null
+        if (mark === null) continue
+        const key = `warranty:${t.id}:${mark}`
+        if (sent[key] !== undefined) continue
+        await safePush(admin, userId, {
+          title: '4S',
+          body: left === 0 ? `The warranty on "${t.name}" ends today.` : `The warranty on "${t.name}" ends in ${left} day${left === 1 ? '' : 's'}.`,
+          url: '/dashboard?go=home',
+        })
+        fresh[key] = today
         notified++
       }
     }

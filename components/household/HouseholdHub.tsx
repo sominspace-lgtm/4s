@@ -10,6 +10,8 @@ import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/use
 import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
+import WinsBlock from './WinsBlock'
+import ThingsWeOwn from './ThingsWeOwn'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
@@ -297,6 +299,11 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     ),
 
     thisWeek: () => <WeeklyRecapBlock spaceId={spaceId} />,
+
+    // Wins and owned things are the household's own business, not a guest's
+    // (2026-10-20), so shared mode hides them.
+    wins: () => (sharedMode ? null : <WinsBlock spaceId={spaceId} userId={userId} nameFor={nameFor} />),
+    things: () => (sharedMode ? null : <ThingsWeOwn spaceId={spaceId} userId={userId} />),
 
     // The weekly check-in prompt, above the shopping list — shows on Sunday,
     // or any day this week's check-in still isn't done, else a no-op. Same

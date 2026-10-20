@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { logWin } from '@/lib/household/wins'
 import { createClient } from '@/lib/supabase/client'
 import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
 
@@ -178,6 +179,7 @@ export function useHousehold(spaceId: string | null) {
       .update({ last_done_at: anchor, last_done_by: user.id })
       .eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
+    if (chore) void logWin(supabase, spaceId, user.id, 'chore', chore.name)
     await load(); notify(); return { error: null }
   }
 
