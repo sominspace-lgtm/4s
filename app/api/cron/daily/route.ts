@@ -42,7 +42,7 @@ function ownOrSpaceFilter(userId: string, spaceIds: string[]): string {
 // Still the product's promise: named, never counted; nothing alarmist;
 // nothing that follows you around out of guilt.
 
-type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder' | 'goalStale' | 'tripItem'
+type Kind = 'overdueTasks' | 'subRenewal' | 'listReminder' | 'goalStale' | 'tripItem' | 'choresDue'
 
 // Must match STALE_AFTER_DAYS in lib/hooks/useGoals.ts — duplicated rather
 // than imported because that file is 'use client' and this is a server
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
     // household_lists/goals/trips can all be personal (space_id null) or
     // shared; this cron runs on the admin client (no RLS), so space
     // membership is resolved by hand once and reused by kinds 3-5.
-    const spaceIds = (on('listReminder') || on('goalStale') || on('tripItem'))
+    const spaceIds = (on('listReminder') || on('goalStale') || on('tripItem') || on('choresDue'))
       ? await resolveSpaceIds(admin, userId)
       : []
 
@@ -195,6 +195,38 @@ export async function GET(request: Request) {
           for (const item of tripItems) fresh[`tripitem:${item.id}:${item.item_date}`] = today
           notified++
         }
+      }
+    }
+
+    // 6. Chores due (2026-10-19): Somi's care and the house's upkeep are
+    // chores now, each on its own rhythm. Once a day, named, not counted out
+    // loud: the most overdue one, and how many others are waiting. A chore is
+    // due once its last-done date plus its rhythm reaches today, or if it has
+    // never been done.
+    if (on('choresDue') && sent[`chores:${today}`] === undefined) {
+      const { data: chores } = await admin.from('household_chores').select('name, cadence_days, last_done_at')
+        .or(ownOrSpaceFilter(userId, spaceIds))
+      const dayMs = 86_400_000
+      const todayMs = Date.parse(`${today}T00:00:00Z`)
+      const due = (chores ?? [])
+        .map(c => {
+          const last = c.last_done_at ? Date.parse(`${String(c.last_done_at).slice(0, 10)}T00:00:00Z`) : null
+          const late = last === null ? 0 : Math.round((todayMs - last) / dayMs) - Number(c.cadence_days)
+          return { name: c.name as string, late }
+        })
+        .filter(c => c.late >= 0)
+        .sort((a, b) => b.late - a.late)
+      if (due.length > 0) {
+        const first = due[0]
+        await safePush(admin, userId, {
+          title: '4S',
+          body: due.length === 1
+            ? `"${first.name}" is due${first.late > 0 ? ` (${first.late} day${first.late === 1 ? '' : 's'} late)` : ''}.`
+            : `"${first.name}" and ${due.length - 1} other chore${due.length === 2 ? '' : 's'} are due.`,
+          url: '/dashboard?go=upkeep',
+        })
+        fresh[`chores:${today}`] = today
+        notified++
       }
     }
 

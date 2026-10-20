@@ -16,6 +16,7 @@ const KINDS: { key: string; label: string; hint: string }[] = [
   { key: 'listReminder', label: 'List reminders', hint: 'When a reminder on any list arrives' },
   { key: 'goalStale', label: 'Goals gone quiet', hint: 'If a goal hasn’t been touched in a few weeks' },
   { key: 'tripItem', label: 'Trip items today', hint: 'Whatever is on the itinerary for today' },
+  { key: 'choresDue', label: 'Chores due', hint: 'Somi’s care and house upkeep, when one comes due' },
   { key: 'checkinNudge', label: 'Weekly check-in', hint: 'Sunday, if you haven’t done it yet' },
 ]
 
