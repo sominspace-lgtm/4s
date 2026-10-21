@@ -20,7 +20,7 @@ export type HouseholdTabId = 'home' | 'upkeep' | 'smarthome' | 'reference'
 // of these is cleaned up automatically.
 // Shortcuts, This week's meals and Money this month were removed 2026-10-19;
 // mergeHomeBlocks drops their ids from saved layouts.
-export type HomeBlockId = 'glance' | 'tonight' | 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'rules' | 'moveIn' | 'notes' | 'smartHome' | 'settle' | 'board' | 'datenight' | 'wins' | 'things'
+export type HomeBlockId = 'glance' | 'tonight' | 'calendar' | 'thisWeek' | 'checkin' | 'shopping' | 'rules' | 'moveIn' | 'notes' | 'smartHome' | 'settle' | 'board' | 'datenight' | 'wins'
 
 export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string }> = {
   // Every part of Home is a block you can move or hide (2026-10-13). The
@@ -45,14 +45,17 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   datenight: { label: 'Date night',        hint: 'Pick a date idea by budget and energy' },
   settle:    { label: 'Dice and coin',      hint: 'Flip a coin or roll dice to settle it' },
   wins:      { label: 'Little wins',        hint: 'What the two of you got done lately' },
-  things:    { label: 'Things we own',     hint: 'Receipts, photos and when each warranty ends' },
   notes:     { label: 'Household notes',   hint: 'Notes the two of you share' },
   smartHome: { label: 'Smart Home',        hint: 'The device and status list' },
   moveIn:   { label: 'Move-in',            hint: 'The Millton — what’s around it, and the buy-list sheet' },
 }
 
-export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['glance', 'board', 'tonight', 'calendar', 'thisWeek', 'wins', 'checkin', 'shopping', 'rules', 'things', 'datenight', 'settle', 'notes', 'moveIn', 'smartHome'] as HomeBlockId[])
-  .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: id === 'notes' }))
+// A short Home by default (2026-10-21 redesign): the everyday blocks show,
+// the rest wait under "More on Home" at the bottom, one tap to bring back.
+// Things we own moved to Collections the same day.
+const SHOWN_BY_DEFAULT = new Set<HomeBlockId>(['glance', 'board', 'checkin', 'tonight', 'shopping', 'thisWeek', 'wins'])
+export const DEFAULT_HOME_BLOCKS: SectionConfig[] = (['glance', 'board', 'checkin', 'tonight', 'shopping', 'thisWeek', 'wins', 'calendar', 'rules', 'datenight', 'settle', 'notes', 'moveIn', 'smartHome'] as HomeBlockId[])
+  .map(id => ({ id, label: HOME_BLOCK_META[id].label, hint: HOME_BLOCK_META[id].hint, hidden: !SHOWN_BY_DEFAULT.has(id) }))
 
 export function mergeHomeBlocks(saved: SectionConfig[] | null | undefined): SectionConfig[] {
   if (!saved || !Array.isArray(saved)) return DEFAULT_HOME_BLOCKS

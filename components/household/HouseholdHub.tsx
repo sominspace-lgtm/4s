@@ -6,8 +6,6 @@ import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useTrips } from '@/lib/hooks/useTrips'
 import { usePresenceHeartbeat, usePartnerPresence } from '@/lib/hooks/usePresence'
-import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
-import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import WinsBlock from './WinsBlock'
@@ -15,7 +13,6 @@ import ThingsWeOwn from './ThingsWeOwn'
 import AwayCard from './AwayCard'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
-import HouseholdUnderstanding from './HouseholdUnderstanding'
 import ReferenceCollections from './ReferenceCollections'
 import HouseholdReferenceMemories from './HouseholdReferenceMemories'
 import HouseholdSmartHome from './HouseholdSmartHome'
@@ -23,8 +20,6 @@ import DiceCoin from './DiceCoin'
 import DateNightPicker from './DateNightPicker'
 import CheckinCard from '@/components/checkin/CheckinCard'
 import IconButton from '@/components/ui/IconButton'
-import CheckinForm from '@/components/checkin/CheckinForm'
-import CheckinPhoto from '@/components/checkin/CheckinPhoto'
 import { openSmartHome, goToSection } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon from '@/components/ui/Icon'
@@ -54,27 +49,6 @@ type HouseholdTab = HouseholdTabId
 // Calendar (what's coming), Reference (what you look up). What's INSIDE
 // Home is reorderable and hideable — `homeBlocks` is owned by
 // DashboardClient, same relationship Today has with its own blocks.
-// The emoji vibe check — the first check-in question. The four quick picks
-// map to a word + color, same language the due-date coloring elsewhere in
-// this file uses; any other emoji the person typed is shown as-is with a
-// neutral dot (2026-09-03 — "put any emoji" is now supported in the form).
-const VIBE_MAP: Record<string, { label: string; color: string }> = {
-  '🥱': { label: 'Tired', color: 'var(--muted)' },
-  '😐': { label: 'Meh', color: 'var(--amber)' },
-  '🙂': { label: 'Good', color: 'var(--emerald)' },
-  '🥰': { label: 'Great', color: 'var(--gold)' },
-}
-function VibeBadge({ emoji }: { emoji: string }) {
-  const known = VIBE_MAP[emoji]
-  const color = known?.color ?? 'var(--muted)'
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.62rem', color, opacity: 0.9 }}>
-      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      {known ? known.label : <span style={{ fontSize: '0.85rem' }}>{emoji}</span>}
-    </span>
-  )
-}
-
 const STARTER_CHORES: { folder: string; label: string; chores: { name: string; every: number }[] }[] = [
   { folder: 'Somi', label: "Add Somi's chores", chores: [
     { name: "Clean Somi's litter", every: 1 },
@@ -96,7 +70,7 @@ const STARTER_CHORES: { folder: string; label: string; chores: { name: string; e
   ] },
 ]
 
-export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, onLockedNavigate, forcedTab, boardNote = '', onSetBoardNote }: {
+export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, forcedTab, boardNote = '', onSetBoardNote }: {
   userId: string
   userEmail: string
   homeBlocks: SectionConfig[]
@@ -140,15 +114,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     const shared = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))
     setSpaceId((shared ?? spaces[0]).id)
   }, [spaces, members, spaceId])
-  // The weekly check-in lives entirely in 4S OS now (2026-09-02) — answered
-  // on the Today page (CheckinCard), read back here from the `checkins`
-  // table. The Discord bot no longer runs it; its history was backfilled in.
-  const { checkins, loading: checkinsLoading, submitCheckin, thisWeekMine, doneThisWeek } = useCheckins(userId)
-  const [checkinFormOpen, setCheckinFormOpen] = useState(false)
-  // Which sub-tab shows is driven entirely by the top-level nav now
-  // (2026-08-25) — DashboardClient renders one <HouseholdHub forcedTab={id}>
-  // per Home/Calendar/Reference section. The `?? 'home'` only matters if a
-  // future caller renders it without forcedTab.
   const tab = forcedTab ?? (sharedMode ? 'reference' : 'home')
   const h = useHousehold(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
@@ -304,7 +269,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     // Wins and owned things are the household's own business, not a guest's
     // (2026-10-20), so shared mode hides them.
     wins: () => (sharedMode ? null : <WinsBlock spaceId={spaceId} userId={userId} nameFor={nameFor} />),
-    things: () => (sharedMode ? null : <ThingsWeOwn spaceId={spaceId} userId={userId} />),
 
     // The weekly check-in prompt, above the shopping list — shows on Sunday,
     // or any day this week's check-in still isn't done, else a no-op. Same
@@ -775,6 +739,20 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {homeBlocks.filter(b => !b.hidden).map(b => (
             <div key={b.id}>{homeBlockRenderers[b.id as HomeBlockId]()}</div>
           ))}
+          {/* More on Home (2026-10-21): what is hidden waits here, one tap to
+              bring it back. Customize still reorders everything. */}
+          {!guestMode && homeBlocks.some(b => b.hidden) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
+              <div className="t-label">More on Home</div>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {homeBlocks.filter(b => b.hidden).map(b => (
+                  <button key={b.id} className="pill press" onClick={() => onChangeHomeBlocks(homeBlocks.map(x => (x.id === b.id ? { ...x, hidden: false } : x)))}>
+                    + {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -815,6 +793,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           Collections section (2026-10-12), replacing the separate Date Ideas
           and game/watch list blocks. See ReferenceCollections. */}
       {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} sharedMode={sharedMode} />}
+      {/* Things we own lives with the house's other reference things (2026-10-21). */}
+      {tab === 'reference' && !sharedMode && <ThingsWeOwn spaceId={spaceId} userId={userId} />}
 
       {/* Notes the two of you share, after the collections (2026-10-19). */}
       {tab === 'reference' && !sharedMode && <HouseholdNotes spaceId={spaceId} />}
@@ -823,164 +803,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {/* Photo albums + the keepsakes from hosting (2026-09-10). */}
       {tab === 'reference' && <HouseholdReferenceMemories spaceId={spaceId} />}
 
-      {/* Understanding Each Other — real relationship content (love
-          languages, preferences, the kind of thing Check-ins already gates),
-          not household logistics. Locked in shared mode (2026-08-25 fix) —
-          same "tap to unlock" pattern as Check-ins just below. */}
-      {tab === 'reference' && sharedMode && !guestMode && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <button onClick={() => onLockedNavigate?.('Understanding Each Other')} className="press" style={{
-            width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
-          }}>
-            <span className="t-card">Understanding Each Other</span>
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Icon name="lock" size={10} /> Personal, tap to unlock
-            </span>
-          </button>
-        </section>
-      )}
-      {tab === 'reference' && !sharedMode && (
-        <HouseholdUnderstanding spaceId={spaceId} userId={userId} partnerName={uid => nameFor(uid) ?? 'Partner'} collapsible />
-      )}
-
-      {/* Check-ins — the weekly relationship check-in history. Answered on
-          the Today page now (2026-09-01, CheckinCard); the Discord bot still
-          pushes rows too. Read-only here — this is where you go back and
-          read what was said. */}
-      {tab === 'reference' && sharedMode && !guestMode && (
-        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-          <button onClick={() => onLockedNavigate?.('Check-ins')} className="press" style={{
-            width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
-          }}>
-            <span className="t-card">Check-ins</span>
-            <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Icon name="lock" size={10} /> Personal, tap to unlock
-            </span>
-          </button>
-        </section>
-      )}
-      {tab === 'reference' && !sharedMode && (() => {
-        const weeks = groupCheckinsByWeek(checkins)
-        const isSunday = new Date().getDay() === 0
-        const mineDone = !!thisWeekMine
-        const weekStart = weekOfSunday()
-        const streak = checkinStreak(checkins, userId)
-        return (
-          <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-            {/* Take-it prompt shows whenever this week isn't done yet (Sunday
-                or catch-up). Once submitted there's no button — answers can't
-                be revised — just a quiet confirmation and the history. */}
-            {!mineDone ? (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.9rem',
-                padding: '0.8rem 1rem',
-                border: '1px solid color-mix(in srgb, var(--rose) 25%, var(--border))',
-                background: 'color-mix(in srgb, var(--rose) 6%, var(--surface))',
-                borderRadius: '12px',
-              }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 500 }}>
-                    {isSunday ? 'Time for your weekly check-in' : 'This week’s check-in isn’t done'}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
-                    A few minutes, just between you two. You can’t change answers once submitted.
-                  </div>
-                </div>
-                <button onClick={() => setCheckinFormOpen(true)} className="btn btn-primary press"
-                  style={{ fontSize: '0.74rem', flexShrink: 0 }}>
-                  Complete check-in
-                </button>
-              </div>
-            ) : (
-              <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.9rem' }}>
-                You’re in for this week. Next check-in: Sunday.
-              </div>
-            )}
-            {checkinFormOpen && <CheckinForm onSubmit={submitCheckin} onClose={() => setCheckinFormOpen(false)} />}
-
-            <details open={isSunday && !mineDone}>
-              <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                <span className="t-card">Check-ins</span>
-                <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>{weeks.length}</span>
-                {streak > 1 && <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>{streak} weeks running</span>}
-              </summary>
-              <div style={{ marginTop: '0.5rem' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, marginBottom: '0.7rem' }}>
-                  Your weekly check-in, kept here.
-                </div>
-
-                {weeks.length === 0 && !checkinsLoading && (
-                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                    No check-ins yet — the first one you answer on Today shows up here.
-                  </div>
-                )}
-
-                {weeks.map(w => {
-                  // This week's count comes from who has checked in, since a
-                  // partner's answers stay hidden until you both have.
-                  const answered = w.weekOf >= weekStart ? Math.max(doneThisWeek.length, Object.keys(w.byUser).length) : Object.keys(w.byUser).length
-                  // This week's answers open once you have both checked in
-                  // (the database enforces it, checkin_privacy.sql). Past
-                  // weeks are always open.
-                  const locked = w.weekOf >= weekStart && (!mineDone || answered < 2)
-                  return (
-                  <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
-                    <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span>Week of {w.weekOf}</span>
-                      <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7 }}>
-                        {answered >= 2 ? 'both of you checked in' : answered === 1 ? 'one of you checked in' : 'no answers yet'}
-                      </span>
-                      {!locked && w.weekOf >= weekStart && answered >= 2 && (
-                        <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>✓ both in</span>
-                      )}
-                    </summary>
-                    {locked ? (
-                      <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
-                        {mineDone
-                          ? 'Your answers are in. You will both see each other’s once your partner checks in, or when the week ends.'
-                          : 'Your partner’s answers open once you check in too, or when the week ends.'}
-                      </div>
-                    ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
-                      {Object.entries(w.byUser).map(([uid, c]) => {
-                        const vibe = c.answers.find(a => a.questionKey === 'vibe')
-                        const questions = c.answers.filter(a => a.questionKey !== 'vibe')
-                        return (
-                          <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                              <div style={{ fontSize: '0.68rem', color: 'var(--gold)' }}>{nameFor(uid) ?? 'Partner'}</div>
-                              {vibe && <VibeBadge emoji={vibe.answer} />}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                              {questions.map((a, i) => (
-                                <div key={i}>
-                                  {a.questionText && <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>{a.questionText}</div>}
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5 }}>{a.answer}</div>
-                                </div>
-                              ))}
-                              {c.note && (
-                                <div>
-                                  <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.75 }}>Anything else</div>
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.note}</div>
-                                </div>
-                              )}
-                            </div>
-                            <CheckinPhoto path={c.photo_path} />
-                          </div>
-                        )
-                      })}
-                    </div>
-                    )}
-                  </details>
-                  )
-                })}
-              </div>
-            </details>
-          </section>
-        )
-      })()}
 
       <SectionCustomizer
         open={homeCustomizeOpen}

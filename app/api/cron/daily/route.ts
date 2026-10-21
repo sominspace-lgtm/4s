@@ -259,7 +259,7 @@ export async function GET(request: Request) {
         await safePush(admin, userId, {
           title: '4S',
           body: left === 0 ? `The warranty on "${t.name}" ends today.` : `The warranty on "${t.name}" ends in ${left} day${left === 1 ? '' : 's'}.`,
-          url: '/dashboard?go=home',
+          url: '/dashboard?go=reference',
         })
         fresh[key] = today
         notified++

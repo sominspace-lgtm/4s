@@ -1,12 +1,16 @@
 'use client'
 
 import RelationshipMemory from '@/components/relationships/RelationshipMemory'
+import YouTwo from '@/components/checkin/YouTwo'
 
-// People — a flat contact sheet (2026-09-03). The household is exactly two
-// accounts and always will be, so there's no friends/sharing layer here;
-// this is just the people you both want to stay close to — birthdays, last
-// hellos, notes, gift ideas. RelationshipMemory is the whole thing now
-// (it renders its own card); this file is just the section entry point.
-export default function PeopleHub() {
-  return <RelationshipMemory />
+// People (2026-09-03): the people you both want to stay close to. Since the
+// 2026-10-21 redesign it opens with "You two": your weekly check-ins and
+// Understanding each other, which used to sit in Collections.
+export default function PeopleHub({ userId }: { userId: string }) {
+  return (
+    <>
+      <YouTwo userId={userId} />
+      <RelationshipMemory />
+    </>
+  )
 }

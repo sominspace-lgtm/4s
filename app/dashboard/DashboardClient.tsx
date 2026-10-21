@@ -650,7 +650,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
         // Wishlist left Money for its own tab (2026-10-20).
         case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
-        case 'people':   return <PeopleHub key="people" />
+        case 'people':   return <PeopleHub key="people" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
         // Places (2026-09-09) — the map carries a docked pin list, so it's
