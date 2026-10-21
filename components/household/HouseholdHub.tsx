@@ -12,6 +12,7 @@ import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import WinsBlock from './WinsBlock'
 import ThingsWeOwn from './ThingsWeOwn'
+import AwayCard from './AwayCard'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
 import HouseholdUnderstanding from './HouseholdUnderstanding'
@@ -795,6 +796,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           are chores too (folders "Somi" and "House"), not a separate log. */}
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          {!guestMode && spaceId && <AwayCard away={h.away} onSet={h.setAway} onEnd={h.endAway} />}
           <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem' }}>
               <div className="t-card">Chores</div>

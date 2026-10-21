@@ -87,6 +87,14 @@ export function dinnerFor(meals: Meal[], date: Date = new Date()): Meal | null {
   return meals.find(m => m.slot === 'dinner' && m.meal_date.slice(0, 10) === key) ?? null
 }
 
+/** Away mode (2026-10-21): the household's pause, from household_away.sql. */
+export interface Away { from: string; until: string }
+
+/** Is the pause running today (not just planned)? */
+export function awayActive(a: Away | null, today = format(new Date(), 'yyyy-MM-dd')): boolean {
+  return !!a && a.from <= today && today <= a.until
+}
+
 export function useHousehold(spaceId: string | null) {
   const supabase = createClient()
   const [chores, setChores] = useState<Chore[]>([])
@@ -94,6 +102,7 @@ export function useHousehold(spaceId: string | null) {
   const [shopping, setShopping] = useState<ShoppingItem[]>([])
   const [rules, setRules] = useState<HouseRule[]>([])
   const [moveinItems, setMoveinItems] = useState<MoveinItem[]>([])
+  const [away, setAwayState] = useState<Away | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -116,7 +125,29 @@ export function useHousehold(spaceId: string | null) {
     ])
     const firstError = ce ?? me ?? se ?? re ?? mve
     setError(firstError ? firstError.message : null)
-    setChores((c as Chore[] | null) ?? [])
+    // Away mode: while the pause runs, every chore is frozen where it stood
+    // the day you left, by moving its last-done date forward by the days
+    // gone so far. Only on screen; the real dates move once, when you are
+    // back (household_back). A missing column (SQL not run yet) means no pause.
+    let choreRows = c
+    let a: Away | null = null
+    if (spaceId) {
+      const { data: sp } = await supabase.from('shared_spaces').select('away_from, away_until').eq('id', spaceId).maybeSingle()
+      if (sp?.away_from && sp?.away_until) a = { from: String(sp.away_from).slice(0, 10), until: String(sp.away_until).slice(0, 10) }
+    }
+    const today = format(new Date(), 'yyyy-MM-dd')
+    if (a && spaceId && today > a.until) {
+      // The trip is over: make the shift real, then show the chores as they are.
+      await supabase.rpc('household_back', { p_space: spaceId })
+      a = null
+      const { data: fresh } = await supabase.from('household_chores').select('*').eq('space_id', spaceId).order('created_at')
+      if (fresh) choreRows = fresh
+    }
+    setAwayState(a)
+    const gone = a && awayActive(a, today) ? differenceInCalendarDays(parseISO(today), parseISO(a.from)) : 0
+    setChores(((choreRows as Chore[] | null) ?? []).map(ch => (gone > 0 && ch.last_done_at
+      ? { ...ch, last_done_at: format(addDays(parseISO(ch.last_done_at), gone), 'yyyy-MM-dd') }
+      : ch)))
     setMeals((m as Meal[] | null) ?? [])
     setShopping((s as ShoppingItem[] | null) ?? [])
     setRules((r as HouseRule[] | null) ?? [])
@@ -335,8 +366,23 @@ export function useHousehold(spaceId: string | null) {
     await load(); notify(); return { error: null }
   }
 
+  async function setAway(from: string, until: string) {
+    if (!spaceId) return { error: 'No household yet' }
+    const { error } = await supabase.rpc('household_set_away', { p_space: spaceId, p_from: from, p_until: until })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
+  async function endAway() {
+    if (!spaceId) return { error: 'No household yet' }
+    const { error } = await supabase.rpc('household_back', { p_space: spaceId })
+    if (error) { setError(error.message); return { error: error.message } }
+    await load(); notify(); return { error: null }
+  }
+
   return {
     chores, meals, shopping, rules, moveinItems, loading, error,
+    away, setAway, endAway,
     addChore, markChoreDone, removeChore, setChoreFolder, updateChore,
     addMeal, addMeals, removeMeal, updateMeal,
     addShopping, addShoppingMany, toggleGot, clearGot, removeShopping,

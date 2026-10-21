@@ -203,7 +203,20 @@ export async function GET(request: Request) {
     // loud: the most overdue one, and how many others are waiting. A chore is
     // due once its last-done date plus its rhythm reaches today, or if it has
     // never been done.
-    if (on('choresDue') && sent[`chores:${today}`] === undefined) {
+    // Away mode (2026-10-21): a trip that has ended is closed here, so chores
+    // shift forward even if nobody opens the app; while a trip is running, no
+    // chore reminder goes out.
+    let away = false
+    if (spaceIds.length > 0) {
+      const { data: spaces } = await admin.from('shared_spaces').select('id, away_from, away_until').in('id', spaceIds)
+      for (const sp of spaces ?? []) {
+        if (!sp.away_from || !sp.away_until) continue
+        const until = String(sp.away_until).slice(0, 10)
+        if (until < today) await admin.rpc('household_back', { p_space: sp.id })
+        else if (String(sp.away_from).slice(0, 10) <= today) away = true
+      }
+    }
+    if (on('choresDue') && !away && sent[`chores:${today}`] === undefined) {
       const { data: chores } = await admin.from('household_chores').select('name, cadence_days, last_done_at')
         .or(ownOrSpaceFilter(userId, spaceIds))
       const dayMs = 86_400_000

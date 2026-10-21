@@ -152,6 +152,17 @@ export default function RecipeDetail({ r, h, food, canShare, shared, onBack, onE
             {servings !== r.servings && <button style={{ ...small, border: 'none' }} onClick={() => setServings(r.servings)}>Reset</button>}
           </div>
         </div>
+        {/* One tap to halve, double or triple (2026-10-21). Amounts below,
+            the shopping list and cook mode all follow. */}
+        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+          {([['Half', 0.5], ['Double', 2], ['Triple', 3]] as const).map(([name, k]) => {
+            const n = Math.max(0.5, Math.round(r.servings * k * 2) / 2)
+            return (
+              <button key={name} style={{ ...small, ...(servings === n ? { borderColor: 'var(--gold)', color: 'var(--gold)' } : {}) }}
+                onClick={() => setServings(servings === n ? r.servings : n)}>{name} ({n})</button>
+            )
+          })}
+        </div>
         {scaled.length === 0 && <div style={{ ...muted, fontStyle: 'italic' }}>No ingredients yet. Add some in Edit.</div>}
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           {scaled.map(g => (

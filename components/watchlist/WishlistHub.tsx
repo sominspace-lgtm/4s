@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import { useWishlist, useWishShares, atTarget, WISH_LISTS, type Wish, type WishDraft } from '@/lib/hooks/useWishlist'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -37,6 +38,28 @@ export default function WishlistHub({ userId }: { userId: string }) {
   const [fetching, setFetching] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
+
+  // Wish to Thing (2026-10-21): what is already in Things we own, by name,
+  // so a bought wish shows "In Things we own" instead of the add button.
+  const [thingNames, setThingNames] = useState<Set<string>>(new Set())
+  const loadThings = useCallback(async () => {
+    if (!spaceId) return
+    const { data } = await createClient().from('household_things').select('name').eq('space_id', spaceId)
+    setThingNames(new Set(((data as { name: string }[] | null) ?? []).map(t => t.name.trim().toLowerCase())))
+  }, [spaceId])
+  useEffect(() => { void loadThings() }, [loadThings])
+
+  async function toThings(w: Wish, paid?: number | null): Promise<string | null> {
+    if (!spaceId || !me) return 'Things we own needs a shared household.'
+    const notes = [w.url, w.notes].filter(Boolean).join('\n') || null
+    const { error: e } = await createClient().from('household_things').insert({
+      space_id: spaceId, user_id: me, name: w.name.slice(0, 120), store: w.store,
+      price: paid ?? w.bought_price ?? w.price, purchased_on: w.bought_at ?? format(new Date(), 'yyyy-MM-dd'), notes,
+    })
+    if (e) return 'That did not save to Things we own.'
+    await loadThings()
+    return null
+  }
 
   const wanted = wishes.filter(w => w.status === 'wanted')
   const bought = wishes.filter(w => w.status === 'bought')
@@ -170,7 +193,9 @@ export default function WishlistHub({ userId }: { userId: string }) {
             onEdit={() => { setSeed(null); setEditing(w); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
             onBought={async price => setErr(await update(w.id, { status: 'bought', bought_at: format(new Date(), 'yyyy-MM-dd'), bought_price: price ?? w.price }))}
             onBack={async () => setErr(await update(w.id, { status: 'wanted', bought_at: null, bought_price: null }))}
-            onClaim={async on => setErr(await claim(w.id, on))} />
+            onClaim={async on => setErr(await claim(w.id, on))}
+            inThings={thingNames.has(w.name.trim().toLowerCase())}
+            onToThings={spaceId ? async (paid?: number | null) => setErr(await toThings(w, paid)) : undefined} />
         ))}
       </div>
     </div>
@@ -186,10 +211,11 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   )
 }
 
-function Card({ w, me, onEdit, onBought, onBack, onClaim }: {
+function Card({ w, me, onEdit, onBought, onBack, onClaim, inThings, onToThings }: {
   w: Wish; me: string | null
   onEdit: () => void; onBought: (price: number | null) => void; onBack: () => void
   onClaim: (on: boolean) => void
+  inThings: boolean; onToThings?: (paid?: number | null) => void
 }) {
   const [paying, setPaying] = useState(false)
   const [paid, setPaid] = useState(w.price != null ? String(w.price) : '')
@@ -238,14 +264,18 @@ function Card({ w, me, onEdit, onBought, onBack, onClaim }: {
         {mine && (
           <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.3rem' }}>
             {w.status === 'wanted' && !paying && <button style={btn} onClick={() => setPaying(true)}>Got it</button>}
+            {w.status === 'bought' && onToThings && (inThings
+              ? <span style={{ ...muted, color: 'var(--emerald)', alignSelf: 'center' }}>In Things we own</span>
+              : <button style={btn} onClick={() => onToThings()}>Add to Things we own</button>)}
             {w.status === 'bought' && <button style={btn} onClick={onBack}>Move back</button>}
             <button style={btn} onClick={onEdit}>Edit</button>
           </div>
         )}
         {paying && (
-          <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <input type="number" inputMode="decimal" min="0" step="0.01" value={paid} onChange={e => setPaid(e.target.value)} placeholder="Paid" style={{ ...field, padding: '0.25rem 0.4rem', minWidth: 0 }} />
             <button style={btn} onClick={() => { onBought(paid ? Number(paid) : null); setPaying(false) }}>Save</button>
+            {onToThings && !inThings && <button style={btn} onClick={() => { onBought(paid ? Number(paid) : null); setPaying(false); onToThings(paid ? Number(paid) : null) }}>Save and add to Things</button>}
           </div>
         )}
       </div>
