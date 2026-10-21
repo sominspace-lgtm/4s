@@ -592,6 +592,8 @@ select, option {
    on a phone. */
 @keyframes village-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .village-sheet { animation: village-sheet-up 220ms ease both; }
+@keyframes village-side-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.village-side { animation: village-side-in 260ms cubic-bezier(.2,.8,.3,1) both; }
 
 /* ── Village weather and life ───────────────────────────────────────────
    Same budget as the three above: nothing under seven seconds, nothing over
@@ -843,7 +845,7 @@ select, option {
 
 /* Respect reduced motion everywhere */
 @media (prefers-reduced-motion: reduce) {
-  .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade, .village-sheet,
+  .village-drift, .village-glow, .village-flower-sway, .village-sway-soft, .village-fade, .village-sheet, .village-side,
   .village-smoke circle, .village-birds, .village-firefly,
   .village-koi-0, .village-koi-1, .village-koi-rise, .village-crumb, .village-ripple,
   .village-butterfly-0, .village-butterfly-1,

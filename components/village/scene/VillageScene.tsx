@@ -88,23 +88,35 @@ function PingForm({ title, reasons, showNote, onSend }: {
 // slides up from the bottom. Portalled to <body>, so it re-declares the
 // Bloom vars the same way the fullscreen overlay does (the portal lands
 // past the card's own theme scope).
-function GlanceSheet({ info, onClose, onPrimary }: {
+function GlanceSheet({ info, onClose, onPrimary, side = false }: {
   info: { title: string; lines: string[]; actionLabel: string; go: () => void; secondary?: { label: string; go: () => void }; cards?: { text: string; tone?: 'note' }[] }
   onClose: () => void
   /** What the main button does — a district preview step, or straight nav. */
   onPrimary: () => void
+  /** The iPad (2026-10-21): a panel down the right side, so the village stays
+   *  in view on the left, with type you can read from across the counter. */
+  side?: boolean
 }) {
   return (
-    <div style={{ ...THEMES.bloom, position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(20,16,10,0.3)' }} />
-      <div className="village-sheet" style={{
+    <div style={{ ...THEMES.bloom, position: 'fixed', inset: 0, zIndex: 4000, display: 'flex', flexDirection: side ? 'row' : 'column', justifyContent: 'flex-end' }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: side ? 'rgba(20,16,10,0.12)' : 'rgba(20,16,10,0.3)' }} />
+      <div className={side ? 'village-side' : 'village-sheet'} style={side ? {
+        position: 'relative', background: 'var(--surface)', color: 'var(--text)',
+        width: 'min(400px, 42vw)', height: '100%', overflowY: 'auto',
+        borderTopLeftRadius: 24, borderBottomLeftRadius: 24, borderLeft: '1px solid var(--border)',
+        boxShadow: '-12px 0 44px rgba(0,0,0,0.22)', fontFamily: 'var(--font-body)',
+        padding: 'calc(28px + env(safe-area-inset-top, 0px)) 28px calc(28px + env(safe-area-inset-bottom, 0px))',
+        display: 'flex', flexDirection: 'column',
+      } : {
         position: 'relative', background: 'var(--surface)', color: 'var(--text)',
         borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTop: '1px solid var(--border)',
         boxShadow: '0 -12px 44px rgba(0,0,0,0.28)', fontFamily: 'var(--font-body)',
         padding: '12px 20px calc(20px + env(safe-area-inset-bottom, 0px))',
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 14px' }} />
-        <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 6 }}>{info.title}</div>
+        {side
+          ? <button onClick={onClose} aria-label="Close" style={{ alignSelf: 'flex-end', minWidth: 48, minHeight: 48, border: 'none', background: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer', margin: '-14px -12px 4px 0' }}>✕</button>
+          : <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 14px' }} />}
+        <div style={{ fontFamily: side ? 'var(--font-display)' : undefined, fontSize: side ? 28 : 17, fontWeight: side ? 400 : 600, marginBottom: side ? 12 : 6 }}>{info.title}</div>
         {info.cards && info.cards.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '4px 0 8px' }}>
             {info.cards.map((c, i) => (
@@ -122,10 +134,10 @@ function GlanceSheet({ info, onClose, onPrimary }: {
           </div>
         )}
         {info.lines.map((l, i) => (
-          <div key={i} style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{l}</div>
+          <div key={i} style={{ fontSize: side ? 17 : 13.5, color: 'var(--muted)', lineHeight: 1.5, marginBottom: side ? 4 : 0 }}>{l}</div>
         ))}
         <button onClick={() => { onPrimary(); onClose() }} style={{
-          marginTop: 16, width: '100%', padding: '13px 16px', borderRadius: 13,
+          marginTop: side ? 'auto' : 16, width: '100%', padding: side ? '17px 18px' : '13px 16px', borderRadius: 13,
           background: 'var(--gold)', color: 'var(--bg)', border: 'none',
           fontSize: 14.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
         }}>{info.actionLabel}</button>
@@ -569,13 +581,18 @@ export default function VillageScene({
   // Village.tsx; detected here too so the sheet also applies to a phone in
   // fullscreen, where `scroll` is off.
   const [mobile, setMobile] = useState(false)
+  // A touch screen wider than a phone (the iPad): the glance card opens as a
+  // side panel instead of the small popover (2026-10-21).
+  const [touchWide, setTouchWide] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return
     const mq = window.matchMedia('(max-width: 640px)')
-    const on = () => setMobile(mq.matches)
+    const tw = window.matchMedia('(pointer: coarse) and (min-width: 641px)')
+    const on = () => { setMobile(mq.matches); setTouchWide(tw.matches) }
     on()
     mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
+    tw.addEventListener('change', on)
+    return () => { mq.removeEventListener('change', on); tw.removeEventListener('change', on) }
   }, [])
 
   // Tap-your-own-figure personal entry (2026-08-25) — same hover-card idea
@@ -754,7 +771,7 @@ export default function VillageScene({
             homeCard.sceneName ? `Scene · ${homeCard.sceneName}` : null,
           ].filter(Boolean).slice(0, 3) as string[]
         : ['Dinner, chores, and the house'],
-      actionLabel: 'Go to Household', go: () => goToHousehold('home'),
+      actionLabel: 'Open Home', go: () => goToHousehold('home'),
       secondary: { label: homeCard?.choresDue ? 'See the chores' : 'Smart Home', go: homeCard?.choresDue ? () => goToHousehold('upkeep') : openSmartHome },
     },
     projects: {
@@ -848,7 +865,7 @@ export default function VillageScene({
         for (const w of structures?.week ?? []) c.push({ text: `${w.when} · ${w.text}` })
         return c.length ? c : undefined
       })(),
-      actionLabel: gathering ? 'See what’s on' : 'Go to Household',
+      actionLabel: gathering ? 'See what’s on' : 'Open Home',
       go: () => goToHousehold(gathering ? 'reference' : 'calendar'),
       secondary: locked ? undefined : { label: 'Open Notes', go: () => goToPersonal('notes') },
     },
@@ -2578,7 +2595,7 @@ export default function VillageScene({
           navigates via openOrToggle instead of being swallowed by this
           rect). A click anywhere else closes the card. The card body
           itself renders later, on top of everything. */}
-      {openPanel && !arranging && !mobile && (
+      {openPanel && !arranging && !mobile && !touchWide && (
         <rect className="village-fade" x={0} y={0} width={800} height={440} fill="transparent"
           style={{ pointerEvents: 'all' }} onClick={() => setOpenPanel(null)} />
       )}
@@ -3087,9 +3104,9 @@ export default function VillageScene({
         // is wired (e.g. /village-preview).
         const primary = () => { if (onOpenPreview) onOpenPreview(panelId, info.go); else info.go() }
         // Phone — a bottom sheet portalled past the SVG, not the popover.
-        if (mobile) {
+        if (mobile || touchWide) {
           return typeof document !== 'undefined'
-            ? createPortal(<GlanceSheet info={info} onPrimary={primary} onClose={() => setOpenPanel(null)} />, document.body)
+            ? createPortal(<GlanceSheet info={info} onPrimary={primary} onClose={() => setOpenPanel(null)} side={touchWide} />, document.body)
             : null
         }
         const p = pos(openPanel)
