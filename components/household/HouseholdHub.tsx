@@ -142,7 +142,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // The weekly check-in lives entirely in 4S OS now (2026-09-02) — answered
   // on the Today page (CheckinCard), read back here from the `checkins`
   // table. The Discord bot no longer runs it; its history was backfilled in.
-  const { checkins, loading: checkinsLoading, submitCheckin, thisWeekMine } = useCheckins(userId)
+  const { checkins, loading: checkinsLoading, submitCheckin, thisWeekMine, doneThisWeek } = useCheckins(userId)
   const [checkinFormOpen, setCheckinFormOpen] = useState(false)
   // Which sub-tab shows is driven entirely by the top-level nav now
   // (2026-08-25) — DashboardClient renders one <HouseholdHub forcedTab={id}>
@@ -916,11 +916,13 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                 )}
 
                 {weeks.map(w => {
-                  const answered = Object.keys(w.byUser).length
-                  // Your partner's answers for the CURRENT week stay hidden
-                  // until you've checked in — so their words can't anchor
-                  // yours. Past weeks are always open.
-                  const locked = w.weekOf >= weekStart && !mineDone
+                  // This week's count comes from who has checked in, since a
+                  // partner's answers stay hidden until you both have.
+                  const answered = w.weekOf >= weekStart ? Math.max(doneThisWeek.length, Object.keys(w.byUser).length) : Object.keys(w.byUser).length
+                  // This week's answers open once you have both checked in
+                  // (the database enforces it, checkin_privacy.sql). Past
+                  // weeks are always open.
+                  const locked = w.weekOf >= weekStart && (!mineDone || answered < 2)
                   return (
                   <details key={w.weekOf} style={{ borderBottom: '1px solid var(--faint)', padding: '0.6rem 0' }}>
                     <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -934,7 +936,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                     </summary>
                     {locked ? (
                       <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
-                        Your partner’s answers unlock once you’ve checked in this week.
+                        {mineDone
+                          ? 'Your answers are in. You will both see each other’s once your partner checks in, or when the week ends.'
+                          : 'Your partner’s answers open once you check in too, or when the week ends.'}
                       </div>
                     ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>

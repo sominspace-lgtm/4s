@@ -37,18 +37,28 @@ export function useCheckins(userId: string | null = null) {
   const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? spaces[0]?.id ?? null
 
   const [checkins, setCheckins] = useState<Checkin[]>([])
+  // Who has checked in this week. Your partner's ROW stays hidden by the
+  // database until you have checked in too, or the week is over
+  // (checkin_privacy.sql), so "has your partner answered" comes from here.
+  const [doneThisWeek, setDoneThisWeek] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('checkins')
-      .select('*')
-      .order('week_of', { ascending: false })
-      .limit(40)
-    setCheckins((data as Checkin[] | null) ?? [])
+    const [{ data }, done] = await Promise.all([
+      supabase.from('checkins').select('*').order('week_of', { ascending: false }).limit(40),
+      spaceId
+        ? supabase.rpc('checkin_week_done', { p_space: spaceId, p_week: weekOfSunday() })
+        : Promise.resolve({ data: null }),
+    ])
+    const rows = (data as Checkin[] | null) ?? []
+    setCheckins(rows)
+    const ids = new Set(((done.data as string[] | null) ?? []).filter(x => typeof x === 'string'))
+    // Before the privacy SQL runs the rpc is missing; fall back to the rows.
+    for (const c of rows) if (c.week_of.slice(0, 10) >= weekOfSunday()) ids.add(c.user_id)
+    setDoneThisWeek([...ids])
     setLoading(false)
-  }, [supabase])
+  }, [supabase, spaceId])
 
   useEffect(() => {
     load()
@@ -99,7 +109,7 @@ export function useCheckins(userId: string | null = null) {
   /** This user's row for the current week, if it exists. */
   const thisWeek = checkins.find(c => c.user_id === userId && c.week_of.slice(0, 10) >= weekOfSunday())
 
-  return { checkins, loading, submitCheckin, thisWeekMine: thisWeek ?? null }
+  return { checkins, loading, submitCheckin, thisWeekMine: thisWeek ?? null, doneThisWeek }
 }
 
 export interface CheckinWeek {

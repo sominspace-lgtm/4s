@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useCheckins, groupCheckinsByWeek, checkinStreak } from '@/lib/hooks/useCheckins'
+import { useCheckins, checkinStreak } from '@/lib/hooks/useCheckins'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import CheckinForm from './CheckinForm'
 
 // The weekly relationship check-in prompt. Shown on check-in day (Sunday),
@@ -11,15 +10,13 @@ import CheckinForm from './CheckinForm'
 // null. Once you've submitted, there's no button: answers can't be revised
 // (2026-09-03).
 export default function CheckinCard({ userId }: { userId: string }) {
-  const { checkins, submitCheckin, thisWeekMine } = useCheckins(userId)
+  const { checkins, submitCheckin, thisWeekMine, doneThisWeek } = useCheckins(userId)
   const { members } = useSharedSpaces(userId)
   const [formOpen, setFormOpen] = useState(false)
 
-  const weekStart = weekOfSunday()
   const isSunday = new Date().getDay() === 0
 
-  const thisWeek = groupCheckinsByWeek(checkins).find(w => w.weekOf >= weekStart)
-  const answeredIds = thisWeek ? Object.keys(thisWeek.byUser) : []
+  const answeredIds = doneThisWeek
   const partnerId = members.find(m => m.member_id && m.member_id !== userId && m.status === 'accepted')?.member_id ?? null
   const partnerName = members.find(m => m.member_id === partnerId)?.member_email ?? 'your partner'
   const partnerDone = !!partnerId && answeredIds.includes(partnerId)
@@ -43,7 +40,7 @@ export default function CheckinCard({ userId }: { userId: string }) {
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
           {mineDone
             ? (partnerDone ? 'You’re both in for this week.' : `Done. Waiting on ${partnerName}.`)
-            : (partnerDone ? `${partnerName} has answered this week.` : 'A few minutes, just between you two.')}
+            : (partnerDone ? `${partnerName} has checked in. Check in to see their answers.` : 'A few minutes, just between you two. You see each other’s answers once you both check in.')}
           {mineDone && streak > 1 && (
             <span style={{ color: 'var(--gold)' }}> · {streak} weeks running</span>
           )}

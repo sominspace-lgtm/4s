@@ -48,11 +48,13 @@ export async function GET(request: Request) {
   }
 
   const { weekday, hour, date } = laParts(new Date())
-  // Only act in the 10-11pm LA hour (the 06:00-UTC run lands there year-
-  // round, 10pm in winter / 11pm in summer), and only Sunday (first nudge)
-  // through Tuesday (re-reminders). Every other invocation is a no-op.
+  // Sunday (first nudge) through Tuesday (re-reminders), by the LA day.
+  // There used to be a 10-11pm hour check too, but Vercel can start a daily
+  // cron late in its hour, and a run that landed outside that window skipped
+  // the whole week (2026-10-21). The schedule alone sets the evening now; the
+  // per-night dedupe below still keeps it to one nudge a night.
   const nudgeDays = ['Sun', 'Mon', 'Tue']
-  if ((hour !== 22 && hour !== 23) || !nudgeDays.includes(weekday)) {
+  if (!nudgeDays.includes(weekday)) {
     return NextResponse.json({ skipped: true, weekday, hour })
   }
 
@@ -94,7 +96,7 @@ export async function GET(request: Request) {
     const partnerDone = spacePeople.some(people =>
       people.has(userId) && [...people].some(p => p !== userId && doneThisWeek.has(p)))
     const body = partnerDone
-      ? 'Your partner checked in — your turn.'
+      ? 'Your partner checked in. Your turn, then you can read each other’s.'
       : weekday === 'Sun'
         ? 'Time for your weekly check-in.'
         : 'Still time for your weekly check-in.'
