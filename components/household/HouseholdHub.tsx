@@ -146,6 +146,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [editingRule, setEditingRule] = useState<{ id: string; text: string } | null>(null)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
   // Editing or adding a chore opens a sheet (2026-10-21 redesign); id null = a new chore.
+  // Blocks under "More on Home" opened in place this visit.
+  const [openExtras, setOpenExtras] = useState<Set<string>>(new Set())
   const [editingChore, setEditingChore] = useState<{ id: string | null; name: string; cadence: string; folder: string } | null>(null)
 
 
@@ -708,18 +710,35 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {homeBlocks.filter(b => !b.hidden).map(b => (
             <div key={b.id}>{homeBlockRenderers[b.id as HomeBlockId]()}</div>
           ))}
-          {/* More on Home (2026-10-21): what is hidden waits here, one tap to
-              bring it back. Customize still reorders everything. */}
+          {/* More on Home (2026-10-21): every other block is still right here
+              by name, one tap to open it in place. Nothing is out of sight. */}
           {!guestMode && homeBlocks.some(b => b.hidden) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.4rem' }}>
               <div className="t-label">More on Home</div>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                {homeBlocks.filter(b => b.hidden).map(b => (
-                  <button key={b.id} className="pill press" onClick={() => onChangeHomeBlocks(homeBlocks.map(x => (x.id === b.id ? { ...x, hidden: false } : x)))}>
-                    + {b.label}
-                  </button>
-                ))}
-              </div>
+              {homeBlocks.filter(b => b.hidden).map(b => {
+                const isOpen = openExtras.has(b.id)
+                return (
+                  <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button className="press organic specimen" onClick={() => setOpenExtras(prev => { const n = new Set(prev); if (n.has(b.id)) n.delete(b.id); else n.add(b.id); return n })}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', width: '100%', minHeight: 56, padding: '0.6rem 1rem', textAlign: 'left', cursor: 'pointer', fontFamily: 'var(--font-body)', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: '1.02rem', color: 'var(--text)' }}>{b.label}</span>
+                        {b.hint && <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--muted)' }}>{b.hint}</span>}
+                      </span>
+                      <span aria-hidden style={{ color: 'var(--muted)', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 160ms ease' }}>›</span>
+                    </button>
+                    {isOpen && (
+                      <>
+                        {homeBlockRenderers[b.id as HomeBlockId]()}
+                        <button className="btn btn-ghost press" style={{ alignSelf: 'flex-start' }}
+                          onClick={() => onChangeHomeBlocks(homeBlocks.map(x => (x.id === b.id ? { ...x, hidden: false } : x)))}>
+                          Keep this open at the top
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </>

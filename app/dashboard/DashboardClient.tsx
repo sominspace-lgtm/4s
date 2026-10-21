@@ -17,7 +17,7 @@ import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
-import Icon from '@/components/ui/Icon'
+import YouTwo from '@/components/checkin/YouTwo'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -167,6 +167,7 @@ const SECTION_GROUPS: Record<string, string> = {
   money:     'mine',
   wishlist:  'mine',
   people:    'mine',
+  checkins:  'mine',
   vault:     'mine',
   village:   'your world',
   places:    'ours',
@@ -223,18 +224,17 @@ const SECTION_GROUPS: Record<string, string> = {
 // — it's now reached from Household's own trailing "Controls" pill, or by
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
-// Four places on a phone (2026-10-21 redesign): Today, Home, Me, Places.
-// Me opens to a grid of tiles ('me' is not a real section, just that grid),
-// and the Village lives inside Me on a phone. On the shared iPad there is no
-// Today or Me, and the Village is its own place, first. groupsForMode below
-// picks which set applies.
+// The bottom bar (2026-10-21 redesign): Today, Village, Home, Me, Places.
+// Me opens to a grid of tiles ('me' is not a real section, just that grid).
+// The Village is always on the bar, never tucked away ("features should not
+// be hidden", 2026-10-21). On the shared iPad there is no Today or Me.
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'today',    icon: 'today',     label: 'Today',      members: ['brief'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault', 'village'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
@@ -545,7 +545,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Calendar folded back into a Home block 2026-09-02 — no longer a section,
   // so no shared-mode split-out. Household's group is Home/Reference/Smart
   // Home in both modes now.
-  const groupsForMode = ALL_HOME_BAR_GROUPS.filter(g => (sharedMode ? g.id !== 'me' : g.id !== 'village'))
+  const groupsForMode = ALL_HOME_BAR_GROUPS.filter(g => !sharedMode || g.id !== 'me')
   const homeBarGroups = groupsForMode
     .map(g => ({
       ...g,
@@ -600,7 +600,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
-      notes: t('Notes', lang), money: t('Money', lang), wishlist: t('Wishlist', lang), people: t('People', lang), vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
+      notes: t('Notes', lang), money: t('Money', lang), wishlist: t('Wishlist', lang), people: t('People', lang), checkins: 'Check-ins', vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -638,7 +638,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const body = (() => {
       switch (id) {
-        case 'me':       return <MeGrid key="me" visible={navIds} onOpen={go} />
+        case 'me':       return <MeGrid key="me" visible={navIds} onOpen={go} userId={userId} />
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onOpenDoors={gathering.openDoors} onUpdatePrep={gathering.updatePrep} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} onSetMenu={gathering.setMenu} onSetAgenda={gathering.setAgenda} onSetPinnedContribution={gathering.setPinnedContribution} onSetPinnedNote={gathering.setPinnedNote} petInfo={gathering.petInfo} onSetPetInfo={gathering.setPetInfo} boardNote={gathering.boardNote} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} guestView={sharedMode && guestView} />
         // Personal areas — one section id each (2026-09-01). Goals folded
@@ -650,7 +650,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
         // Wishlist left Money for its own tab (2026-10-20).
         case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
-        case 'people':   return <PeopleHub key="people" userId={userId} />
+        case 'people':   return <PeopleHub key="people" />
+        // Check-ins are their own page (2026-10-21), a tile in Me and a card on Today.
+        case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
         // Places (2026-09-09) — the map carries a docked pin list, so it's
@@ -736,18 +738,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
-        {/* The village is inside Me on a phone; a quiet way in from Today. */}
-        {currentTab === 'brief' && !sharedMode && navIds.has('village') && (
-          <button onClick={() => go('village')} className="press" style={{
-            display: 'flex', alignItems: 'center', gap: '0.7rem', width: '100%', minHeight: 52, margin: '0 0 1rem',
-            padding: '0.6rem 0.9rem', borderRadius: 16, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)',
-            background: 'color-mix(in srgb, var(--gold) 7%, var(--surface))', border: '1px solid color-mix(in srgb, var(--gold) 18%, var(--border))',
-          }}>
-            <span aria-hidden style={{ color: 'var(--gold)', display: 'inline-flex' }}><Icon name="village" size={20} /></span>
-            <span style={{ flex: 1, fontSize: '0.92rem', color: 'var(--text)' }}>Visit the village</span>
-            <span aria-hidden style={{ color: 'var(--muted)' }}>›</span>
-          </button>
-        )}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
           // key + .tab-in means React remounts on every tab change, so

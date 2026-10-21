@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useCheckins, checkinStreak } from '@/lib/hooks/useCheckins'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import CheckinForm from './CheckinForm'
+import { goToSection } from '@/lib/utils/navigate'
 
 // The weekly relationship check-in prompt. Shown on check-in day (Sunday),
 // or any day if this week's check-in still isn't done — otherwise it returns
@@ -23,8 +24,9 @@ export default function CheckinCard({ userId }: { userId: string }) {
   const mineDone = !!thisWeekMine
   const streak = checkinStreak(checkins, userId)
 
-  // Only surface it on check-in day, or whenever it's still not done.
-  if (mineDone && !isSunday) return null
+  // Always on Today (2026-10-21, "features should not be hidden"): before
+  // you check in it asks, after it shows where the two of you are and opens
+  // the history.
 
   return (
     <div style={{
@@ -35,7 +37,7 @@ export default function CheckinCard({ userId }: { userId: string }) {
     }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 500 }}>
-          {mineDone ? 'Weekly check-in' : 'Time for your weekly check-in'}
+          {mineDone ? 'Weekly check-in' : isSunday ? 'Time for your weekly check-in' : 'This week’s check-in'}
         </div>
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '0.15rem' }}>
           {mineDone
@@ -49,6 +51,11 @@ export default function CheckinCard({ userId }: { userId: string }) {
       {!mineDone && (
         <button onClick={() => setFormOpen(true)} className="btn btn-primary press" style={{ fontSize: '0.74rem', flexShrink: 0 }}>
           Start
+        </button>
+      )}
+      {mineDone && (
+        <button onClick={() => goToSection('checkins')} className="btn btn-secondary press" style={{ fontSize: '0.74rem', flexShrink: 0 }}>
+          {partnerDone ? 'Read them' : 'See past weeks'}
         </button>
       )}
       {formOpen && <CheckinForm onSubmit={submitCheckin} onClose={() => setFormOpen(false)} />}

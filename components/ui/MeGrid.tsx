@@ -6,26 +6,28 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useHabits } from '@/lib/hooks/useHabits'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useWishlist } from '@/lib/hooks/useWishlist'
+import { useCheckins } from '@/lib/hooks/useCheckins'
 
 // Me (2026-10-21 redesign): your own things as a grid of tiles instead of a
 // row of eight pills. Each tile says one useful thing about what is inside.
 
 const TILES: { id: string; label: string; icon: IconName; tint: string }[] = [
+  { id: 'checkins', label: 'Check-ins', icon: 'heart',     tint: 'var(--rose)' },
   { id: 'tasks',    label: 'Tasks',     icon: 'clipboard', tint: 'var(--gold)' },
   { id: 'habits',   label: 'Habits',    icon: 'sprout',    tint: 'var(--emerald)' },
   { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
   { id: 'money',    label: 'Money',     icon: 'scale',     tint: 'var(--emerald)' },
   { id: 'wishlist', label: 'Wishlist',  icon: 'sparkle',   tint: 'var(--rose)' },
-  { id: 'people',   label: 'People',    icon: 'heart',     tint: 'var(--rose)' },
+  { id: 'people',   label: 'People',    icon: 'handshake', tint: 'var(--amber, var(--gold))' },
   { id: 'vault',    label: 'Passwords', icon: 'lock',      tint: 'var(--muted)' },
-  { id: 'village',  label: 'Village',   icon: 'village',   tint: 'var(--gold)' },
 ]
 
-export default function MeGrid({ visible, onOpen }: { visible: Set<string>; onOpen: (id: string) => void }) {
+export default function MeGrid({ visible, onOpen, userId }: { visible: Set<string>; onOpen: (id: string) => void; userId: string }) {
   const { items } = useWorkItems()
   const { habits, completions } = useHabits()
   const { total } = useSubscriptions()
   const { wishes } = useWishlist()
+  const { thisWeekMine, doneThisWeek } = useCheckins(userId)
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const open = items.filter(i => i.status !== 'done')
@@ -35,6 +37,7 @@ export default function MeGrid({ visible, onOpen }: { visible: Set<string>; onOp
   const wanted = wishes.filter(w => w.status === 'wanted').length
 
   const hint: Record<string, string> = {
+    checkins: thisWeekMine ? (doneThisWeek.length > 1 ? 'Both in this week' : 'Done, waiting on your partner') : 'Not done this week',
     tasks: dueNow > 0 ? `${dueNow} due` : open.length > 0 ? `${open.length} open` : 'All clear',
     habits: activeHabits.length > 0 ? `${doneToday} of ${activeHabits.length} today` : 'Start one',
     notes: 'Thoughts and lists',
@@ -42,7 +45,6 @@ export default function MeGrid({ visible, onOpen }: { visible: Set<string>; onOp
     wishlist: wanted > 0 ? `${wanted} wanted` : 'Things you want',
     people: 'Birthdays and gifts',
     vault: 'Locked',
-    village: 'Your little world',
   }
 
   return (

@@ -40,7 +40,7 @@ export default function UiPreviewClient() {
             : g.members.length > 1 && g.id !== 'me'
               ? <SubNav items={g.members.map(m => ({ id: m, label: LABELS[m] }))} activeId={tab} onSelect={setTab} />
               : null}
-          {tab === 'me' && <MeGrid visible={all} onOpen={setTab} />}
+          {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
           {tab !== 'me' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               {[1, 2, 3, 4].map(i => (
