@@ -806,7 +806,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   const card = (
       <div
-        className={['lift organic', villageLite.lite ? 'village-lite' : '', bedtime ? 'village-lite village-bedtime' : ''].filter(Boolean).join(' ')}
+        className={['lift organic village-frame', villageLite.lite ? 'village-lite' : '', bedtime ? 'village-lite village-bedtime' : ''].filter(Boolean).join(' ')}
         style={{
           // Scopes every custom property the scene reads (--emerald, --gold,
           // --surface, --bg, the aurora washes, even --radius-organic) to

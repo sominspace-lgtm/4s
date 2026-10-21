@@ -931,3 +931,26 @@ select, option {
 /* Bedtime on the shared screen (2026-10-19): 10pm to 5:30am the village
    dims and stills (it also carries .village-lite, so nothing animates). */
 .village-bedtime svg { filter: brightness(0.62) saturate(0.8); transition: filter 2s ease; }
+
+/* ── One look, 2026-10-21 redesign ─────────────────────────────────────
+   Every card in the app gets the village's warm-paper finish: the same
+   hairline edge and the same soft shadow, so screens stop looking like they
+   came from different apps. Background and radius stay with each theme. */
+main .specimen, main .organic.lift {
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 30%, transparent) inset, 0 8px 22px -14px color-mix(in srgb, var(--shadow) 90%, transparent);
+}
+main .specimen { border-color: color-mix(in srgb, var(--border) 75%, #d9c4a0 25%) !important; }
+
+/* No text under about 12px on a phone or the iPad. Most fine print is
+   written inline as tiny rem values (0.55 to 0.68rem, 10 to 12px at the 18px
+   root), so this lifts those to 0.7rem (12.6px) where people actually read
+   them. The village scene keeps its own sizes, it is drawn to scale. */
+@media (max-width: 900px), (pointer: coarse) {
+  :is(main, [role="dialog"], .sheet) :is([style*="font-size: 0.5"], [style*="font-size: 0.6"], [style*="font-size:0.5"], [style*="font-size:0.6"]):not(.village-frame *) {
+    font-size: 0.7rem !important;
+  }
+  .pill { font-size: 0.8rem; }
+  .t-label { font-size: 0.74rem; }
+  .btn { min-height: 44px; }
+}
+
