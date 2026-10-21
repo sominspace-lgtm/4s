@@ -19,7 +19,7 @@ import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import Icon from '@/components/ui/Icon'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine, proactivityOf } from '@/lib/utils/guideVoice'
-import { MODES, type Mode } from '@/lib/constants/modes'
+import type { Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import AttentionBudget from '@/components/brief/AttentionBudget'
 import TodayRoutine from './TodayRoutine'
@@ -38,12 +38,6 @@ import { getLast7Days } from '@/lib/utils/habits'
 import { useLang } from '@/lib/LangContext'
 import { t, fmtDate, getInsightKO } from '@/lib/i18n'
 
-function weekKey() {
-  const d = new Date()
-  const onejan = new Date(d.getFullYear(), 0, 1)
-  const week = Math.ceil((((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7)
-  return `${d.getFullYear()}-w${week}`
-}
 
 function Stat({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
@@ -76,7 +70,7 @@ function AreaRow({ label, line, onAction }: { label: string; line: string; onAct
 }
 
 
-export default function DailyBrief({ userId, mode = 'peaceful', calendarConnected = false, blocks, onOpenCustomize }: {
+export default function DailyBrief({ userId, mode = 'friend', calendarConnected = false, blocks, onOpenCustomize }: {
   userId: string
   mode?: Mode
   calendarConnected?: boolean
@@ -136,19 +130,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   // Enter Focus view (the timer + decluttered layout) from anywhere in Brief.
   const lowDay = recovery || energy === 'low'
 
-  // Adaptive Guide suggestion — dismissible per week so it never nags.
-  const [adaptiveDismissed, setAdaptiveDismissed] = useState(true)
-  useEffect(() => {
-    setAdaptiveDismissed(localStorage.getItem(`4s-adaptive-${weekKey()}`) === '1')
-  }, [])
-  function dismissAdaptive() {
-    localStorage.setItem(`4s-adaptive-${weekKey()}`, '1')
-    setAdaptiveDismissed(true)
-  }
-  function applyGuide(next: Mode) {
-    window.dispatchEvent(new CustomEvent('4s:set-guide', { detail: next }))
-    dismissAdaptive()
-  }
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const week  = getLast7Days()
@@ -256,17 +237,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
   }
   const whisper = (whisperDismissed || lowDay) ? null : pickWhisper()
 
-  // Adaptive Guide — read the week and gently suggest a fitting Guide. Only
-  // surfaces a Guide different from the current one; the user always chooses.
-  function suggestGuide(): { guide: Mode; reason: string } | null {
-    if (overdue >= 5) return { guide: 'executive', reason: 'A lot is overdue. Executive keeps things to the essentials.' }
-    const maintenance = peopleQuiet.length + refillsDue + (moneyTracksAnything ? moneyDueSoon : 0)
-    if (maintenance >= 3) return { guide: 'friend', reason: 'A few quiet tasks are piling up. Friend keeps an eye on them with you.' }
-    if (overdue === 0 && dueToday === 0 && habitsDueCount === 0) return { guide: 'peaceful', reason: 'Things look calm. Peaceful keeps it light.' }
-    return null
-  }
-  const suggestion = adaptiveDismissed ? null : suggestGuide()
-  const showAdaptive = suggestion && suggestion.guide !== mode ? suggestion : null
 
   const summaryCards = [
     {
@@ -303,22 +273,6 @@ export default function DailyBrief({ userId, mode = 'peaceful', calendarConnecte
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-    {showAdaptive && lang !== 'ko' && (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap',
-        background: 'color-mix(in srgb, var(--gold) 7%, var(--surface))',
-        border: '1px solid color-mix(in srgb, var(--gold) 22%, var(--border))',
-        borderRadius: '12px', padding: '0.7rem 1rem',
-      }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1, minWidth: '180px', lineHeight: 1.5 }}>
-          <span style={{ color: 'var(--muted)' }}>{showAdaptive.reason}</span>
-        </span>
-        <button onClick={() => applyGuide(showAdaptive.guide)} className="btn btn-primary press" style={{ fontSize: '0.7rem' }}>
-          Try {MODES[showAdaptive.guide].label}
-        </button>
-        <button onClick={dismissAdaptive} className="btn btn-ghost" style={{ fontSize: '0.7rem' }}>Not now</button>
-      </div>
-    )}
 
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px',

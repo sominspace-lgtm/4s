@@ -103,7 +103,7 @@ export default function OnboardPage() {
         user_id: user.id,
         onboarded: true,
         theme: DEFAULT_THEME, // changeable any time from the header ◐
-        mode: 'peaceful',    // the calm default; the app suggests others later
+        mode: 'friend',      // the app's one voice (2026-10-21)
       })
       if (prefsError) {
         setError(`We couldn't save your setup: ${prefsError.message}`)

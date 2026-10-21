@@ -6,18 +6,10 @@ import {
   THEMES, buildCustomVars, FONT_PRESETS, DEFAULT_CUSTOM_SEED, NEUTRAL_LIGHT, NEUTRAL_DARK, DEFAULT_ACCENT, DEFAULT_THEME,
   type CustomThemeSeed,
 } from './ThemeProvider'
-import { MODES, type Mode } from '@/lib/constants/modes'
+import type { Mode } from '@/lib/constants/modes'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
-import Icon, { type IconName } from '@/components/ui/Icon'
 
-// Only three Guides now (2026-08-21), down from five — Therapist and
-// Challenger felt like the same underlying voice wearing different framing
-// as Friend and Executive respectively, and five options for "who's talking
-// to me today" was more choosing than deciding.
-const MODE_ICONS: Partial<Record<Mode, IconName>> = {
-  peaceful: 'leaf', friend: 'handshake',
-}
 
 function swatch(seed: CustomThemeSeed) {
   const v = buildCustomVars(seed)
@@ -53,7 +45,7 @@ interface ThemeModePickerProps {
 export default function ThemeModePicker({ userId, currentTheme, currentMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange }: ThemeModePickerProps) {
   const lang = useLang()
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<'theme' | 'mode'>('theme')
+  const tab = 'theme' as const
   const [advanced, setAdvanced] = useState(false)
   const [draft, setDraft] = useState<CustomThemeSeed>(customTheme ?? DEFAULT_CUSTOM_SEED)
   const ref = useRef<HTMLDivElement>(null)
@@ -69,8 +61,6 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
 
   useEffect(() => {
     function onOpenRequest(e: Event) {
-      const tabRequested = (e as CustomEvent<{ tab: 'theme' | 'mode' }>).detail?.tab
-      if (tabRequested) setTab(tabRequested)
       setOpen(true)
     }
     window.addEventListener('app:open-theme-picker', onOpenRequest)
@@ -96,11 +86,6 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
     if (error) console.error('Failed to reset theme:', error.message)
   }
 
-  async function setMode(m: Mode) {
-    onModeChange(m)
-    const { error } = await supabase.from('user_prefs').upsert({ user_id: userId, mode: m })
-    if (error) console.error('Failed to save mode:', error.message)
-  }
 
   // If there's no saved custom seed yet, derive a starting point from
   // whatever preset the account is actually still on (an old bloom/
@@ -150,11 +135,6 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
           borderRadius: '14px', padding: '1rem', width: '300px', maxHeight: '80vh', overflowY: 'auto',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.9rem' }}>
-            <button style={tabStyle(tab === 'theme')} onClick={() => setTab('theme')}>{t('Theme', lang)}</button>
-            <button style={tabStyle(tab === 'mode')} onClick={() => setTab('mode')}>{t('Guide', lang)}</button>
-          </div>
 
           {tab === 'theme' && !advanced && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
@@ -269,34 +249,9 @@ export default function ThemeModePicker({ userId, currentTheme, currentMode, cus
             </div>
           )}
 
-          {tab === 'mode' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {(Object.entries(MODES) as [Mode, typeof MODES[Mode]][]).map(([key, cfg]) => {
-                const isActive = currentMode === key
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setMode(key)}
-                    style={{
-                      textAlign: 'left', padding: '0.55rem 0.7rem', borderRadius: '8px',
-                      cursor: 'pointer', border: 'none', fontFamily: 'var(--font-body)',
-                      background: isActive ? 'var(--hover-bg)' : 'transparent',
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <div style={{ fontSize: '0.75rem', color: isActive ? 'var(--text)' : 'var(--muted)', fontWeight: isActive ? 500 : 300, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      {MODE_ICONS[key] ? <Icon name={MODE_ICONS[key]!} size={12} /> : key === 'executive' ? <span aria-hidden>▲</span> : null}
-                      {cfg.label}
-                    </div>
-                    <div style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.1rem', lineHeight: 1.4 }}>{cfg.description}</div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
 
           <div style={{ marginTop: '0.8rem', fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.4, letterSpacing: '0.04em' }}>
-            {t('theme + guide stack · mix freely', lang)}
+            {t('Pick a theme, light or dark', lang)}
           </div>
         </div>
       )}

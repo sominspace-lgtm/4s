@@ -151,7 +151,7 @@ export default function Header({ email, userId, initialName, sharedMode = false,
   const displayName = name
 
   const accentStyle: React.CSSProperties = {
-    fontStyle: ['peaceful', 'friend'].includes(mode) ? 'italic' : 'normal',
+    fontStyle: 'italic',
     background: 'linear-gradient(90deg, var(--gold), var(--rose))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
@@ -226,9 +226,6 @@ export default function Header({ email, userId, initialName, sharedMode = false,
                 computed from the browser's own local `now`, which can
                 legitimately differ from the server's guess. */}
             <span suppressHydrationWarning>{format(now, "EEEE, MMMM d · yyyy")}</span>
-            {mode !== 'peaceful' && !sharedMode && (
-              <span style={{ marginLeft: '0.6rem', opacity: 0.5 }}>· {mode} guide</span>
-            )}
           </span>
           {/* The one unmistakable, always-visible cue for which mode this is
               — restricting the tab bar to Household alone is the real

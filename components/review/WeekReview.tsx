@@ -22,7 +22,7 @@ interface WeekData {
   streak:          number
 }
 
-export default function WeekReview({ mode = 'peaceful' }: { mode?: Mode }) {
+export default function WeekReview({ mode = 'friend' }: { mode?: Mode }) {
   const lang = useLang()
   const supabase = createClient()
   const [data, setData] = useState<WeekData | null>(null)

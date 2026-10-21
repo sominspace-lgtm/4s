@@ -454,19 +454,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     return () => window.removeEventListener('4s:navigate', onNav)
   }, [])
 
-  // Switch the active Guide from anywhere (e.g. the Adaptive Guide suggestion
-  // in Brief). Updates live state and persists — the user always chooses.
-  useEffect(() => {
-    function onGuide(e: Event) {
-      const next = (e as CustomEvent<Mode>).detail
-      if (!next) return
-      setMode(next)
-      createClient().from('user_prefs').upsert({ user_id: userId, mode: next })
-    }
-    window.addEventListener('4s:set-guide', onGuide)
-    return () => window.removeEventListener('4s:set-guide', onGuide)
-  }, [userId])
-
   // Global keyboard shortcuts. ⌘/ opens Search (⌘K is Quick Note's alone,
   // see QuickNote — they used to collide). Bare letters (t/h/c) and `/`
   // and `?` are gated by ignoreShortcut() so they never fire while you're

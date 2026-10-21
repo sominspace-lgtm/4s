@@ -90,7 +90,6 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToPersonal('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
     { id: 'new-note', label: 'New note', hint: 'Notes', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'quick add'], run: () => window.dispatchEvent(new CustomEvent('app:open-quick-capture')) },
     { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
-    { id: 'switch-mode',  label: 'Switch mode',      icon: '◐', keywords: ['mode', 'personality', 'tone', 'guide', 'voice'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'mode' } })) },
   ]
 
   const allCommands = baseCommands
