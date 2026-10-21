@@ -2,42 +2,24 @@
 
 import Icon, { type IconName } from './Icon'
 
-// The ONE nav for both personal and shared use (2026-08-25) — started as
-// the shared/kiosk device's own bar (replacing SectionNav+BottomNav there),
-// now replaces them everywhere so the two modes share one visual design,
-// not just the same relative order. Broad contexts (Village / Household /
-// Places / Controls, plus Today / Personal in personal mode only) instead
-// of a flat row of individual tabs, with a second, quieter row of pills for
-// whichever context is open and has more than one real destination inside
-// it. A context switcher, not a standard app tab bar. Icons are this app's
-// own (see components/ui/Icon.tsx), not emoji — an emoji renders
-// differently per platform and carries its own baked-in color/style.
 export interface HomeBarGroup {
   id: string
   icon: IconName
   label: string
-  /** The real section ids this context covers — DashboardClient's section
-   *  ids (brief/tasks/habits/notes/money/people/village/home/calendar/
-   *  smarthome/reference/places). members[0] is where selecting the group
-   *  (without already being inside it) lands. */
+  /** The real section ids this place covers. The first is where a tap on
+   *  the icon lands (its "root"); DashboardClient's top SubNav moves between
+   *  the rest. */
   members: string[]
   /** True for a group whose tap opens an overlay (e.g. Smart Home) rather
-   *  than switching `currentTab` — it can structurally never become
-   *  `activeGroup`, so it would otherwise always render identically to a
-   *  plain "not currently selected" icon. The small dot below its icon (see
-   *  render below) is what tells those two states apart: "always opens
-   *  something" vs. "just not the one you're on right now." */
+   *  than switching tabs. Shown with a small dot. */
   opensOverlay?: boolean
 }
 
-const MEMBER_LABELS: Record<string, string> = {
-  brief: 'Today',
-  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', wishlist: 'Wishlist', people: 'People', vault: 'Passwords',
-  village: 'Village', home: 'Home', upkeep: 'Upkeep', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
-  places: 'Places', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
-  smarthome: 'Controls',
-}
-
+// The bottom bar (2026-10-21 redesign): one row, four places on a phone
+// (Today, Home, Me, Places; Village, Home, Places on the shared iPad). The
+// pages inside a place moved to a readable bar at the top (SubNav), so the
+// bottom is never two rows tall. Tapping the place you are already in goes
+// back to its first page, the way phone apps do.
 export default function HomeBar({ groups, activeId, onSelect }: {
   groups: HomeBarGroup[]
   activeId: string
@@ -46,78 +28,41 @@ export default function HomeBar({ groups, activeId, onSelect }: {
   const activeGroup = groups.find(g => g.members.includes(activeId)) ?? groups[0]
 
   return (
-    <div style={{
+    <nav aria-label="Main" className="homebar" style={{
       position: 'sticky', bottom: 0, zIndex: 90,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
-      padding: '0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom))',
+      display: 'flex', justifyContent: 'center',
+      padding: '0.4rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom))',
     }}>
-      {/* Secondary row — only the current context's own sub-destinations,
-          quieter than the primary row so it reads as "within Home" rather
-          than a second equal-weight nav. */}
-      {activeGroup.members.length > 1 && (
-        <div style={{
-          display: 'flex', gap: '0.3rem', padding: '0.25rem',
-          background: 'color-mix(in srgb, var(--gold) 6%, color-mix(in srgb, var(--bg) 55%, transparent))',
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-          borderRadius: '999px', border: '1px solid color-mix(in srgb, var(--gold) 15%, var(--faint))',
-          maxWidth: 'calc(100vw - 1.5rem)', overflowX: 'auto', scrollbarWidth: 'none',
-        }}>
-          {activeGroup.members.map(m => {
-            const isActive = m === activeId
-            return (
-              <button key={m} onClick={() => onSelect(m)} className="press" style={{
-                padding: '0.3rem 0.7rem', borderRadius: '999px', border: 'none', cursor: 'pointer', flexShrink: 0,
-                whiteSpace: 'nowrap',
-                background: isActive ? 'color-mix(in srgb, var(--gold) 16%, transparent)' : 'none',
-                color: isActive ? 'var(--gold)' : 'var(--muted)',
-                fontFamily: 'var(--font-body)', fontSize: '0.66rem', letterSpacing: '0.02em',
-                opacity: isActive ? 1 : 0.75,
-              }}>{MEMBER_LABELS[m] ?? m}</button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Primary row — the four/five contexts. A little dock/signpost, not a
-          standard app tab bar (2026-08-27 restyle, same icons/members/click
-          behavior as before — purely visual): a warmer gold-tinted glass
-          instead of a neutral one, a faint top highlight like a wood edge
-          catching light, and the active state reads as a small grounding
-          shadow under the icon (the same "sits above the scene" language
-          every prop/building in the village itself uses) instead of a flat
-          opacity/grayscale toggle. */}
       <div style={{
         position: 'relative',
-        display: 'flex', gap: '0.15rem', padding: '0.3rem',
-        background: 'color-mix(in srgb, var(--gold) 7%, color-mix(in srgb, var(--bg) 55%, transparent))',
-        backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-        borderRadius: '20px', border: '1px solid color-mix(in srgb, var(--gold) 16%, var(--faint))',
-        boxShadow: '0 2px 14px color-mix(in srgb, var(--text) 6%, transparent), inset 0 1px 0 color-mix(in srgb, var(--gold) 14%, transparent)',
-        maxWidth: 'calc(100vw - 1.5rem)', overflowX: 'auto', scrollbarWidth: 'none',
+        display: 'flex', gap: '0.1rem', padding: '0.3rem', width: 'min(100%, 26rem)', justifyContent: 'space-around',
+        background: 'color-mix(in srgb, var(--surface) 78%, transparent)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--gold) 14%, var(--border))',
+        boxShadow: '0 8px 28px color-mix(in srgb, var(--text) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--gold) 12%, transparent)',
       }}>
         {groups.map(g => {
-          const isActive = g.id === activeGroup.id
+          const isActive = g.id === activeGroup?.id
           return (
             <button
               key={g.id}
-              onClick={() => onSelect(isActive ? activeId : g.members[0])}
+              onClick={() => onSelect(g.members[0])}
               aria-current={isActive ? 'page' : undefined}
               className="press"
               style={{
-                position: 'relative',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
-                padding: '0.4rem 0.9rem', borderRadius: '16px', border: 'none', cursor: 'pointer',
-                background: 'none', minWidth: '3.6rem', flexShrink: 0,
+                position: 'relative', flex: 1,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.2rem',
+                minHeight: 52, padding: '0.35rem 0.4rem', borderRadius: '17px', border: 'none', cursor: 'pointer',
+                background: isActive ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
+                transition: 'background 160ms ease',
               }}
             >
               <span aria-hidden style={{
                 position: 'relative', display: 'inline-flex',
-                color: isActive ? 'var(--gold)' : 'var(--muted)', opacity: isActive ? 1 : 0.6,
+                color: isActive ? 'var(--gold)' : 'var(--muted)', opacity: isActive ? 1 : 0.75,
                 transition: 'opacity 160ms ease, color 160ms ease',
               }}>
-                <Icon name={g.icon} size={19} />
-                {/* See opensOverlay's own comment — a fixed cue, not tied to
-                    isActive, since this icon can never BE active. */}
+                <Icon name={g.icon} size={21} />
                 {g.opensOverlay && (
                   <span aria-hidden style={{
                     position: 'absolute', bottom: -2, right: -3, width: 5, height: 5, borderRadius: '50%',
@@ -125,22 +70,14 @@ export default function HomeBar({ groups, activeId, onSelect }: {
                   }} />
                 )}
               </span>
-              {/* Grounding shadow, only under the active icon — a small flat
-                  ellipse, same shape/opacity language as the shadow under
-                  every prop and building in the scene itself. */}
-              <span aria-hidden style={{
-                width: isActive ? 16 : 0, height: 3, borderRadius: '50%',
-                background: 'var(--text)', opacity: isActive ? 0.14 : 0,
-                transition: 'width 160ms ease, opacity 160ms ease', marginTop: '-1px',
-              }} />
               <span style={{
-                fontSize: '0.58rem', letterSpacing: '0.04em', fontFamily: 'var(--font-body)',
-                color: isActive ? 'var(--text)' : 'var(--muted)', opacity: isActive ? 0.9 : 0.6,
+                fontSize: '0.72rem', fontFamily: 'var(--font-body)', fontWeight: isActive ? 500 : 400,
+                color: isActive ? 'var(--text)' : 'var(--muted)',
               }}>{g.label}</span>
             </button>
           )
         })}
       </div>
-    </div>
+    </nav>
   )
 }

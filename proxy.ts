@@ -40,6 +40,7 @@ export async function proxy(request: NextRequest) {
     || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/village-preview'))
     // Dev-only diagnostic harness for the Places map — same guard.
     || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/places-preview'))
+    || (process.env.NODE_ENV !== 'production' && pathname.startsWith('/ui-preview'))
     || pathname.startsWith('/api/alexa')
     // Guest Layer (Guest Mode): /g/<token> is the phone portal a party guest
     // opens with no account, and /api/g/<token> is where its writes land.

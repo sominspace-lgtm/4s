@@ -15,6 +15,9 @@ import ArchivePanel from '@/components/archive/ArchivePanel'
 import WeekReview from '@/components/review/WeekReview'
 import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
+import SubNav from '@/components/ui/SubNav'
+import MeGrid from '@/components/ui/MeGrid'
+import Icon from '@/components/ui/Icon'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -220,14 +223,26 @@ const SECTION_GROUPS: Record<string, string> = {
 // — it's now reached from Household's own trailing "Controls" pill, or by
 // tapping the Home cottage in the Village scene (panelContent.home in
 // VillageScene.tsx).
+// Four places on a phone (2026-10-21 redesign): Today, Home, Me, Places.
+// Me opens to a grid of tiles ('me' is not a real section, just that grid),
+// and the Village lives inside Me on a phone. On the shared iPad there is no
+// Today or Me, and the Village is its own place, first. groupsForMode below
+// picks which set applies.
 const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
-  { id: 'personal', icon: 'personal',  label: 'Personal',   members: ['brief', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault'] },
+  { id: 'today',    icon: 'today',     label: 'Today',      members: ['brief'] },
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Household',  members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
+  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault', 'village'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
+
+// The words on the top bar inside a place.
+const SUB_LABELS: Record<string, string> = {
+  home: 'Home', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
+  places: 'Map', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
+}
 
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialMilestonesSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
@@ -530,20 +545,21 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Calendar folded back into a Home block 2026-09-02 — no longer a section,
   // so no shared-mode split-out. Household's group is Home/Reference/Smart
   // Home in both modes now.
-  const groupsForMode = ALL_HOME_BAR_GROUPS
+  const groupsForMode = ALL_HOME_BAR_GROUPS.filter(g => (sharedMode ? g.id !== 'me' : g.id !== 'village'))
   const homeBarGroups = groupsForMode
     .map(g => ({
       ...g,
       members: g.members.filter(m => {
-        if (m === 'smarthome') return true
+        if (m === 'smarthome' || m === 'me') return true
         return navIds.has(m)
       }),
     }))
     .filter(g => g.members.length > 0)
+  const go = (id: string) => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
   // Tab mode: only the active section renders. If the active tab was hidden
   // (customize / simple mode), fall back to the first visible one.
-  const currentTab = navSections.some(s => s.id === activeTab) ? activeTab : (navSections[0]?.id ?? 'brief')
+  const currentTab = (activeTab === 'me' && !sharedMode) || navSections.some(s => s.id === activeTab) ? activeTab : (navSections[0]?.id ?? 'brief')
 
   // Idle/ambient mode (2026-08-25) — the wall-mounted "Shared" device is
   // meant to sit untouched as a picture frame, not a dashboard left open.
@@ -593,6 +609,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Renamed from Reference (2026-10-19): it is the household's collections,
       // shared notes, and the two of you.
       reference: t('Collections', lang),
+      me: 'Me',
     }
 
     return { label: LABELS[id] ?? id, group }
@@ -603,7 +620,17 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     // No section label while ambient — the picture-frame default shouldn't
     // caption itself "VILLAGE" above the scene.
-    const heading = ambient && id === 'village' ? null : (
+    // Inside a place with more than one page, the top bar replaces the
+    // section heading: a row of pages (Home, Places), or a back link to the
+    // grid inside Me.
+    const g = homeBarGroups.find(x => x.members.includes(id))
+    const subnav = ambient && id === 'village' ? null
+      : g?.id === 'me' && id !== 'me'
+        ? <SubNav key={`nav-${id}`} activeId={id} onSelect={go} back={{ label: 'Me', title: label, onClick: () => go('me') }} />
+        : g && g.id !== 'me' && g.members.length > 1
+          ? <SubNav key={`nav-${id}`} items={g.members.map(m => ({ id: m, label: SUB_LABELS[m] ?? sectionLabel(m).label }))} activeId={id} onSelect={go} />
+          : null
+    const heading = ambient && id === 'village' ? null : subnav ?? (
       <SectionLabel key={`lbl-${id}`} style={{ marginTop: 0 }} group={group}>
         {label}
       </SectionLabel>
@@ -611,6 +638,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
 
     const body = (() => {
       switch (id) {
+        case 'me':       return <MeGrid key="me" visible={navIds} onOpen={go} />
         case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onOpenDoors={gathering.openDoors} onUpdatePrep={gathering.updatePrep} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} onSetMenu={gathering.setMenu} onSetAgenda={gathering.setAgenda} onSetPinnedContribution={gathering.setPinnedContribution} onSetPinnedNote={gathering.setPinnedNote} petInfo={gathering.petInfo} onSetPetInfo={gathering.setPetInfo} boardNote={gathering.boardNote} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} guestView={sharedMode && guestView} />
         // Personal areas — one section id each (2026-09-01). Goals folded
@@ -708,6 +736,18 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
+        {/* The village is inside Me on a phone; a quiet way in from Today. */}
+        {currentTab === 'brief' && !sharedMode && navIds.has('village') && (
+          <button onClick={() => go('village')} className="press" style={{
+            display: 'flex', alignItems: 'center', gap: '0.7rem', width: '100%', minHeight: 52, margin: '0 0 1rem',
+            padding: '0.6rem 0.9rem', borderRadius: 16, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)',
+            background: 'color-mix(in srgb, var(--gold) 7%, var(--surface))', border: '1px solid color-mix(in srgb, var(--gold) 18%, var(--border))',
+          }}>
+            <span aria-hidden style={{ color: 'var(--gold)', display: 'inline-flex' }}><Icon name="village" size={20} /></span>
+            <span style={{ flex: 1, fontSize: '0.92rem', color: 'var(--text)' }}>Visit the village</span>
+            <span aria-hidden style={{ color: 'var(--muted)' }}>›</span>
+          </button>
+        )}
         {(() => {
           const s = navSections.find(v => v.id === currentTab)
           // key + .tab-in means React remounts on every tab change, so
@@ -732,7 +772,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
             // else about currentTab changes, so whatever was showing (the
             // Village, most of the time) is still there underneath.
             if (id === 'smarthome') { setSmartHomeOpen(true); return }
-            setActiveTab(id); window.scrollTo({ top: 0, behavior: 'smooth' })
+            go(id)
           }}
         />
       )}
