@@ -739,7 +739,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
         {(() => {
-          const s = navSections.find(v => v.id === currentTab)
+          // 'me' is the Me grid, not a saved section, so it is not in navSections.
+          const s = currentTab === 'me' ? { id: 'me' } : navSections.find(v => v.id === currentTab)
           // key + .tab-in means React remounts on every tab change, so
           // the entrance animation replays instead of firing once on
           // first render and never again.
