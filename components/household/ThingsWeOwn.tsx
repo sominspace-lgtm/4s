@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
+import Sheet from '@/components/ui/Sheet'
 import { deleteThingPhotos, getThingPhotoUrls, uploadThingPhoto } from '@/lib/storage/thingPhotos'
 
 // Things we own (2026-10-20): what the house has, with the receipt or a photo
@@ -192,7 +193,7 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
         <div className="t-card">Things we own</div>
-        {spaceId && !draft && (
+        {spaceId && (
           <div style={{ display: 'flex', gap: '0.4rem' }}>
             <label className="btn btn-secondary press" style={{ minHeight: 40, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
               {reading ? 'Reading…' : 'From photo'}
@@ -207,13 +208,13 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
       {!spaceId && <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>This fills in once you share a household.</div>}
       {err && !draft && <div style={{ fontSize: '0.8rem', color: 'var(--rose)', marginBottom: '0.4rem' }}>{err}</div>}
 
-      {spaceId && !draft && things.length === 0 && (
+      {spaceId && things.length === 0 && (
         <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
           Nothing here yet. Take a photo of a receipt or an appliance sticker and it fills in the details.
         </div>
       )}
 
-      {!draft && things.map(t => {
+      {things.map(t => {
         const w = warranty(t.warranty_until)
         const sub = [t.brand, t.model].filter(Boolean).join(' ')
         return (
@@ -234,6 +235,7 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
         )
       })}
 
+      <Sheet open={!!draft} title={draft?.id ? 'Edit' : 'Add a thing'} onClose={() => { setDraft(null); setErr(null) }}>
       {draft && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <label style={label}>Name
@@ -299,6 +301,7 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
           </div>
         </div>
       )}
+      </Sheet>
     </section>
   )
 }

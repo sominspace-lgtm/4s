@@ -5,6 +5,7 @@ import ThemeProvider from '@/components/ui/ThemeProvider'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
+import Sheet from '@/components/ui/Sheet'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -21,6 +22,7 @@ const LABELS: Record<string, string> = {
 export default function UiPreviewClient() {
   const [tab, setTab] = useState('home')
   const [theme, setTheme] = useState('bloom')
+  const [sheet, setSheet] = useState(false)
   const g = GROUPS.find(x => x.members.includes(tab))!
   const all = new Set(Object.keys(LABELS))
 
@@ -46,12 +48,16 @@ export default function UiPreviewClient() {
                   <div className="t-card">Card {i} on {LABELS[tab] ?? tab}</div>
                   <div style={{ fontSize: '0.62rem', color: 'var(--muted)' }}>Tiny helper text at 0.62rem</div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text)' }}>Body text at 0.74rem with a few more words to wrap on a phone.</div>
-                  <button className="btn btn-primary press" style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>Action</button>
+                  <button onClick={() => setSheet(true)} className="btn btn-primary press" style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>Action</button>
                 </section>
               ))}
             </div>
           )}
         </main>
+        <Sheet open={sheet} title="New chore" onClose={() => setSheet(false)} footer={<><button className="btn btn-primary press">Save</button><button className="btn btn-ghost press" onClick={() => setSheet(false)}>Cancel</button></>}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "var(--muted)" }}>Chore<input placeholder="Water the plants" style={{ minHeight: 44, padding: "0 0.7rem", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg)", color: "var(--text)" }} /></label>
+          <div style={{ fontSize: "0.62rem", color: "var(--muted)" }}>small hint inside a sheet</div>
+        </Sheet>
         <HomeBar groups={GROUPS} activeId={tab} onSelect={setTab} />
       </div>
     </ThemeProvider>

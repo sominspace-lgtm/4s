@@ -954,3 +954,11 @@ main .specimen { border-color: color-mix(in srgb, var(--border) 75%, #d9c4a0 25%
   .btn { min-height: 44px; }
 }
 
+
+/* Sheets (2026-10-21): slide up on a phone, sit centred on a wide screen. */
+@keyframes sheet-up { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet { animation: sheet-up 240ms cubic-bezier(.2,.8,.3,1) both; }
+@media (min-width: 700px) {
+  .sheet-backdrop { align-items: center !important; padding: 1.5rem; }
+  .sheet { border-radius: 22px !important; border-bottom: 1px solid var(--border) !important; }
+}

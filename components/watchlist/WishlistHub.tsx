@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Sheet from '@/components/ui/Sheet'
 import { format } from 'date-fns'
 import { useWishlist, useWishShares, atTarget, WISH_LISTS, type Wish, type WishDraft } from '@/lib/hooks/useWishlist'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -137,6 +138,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
       </form>
       {err && <div style={{ ...muted, color: 'var(--rose)' }}>{err}</div>}
 
+      <Sheet open={!!editing} title={editing === 'new' ? 'New wish' : 'Edit wish'} onClose={() => { setEditing(null); setSeed(null) }}>
       {editing && (
         <Editor
           key={editing === 'new' ? `new-${seed?.url ?? seed?.name ?? ''}` : editing.id}
@@ -159,6 +161,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
           }}
         />
       )}
+      </Sheet>
 
       {/* tabs + filters */}
       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -190,7 +193,7 @@ export default function WishlistHub({ userId }: { userId: string }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr))', gap: '0.8rem' }}>
         {shown.map(w => (
           <Card key={w.id} w={w} me={me}
-            onEdit={() => { setSeed(null); setEditing(w); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            onEdit={() => { setSeed(null); setEditing(w) }}
             onBought={async price => setErr(await update(w.id, { status: 'bought', bought_at: format(new Date(), 'yyyy-MM-dd'), bought_price: price ?? w.price }))}
             onBack={async () => setErr(await update(w.id, { status: 'wanted', bought_at: null, bought_price: null }))}
             onClaim={async on => setErr(await claim(w.id, on))}
@@ -316,8 +319,7 @@ function Editor({ initial, seed, spaceId, onSave, onCancel, onDelete, onChecked 
   }
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div style={{ fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>{initial ? 'Edit' : 'New wish'}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       <div style={{ display: 'flex', gap: '0.7rem' }}>
         {image && (
           // eslint-disable-next-line @next/next/no-img-element

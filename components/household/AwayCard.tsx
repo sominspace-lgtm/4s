@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { addDays, format, parseISO } from 'date-fns'
 import { awayActive, type Away } from '@/lib/hooks/useHousehold'
+import Sheet from '@/components/ui/Sheet'
 
 // Away mode (2026-10-21): one switch pauses every chore while you are both
 // away. Chores freeze where they were the day you left, no chore reminders go
@@ -59,7 +60,7 @@ export default function AwayCard({ away, onSet, onEnd }: {
           </button>
           <button disabled={busy} onClick={() => { setFrom(away.from); setUntil(away.until); setOpen(o => !o) }} className="btn btn-ghost press" style={{ minHeight: 44 }}>Change dates</button>
         </div>
-        {open && renderForm()}
+        <Sheet open={open} title={away ? 'Change the dates' : 'Going away'} onClose={() => setOpen(false)}>{renderForm()}</Sheet>
       </section>
     )
   }
@@ -89,9 +90,9 @@ export default function AwayCard({ away, onSet, onEnd }: {
           <div style={{ fontSize: '0.88rem', color: 'var(--text)' }}>Going away?</div>
           <div style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Pause every chore while you are gone.</div>
         </div>
-        <button onClick={() => setOpen(o => !o)} className="btn btn-secondary press" style={{ minHeight: 44, flexShrink: 0 }}>{open ? 'Close' : 'Set dates'}</button>
+        <button onClick={() => setOpen(o => !o)} className="btn btn-secondary press" style={{ minHeight: 44, flexShrink: 0 }}>Set dates</button>
       </div>
-      {open && renderForm()}
+      <Sheet open={open} title={away ? 'Change the dates' : 'Going away'} onClose={() => setOpen(false)}>{renderForm()}</Sheet>
       {err && <div style={{ fontSize: '0.8rem', color: 'var(--rose)' }}>{err}</div>}
     </section>
   )

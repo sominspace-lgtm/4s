@@ -23,6 +23,7 @@ import IconButton from '@/components/ui/IconButton'
 import { openSmartHome, goToSection } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon from '@/components/ui/Icon'
+import Sheet from '@/components/ui/Sheet'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
 /** The Millton, Redwood City CA — the move-in address the Move-In block is about. */
@@ -128,9 +129,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   usePresenceHeartbeat(userId, spaceId, !sharedMode)
   const partnerPresence = usePartnerPresence(userId, spaceId)
 
-  const [choreName, setChoreName] = useState('')
-  const [choreCadence, setChoreCadence] = useState('7')
-  const [choreFolder, setChoreFolder] = useState('')
   // Which chore folders are collapsed (2026-08-26) — open by default (empty
   // set), so a folder someone just filed something into doesn't immediately
   // hide it; click the header to fold an 8-item list like Somi's care down
@@ -147,7 +145,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   const [showRetiredRules, setShowRetiredRules] = useState(false)
   const [editingRule, setEditingRule] = useState<{ id: string; text: string } | null>(null)
   const [homeCustomizeOpen, setHomeCustomizeOpen] = useState(false)
-  const [editingChore, setEditingChore] = useState<{ id: string; name: string; cadence: string } | null>(null)
+  // Editing or adding a chore opens a sheet (2026-10-21 redesign); id null = a new chore.
+  const [editingChore, setEditingChore] = useState<{ id: string | null; name: string; cadence: string; folder: string } | null>(null)
 
 
   // Somi's care moved to the care log (2026-09-08) — chores in a "Somi"
@@ -522,25 +521,6 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
     function renderChoreRow(c: Chore) {
       const due = dueLabel(c)
-      if (editingChore?.id === c.id) {
-        return (
-          <div key={c.id} style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem', border: '1px solid var(--gold)' }}>
-            <input value={editingChore.name} onChange={e => setEditingChore({ ...editingChore, name: e.target.value })}
-              style={{ ...input, flex: '1 1 10rem' }} autoFocus />
-            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>every</span>
-            <input type="number" min={1} value={editingChore.cadence} onChange={e => setEditingChore({ ...editingChore, cadence: e.target.value })}
-              style={{ ...input, width: '4.5rem' }} />
-            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>days</span>
-            <button className="btn btn-primary press" style={{ minHeight: 40 }} onClick={async () => {
-              const name = editingChore.name.trim()
-              if (!name) return
-              await h.updateChore(c.id, { name, cadence_days: Math.max(1, Number(editingChore.cadence) || c.cadence_days) })
-              setEditingChore(null)
-            }}>Save</button>
-            <button className="btn btn-ghost press" style={{ minHeight: 40 }} onClick={() => setEditingChore(null)}>Cancel</button>
-          </div>
-        )
-      }
       return (
         <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
           display: 'flex', alignItems: 'center', gap: '0.6rem',
@@ -560,12 +540,12 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             title="Mark done, resets the clock"
             style={{
               background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
-              width: 20, height: 20, cursor: 'pointer', color: 'var(--emerald)',
-              fontSize: '0.6rem', lineHeight: 1, flexShrink: 0,
+              width: 34, height: 34, cursor: 'pointer', color: 'var(--emerald)',
+              fontSize: '0.9rem', lineHeight: 1, flexShrink: 0,
             }}
           >✓</button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <button onClick={() => setEditingChore({ id: c.id, name: c.name, cadence: String(c.cadence_days) })} title="Edit"
+            <button onClick={() => setEditingChore({ id: c.id, name: c.name, cadence: String(c.cadence_days), folder: c.folder ?? '' })} title="Edit"
               style={{ fontSize: '0.78rem', color: 'var(--text)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}>{c.name} <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>✎</span></button>
             {c.last_done_at && nameFor(c.last_done_by) && (
               <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
@@ -659,20 +639,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           {existingFolders.map(f => <option key={f} value={f} />)}
         </datalist>
 
-        <form
-          onSubmit={async e => {
-            e.preventDefault()
-            if (!choreName.trim()) return
-            await h.addChore(choreName.trim(), Math.max(1, parseInt(choreCadence) || 7), choreFolder.trim() || null)
-            setChoreName(''); setChoreFolder('')
-          }}
-          style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}
-        >
-          <input value={choreName} onChange={e => setChoreName(e.target.value)} placeholder="Add a chore" style={{ ...input, flex: 1, minWidth: '140px' }} />
-          <input type="number" min={1} value={choreCadence} onChange={e => setChoreCadence(e.target.value)} title="Every N days" style={{ ...input, width: '70px' }} />
-          <input value={choreFolder} onChange={e => setChoreFolder(e.target.value)} list="chore-folders" placeholder="Folder (optional)" style={{ ...input, width: '120px' }} />
-          <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.7rem' }}>Add</button>
-        </form>
+        <button onClick={() => setEditingChore({ id: null, name: '', cadence: '7', folder: '' })} className="btn btn-secondary press" style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
+          + Add a chore
+        </button>
         </div>
       </details>
     )
@@ -784,6 +753,47 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             </div>
             {renderChores()}
             {renderStarterChores()}
+            <Sheet open={!!editingChore} title={editingChore?.id ? 'Edit chore' : 'New chore'} onClose={() => setEditingChore(null)}
+              footer={editingChore && (
+                <>
+                  <button className="btn btn-primary press" onClick={async () => {
+                    const name = editingChore.name.trim()
+                    if (!name) return
+                    const every = Math.max(1, Number(editingChore.cadence) || 7)
+                    const folder = editingChore.folder.trim() || null
+                    if (editingChore.id) await h.updateChore(editingChore.id, { name, cadence_days: every, folder })
+                    else await h.addChore(name, every, folder)
+                    setEditingChore(null)
+                  }}>Save</button>
+                  <button className="btn btn-ghost press" onClick={() => setEditingChore(null)}>Cancel</button>
+                  {editingChore.id && (
+                    <button className="btn btn-ghost press" style={{ marginLeft: 'auto', color: 'var(--rose)' }} onClick={async () => {
+                      if (!window.confirm(`Remove "${editingChore.name}"?`)) return
+                      await h.removeChore(editingChore.id!)
+                      setEditingChore(null)
+                    }}>Remove</button>
+                  )}
+                </>
+              )}>
+              {editingChore && (
+                <>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.78rem', color: 'var(--muted)' }}>Chore
+                    <input value={editingChore.name} onChange={e => setEditingChore({ ...editingChore, name: e.target.value })} placeholder="Water the plants" autoFocus style={{ ...input, minHeight: 44, fontSize: '0.95rem' }} />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.78rem', color: 'var(--muted)' }}>Every how many days
+                    <input type="number" inputMode="numeric" min={1} value={editingChore.cadence} onChange={e => setEditingChore({ ...editingChore, cadence: e.target.value })} style={{ ...input, minHeight: 44, fontSize: '0.95rem' }} />
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {[[1, 'Daily'], [7, 'Weekly'], [14, 'Every 2 weeks'], [30, 'Monthly']].map(([n, l]) => (
+                      <button key={n} className="pill press" onClick={() => setEditingChore({ ...editingChore, cadence: String(n) })}>{l}</button>
+                    ))}
+                  </div>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.78rem', color: 'var(--muted)' }}>Folder (optional)
+                    <input value={editingChore.folder} onChange={e => setEditingChore({ ...editingChore, folder: e.target.value })} list="chore-folders" placeholder="Somi, House…" style={{ ...input, minHeight: 44, fontSize: '0.95rem' }} />
+                  </label>
+                </>
+              )}
+            </Sheet>
           </section>
 
         </div>
