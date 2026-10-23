@@ -6,6 +6,7 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { countSteps, parseRoutineText } from '@/lib/routines/items'
 import { MY_ROUTINES } from '@/lib/routines/presets'
 import { routineStreak } from '@/lib/routines/streak'
+import { getLast7Days } from '@/lib/utils/habits'
 import RoutineEditor from '@/components/routines/RoutineEditor'
 import RoutineChecklist from '@/components/routines/RoutineChecklist'
 
@@ -29,7 +30,10 @@ const smallBtn: React.CSSProperties = {
 // 2026-10-15: every routine can be edited (name, how often, sections, steps,
 // notes), a routine can be pasted in as text, and ticks reset each period, so
 // a daily routine starts fresh each morning.
-export default function PersonalRoutines({ userId }: { userId: string }) {
+// Routines live inside the habits card now (2026-10-23): each one shows the
+// same week of dots a habit does, filled on the days it was finished.
+export default function PersonalRoutines({ userId, embedded = false }: { userId: string; embedded?: boolean }) {
+  const week = getLast7Days()
   const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
   const { routines, sharedFromPartner, loading, addRoutine, updateRoutine, removeRoutine, toggleRoutineItem, markRoutineDone, toggleItemShared } =
@@ -73,9 +77,9 @@ export default function PersonalRoutines({ userId }: { userId: string }) {
   const toggleOpen = (id: string) => setOpen(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.2rem 1.2rem', marginBottom: '1rem' }}>
+    <div style={embedded ? { marginBottom: '1.1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--faint)' } : { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.2rem 1.2rem', marginBottom: '1rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>Routines</div>
+        <div className={embedded ? 't-label' : undefined} style={embedded ? undefined : { fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>Routines</div>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button onClick={() => setMode(m => (m === 'paste' ? 'none' : 'paste'))} style={smallBtn}>{mode === 'paste' ? 'Cancel' : 'Paste a routine'}</button>
           <button onClick={() => setMode(m => (m === 'new' ? 'none' : 'new'))} style={smallBtn}>{mode === 'new' ? 'Cancel' : '+ New'}</button>
@@ -137,7 +141,12 @@ export default function PersonalRoutines({ userId }: { userId: string }) {
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', minHeight: 44,
               background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)', textAlign: 'left',
             }}>
-              <span style={{ fontSize: '0.92rem', color: 'var(--text)' }}>{r.name}</span>
+              <span style={{ fontSize: '0.92rem', color: 'var(--text)', flex: 1, minWidth: 0 }}>{r.name}</span>
+              <span aria-label="This week" style={{ display: 'inline-flex', gap: 3, flexShrink: 0 }}>
+                {week.map(d => (
+                  <span key={d} title={d} style={{ width: 9, height: 9, borderRadius: '50%', border: '1px solid color-mix(in srgb, var(--emerald) 45%, var(--border))', background: (r.done_days ?? []).includes(d) ? 'var(--emerald)' : 'transparent' }} />
+                ))}
+              </span>
               <span style={{ fontSize: '0.74rem', color: done === total && total > 0 ? 'var(--emerald)' : due < 0 ? 'var(--rose)' : 'var(--muted)', flexShrink: 0 }}>
                 {total > 0 ? `${done}/${total}` : ''}{(() => { const st = routineStreak(r.done_days ?? []); return st.days > 1 ? ` · ${st.days} days${st.paused ? ', paused' : ''}` : '' })()}{r.cadence_days !== 1 ? ` · every ${r.cadence_days}d` : ''} {isOpen ? '▴' : '▾'}
               </span>

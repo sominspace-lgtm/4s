@@ -19,7 +19,7 @@ const DOMAINS = [
   { id: 'self', label: 'Self' },
 ]
 
-export default function HabitTracker() {
+export default function HabitTracker({ children }: { children?: React.ReactNode }) {
   const { habits, completions, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit } = useHabits()
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
@@ -66,7 +66,7 @@ export default function HabitTracker() {
         {/* Not "Streaks" — nothing here counts consecutive days anymore, and
             a heading that names the mechanic you removed is worse than a
             generic one. This is the forest floor: things you're growing. */}
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>Growing</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-card)', fontWeight: 400, letterSpacing: '0.02em' }}>{children ? 'Habits and routines' : 'Growing'}</div>
         <button onClick={() => setShowForm(o => !o)} style={{
           fontSize: '0.68rem', letterSpacing: '0.06em', color: 'var(--muted)',
           background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
@@ -75,6 +75,9 @@ export default function HabitTracker() {
           {showForm ? 'cancel' : '+ add habit'}
         </button>
       </div>
+
+      {children}
+      {children && <div className="t-label" style={{ marginBottom: '0.6rem' }}>Habits</div>}
 
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

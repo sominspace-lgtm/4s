@@ -10,8 +10,10 @@ import HouseholdUpkeep from './HouseholdUpkeep'
 export default function HabitsTab({ userId }: { userId: string }) {
   return (
     <div>
-      <PersonalRoutines userId={userId} />
-      <HabitTracker />
+      {/* Routines sit inside the habits card (2026-10-23). */}
+      <HabitTracker>
+        <PersonalRoutines userId={userId} embedded />
+      </HabitTracker>
       <HouseholdUpkeep userId={userId} />
     </div>
   )
