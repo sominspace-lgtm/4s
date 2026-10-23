@@ -149,10 +149,26 @@ export interface UseGathering {
    *  view only (never to guests). Space-level. */
   boardNote: string
   setBoardNote: (text: string) => Promise<void>
+  /** Who wrote the note, when, and when the other one saw it (2026-10-23). */
+  boardNoteBy: string | null
+  boardNoteSeenAt: string | null
+  /** Marks the other person's note as seen. */
+  seeBoardNote: () => Promise<void>
 }
 
 export function useGathering(userId: string): UseGathering {
   const supabase = createClient()
+  // The note, who wrote it and whether it has been seen. The seen columns are
+  // newer (board_note_seen.sql), so a missing one falls back to the old read.
+  async function loadBoard(sid: string) {
+    const full = await supabase.from('shared_spaces').select('board_note, board_note_by, board_note_seen_at').eq('id', sid).maybeSingle()
+    const row = (full.error
+      ? (await supabase.from('shared_spaces').select('board_note, board_note_by').eq('id', sid).maybeSingle()).data
+      : full.data) as { board_note?: string | null; board_note_by?: string | null; board_note_seen_at?: string | null } | null
+    setBoardNoteState(row?.board_note ?? '')
+    setBoardNoteBy(row?.board_note_by ?? null)
+    setBoardNoteSeenAt(row?.board_note_seen_at ?? null)
+  }
   const { spaces, members } = useSharedSpaces(userId)
   const spaceId = spaces.find(s => members.some(m => m.space_id === s.id && m.status === 'accepted'))?.id ?? null
 
@@ -162,6 +178,8 @@ export function useGathering(userId: string): UseGathering {
   const [guestInfo, setGuestInfoState] = useState<GuestInfo>({})
   const [petInfo, setPetInfoState] = useState<PetInfo>({})
   const [boardNote, setBoardNoteState] = useState('')
+  const [boardNoteBy, setBoardNoteBy] = useState<string | null>(null)
+  const [boardNoteSeenAt, setBoardNoteSeenAt] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const contribRef = useRef<GuestContribution[]>([])
   contribRef.current = contributions
@@ -211,8 +229,7 @@ export function useGathering(userId: string): UseGathering {
       }
       // Separate read — a missing board_note column (migration not run yet)
       // must not take guest_info / pet_info down with it.
-      const { data: bn } = await supabase.from('shared_spaces').select('board_note').eq('id', spaceId).maybeSingle()
-      if (alive) setBoardNoteState((bn as { board_note?: string | null } | null)?.board_note ?? '')
+      if (alive) await loadBoard(spaceId)
       setReady(true)
     })()
 
@@ -424,16 +441,29 @@ export function useGathering(userId: string): UseGathering {
     if (error) console.error('[4s] setPetInfo failed:', error.message)
   }, [supabase])
 
+  // Posting goes through set_board_note (2026-10-23): a plain update only
+  // ever worked for the household's owner, so the other person's note
+  // silently did not save. Falls back to the old update if the SQL is not in.
   const setBoardNote = useCallback(async (text: string) => {
     const sid = spaceRef.current
     if (!sid) return
     const clean = text.trim().slice(0, 160)
-    setBoardNoteState(clean)
-    const { error } = await supabase.from('shared_spaces')
-      .update({ board_note: clean || null, board_note_by: userId, board_note_at: new Date().toISOString() })
-      .eq('id', sid)
-    if (error) console.error('[4s] setBoardNote failed:', error.message)
+    setBoardNoteState(clean); setBoardNoteBy(userId); setBoardNoteSeenAt(null)
+    const { error } = await supabase.rpc('set_board_note', { p_space: sid, p_note: clean })
+    if (error) {
+      const { error: e2 } = await supabase.from('shared_spaces')
+        .update({ board_note: clean || null, board_note_by: userId, board_note_at: new Date().toISOString() })
+        .eq('id', sid)
+      if (e2) console.error('[4s] setBoardNote failed:', e2.message)
+    }
   }, [supabase, userId])
+
+  const seeBoardNote = useCallback(async () => {
+    const sid = spaceRef.current
+    if (!sid) return
+    setBoardNoteSeenAt(new Date().toISOString())
+    await supabase.rpc('see_board_note', { p_space: sid })
+  }, [supabase])
 
   return {
     gathering, contributions, memories, ready,
@@ -442,6 +472,6 @@ export function useGathering(userId: string): UseGathering {
     moderate, removeContribution, updateMemory, deleteMemory,
     guestInfo, setGuestInfo,
     petInfo, setPetInfo,
-    boardNote, setBoardNote,
+    boardNote, setBoardNote, boardNoteBy, boardNoteSeenAt, seeBoardNote,
   }
 }

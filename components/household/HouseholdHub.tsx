@@ -71,7 +71,7 @@ const STARTER_CHORES: { folder: string; label: string; chores: { name: string; e
   ] },
 ]
 
-export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, forcedTab, boardNote = '', onSetBoardNote }: {
+export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHomeBlocks, sharedMode = false, guestMode = false, forcedTab, boardNote = '', onSetBoardNote, boardNoteBy = null, boardNoteSeenAt = null, onSeeBoardNote }: {
   userId: string
   userEmail: string
   homeBlocks: SectionConfig[]
@@ -94,6 +94,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   /** One line a partner leaves the other on the village notice board. */
   boardNote?: string
   onSetBoardNote?: (text: string) => void
+  boardNoteBy?: string | null
+  boardNoteSeenAt?: string | null
+  onSeeBoardNote?: () => void
 }) {
   const { spaces, members } = useSharedSpaces(userId)
   const [spaceId, setSpaceId] = useState<string | null>(null)
@@ -252,6 +255,17 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     board: () => (!onSetBoardNote || sharedMode) ? null : (
       <section style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem 1.2rem' }}>
         <div className="t-card" style={{ marginBottom: '0.5rem' }}>Note on the board</div>
+        {/* The other one's note, big enough to read, with "Got it" so they
+            know you saw it (2026-10-23). */}
+        {boardNote && boardNoteBy && boardNoteBy !== userId && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.8rem', padding: '0.8rem 0.9rem', borderRadius: 12, background: 'color-mix(in srgb, var(--rose) 8%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--rose) 22%, var(--border))' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>From {nameFor(boardNoteBy) ?? 'your partner'}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '1.1rem', color: 'var(--text)' }}>{boardNote}</div>
+            {boardNoteSeenAt
+              ? <div style={{ fontSize: '0.78rem', color: 'var(--emerald)' }}>✓ You saw this</div>
+              : onSeeBoardNote && <button onClick={onSeeBoardNote} className="btn btn-primary press" style={{ alignSelf: 'flex-start', minHeight: 40 }}>Got it ♥</button>}
+          </div>
+        )}
         <form onSubmit={e => { e.preventDefault(); const v = String(new FormData(e.currentTarget).get('note') ?? '').trim(); if (v !== boardNote) onSetBoardNote(v) }}
           style={{ display: 'flex', gap: '0.4rem' }}>
           <input key={`boardnote-${boardNote}`} name="note" defaultValue={boardNote} maxLength={160} placeholder="Leave a line for the other"
@@ -260,7 +274,9 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           <button type="submit" className="btn btn-primary press" style={{ minHeight: 44 }}>Post</button>
         </form>
         <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
-          {boardNote ? 'On the board now. Clear it to take it down.' : 'Shows on the village notice board at home. Guests never see it.'}
+          {boardNote && boardNoteBy === userId
+            ? (boardNoteSeenAt ? '✓ Seen. Clear it to take it down.' : 'On the board. Not seen yet.')
+            : boardNote ? 'Write a new line to reply. It replaces the note on the board.' : 'Shows on the village notice board and on Today. Guests never see it.'}
         </div>
       </section>
     ),

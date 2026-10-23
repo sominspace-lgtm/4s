@@ -2639,6 +2639,19 @@ export default function VillageScene({
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
       <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
+      {/* The partner note, pinned to the board as a little paper (2026-10-23). */}
+      {structures?.note && !hosting && !arranging && (() => {
+        const p = pos('calendar')
+        const t = structures.note.length > 22 ? structures.note.slice(0, 21) + '…' : structures.note
+        return (
+          <g transform={`translate(${p.x - 4} ${p.y - 50}) rotate(-5)`} onClick={openOrToggle('calendar', 'Notice board')} style={{ cursor: 'pointer' }}>
+            <rect x={-2} y={-1} width={70} height={22} rx={2} fill="var(--text)" opacity={0.12} transform="translate(1 2)" />
+            <rect x={-2} y={-1} width={70} height={22} rx={2} fill="#fff6dc" stroke="#e3cf9f" strokeWidth={0.6} />
+            <circle cx={33} cy={1} r={2.2} fill="#c9584f" />
+            <text x={33} y={13.5} textAnchor="middle" fontSize={7} fontStyle="italic" fill="#5a4630" fontFamily="var(--font-display)">{t}</text>
+          </g>
+        )
+      })()}
       <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Notice board" onClick={openOrToggle('calendar', 'Notice board')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
         draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism

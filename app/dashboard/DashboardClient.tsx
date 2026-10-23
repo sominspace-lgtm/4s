@@ -650,7 +650,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.
         case 'home': case 'upkeep': case 'reference':
-          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} />
+          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />
         default: return null
       }
     })()
@@ -725,6 +725,20 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
         {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
+        {/* A note from the other one on the board shows on Today until you
+            say you saw it (2026-10-23). */}
+        {currentTab === 'brief' && !sharedMode && gathering.boardNote && gathering.boardNoteBy && gathering.boardNoteBy !== userId && !gathering.boardNoteSeenAt && (
+          <div className="organic" style={{
+            display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap', margin: '0 0 1rem', padding: '0.9rem 1.1rem',
+            background: 'color-mix(in srgb, var(--rose) 8%, var(--surface))', border: '1px solid color-mix(in srgb, var(--rose) 24%, var(--border))',
+          }}>
+            <div style={{ flex: 1, minWidth: '12rem' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>A note on the board</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '1.15rem', color: 'var(--text)' }}>{gathering.boardNote}</div>
+            </div>
+            <button onClick={() => { void gathering.seeBoardNote() }} className="btn btn-primary press" style={{ minHeight: 44 }}>Got it ♥</button>
+          </div>
+        )}
         {(() => {
           // 'me' is the Me grid, not a saved section, so it is not in navSections.
           const s = currentTab === 'me' ? { id: 'me' } : navSections.find(v => v.id === currentTab)
