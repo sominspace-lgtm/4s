@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import VoiceRecorder from './VoiceRecorder'
 import { format } from 'date-fns'
 import { useNotes, type Note } from '@/lib/hooks/useNotes'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -97,8 +98,41 @@ function NotesList({ userId }: { userId: string }) {
   function hookFor(n: Note) { return n.space_id ? shared : personal }
 
   function openNote(n: Note, asReading?: boolean) {
+    setNoteSum(null); setSumErr(null)
     setOpenId(n.id); setDraftTitle(n.title); setDraftBody(n.body)
     setReading(asReading ?? n.body.trim().length > 0)
+  }
+
+  // Summaries (2026-10-23): one note, or the last week of notes.
+  const [noteSum, setNoteSum] = useState<NoteSummary | null>(null)
+  const [weekSum, setWeekSum] = useState<NoteSummary | null>(null)
+  const [sumBusy, setSumBusy] = useState<'note' | 'week' | null>(null)
+  const [sumErr, setSumErr] = useState<string | null>(null)
+
+  async function summarizeOpen() {
+    const text = [draftTitle, draftBody].filter(Boolean).join('\n\n')
+    if (text.trim().length < 40) { setSumErr('There is not much to summarize yet.'); return }
+    setSumBusy('note'); setSumErr(null)
+    const r = await summarize(text)
+    setSumBusy(null)
+    if (typeof r === 'string') setSumErr(r); else setNoteSum(r)
+  }
+
+  async function summarizeWeek() {
+    const since = Date.now() - 7 * 86_400_000
+    const recent = notes.filter(n => Date.parse(n.updated_at) >= since && (n.title || n.body).trim())
+    if (recent.length === 0) { setSumErr('No notes from this week yet.'); return }
+    setSumBusy('week'); setSumErr(null)
+    const r = await summarize(recent.map(n => `## ${n.title || 'Untitled'}\n${n.body}`).join('\n\n'))
+    setSumBusy(null)
+    if (typeof r === 'string') setSumErr(r); else setWeekSum(r)
+  }
+
+  // A voice note becomes a new note, opened so it can be read back.
+  async function saveVoiceNote(text: string) {
+    const title = `Voice note, ${format(new Date(), 'MMM d, h:mm a')}`
+    const id = await personal.add({ title, body: text })
+    if (id) { setOpenId(id); setDraftTitle(title); setDraftBody(text); setReading(true) }
   }
 
   async function newNote(templateId = 'blank') {
@@ -166,6 +200,7 @@ function NotesList({ userId }: { userId: string }) {
         <div style={{ fontSize: 'var(--text-card)', fontFamily: 'var(--font-display)', color: 'var(--text)' }}>Notes</div>
         <div style={{ position: 'relative', display: 'flex', gap: '0.4rem' }}>
           <button onClick={() => newNote()} className="btn btn-primary press" style={{ fontSize: '0.72rem' }}>+ New note</button>
+          <VoiceRecorder onText={saveVoiceNote} label="Voice note" />
           <button onClick={() => setTemplates(t => !t)} className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}>From a template</button>
           {templates && (
             <div style={{
@@ -182,6 +217,24 @@ function NotesList({ userId }: { userId: string }) {
           )}
         </div>
       </div>
+
+      {notes.length > 0 && !weekSum && (
+        <div style={{ marginBottom: '0.7rem' }}>
+          <button onClick={summarizeWeek} disabled={sumBusy === 'week'} className="btn btn-ghost press" style={{ paddingLeft: 0 }}>
+            {sumBusy === 'week' ? 'Reading your notes…' : '✦ Sum up this week'}
+          </button>
+          {sumErr && !open && <div style={{ fontSize: '0.78rem', color: 'var(--rose)' }}>{sumErr}</div>}
+        </div>
+      )}
+      {weekSum && (
+        <div style={{ marginBottom: '0.9rem' }}>
+          <SummaryBox r={weekSum} addLabel="Save as a note" onClose={() => setWeekSum(null)} onAdd={async () => {
+            const title = `My week, ${format(new Date(), 'MMM d')}`
+            await personal.add({ title, body: summaryText(weekSum) })
+            setWeekSum(null)
+          }} />
+        </div>
+      )}
 
       {notes.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.9rem' }}>
@@ -271,6 +324,8 @@ function NotesList({ userId }: { userId: string }) {
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <button className="press" onClick={() => setReading(false)} style={chip(!reading)}>Write</button>
               <button className="press" onClick={() => setReading(true)} style={chip(reading)}>Read</button>
+              <button className="press" onClick={summarizeOpen} disabled={sumBusy === 'note'} style={chip(false)}>{sumBusy === 'note' ? 'Summarizing…' : '✦ Summarize'}</button>
+              <VoiceRecorder compact label="Dictate" onText={t => { setReading(false); addToBody(t) }} />
               {!reading && (
                 <>
                   <span style={{ width: 1, height: 14, background: 'var(--border)', margin: '0 0.2rem' }} />
@@ -284,6 +339,11 @@ function NotesList({ userId }: { userId: string }) {
               )}
             </div>
 
+            {sumErr && open && <div style={{ fontSize: '0.78rem', color: 'var(--rose)' }}>{sumErr}</div>}
+            {noteSum && (
+              <SummaryBox r={noteSum} addLabel="Add to the top" onClose={() => setNoteSum(null)}
+                onAdd={() => { setDraftBody(b => `${summaryText(noteSum)}\n\n---\n${b}`); setNoteSum(null) }} />
+            )}
             {reading ? (
               draftBody.trim()
                 ? <NoteView body={draftBody} titles={titles} onOpenNote={openByTitle} onToggle={toggleCheck} onTag={t => { setTag(t); setOpenId(null) }} />
@@ -349,6 +409,40 @@ function NotesList({ userId }: { userId: string }) {
 
 // The Notes section holds two things: written pages, and Collections (small
 // databases for tracking anything). Notes opens first.
+interface NoteSummary { summary: string; points: string[]; todos: string[] }
+
+async function summarize(text: string): Promise<NoteSummary | string> {
+  try {
+    const res = await fetch('/api/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'summarize-notes', text }) })
+    if (res.status === 503) return 'Summaries need the AI key on the server.'
+    const j = await res.json() as { result?: NoteSummary }
+    return res.ok && j.result ? j.result : 'Could not summarize that.'
+  } catch { return 'Could not summarize that.' }
+}
+
+function summaryText(r: NoteSummary): string {
+  return [r.summary, ...r.points.map(p => `- ${p}`), ...(r.todos.length ? ['', 'To do:', ...r.todos.map(t => `- [ ] ${t}`)] : [])].join('\n')
+}
+
+function SummaryBox({ r, onAdd, onClose, addLabel }: { r: NoteSummary; onAdd?: () => void; onClose: () => void; addLabel: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', padding: '0.85rem 1rem', borderRadius: 12, background: 'color-mix(in srgb, var(--gold) 7%, var(--surface2))', border: '1px solid color-mix(in srgb, var(--gold) 22%, var(--border))' }}>
+      <div style={{ fontSize: '0.92rem', color: 'var(--text)', lineHeight: 1.55 }}>{r.summary}</div>
+      {r.points.length > 0 && <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.86rem', color: 'var(--text)', lineHeight: 1.55 }}>{r.points.map((p, i) => <li key={i}>{p}</li>)}</ul>}
+      {r.todos.length > 0 && (
+        <div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>To do</div>
+          <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.86rem', color: 'var(--text)', lineHeight: 1.55 }}>{r.todos.map((t, i) => <li key={i}>{t}</li>)}</ul>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+        {onAdd && <button onClick={onAdd} className="btn btn-primary press">{addLabel}</button>}
+        <button onClick={onClose} className="btn btn-ghost press">Close</button>
+      </div>
+    </div>
+  )
+}
+
 export default function NotesHub({ userId }: { userId: string }) {
   const [tab, setTab] = useState<'notes' | 'collections'>('notes')
   const seg = (active: boolean): React.CSSProperties => ({
