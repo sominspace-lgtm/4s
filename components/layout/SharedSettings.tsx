@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
-import { DEFAULT_VILLAGE_PANEL_BLOCKS } from '@/lib/utils/villagePanel'
+import type { SectionConfig } from '@/components/ui/SectionCustomizer'
 import { DEVICE_EVENT, DEVICE_KEYS, readDevice, writeDevice } from '@/lib/utils/deviceSettings'
 
 // One settings page for the shared iPad (2026-10-19): guest view, older-iPad
 // mode, the screen staying on, the bedtime dim, and what the village panel
 // shows. Everything except the panel is this device only.
 
-export default function SharedSettings({ open, onClose, guestView, onToggleGuestView, panelBlocks, onChangePanelBlocks }: {
+export default function SharedSettings({ open, onClose, guestView, onToggleGuestView }: {
   open: boolean; onClose: () => void
   guestView: boolean; onToggleGuestView?: () => void
   panelBlocks: SectionConfig[]; onChangePanelBlocks: (b: SectionConfig[]) => void
@@ -18,7 +17,6 @@ export default function SharedSettings({ open, onClose, guestView, onToggleGuest
   const [lite, setLite] = useState<string>('auto')
   const [awake, setAwake] = useState(true)
   const [bedtime, setBedtime] = useState(true)
-  const [panelOpen, setPanelOpen] = useState(false)
 
   useEffect(() => {
     const read = () => {
@@ -72,13 +70,7 @@ export default function SharedSettings({ open, onClose, guestView, onToggleGuest
           <div><div style={name}>Dim at bedtime</div><div style={hint}>From 10pm to 5:30am the village goes dim and still.</div></div>
           {toggle(bedtime, () => writeDevice(DEVICE_KEYS.bedtime, bedtime ? '0' : null))}
         </div>
-        <div style={{ ...row, borderBottom: 'none' }}>
-          <div><div style={name}>What the panel shows</div><div style={hint}>The cards under the village: This week, Tonight, shopping and more.</div></div>
-          <button onClick={() => setPanelOpen(true)} className="btn btn-secondary press" style={{ minHeight: 40 }}>Choose</button>
-        </div>
       </div>
-      <SectionCustomizer open={panelOpen} title="Village panel" intro="What shows under the village. Reorder with ↑↓ or hide with the eye toggle."
-        sections={panelBlocks} defaultSections={DEFAULT_VILLAGE_PANEL_BLOCKS} onChange={onChangePanelBlocks} onClose={() => setPanelOpen(false)} />
     </div>,
     document.body,
   )
