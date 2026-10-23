@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { useWorkItems, dueUrgency } from '@/lib/hooks/useWorkItems'
 import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { useSubscriptions, urgency as subUrgency } from '@/lib/hooks/useSubscriptions'
-import { useGiftOccasions, usePeople, daysSinceContact } from '@/lib/hooks/usePeople'
+import { useGiftOccasions } from '@/lib/hooks/usePeople'
 import { useNotes } from '@/lib/hooks/useNotes'
 import { useWishlist } from '@/lib/hooks/useWishlist'
 import { useBuyItems, computeStatus } from '@/lib/hooks/useBuyItems'
@@ -89,7 +89,6 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
   const { habits, completions } = useHabits()
   const { subs, total: monthlyTotal } = useSubscriptions()
   const giftItems = useGiftOccasions()
-  const { people } = usePeople()
   const { notes } = useNotes(null)
   const { wishes } = useWishlist()
   const wishItems = wishes.filter(w => w.status === 'wanted')
@@ -160,13 +159,6 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
     }, 0) / (habitsTotal * week.length) * 100
   )
 
-  // Replaces the old domainsNeedingReview signal (2026-08-21) — Life/Domains
-  // is gone, so "who hasn't been contacted in a while" comes straight from
-  // real relationship data instead of a proxy category-review heuristic.
-  const peopleQuiet = people.filter(p => {
-    const since = daysSinceContact(p.last_contact)
-    return since !== null && since > 30
-  })
   const refillsDue = buyItems.filter(b => ['due-to-buy', 'overdue'].includes(computeStatus(b))).length
   const moneyDueSoon = subs.filter(s => subUrgency(s) === 'soon').length
     + giftItems.filter(g => g.days <= 7).length
@@ -176,7 +168,6 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
   const summaryParts: string[] = []
   if (overdue > 0) summaryParts.push(`${overdue} overdue task${overdue > 1 ? 's' : ''}`)
   else if (dueToday > 0) summaryParts.push(`${dueToday} due today`)
-  if (peopleQuiet.length > 0) summaryParts.push(`${peopleQuiet.length} hello${peopleQuiet.length > 1 ? 's' : ''} overdue`)
   if (moneyDueSoon > 0) summaryParts.push(`${moneyDueSoon} money reminder${moneyDueSoon > 1 ? 's' : ''}`)
   if (habitsDueCount > 0) summaryParts.push(`${habitsDueCount} habit${habitsDueCount > 1 ? 's' : ''} due`)
 
@@ -224,7 +215,6 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
     // to say once there's enough of a pile that naming a real next step
     // (one focused stretch, not "catch up on everything") actually helps.
     if (overdue >= 3) return `${overdue} things are overdue. One focused stretch might clear more than piecemeal would.`
-    if (peopleQuiet.length > 0) return 'Someone may deserve a hello today.'
     if (giftSoon > 0) return 'A gift moment is coming up. Worth a thought.'
     if (refillsDue > 0) return 'You may be running low on something.'
     if (dormantHabits.length > 0) {
@@ -264,10 +254,6 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
         : refillsDue > 0
           ? `${refillsDue} to buy again · $${monthlyTotal.toFixed(0)}/mo`
           : `$${monthlyTotal.toFixed(0)}/mo · ${wishItems.length} wishlist · ${subs.length} renewals`,
-    },
-    {
-      label: 'People', action: 'Open People', onAction: () => goToPersonal('people'),
-      line: peopleQuiet.length > 0 ? `${peopleQuiet.length} to reach out to` : `${people.length} ${people.length === 1 ? 'person' : 'people'}`,
     },
   ]
 

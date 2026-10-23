@@ -85,7 +85,6 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'gift'], run: () => goToPersonal('money') },
     { id: 'go-wishlist', label: 'Go to Wishlist',    icon: '✦', keywords: ['wishlist', 'wish', 'want', 'someday', 'save for'], run: () => goToPersonal('wishlist') },
     { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },
-    { id: 'go-people',   label: 'Go to People',      icon: '♡', keywords: ['shared', 'share', 'friend', 'people', 'family', 'partner', 'companion', 'space', 'relationship'], run: () => goToPersonal('people') },
     { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goToPersonal('tasks'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
     { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToPersonal('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
     { id: 'new-note', label: 'New note', hint: 'Notes', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'quick add'], run: () => window.dispatchEvent(new CustomEvent('app:open-quick-capture')) },

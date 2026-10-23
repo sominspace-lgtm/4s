@@ -18,7 +18,6 @@ const TILES: { id: string; label: string; icon: IconName; tint: string }[] = [
   { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
   { id: 'money',    label: 'Money',     icon: 'scale',     tint: 'var(--emerald)' },
   { id: 'wishlist', label: 'Wishlist',  icon: 'sparkle',   tint: 'var(--rose)' },
-  { id: 'people',   label: 'People',    icon: 'handshake', tint: 'var(--amber, var(--gold))' },
   { id: 'vault',    label: 'Passwords', icon: 'lock',      tint: 'var(--muted)' },
 ]
 
@@ -43,7 +42,6 @@ export default function MeGrid({ visible, onOpen, userId }: { visible: Set<strin
     notes: 'Thoughts and lists',
     money: total > 0 ? `$${total.toFixed(0)} a month` : 'Bills and renewals',
     wishlist: wanted > 0 ? `${wanted} wanted` : 'Things you want',
-    people: 'Birthdays and gifts',
     vault: 'Locked',
   }
 

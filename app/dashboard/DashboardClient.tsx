@@ -36,7 +36,6 @@ import VaultHub from '@/components/vault/VaultHub'
 import KitchenHub from '@/components/kitchen/KitchenHub'
 import MoneyHub from '@/components/money/MoneyHub'
 import WishlistHub from '@/components/watchlist/WishlistHub'
-import PeopleHub from '@/components/people/PeopleHub'
 import HouseholdHub from '@/components/household/HouseholdHub'
 import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
 import PlacesHub from '@/components/places/PlacesHub'
@@ -93,6 +92,7 @@ interface Props {
 // top-level ids and are Personal sub-tabs as of this change, so any layout
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
+  'people',                                          // People page deleted (2026-10-23)
   'hhtoday',                                          // Household Today tab removed (2026-09-08)
   // 'wishlist' is its own section again (2026-10-20), so it is no longer here.
   'pulse', 'spending', 'capture',
@@ -234,7 +234,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
@@ -637,7 +637,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
         // Wishlist left Money for its own tab (2026-10-20).
         case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
-        case 'people':   return <PeopleHub key="people" />
         // Check-ins are their own page (2026-10-21), a tile in Me and a card on Today.
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>

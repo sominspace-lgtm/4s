@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import IconButton from '@/components/ui/IconButton'
 import { usePeople, daysUntilBirthday, type Person } from '@/lib/hooks/usePeople'
-import { goToPersonal } from '@/lib/utils/navigate'
 
 // Gifts is a LENS over contacts, not a second store.
 //
@@ -67,9 +66,6 @@ export default function GiftsCard() {
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.6rem', marginBottom: '0.7rem', flexWrap: 'wrap' }}>
         <span className="t-meta">Birthdays and what to get them.</span>
-        <button onClick={() => goToPersonal('people')} className="btn btn-ghost press" style={{ fontSize: '0.64rem' }}>
-          All contacts →
-        </button>
       </div>
 
       {upcoming.length === 0 && (
