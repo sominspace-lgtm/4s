@@ -123,15 +123,17 @@ export default function YouTwo({ userId }: { userId: string }) {
                         <span style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>✓ both in</span>
                       )}
                     </summary>
-                    {locked ? (
+                    {/* Your own answers always show. Your partner's show once you
+                        have both checked in, or the week is over (2026-10-23). */}
+                    {locked && (
                       <div style={{ marginTop: '0.6rem', fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
                         {mineDone
                           ? 'Your answers are in. You will both see each other’s once your partner checks in, or when the week ends.'
                           : 'Your partner’s answers open once you check in too, or when the week ends.'}
                       </div>
-                    ) : (
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
-                      {Object.entries(w.byUser).map(([uid, c]) => {
+                      {Object.entries(w.byUser).filter(([uid]) => !locked || uid === userId).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
                         const questions = c.answers.filter(a => a.questionKey !== 'vibe')
                         return (
@@ -159,7 +161,6 @@ export default function YouTwo({ userId }: { userId: string }) {
                         )
                       })}
                     </div>
-                    )}
                   </details>
                   )
                 })}
