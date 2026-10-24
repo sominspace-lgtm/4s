@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useMail } from '@/lib/hooks/useMail'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import GmailInbox from '@/components/mail/GmailInbox'
+import { goToSection } from '@/lib/utils/navigate'
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -29,18 +29,13 @@ function timeAgo(iso: string): string {
 // Two inboxes: the household's own async mailbox, and (once Google is
 // connected) the person's Gmail. Household stays the default.
 export default function MailHub({ userId }: { userId: string }) {
-  const [tab, setTab] = useState<'household' | 'gmail'>('household')
-  const tabBtn = (active: boolean): React.CSSProperties => ({
-    fontSize: '0.7rem', padding: '0.3em 0.9em', borderRadius: '7px', cursor: 'pointer', border: 'none',
-    fontFamily: 'var(--font-body)', background: active ? 'var(--surface)' : 'transparent', color: active ? 'var(--text)' : 'var(--muted)',
-  })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-      <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem', alignSelf: 'flex-start' }}>
-        <button className="press" onClick={() => setTab('household')} style={tabBtn(tab === 'household')}>Household</button>
-        <button className="press" onClick={() => setTab('gmail')} style={tabBtn(tab === 'gmail')}>Gmail</button>
+      {/* Gmail moved to Me → Google and Home → Shared (2026-10-24). */}
+      <HouseholdMail userId={userId} />
+      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+        Looking for Gmail? Your inbox is in <button className="press" onClick={() => goToSection('google')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 'inherit' }}>Me → Google</button>, the shared one in <button className="press" onClick={() => goToSection('ourgoogle')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 'inherit' }}>Home → Shared</button>.
       </div>
-      {tab === 'household' ? <HouseholdMail userId={userId} /> : <GmailInbox />}
     </div>
   )
 }

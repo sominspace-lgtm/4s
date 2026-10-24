@@ -38,7 +38,7 @@ function senderAddress(from: string): string {
   return from.match(/<([^>]+)>/)?.[1] ?? from
 }
 
-export default function GmailInbox() {
+export default function GmailInbox({ only }: { only?: 'mine' | 'shared' } = {}) {
   const { status, loading: statusLoading, connect } = useGoogleStatus()
   const { add: addTask } = useWorkItems()
   const { add: addEvent } = useEvents()
@@ -59,7 +59,8 @@ export default function GmailInbox() {
   const mineOk = status.connected && !!status.gmail
   const sharedOk = !!status.household?.connected
   const [pick, setPick] = useState<'mine' | 'shared'>('mine')
-  const account: 'mine' | 'shared' = !mineOk ? 'shared' : !sharedOk ? 'mine' : pick
+  // only pins it to one inbox (the Google pages, 2026-10-24).
+  const account: 'mine' | 'shared' = only ?? (!mineOk ? 'shared' : !sharedOk ? 'mine' : pick)
   const acct = account === 'shared' ? 'account=shared' : ''
   const withAcct = (url: string) => (acct ? `${url}${url.includes('?') ? '&' : '?'}${acct}` : url)
 
@@ -123,7 +124,7 @@ export default function GmailInbox() {
   if (statusLoading) return <div style={small}>Checking…</div>
   if (status.blocked) return <div style={small}>Mail is not on the shared screen. Sign in as yourself to read it.</div>
   if (!status.configured) return <div style={small}>Google is not set up on the server yet.</div>
-  if (!mineOk && !sharedOk) {
+  if (only === 'shared' ? !sharedOk : only === 'mine' ? !mineOk : !mineOk && !sharedOk) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', alignItems: 'flex-start' }}>
         <div style={small}>Connect Google to read your inbox here, turn emails into tasks and events, and send mail.</div>
@@ -197,7 +198,7 @@ ${open.body.slice(0, 6000)}`} />}
   const FILTERS: [string, string][] = [['Inbox', ''], ['Unread', 'is:unread'], ['This week', 'newer_than:7d'], ['Bills', 'subject:(bill OR invoice OR receipt OR statement OR payment)'], ['Travel', 'subject:(flight OR reservation OR booking OR itinerary OR confirmation)']]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-      {mineOk && sharedOk && (
+      {!only && mineOk && sharedOk && (
         <div style={{ display: 'flex', gap: '0.2rem', padding: '0.2rem', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, alignSelf: 'flex-start' }}>
           {(['mine', 'shared'] as const).map(a => (
             <button key={a} onClick={() => { setPick(a); setOpen(null); setQ('') }} className="press" style={{

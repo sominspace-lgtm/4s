@@ -13,6 +13,7 @@ import { useCheckins } from '@/lib/hooks/useCheckins'
 
 const TILES: { id: string; label: string; icon: IconName; tint: string }[] = [
   { id: 'checkins', label: 'Check-ins', icon: 'heart',     tint: 'var(--rose)' },
+  { id: 'google',   label: 'Google',    icon: 'link',      tint: 'var(--gold)' },
   { id: 'tasks',    label: 'Tasks',     icon: 'clipboard', tint: 'var(--gold)' },
   { id: 'habits',   label: 'Habits',    icon: 'sprout',    tint: 'var(--emerald)' },
   { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
@@ -37,6 +38,7 @@ export default function MeGrid({ visible, onOpen, userId }: { visible: Set<strin
 
   const hint: Record<string, string> = {
     checkins: thisWeekMine ? (doneThisWeek.length > 1 ? 'Both in this week' : 'Done, waiting on your partner') : 'Not done this week',
+    google: 'Inbox, calendar, Drive',
     tasks: dueNow > 0 ? `${dueNow} due` : open.length > 0 ? `${open.length} open` : 'All clear',
     habits: activeHabits.length > 0 ? `${doneToday} of ${activeHabits.length} today` : 'Start one',
     notes: 'Thoughts and lists',

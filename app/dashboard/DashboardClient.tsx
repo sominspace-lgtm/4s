@@ -18,6 +18,7 @@ import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
 import YouTwo from '@/components/checkin/YouTwo'
+import GoogleHub from '@/components/google/GoogleHub'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -181,6 +182,8 @@ const SECTION_GROUPS: Record<string, string> = {
   // now, not just in shared mode).
   home:      'ours',
   reference: 'ours',
+  ourgoogle: 'ours',
+  google:    'mine',
   mail:      'ours',
   kitchen:   'ours',
 }
@@ -233,14 +236,14 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
+  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'ourgoogle', 'mail'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'google', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
 // The words on the top bar inside a place.
 const SUB_LABELS: Record<string, string> = {
-  home: 'Home', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
+  home: 'Home', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', ourgoogle: 'Shared', mail: 'Mail',
   places: 'Map', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
 }
 
@@ -596,6 +599,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Renamed from Reference (2026-10-19): it is the household's collections,
       // shared notes, and the two of you.
       reference: t('Collections', lang),
+      // The Google pages (2026-10-24).
+      google: 'Google', ourgoogle: 'Shared',
       me: 'Me',
     }
 
@@ -638,6 +643,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Wishlist left Money for its own tab (2026-10-20).
         case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
         // Check-ins are their own page (2026-10-21), a tile in Me and a card on Today.
+        case 'google':    return <div key="google" className="roomy"><GoogleHub scope="mine" userId={userId} /></div>
+        case 'ourgoogle': return <div key="ourgoogle" className="roomy"><GoogleHub scope="shared" userId={userId} guestMode={guestMode} /></div>
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>

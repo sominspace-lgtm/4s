@@ -9,9 +9,9 @@ import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 
 interface DriveFile { id: string; name: string; type: string; modified: string | null; link: string | null }
 
-export default function SharedDrive() {
+export default function SharedDrive({ account = 'shared', title = 'Shared Drive' }: { account?: 'mine' | 'shared'; title?: string } = {}) {
   const { status } = useGoogleStatus()
-  const connected = !!status.household?.connected
+  const connected = account === 'shared' ? !!status.household?.connected : status.connected && !!status.drive
   const [files, setFiles] = useState<DriveFile[]>([])
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
@@ -19,12 +19,12 @@ export default function SharedDrive() {
 
   const load = useCallback(async (query: string) => {
     setBusy(true); setErr(null)
-    const res = await fetch(`/api/google/drive?account=shared${query ? `&q=${encodeURIComponent(query)}` : ''}`)
+    const res = await fetch(`/api/google/drive?account=${account}${query ? `&q=${encodeURIComponent(query)}` : ''}`)
     const j = await res.json().catch(() => ({})) as { files?: DriveFile[]; error?: string }
     if (res.ok) setFiles(j.files ?? [])
     else setErr(res.status === 409 ? 'Reconnect the shared Google account in Connect.' : (j.error ?? 'Drive did not answer.'))
     setBusy(false)
-  }, [])
+  }, [account])
 
   useEffect(() => { if (connected) void load('') }, [connected, load])
 
@@ -32,9 +32,9 @@ export default function SharedDrive() {
 
   return (
     <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
-      <div className="t-card" style={{ marginBottom: '0.6rem' }}>Shared Drive</div>
+      <div className="t-card" style={{ marginBottom: '0.6rem' }}>{title}</div>
       <form onSubmit={e => { e.preventDefault(); void load(q.trim()) }} style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem' }}>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search the shared Drive"
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder={`Search ${account === 'shared' ? 'the shared' : 'your'} Drive`}
           style={{ flex: 1, minWidth: 0, minHeight: 44, padding: '0 0.7rem', fontSize: '0.9rem', fontFamily: 'var(--font-body)', color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, outline: 'none' }} />
         <button className="btn btn-secondary press" disabled={busy}>{busy ? '…' : 'Search'}</button>
       </form>
