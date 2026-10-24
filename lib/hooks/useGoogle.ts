@@ -20,6 +20,8 @@ export interface GoogleStatus {
   drafts?: boolean
   /** Shared mode: Google is deliberately unavailable. */
   blocked?: boolean
+  /** The household's shared Google account (2026-10-24). */
+  household?: { available: boolean; connected: boolean; email: string | null }
 }
 
 export interface GoogleEvent {
@@ -75,7 +77,13 @@ export function useGoogleStatus() {
     await fetch('/api/google/disconnect', { method: 'POST' })
     notifyGoogleChanged()
   }
-  return { status, loading, connect, disconnect }
+  // The household's shared Google account: same sign-in, saved to the household.
+  const connectShared = () => { window.location.href = '/api/google/connect?for=household' }
+  const disconnectShared = async () => {
+    await fetch('/api/google/disconnect?account=shared', { method: 'POST' })
+    notifyGoogleChanged()
+  }
+  return { status, loading, connect, disconnect, connectShared, disconnectShared }
 }
 
 // --- calendar window --------------------------------------------------------

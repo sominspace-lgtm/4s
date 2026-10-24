@@ -6,6 +6,7 @@ import { lookupFood, FoodError } from './food'
 import { searchMail, readMail, saveDraft } from '@/lib/google/gmail'
 import { listTasks, addTask, updateTask } from '@/lib/google/tasks'
 import { searchDrive, readDrive } from '@/lib/google/drive'
+import { resolveOwner } from '@/lib/google/server'
 
 // What Jarvis can do (2026-10-18). Each tool is a small server function with
 // a JSON schema the model sees. A `write` tool never runs straight from the
@@ -283,7 +284,29 @@ const foodTools: JarvisTool[] = [
   },
 ]
 
-export const TOOLS: JarvisTool[] = [...calendarTools, ...weatherTools, ...taskTools, ...googleTaskTools, ...gmailTools, ...driveTools, ...foodTools]
+// Two Google accounts (2026-10-24): the person's own, and the household's
+// shared email. Every Google tool takes an optional account, "mine" by
+// default, and runs against that account's tokens. Signed pending actions
+// carry it too, so a confirmed write goes to the account that was shown.
+function withAccount(t: JarvisTool): JarvisTool {
+  return {
+    ...t,
+    description: `${t.description} Set account to "shared" for the household's shared Google account (the shared email), otherwise it uses the person's own.`,
+    input_schema: { ...t.input_schema, properties: { ...t.input_schema.properties, account: { type: 'string', enum: ['mine', 'shared'], description: 'Which Google account. Default mine.' } } },
+    summarize: t.summarize ? (i => `${t.summarize!(i)}${i.account === 'shared' ? ' (shared account)' : ''}`) : undefined,
+    run: async (ctx, i) => {
+      let owner: string
+      try { owner = await resolveOwner(ctx.userId, i.account) }
+      catch { throw new ToolInputError('The shared Google account is not connected yet. Connect it in Connect.') }
+      return t.run({ ...ctx, userId: owner }, i)
+    },
+  }
+}
+
+export const TOOLS: JarvisTool[] = [
+  ...calendarTools.map(withAccount), ...weatherTools, ...taskTools, ...googleTaskTools.map(withAccount),
+  ...gmailTools.map(withAccount), ...driveTools.map(withAccount), ...foodTools,
+]
 
 /** Errors whose words are safe and useful to show the model and the person. */
 export function isPlainError(e: unknown): e is Error {

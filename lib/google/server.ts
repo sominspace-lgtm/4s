@@ -64,22 +64,56 @@ export async function requireGoogleUser(): Promise<
   return { ok: true, userId: user.id }
 }
 
+// --- whose Google ----------------------------------------------------------
+// Since 2026-10-24 a connection belongs either to one person (their user id)
+// or to the household ("space:<id>", the shared email). Everything below
+// takes that owner string, so calendar, Gmail, Tasks and Drive work with
+// either account without knowing which it is.
+export const FOR_COOKIE = '4s-google-for'
+
+function where(owner: string): { table: string; col: string; id: string } {
+  return owner.startsWith('space:')
+    ? { table: 'household_google_connections', col: 'space_id', id: owner.slice(6) }
+    : { table: 'google_connections', col: 'user_id', id: owner }
+}
+
+/** The household's Google owner for this person, or null if they have no household. */
+export async function householdOwner(userId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data: m } = await admin.from('shared_space_members').select('space_id').eq('member_id', userId).eq('status', 'accepted').limit(1).maybeSingle()
+  if (m?.space_id) return `space:${m.space_id as string}`
+  const { data: own } = await admin.from('shared_spaces').select('id').eq('owner_id', userId).limit(1).maybeSingle()
+  return own?.id ? `space:${own.id as string}` : null
+}
+
+/** "shared" means the household account; anything else is the person's own. */
+export async function resolveOwner(userId: string, account: unknown): Promise<string> {
+  if (account === 'shared' || account === 'household') {
+    const h = await householdOwner(userId)
+    if (!h) throw new Error('not-connected')
+    return h
+  }
+  return userId
+}
+
 // --- tokens ----------------------------------------------------------------
 interface Row {
   access_token: string; refresh_token: string | null; expires_at: string
   google_email: string | null; scopes: string | null
 }
 
-export async function saveTokens(userId: string, t: {
+export async function saveTokens(owner: string, t: {
   access_token: string; refresh_token?: string | null; expires_in: number; scope?: string; email?: string | null
-}) {
+}, connectedBy?: string) {
   const admin = createAdminClient()
-  const { data: existing } = await admin.from('google_connections').select('refresh_token').eq('user_id', userId).maybeSingle()
+  const w = where(owner)
+  const { data: existing } = await admin.from(w.table).select('refresh_token').eq(w.col, w.id).maybeSingle()
   // Google only sends a refresh token on the first consent; keep the stored
   // (already sealed) one when a refresh response has none.
   const refreshSealed = t.refresh_token ? seal(t.refresh_token) : ((existing?.refresh_token as string | null) ?? null)
-  const { error } = await admin.from('google_connections').upsert({
-    user_id: userId,
+  const { error } = await admin.from(w.table).upsert({
+    [w.col]: w.id,
+    ...(w.col === 'space_id' && connectedBy ? { connected_by: connectedBy } : {}),
     google_email: t.email ?? null,
     scopes: t.scope ?? null,
     access_token: seal(t.access_token),
@@ -90,26 +124,29 @@ export async function saveTokens(userId: string, t: {
   if (error) throw new Error(error.message)
 }
 
-export async function getConnection(userId: string): Promise<{ email: string | null; scopes: string | null } | null> {
+export async function getConnection(owner: string): Promise<{ email: string | null; scopes: string | null } | null> {
   const admin = createAdminClient()
-  const { data } = await admin.from('google_connections').select('google_email, scopes').eq('user_id', userId).maybeSingle()
+  const w = where(owner)
+  const { data } = await admin.from(w.table).select('google_email, scopes').eq(w.col, w.id).maybeSingle()
   return data ? { email: (data.google_email as string | null) ?? null, scopes: (data.scopes as string | null) ?? null } : null
 }
 
 /** Deletes the stored connection and returns a token to revoke at Google. */
-export async function deleteConnection(userId: string): Promise<string | null> {
+export async function deleteConnection(owner: string): Promise<string | null> {
   const admin = createAdminClient()
-  const { data } = await admin.from('google_connections').select('access_token, refresh_token').eq('user_id', userId).maybeSingle()
+  const w = where(owner)
+  const { data } = await admin.from(w.table).select('access_token, refresh_token').eq(w.col, w.id).maybeSingle()
   const token = data ? open((data.refresh_token as string | null) ?? (data.access_token as string)) : null
-  await admin.from('google_connections').delete().eq('user_id', userId)
+  await admin.from(w.table).delete().eq(w.col, w.id)
   return token
 }
 
 /** A usable access token, refreshed when it is about to expire. null = not connected / refresh failed. */
-export async function getAccessToken(userId: string): Promise<string | null> {
+export async function getAccessToken(owner: string): Promise<string | null> {
   const admin = createAdminClient()
-  const { data } = await admin.from('google_connections')
-    .select('access_token, refresh_token, expires_at, google_email, scopes').eq('user_id', userId).maybeSingle()
+  const w = where(owner)
+  const { data } = await admin.from(w.table)
+    .select('access_token, refresh_token, expires_at, google_email, scopes').eq(w.col, w.id).maybeSingle()
   const row = data as Row | null
   if (!row) return null
   if (new Date(row.expires_at).getTime() > Date.now() + 30_000) return open(row.access_token)
@@ -126,13 +163,13 @@ export async function getAccessToken(userId: string): Promise<string | null> {
   })
   if (!res.ok) return null
   const j = await res.json() as { access_token: string; expires_in: number; scope?: string }
-  await saveTokens(userId, { access_token: j.access_token, expires_in: j.expires_in, scope: j.scope ?? row.scopes ?? undefined, email: row.google_email })
+  await saveTokens(owner, { access_token: j.access_token, expires_in: j.expires_in, scope: j.scope ?? row.scopes ?? undefined, email: row.google_email })
   return j.access_token
 }
 
 /** Authenticated fetch against a Google API. Throws 'not-connected' when there is no usable token. */
-export async function googleFetch(userId: string, url: string, init?: RequestInit): Promise<Response> {
-  const token = await getAccessToken(userId)
+export async function googleFetch(owner: string, url: string, init?: RequestInit): Promise<Response> {
+  const token = await getAccessToken(owner)
   if (!token) throw new Error('not-connected')
   return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), authorization: `Bearer ${token}` } })
 }

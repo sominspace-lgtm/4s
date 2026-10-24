@@ -28,7 +28,7 @@ function Btn({ onClick, children, danger }: { onClick: () => void; children: Rea
 }
 
 export default function GoogleConnect() {
-  const { status, loading, connect, disconnect } = useGoogleStatus()
+  const { status, loading, connect, disconnect, connectShared, disconnectShared } = useGoogleStatus()
   const [result, setResult] = useState<string | null>(null)
 
   // Landed back from Google with ?google=<result>: show it once, then tidy the URL.
@@ -76,6 +76,28 @@ export default function GoogleConnect() {
           </div>
           <div><Btn onClick={connect}>Connect Google</Btn></div>
         </>
+      )}
+
+      {/* The household's shared email (2026-10-24): one account the two of
+          you share. Either of you can connect it; both can use it. */}
+      {status.household?.available && (
+        <div style={{ borderTop: '1px solid var(--faint)', paddingTop: '0.7rem', marginTop: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text)' }}>Shared Google account</div>
+          {status.household.connected ? (
+            <>
+              <div style={muted}>Connected{status.household.email ? ` as ${status.household.email}` : ''}. You both can use it. Ask Jarvis about the shared inbox or calendar.</div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <Btn onClick={connectShared}>Reconnect</Btn>
+                <Btn danger onClick={disconnectShared}>Disconnect</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={muted}>The email the two of you share. Connect it once and it works for both of you. When Google asks, pick the shared account.</div>
+              <div><Btn onClick={connectShared}>Connect shared account</Btn></div>
+            </>
+          )}
+        </div>
       )}
     </div>
   )

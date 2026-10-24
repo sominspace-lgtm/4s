@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { STATE_COOKIE, redirectUri, requireGoogleUser, saveTokens } from '@/lib/google/server'
+import { FOR_COOKIE, STATE_COOKIE, householdOwner, redirectUri, requireGoogleUser, saveTokens } from '@/lib/google/server'
 
 // Google sends the browser back here with ?code. Swap it for tokens, store
 // them (sealed, service-role only), then return to the dashboard.
@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   const back = (status: string) => {
     const res = NextResponse.redirect(`${origin}/dashboard?google=${status}`)
     res.cookies.delete(STATE_COOKIE)
+    res.cookies.delete(FOR_COOKIE)
     return res
   }
 
@@ -40,7 +41,10 @@ export async function GET(request: Request) {
   } catch { /* the email is a label, not required */ }
 
   try {
-    await saveTokens(who.userId, { ...t, email })
+    const forHousehold = (await cookies()).get(FOR_COOKIE)?.value === 'household'
+    const owner = forHousehold ? await householdOwner(who.userId) : who.userId
+    if (!owner) return back('savefail')
+    await saveTokens(owner, { ...t, email }, who.userId)
   } catch {
     return back('savefail')
   }
