@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { googleFetch, requireGoogleAccess } from '@/lib/google/server'
+import { googleFetch, googleReason, requireGoogleAccess } from '@/lib/google/server'
 
 // Google Photos (2026-10-24), through Google's Photos Picker: you choose the
 // photos in Google's own picker, and 4S only ever sees the ones you chose.
@@ -36,8 +36,7 @@ export async function POST(request: Request) {
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
   try {
     const res = await googleFetch(who.owner, `${API}/sessions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
-    if (res.status === 403) return NextResponse.json({ error: 'Google Photos needs permission. Reconnect Google in Connect.' }, { status: 403 })
-    if (!res.ok) throw new Error(`session ${res.status}`)
+    if (!res.ok) return NextResponse.json({ error: await googleReason(res, 'Google Photos Picker API') }, { status: res.status === 403 ? 403 : 502 })
     const j = await res.json() as { id: string; pickerUri: string; pollingConfig?: { pollInterval?: string } }
     return NextResponse.json({ session: j.id, url: j.pickerUri, poll: j.pollingConfig?.pollInterval ?? '3s' })
   } catch (e) { return fail(e) }

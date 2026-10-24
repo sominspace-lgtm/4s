@@ -203,3 +203,27 @@ export async function googleFetch(owner: string, url: string, init?: RequestInit
   if (!token) throw new Error('not-connected')
   return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), authorization: `Bearer ${token}` } })
 }
+
+/**
+ * Plain words for why Google said no (2026-10-24), so the screen can say
+ * what to fix instead of "could not load". The most common one by far is an
+ * API that was never switched on in the Google Cloud project.
+ */
+export async function googleReason(res: Response, api: string): Promise<string> {
+  let reason = '', message = ''
+  try {
+    const j = await res.clone().json() as { error?: { message?: string; status?: string; errors?: { reason?: string }[]; details?: { reason?: string }[] } }
+    reason = j.error?.errors?.[0]?.reason ?? j.error?.details?.[0]?.reason ?? j.error?.status ?? ''
+    message = j.error?.message ?? ''
+  } catch { /* not JSON */ }
+  console.error(`[google] ${api} ${res.status} ${reason} ${message.slice(0, 200)}`)
+  if (/accessNotConfigured|SERVICE_DISABLED|has not been used|is disabled/i.test(reason + ' ' + message)) {
+    return `The ${api} is switched off in your Google Cloud project. Turn it on in APIs & Services → Library, wait a minute, then try again.`
+  }
+  if (res.status === 403 && /insufficient|scope|PERMISSION_DENIED/i.test(reason + ' ' + message)) {
+    return 'Google has not given 4S permission for this. Reconnect Google in Connect and tick every box.'
+  }
+  if (res.status === 401) return 'Google needs to be connected again. Reconnect it in Connect.'
+  if (res.status === 429) return 'Google says slow down. Try again in a minute.'
+  return `Google said no (${res.status}${reason ? `, ${reason}` : ''}).`
+}

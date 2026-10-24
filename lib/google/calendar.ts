@@ -26,6 +26,11 @@ export async function checked(res: Response): Promise<Response> {
   if (res.ok) return res
   if (res.status === 403) {
     const t = await res.text().catch(() => '')
+    // An API never switched on in the Google Cloud project (2026-10-24).
+    if (/accessNotConfigured|SERVICE_DISABLED|has not been used|is disabled/i.test(t)) {
+      const api = /gmail/i.test(t) ? 'Gmail API' : /drive/i.test(t) ? 'Google Drive API' : /tasks/i.test(t) ? 'Google Tasks API' : /photospicker/i.test(t) ? 'Google Photos Picker API' : 'Google Calendar API'
+      throw new GoogleError('failed', `The ${api} is switched off in your Google Cloud project. Turn it on in APIs & Services → Library, then try again.`)
+    }
     if (/insufficient|scope/i.test(t)) throw new GoogleError('missing-scope', 'Google has not given 4S permission for this yet. Reconnect Google in Connect.')
     if (/rate|quota/i.test(t)) throw new GoogleError('rate-limited', 'Google says to slow down. Try again in a minute.')
   }

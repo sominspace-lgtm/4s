@@ -15,6 +15,7 @@ function fail(e: unknown) {
   if (e instanceof GoogleError && e.code === 'not-connected') return NextResponse.json({ error: 'not-connected' }, { status: 409 })
   if (e instanceof Error && e.message === 'not-connected') return NextResponse.json({ error: 'not-connected' }, { status: 409 })
   if (e instanceof GoogleError && e.code === 'rate-limited') return NextResponse.json({ error: e.message }, { status: 429 })
+  if (e instanceof GoogleError) return NextResponse.json({ error: e.message }, { status: 502 })
   return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
 }
 

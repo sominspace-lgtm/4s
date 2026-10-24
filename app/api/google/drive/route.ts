@@ -16,6 +16,6 @@ export async function GET(request: Request) {
   } catch (e) {
     const code = (e as { code?: string }).code
     if (code === 'not-connected' || (e instanceof Error && e.message === 'not-connected')) return NextResponse.json({ error: 'not-connected' }, { status: 409 })
-    return NextResponse.json({ error: 'Drive did not answer. Try again.' }, { status: 502 })
+    return NextResponse.json({ error: e instanceof Error && e.message ? e.message : 'Drive did not answer. Try again.' }, { status: 502 })
   }
 }

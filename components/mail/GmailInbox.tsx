@@ -67,7 +67,7 @@ export default function GmailInbox() {
     setBusy(true); setErr(null)
     const res = await fetch(withAcct(`/api/google/gmail?${new URLSearchParams(query ? { q: query } : {})}`))
     if (res.ok) setMessages(((await res.json()) as { messages: GmailSummary[] }).messages)
-    else setErr(res.status === 409 ? 'Google needs to be connected again.' : 'Could not load Gmail.')
+    else setErr(res.status === 409 ? 'Google needs to be connected again.' : (((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Could not load Gmail.'))
     setBusy(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- re-list when the inbox changes
   }, [acct])

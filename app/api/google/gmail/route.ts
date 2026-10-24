@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { googleFetch, requireGoogleAccess } from '@/lib/google/server'
+import { googleFetch, googleReason, requireGoogleAccess } from '@/lib/google/server'
 import { header, textOf, type Msg } from '@/lib/google/gmail'
 
 // Gmail (2026-10-05). GET lists/searches (metadata only) or, with ?id=, reads
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     if (id) {
       if (!/^[a-zA-Z0-9]{5,64}$/.test(id)) return NextResponse.json({ error: 'Bad id' }, { status: 400 })
       const res = await googleFetch(gid, `${BASE}/messages/${id}?format=full`)
-      if (!res.ok) return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
+      if (!res.ok) return NextResponse.json({ error: await googleReason(res, 'Gmail API') }, { status: 502 })
       const m = await res.json() as Msg
       return NextResponse.json({
         id: m.id, from: header(m, 'from'), to: header(m, 'to'), subject: header(m, 'subject'), date: header(m, 'date'),
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const q = (sp.get('q') ?? '').slice(0, 200)
     const max = Math.min(25, Math.max(1, Number(sp.get('max')) || 15))
     const list = await googleFetch(gid, `${BASE}/messages?${new URLSearchParams({ maxResults: String(max), ...(q ? { q } : { labelIds: 'INBOX' }) })}`)
-    if (!list.ok) return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
+    if (!list.ok) return NextResponse.json({ error: await googleReason(list, 'Gmail API') }, { status: 502 })
     const ids = ((await list.json()) as { messages?: { id: string }[] }).messages ?? []
     const messages = await Promise.all(ids.map(async ({ id: mid }) => {
       const r = await googleFetch(gid, `${BASE}/messages/${mid}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`)
