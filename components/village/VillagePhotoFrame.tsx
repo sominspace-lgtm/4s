@@ -8,7 +8,8 @@ import { useHouseholdPhotos } from '@/lib/hooks/useHouseholdPhotos'
 // marked for guests show. Tap it to see it big.
 
 export default function VillagePhotoFrame({ spaceId, guestOnly }: { spaceId: string | null; guestOnly: boolean }) {
-  const { photos } = useHouseholdPhotos(spaceId, guestOnly)
+  // Everything in the album (Drive folder and check-ins too); guests only theirs.
+  const { items: photos } = useHouseholdPhotos(spaceId, guestOnly)
   const [i, setI] = useState(0)
   const [big, setBig] = useState(false)
 
@@ -19,7 +20,7 @@ export default function VillagePhotoFrame({ spaceId, guestOnly }: { spaceId: str
   }, [photos.length])
 
   const p = photos.length ? photos[i % photos.length] : null
-  if (!p?.url) return null
+  if (!p) return null
 
   return (
     <>
@@ -29,7 +30,7 @@ export default function VillagePhotoFrame({ spaceId, guestOnly }: { spaceId: str
         boxShadow: '0 6px 16px -6px rgba(40,25,10,0.45)', transform: 'rotate(-3deg)', cursor: 'zoom-in',
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img key={p.id} src={p.url} alt="" className="fade-in" style={{ display: 'block', width: '100%', aspectRatio: '1 / 1', objectFit: 'cover' }} />
+        <img key={p.key} src={p.url} alt="" className="fade-in" style={{ display: 'block', width: '100%', aspectRatio: '1 / 1', objectFit: 'cover' }} />
       </button>
       {big && (
         <div role="dialog" aria-modal="true" aria-label="Photo" onClick={() => setBig(false)} style={{
