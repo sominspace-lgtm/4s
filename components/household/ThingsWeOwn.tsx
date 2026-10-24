@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import Sheet from '@/components/ui/Sheet'
+import GooglePhotosButton from '@/components/ui/GooglePhotosButton'
 import { deleteThingPhotos, getThingPhotoUrls, uploadThingPhoto } from '@/lib/storage/thingPhotos'
 
 // Things we own (2026-10-20): what the house has, with the receipt or a photo
@@ -110,7 +111,7 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
     finally { setReading(false) }
   }
 
-  async function addPhotos(files: FileList | null) {
+  async function addPhotos(files: FileList | File[] | null) {
     if (!files || !draft) return
     const blobs: Blob[] = []
     for (const f of Array.from(files).slice(0, 6)) { try { blobs.push((await shrink(f)).blob) } catch { /* skip an unreadable file */ } }
@@ -290,6 +291,7 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
               <input type="file" accept="image/*" multiple onChange={e => { void addPhotos(e.target.files); e.target.value = '' }}
                 style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
             </label>
+            <GooglePhotosButton max={6} label="Google Photos" onPick={fs => addPhotos(fs)} />
           </div>
           {draft.pending.length > 0 && <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Tap a new photo to take it off.</div>}
 

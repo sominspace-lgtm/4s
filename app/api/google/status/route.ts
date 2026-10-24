@@ -30,6 +30,7 @@ export async function GET() {
     tasks: scopes.includes('/auth/tasks'),
     drive: scopes.includes('drive.readonly'),
     drafts: scopes.includes('gmail.compose'),
+    photos: scopes.includes('photospicker'),
     // The household's shared Google account (2026-10-24).
     household: { available: !!hOwner, connected: !!hConn, email: hConn?.email ?? null },
   })

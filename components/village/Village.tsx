@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useGoogleStatus, useGoogleEvents } from '@/lib/hooks/useGoogle'
 import { createPortal } from 'react-dom'
 import { format, parseISO, differenceInCalendarDays } from 'date-fns'
 import { useHabits } from '@/lib/hooks/useHabits'
@@ -691,11 +692,18 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Data-domain structures (2026-09-06) — the calendar building's
   // glance-card. Only its derived text reaches the hookless scene.
   const { items: calendarEvents } = useEvents()
+  // Google Calendar on the board too (2026-10-24): your own and the shared
+  // one; on the shared iPad only the shared calendar comes back.
+  const gStatus = useGoogleStatus().status
+  const googleEvents = useGoogleEvents(((gStatus.connected && !!gStatus.calendar) || !!gStatus.household?.connected) && !guestView)
   const structures = useMemo(() => {
     const now = new Date()
     const today = format(now, 'yyyy-MM-dd')
 
-    const upcoming = [...calendarEvents]
+    const fromGoogle = googleEvents
+      .map(g => ({ title: g.title, event_date: g.start.slice(0, 10) }))
+      .filter(g => !calendarEvents.some(e => e.event_date === g.event_date && e.title.trim().toLowerCase() === g.title.trim().toLowerCase()))
+    const upcoming = [...calendarEvents.map(e => ({ title: e.title, event_date: e.event_date })), ...fromGoogle]
       .filter(e => e.event_date >= today)
       .sort((a, b) => a.event_date.localeCompare(b.event_date))
     const whenLabel = (d: string) => (d === today ? 'Today' : format(parseISO(d), 'EEE MMM d'))
@@ -729,7 +737,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     week.sort((a, b) => a.sort.localeCompare(b.sort))
 
     return { calendar, week: week.slice(0, 3).map(({ kind, text, when }) => ({ kind, text, when })), note: guestView ? '' : boardNote }
-  }, [calendarEvents, trips, people, boardNote, guestView])
+  }, [calendarEvents, googleEvents, trips, people, boardNote, guestView])
 
   // Life pulse (2026-09-07) — a district touched in the last few days glows
   // warmer; one left alone for weeks fades and desaturates. Not a number or

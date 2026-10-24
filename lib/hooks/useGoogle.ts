@@ -18,6 +18,7 @@ export interface GoogleStatus {
   tasks?: boolean
   drive?: boolean
   drafts?: boolean
+  photos?: boolean
   /** Shared mode: Google is deliberately unavailable. */
   blocked?: boolean
   /** The household's shared Google account (2026-10-24). */

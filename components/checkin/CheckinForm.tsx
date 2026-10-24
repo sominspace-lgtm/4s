@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { questionsForWeek, weekOfSunday, isSingleEmoji, type CheckinQuestion } from '@/lib/utils/checkinQuestions'
 import type { CheckinAnswer } from '@/lib/hooks/useCheckins'
 import IconButton from '@/components/ui/IconButton'
+import GooglePhotosButton from '@/components/ui/GooglePhotosButton'
 
 // One question per screen, then a review screen. Every question is required
 // (2026-09-03) and answers can't be changed once submitted, so: Next is
@@ -152,6 +153,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
                   onChange={e => setPhoto(e.target.files?.[0] ?? null)}
                   style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
               </label>
+              {!photo && <GooglePhotosButton onPick={fs => setPhoto(fs[0] ?? null)} />}
               {photo && (
                 <IconButton label="Choose a different photo" onClick={() => setPhoto(null)} color="var(--gold)" size={11} style={{ alignSelf: 'flex-start' }}>
                   Choose a different one

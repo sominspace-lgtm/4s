@@ -17,6 +17,8 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/tasks',
   'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/gmail.compose',
+  // Google Photos (2026-10-24): only the photos you pick in Google's picker.
+  'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
 ]
 
 export const STATE_COOKIE = '4s-google-state'
