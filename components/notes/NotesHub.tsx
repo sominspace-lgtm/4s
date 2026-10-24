@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import VoiceRecorder from './VoiceRecorder'
 import { format } from 'date-fns'
 import { useNotes, type Note } from '@/lib/hooks/useNotes'
@@ -296,8 +297,9 @@ function NotesList({ userId }: { userId: string }) {
         })}
       </div>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
+          role="dialog" aria-modal="true" aria-label="Note"
           onClick={() => setOpenId(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 500, display: 'flex',
@@ -309,7 +311,7 @@ function NotesList({ userId }: { userId: string }) {
             onClick={e => e.stopPropagation()}
             className="organic"
             style={{
-              width: '100%', maxWidth: 720, maxHeight: '88vh', overflowY: 'auto',
+              width: '100%', maxWidth: 720, maxHeight: 'min(88vh, calc(100dvh - 2rem))', overflowY: 'auto',
               background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18,
               padding: '1.4rem 1.5rem', boxShadow: 'var(--elev-3)',
               display: 'flex', flexDirection: 'column', gap: '0.7rem',
@@ -401,7 +403,8 @@ function NotesList({ userId }: { userId: string }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

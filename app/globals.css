@@ -964,3 +964,16 @@ main .specimen { border-color: color-mix(in srgb, var(--border) 75%, #d9c4a0 25%
   .sheet-backdrop { align-items: center !important; padding: 1.5rem; }
   .sheet { border-radius: 22px !important; border-bottom: 1px solid var(--border) !important; }
 }
+
+/* Bottom bar out of the way (2026-10-24). It hides while any dialog or sheet
+   is open, so it can never cover a Submit or Save button, and on a phone it
+   hides while you type, when the keyboard pushes it up over the form. The
+   floating buttons step aside the same way. */
+body:has([aria-modal="true"]) .homebar,
+body:has(.sheet) .homebar,
+body:has([aria-modal="true"]) .mobile-nav { display: none !important; }
+@media (max-width: 768px) {
+  body:has(main input:focus, main textarea:focus, main select:focus) .homebar,
+  body:has(main input:focus, main textarea:focus, main select:focus) .mobile-nav { display: none !important; }
+  main { padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important; }
+}

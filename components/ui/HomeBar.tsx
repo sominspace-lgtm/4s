@@ -31,14 +31,14 @@ export default function HomeBar({ groups, activeId, onSelect }: {
     <nav aria-label="Main" className="homebar" style={{
       position: 'sticky', bottom: 0, zIndex: 90,
       display: 'flex', justifyContent: 'center',
-      padding: '0.4rem 0.75rem calc(0.45rem + env(safe-area-inset-bottom))',
+      padding: '0.3rem 0.75rem calc(0.3rem + env(safe-area-inset-bottom))',
     }}>
       <div style={{
         position: 'relative',
-        display: 'flex', gap: '0.1rem', padding: '0.3rem', width: 'min(100%, 26rem)', justifyContent: 'space-around',
+        display: 'flex', gap: '0.1rem', padding: '0.2rem', width: 'min(100%, 24rem)', justifyContent: 'space-around',
         background: 'color-mix(in srgb, var(--surface) 78%, transparent)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderRadius: '22px', border: '1px solid color-mix(in srgb, var(--gold) 14%, var(--border))',
+        borderRadius: '18px', border: '1px solid color-mix(in srgb, var(--gold) 14%, var(--border))',
         boxShadow: '0 8px 28px color-mix(in srgb, var(--text) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--gold) 12%, transparent)',
       }}>
         {groups.map(g => {
@@ -51,8 +51,8 @@ export default function HomeBar({ groups, activeId, onSelect }: {
               className="press"
               style={{
                 position: 'relative', flex: 1,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.2rem',
-                minHeight: 52, padding: '0.35rem 0.4rem', borderRadius: '17px', border: 'none', cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.1rem',
+                minHeight: 44, padding: '0.2rem 0.3rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                 background: isActive ? 'color-mix(in srgb, var(--gold) 12%, transparent)' : 'none',
                 transition: 'background 160ms ease',
               }}
@@ -62,7 +62,7 @@ export default function HomeBar({ groups, activeId, onSelect }: {
                 color: isActive ? 'var(--gold)' : 'var(--muted)', opacity: isActive ? 1 : 0.75,
                 transition: 'opacity 160ms ease, color 160ms ease',
               }}>
-                <Icon name={g.icon} size={21} />
+                <Icon name={g.icon} size={18} />
                 {g.opensOverlay && (
                   <span aria-hidden style={{
                     position: 'absolute', bottom: -2, right: -3, width: 5, height: 5, borderRadius: '50%',
@@ -71,7 +71,7 @@ export default function HomeBar({ groups, activeId, onSelect }: {
                 )}
               </span>
               <span style={{
-                fontSize: '0.72rem', fontFamily: 'var(--font-body)', fontWeight: isActive ? 500 : 400,
+                fontSize: '0.64rem', fontFamily: 'var(--font-body)', fontWeight: isActive ? 500 : 400, lineHeight: 1.1,
                 color: isActive ? 'var(--text)' : 'var(--muted)',
               }}>{g.label}</span>
             </button>

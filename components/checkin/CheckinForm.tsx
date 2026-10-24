@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { questionsForWeek, weekOfSunday, isSingleEmoji, type CheckinQuestion } from '@/lib/utils/checkinQuestions'
 import type { CheckinAnswer } from '@/lib/hooks/useCheckins'
 import IconButton from '@/components/ui/IconButton'
@@ -81,7 +82,10 @@ export default function CheckinForm({ onSubmit, onClose }: {
     onClose()
   }
 
-  return (
+  // Portalled to <body> (2026-10-24): inside the page, the bottom bar could
+  // sit on top of it on a phone and hide Submit.
+  if (typeof document === 'undefined') return null
+  return createPortal(
     <div
       role="dialog" aria-modal="true" aria-label="Weekly check-in"
       onClick={onClose}
@@ -92,7 +96,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
       }}
     >
       <div onClick={e => e.stopPropagation()} style={{
-        width: 'min(440px, 94vw)', maxHeight: '90vh', overflowY: 'auto',
+        width: 'min(440px, 94vw)', maxHeight: 'min(90vh, calc(100dvh - 2rem))', overflowY: 'auto',
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: '16px', padding: '1.3rem', boxShadow: '0 28px 72px rgba(0,0,0,0.45)',
         display: 'flex', flexDirection: 'column', gap: '1rem',
@@ -201,7 +205,8 @@ export default function CheckinForm({ onSubmit, onClose }: {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
