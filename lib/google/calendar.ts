@@ -10,10 +10,12 @@ const BASE = 'https://www.googleapis.com/calendar/v3'
 export interface CalEvent {
   id: string; title: string; start: string; end: string; allDay: boolean
   location: string | null; link: string | null
+  /** The event's description (2026-10-24, for the event sheet). */
+  notes?: string | null
 }
 
 interface GEvent {
-  id: string; summary?: string; location?: string; htmlLink?: string
+  id: string; summary?: string; location?: string; htmlLink?: string; description?: string
   start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string }
 }
 
@@ -64,6 +66,7 @@ export async function listEvents(userId: string, from: Date, to: Date): Promise<
     allDay: !e.start?.dateTime,
     location: e.location ?? null,
     link: e.htmlLink ?? null,
+    notes: e.description ? e.description.slice(0, 2000) : null,
   })).filter(e => e.start)
 }
 
@@ -93,6 +96,15 @@ export async function createEvent(userId: string, b: NewEvent): Promise<{ id: st
   const j = await res.json() as GEvent
   if (!j.id) throw new GoogleError('failed', 'Google did not confirm the event.')
   return { id: j.id, link: j.htmlLink ?? null }
+}
+
+/** Change an event (2026-10-24): the whole event is rewritten from the form. */
+export async function updateEvent(userId: string, id: string, b: NewEvent): Promise<void> {
+  if (!/^[a-zA-Z0-9_-]{5,1024}$/.test(id)) throw new GoogleError('failed', 'That is not an event id.')
+  if (!b.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(b.date)) throw new GoogleError('failed', 'An event needs a title and a date.')
+  await gfetch(userId, `${BASE}/calendars/primary/events/${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(eventBody(b)),
+  })
 }
 
 /** Busy blocks on the primary calendar between two instants. */

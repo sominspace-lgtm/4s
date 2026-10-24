@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { googleFetch, inSharedMode, requireGoogleAccess } from '@/lib/google/server'
 import { sharedCalendarEvents } from '@/lib/google/shares'
 import { createClient } from '@/lib/supabase/server'
-import { listEvents, createEvent, GoogleError } from '@/lib/google/calendar'
+import { listEvents, createEvent, updateEvent, GoogleError } from '@/lib/google/calendar'
 
 // Google Calendar, primary calendar (2026-10-05). GET lists a window of
 // events, POST creates one, DELETE removes one. Every call is the signed-in
@@ -60,6 +60,22 @@ export async function POST(request: Request) {
   try {
     const r = await createEvent(gid, { title, date: b.date!, time: b.time ?? null, endTime: b.endTime ?? null, notes: b.notes ?? null, location: b.location ?? null })
     return NextResponse.json({ ok: true, id: r.id, link: r.link })
+  } catch (e) { return fail(e) }
+}
+
+// Change an event (2026-10-24). Only your own calendar or the shared one;
+// a calendar someone shared with you is view only.
+export async function PATCH(request: Request) {
+  const sp = new URL(request.url).searchParams
+  const who = await requireGoogleAccess(sp.get('account'))
+  if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
+  const id = sp.get('id') ?? ''
+  const b = await request.json().catch(() => ({})) as { title?: string; date?: string; time?: string; endTime?: string; notes?: string; location?: string }
+  const title = (b.title ?? '').trim().slice(0, 200)
+  if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(b.date ?? '')) return NextResponse.json({ error: 'title and date (yyyy-mm-dd) are required' }, { status: 400 })
+  try {
+    await updateEvent(who.owner, id, { title, date: b.date!, time: b.time ?? null, endTime: b.endTime ?? null, notes: b.notes ?? null, location: b.location ?? null })
+    return NextResponse.json({ ok: true })
   } catch (e) { return fail(e) }
 }
 

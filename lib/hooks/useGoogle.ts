@@ -39,6 +39,7 @@ export interface GoogleEvent {
   account?: 'mine' | 'shared' | 'partner' | 'members'
   /** For a calendar someone shared with you: whose it is. */
   who?: string
+  notes?: string | null
 }
 
 const NONE: GoogleStatus = { configured: false, connected: false }

@@ -6,6 +6,7 @@ import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
 import Sheet from '@/components/ui/Sheet'
+import GoogleCalendar from '@/components/google/GoogleCalendar'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -41,7 +42,8 @@ export default function UiPreviewClient() {
               ? <SubNav items={g.members.map(m => ({ id: m, label: LABELS[m] }))} activeId={tab} onSelect={setTab} />
               : null}
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
-          {tab !== 'me' && (
+          {tab === 'brief' && <GoogleCalendar scope="mine" />}
+          {tab !== 'me' && tab !== 'brief' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               {[1, 2, 3, 4].map(i => (
                 <section key={i} className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
