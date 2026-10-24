@@ -10,6 +10,8 @@ import HouseholdCalendar from './HouseholdCalendar'
 import WeeklyRecapBlock from './WeeklyRecapBlock'
 import WinsBlock from './WinsBlock'
 import ThingsWeOwn from './ThingsWeOwn'
+import OurPhotos from './OurPhotos'
+import SharedDrive from './SharedDrive'
 import AwayCard from './AwayCard'
 import HouseholdAtAGlance from './HouseholdAtAGlance'
 import HouseholdNotes from './HouseholdNotes'
@@ -837,6 +839,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {/* Date ideas, movies and shows, games, and any shared collection — one
           Collections section (2026-10-12), replacing the separate Date Ideas
           and game/watch list blocks. See ReferenceCollections. */}
+      {/* Our photos and the shared Drive (2026-10-24). Guests see only the
+          photos marked for them, and no Drive. */}
+      {tab === 'reference' && <OurPhotos spaceId={spaceId} guestMode={guestMode} />}
+      {tab === 'reference' && !guestMode && <SharedDrive />}
       {tab === 'reference' && <ReferenceCollections spaceId={spaceId} userId={userId} guestMode={guestMode} sharedMode={sharedMode} />}
       {/* Things we own lives with the house's other reference things (2026-10-21). */}
       {tab === 'reference' && !sharedMode && <ThingsWeOwn spaceId={spaceId} userId={userId} />}

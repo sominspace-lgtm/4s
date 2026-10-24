@@ -179,7 +179,10 @@ export default function GmailInbox() {
             )
         )}
         {err && <div style={{ ...small, color: 'var(--rose)' }}>{err}</div>}
-        {compose && <Compose compose={compose} setCompose={setCompose} send={send} note={sendNote} />}
+        {compose && <Compose compose={compose} setCompose={setCompose} send={send} note={sendNote} replyTo={`From: ${open.from}
+Subject: ${open.subject}
+
+${open.body.slice(0, 6000)}`} />}
       </div>
     )
   }
@@ -237,14 +240,37 @@ export default function GmailInbox() {
   )
 }
 
-function Compose({ compose, setCompose, send, note }: {
+function Compose({ compose, setCompose, send, note, replyTo }: {
   compose: { to: string; subject: string; body: string }
   setCompose: (c: { to: string; subject: string; body: string } | null) => void
   send: () => void
   note: string | null
+  /** The email being answered, so the writer can use it. */
+  replyTo?: string | null
 }) {
+  // Help me write (2026-10-24): say it in a few words, get a draft to edit.
+  const [ask, setAsk] = useState('')
+  const [writing, setWriting] = useState(false)
+  const [werr, setWerr] = useState<string | null>(null)
+  async function write() {
+    if (!ask.trim()) return
+    setWriting(true); setWerr(null)
+    try {
+      const res = await fetch('/api/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'write-email', ask, draft: compose.body, reply: replyTo ?? '' }) })
+      const j = await res.json().catch(() => ({})) as { result?: { subject: string; body: string } }
+      if (!res.ok || !j.result) { setWerr(res.status === 503 ? 'Writing help needs the AI key on the server.' : 'Could not write that. Try again.'); return }
+      setCompose({ ...compose, subject: compose.subject || j.result.subject, body: j.result.body })
+      setAsk('')
+    } finally { setWriting(false) }
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem', background: 'var(--surface)' }}>
+      <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <input value={ask} onChange={e => setAsk(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void write() } }}
+          placeholder={replyTo ? 'Help me reply, e.g. say yes to Thursday' : 'Help me write, e.g. ask the landlord about the heater'} style={input} />
+        <button type="button" onClick={write} disabled={writing || !ask.trim()} className="btn btn-secondary press" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{writing ? 'Writing…' : '✦ Write'}</button>
+      </div>
+      {werr && <div style={{ fontSize: '0.74rem', color: 'var(--rose)' }}>{werr}</div>}
       <input value={compose.to} onChange={e => setCompose({ ...compose, to: e.target.value })} placeholder="To" style={input} />
       <input value={compose.subject} onChange={e => setCompose({ ...compose, subject: e.target.value })} placeholder="Subject" style={input} />
       <textarea value={compose.body} onChange={e => setCompose({ ...compose, body: e.target.value })} placeholder="Message" rows={5} style={{ ...input, resize: 'vertical' }} />

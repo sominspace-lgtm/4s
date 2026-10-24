@@ -10,10 +10,12 @@ import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 
 type State = 'idle' | 'picking' | 'loading'
 
-export default function GooglePhotosButton({ onPick, max = 1, label = 'From Google Photos' }: {
+export default function GooglePhotosButton({ onPick, max = 1, label = 'From Google Photos', account: want }: {
   onPick: (files: File[]) => void | Promise<void>
   max?: number
   label?: string
+  /** Pin to one Google account; by default your own, else the shared one. */
+  account?: 'mine' | 'shared'
 }) {
   const { status } = useGoogleStatus()
   const [state, setState] = useState<State>('idle')
@@ -22,8 +24,9 @@ export default function GooglePhotosButton({ onPick, max = 1, label = 'From Goog
 
   const mine = status.connected && !!status.photos
   const shared = !!status.household?.connected
-  if (!mine && !shared) return null
-  const account = mine ? '' : 'account=shared'
+  const use = want ?? (mine ? 'mine' : 'shared')
+  if (use === 'mine' ? !mine : !shared) return null
+  const account = use === 'shared' ? 'account=shared' : ''
   const q = (extra: string) => [extra, account].filter(Boolean).join('&')
 
   async function start() {

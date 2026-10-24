@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import VillagePhotoFrame from './VillagePhotoFrame'
 import { useGoogleStatus, useGoogleEvents } from '@/lib/hooks/useGoogle'
 import { createPortal } from 'react-dom'
 import { format, parseISO, differenceInCalendarDays } from 'date-fns'
@@ -1304,6 +1305,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onClose={() => setChecklistOpen(false)}
           />
         )}
+
+        {/* Our photos, framed in the corner (2026-10-24). Guests see only theirs. */}
+        {!compact && !arranging && !ambient && <VillagePhotoFrame spaceId={spaces[0]?.id ?? null} guestOnly={guestView || guestLive} />}
 
         {hostingSetupOpen && onStartGathering && (
           <HostingSetup onStart={onStartGathering} onClose={() => setHostingSetupOpen(false)} />

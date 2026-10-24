@@ -27,6 +27,14 @@ export async function searchDrive(userId: string, text: string): Promise<DriveFi
   return (j.files ?? []).map(f => ({ id: f.id, name: f.name, type: KIND[f.mimeType] ?? f.mimeType, modified: f.modifiedTime?.slice(0, 10) ?? null, link: f.webViewLink ?? null }))
 }
 
+/** The most recently changed files, for a Drive list with nothing typed yet. */
+export async function recentDrive(userId: string): Promise<DriveFile[]> {
+  const q = new URLSearchParams({ q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'", pageSize: '20', orderBy: 'modifiedTime desc', fields: 'files(id,name,mimeType,modifiedTime,webViewLink)' })
+  const res = await gfetch(userId, `${BASE}?${q}`)
+  const j = await res.json() as { files?: { id: string; name: string; mimeType: string; modifiedTime?: string; webViewLink?: string }[] }
+  return (j.files ?? []).map(f => ({ id: f.id, name: f.name, type: KIND[f.mimeType] ?? f.mimeType, modified: f.modifiedTime?.slice(0, 10) ?? null, link: f.webViewLink ?? null }))
+}
+
 const EXPORT: Record<string, string> = {
   'application/vnd.google-apps.document': 'text/plain',
   'application/vnd.google-apps.presentation': 'text/plain',
