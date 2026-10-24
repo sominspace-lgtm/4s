@@ -30,8 +30,13 @@ export default function CalendarQuickAdd() {
   const { add: addEvent } = useEvents()
   // Also put an event on Google Calendar (2026-10-05) when it is connected.
   const google = useGoogleStatus().status
-  const canGoogle = google.connected && !!google.calendar
+  const canMine = google.connected && !!google.calendar
+  const canShared = !!google.household?.connected
+  const canGoogle = canMine || canShared
   const [toGoogle, setToGoogle] = useState(true)
+  // Which Google calendar (2026-10-24): your own, or the shared one.
+  const [gAccount, setGAccount] = useState<'mine' | 'shared'>('mine')
+  const account: 'mine' | 'shared' = !canMine ? 'shared' : !canShared ? 'mine' : gAccount
   const { add: addTask } = useWorkItems()
 
   useEffect(() => {
@@ -62,7 +67,7 @@ export default function CalendarQuickAdd() {
       const { error } = await addEvent(title.trim(), date, null, time || null)
       if (error) { setErr(error.message); setSaving(false); return }
       if (canGoogle && toGoogle) {
-        const gErr = await createGoogleEvent({ title: title.trim(), date, time: time || null })
+        const gErr = await createGoogleEvent({ title: title.trim(), date, time: time || null, account })
         if (gErr) { setErr(`Saved in 4S. ${gErr}`); setSaving(false); return }
       }
     } else {
@@ -153,6 +158,13 @@ export default function CalendarQuickAdd() {
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.66rem', color: 'var(--muted)', cursor: 'pointer' }}>
               <input type="checkbox" checked={toGoogle} onChange={e => setToGoogle(e.target.checked)} />
               Also add to Google Calendar
+              {toGoogle && canMine && canShared && (
+                <select value={gAccount} onChange={e => setGAccount(e.target.value as 'mine' | 'shared')}
+                  style={{ marginLeft: '0.3rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontFamily: 'var(--font-body)' }}>
+                  <option value="mine">Mine</option>
+                  <option value="shared">Shared</option>
+                </select>
+              )}
             </label>
           )}
 

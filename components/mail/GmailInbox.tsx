@@ -55,20 +55,28 @@ export default function GmailInbox() {
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [compose, setCompose] = useState<{ to: string; subject: string; body: string } | null>(null)
   const [sendNote, setSendNote] = useState<string | null>(null)
+  // Which inbox (2026-10-24): your own, or the household's shared email.
+  const mineOk = status.connected && !!status.gmail
+  const sharedOk = !!status.household?.connected
+  const [pick, setPick] = useState<'mine' | 'shared'>('mine')
+  const account: 'mine' | 'shared' = !mineOk ? 'shared' : !sharedOk ? 'mine' : pick
+  const acct = account === 'shared' ? 'account=shared' : ''
+  const withAcct = (url: string) => (acct ? `${url}${url.includes('?') ? '&' : '?'}${acct}` : url)
 
   const list = useCallback(async (query: string) => {
     setBusy(true); setErr(null)
-    const res = await fetch(`/api/google/gmail?${new URLSearchParams(query ? { q: query } : {})}`)
+    const res = await fetch(withAcct(`/api/google/gmail?${new URLSearchParams(query ? { q: query } : {})}`))
     if (res.ok) setMessages(((await res.json()) as { messages: GmailSummary[] }).messages)
     else setErr(res.status === 409 ? 'Google needs to be connected again.' : 'Could not load Gmail.')
     setBusy(false)
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- re-list when the inbox changes
+  }, [acct])
 
-  useEffect(() => { if (status.connected && status.gmail) list('') }, [status.connected, status.gmail, list])
+  useEffect(() => { if (mineOk || sharedOk) { setOpen(null); list('') } }, [mineOk, sharedOk, list])
 
   async function openMessage(id: string) {
     setErr(null); setSuggestions(null); setSaved(new Set()); setSendNote(null)
-    const res = await fetch(`/api/google/gmail?id=${encodeURIComponent(id)}`)
+    const res = await fetch(withAcct(`/api/google/gmail?id=${encodeURIComponent(id)}`))
     if (!res.ok) { setErr('Could not open that message.'); return }
     setOpen(await res.json() as GmailMessage)
   }
@@ -105,7 +113,7 @@ export default function GmailInbox() {
   async function send() {
     if (!compose) return
     setSendNote('Sending…')
-    const res = await fetch('/api/google/gmail', {
+    const res = await fetch(withAcct('/api/google/gmail'), {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(compose),
     })
     if (res.ok) { setSendNote('Sent.'); setCompose(null) }
@@ -113,9 +121,9 @@ export default function GmailInbox() {
   }
 
   if (statusLoading) return <div style={small}>Checking…</div>
-  if (status.blocked) return <div style={small}>Gmail is only available when you are signed in as yourself.</div>
+  if (status.blocked) return <div style={small}>Mail is not on the shared screen. Sign in as yourself to read it.</div>
   if (!status.configured) return <div style={small}>Google is not set up on the server yet.</div>
-  if (!status.connected || !status.gmail) {
+  if (!mineOk && !sharedOk) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', alignItems: 'flex-start' }}>
         <div style={small}>Connect Google to read your inbox here, turn emails into tasks and events, and send mail.</div>
@@ -140,7 +148,7 @@ export default function GmailInbox() {
           <button onClick={findThings} disabled={extracting} className="btn btn-secondary press" style={{ fontSize: '0.72rem' }}>
             {extracting ? 'Reading…' : 'Find tasks and dates'}
           </button>
-          {status.send && (
+          {(status.send || account === 'shared') && (
             <button className="btn btn-ghost press" style={{ fontSize: '0.72rem' }}
               onClick={() => setCompose({ to: senderAddress(open.from), subject: /^re:/i.test(open.subject) ? open.subject : `Re: ${open.subject}`, body: '' })}>
               Reply
@@ -177,12 +185,34 @@ export default function GmailInbox() {
   }
 
   // --- inbox
+  const chip = (on: boolean): React.CSSProperties => ({
+    fontSize: '0.78rem', padding: '0 0.8rem', minHeight: 34, borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-body)',
+    border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, background: on ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+    color: on ? 'var(--gold)' : 'var(--muted)',
+  })
+  // Quick filters (2026-10-24): the searches people actually run.
+  const FILTERS: [string, string][] = [['Inbox', ''], ['Unread', 'is:unread'], ['This week', 'newer_than:7d'], ['Bills', 'subject:(bill OR invoice OR receipt OR statement OR payment)'], ['Travel', 'subject:(flight OR reservation OR booking OR itinerary OR confirmation)']]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+      {mineOk && sharedOk && (
+        <div style={{ display: 'flex', gap: '0.2rem', padding: '0.2rem', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, alignSelf: 'flex-start' }}>
+          {(['mine', 'shared'] as const).map(a => (
+            <button key={a} onClick={() => { setPick(a); setOpen(null); setQ('') }} className="press" style={{
+              minHeight: 36, padding: '0 0.9rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.84rem',
+              background: account === a ? 'var(--surface)' : 'transparent', color: account === a ? 'var(--text)' : 'var(--muted)',
+            }}>{a === 'mine' ? 'My inbox' : 'Shared inbox'}</button>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+        {FILTERS.map(([label, query]) => (
+          <button key={label} className="press" style={chip(q === query)} onClick={() => { setQ(query); list(query) }}>{label}</button>
+        ))}
+      </div>
       <form onSubmit={e => { e.preventDefault(); list(q.trim()) }} style={{ display: 'flex', gap: '0.5rem' }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search Gmail (try from:airline or is:unread)" style={input} />
         <button className="btn btn-secondary press" style={{ fontSize: '0.72rem' }} disabled={busy}>{busy ? '…' : 'Search'}</button>
-        {status.send && <button type="button" className="btn btn-ghost press" style={{ fontSize: '0.72rem' }} onClick={() => { setCompose({ to: '', subject: '', body: '' }); setSendNote(null) }}>New</button>}
+        {(status.send || account === 'shared') && <button type="button" className="btn btn-ghost press" style={{ fontSize: '0.72rem' }} onClick={() => { setCompose({ to: '', subject: '', body: '' }); setSendNote(null) }}>New</button>}
       </form>
       {err && <div style={{ ...small, color: 'var(--rose)' }}>{err}</div>}
       {compose && <Compose compose={compose} setCompose={setCompose} send={send} note={sendNote} />}

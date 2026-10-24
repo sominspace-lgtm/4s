@@ -86,6 +86,34 @@ export async function householdOwner(userId: string): Promise<string | null> {
   return own?.id ? `space:${own.id as string}` : null
 }
 
+/** Is this request from the shared screen (the iPad, signed in without a PIN)? */
+export async function inSharedMode(): Promise<boolean> {
+  return (await cookies()).get('4s-shared-mode')?.value === '1'
+}
+
+/**
+ * Who is asking, and which Google account they may use (2026-10-24).
+ * Personal accounts are never reachable from the shared screen. The
+ * household's shared account is: it belongs to the house, and the shared
+ * iPad is where it is most useful. Pass sharedOk=false for anything a guest
+ * at the shared screen should not read (the shared inbox).
+ */
+export async function requireGoogleAccess(account: string | null | undefined, sharedOk = true): Promise<
+  { ok: true; userId: string; owner: string; shared: boolean } | { ok: false; status: number; error: string }
+> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, status: 401, error: 'Unauthorized' }
+  const wantShared = account === 'shared' || account === 'household'
+  if (await inSharedMode()) {
+    if (!wantShared || !sharedOk) return { ok: false, status: 403, error: 'Only the shared Google account works on the shared screen.' }
+  }
+  const owner = wantShared
+    ? (await householdOwner(user.id)) ?? 'space:00000000-0000-0000-0000-000000000000'
+    : user.id
+  return { ok: true, userId: user.id, owner, shared: wantShared }
+}
+
 /** "shared" means the household account; anything else is the person's own. */
 export async function resolveOwner(userId: string, account: unknown): Promise<string> {
   if (account === 'shared' || account === 'household') {

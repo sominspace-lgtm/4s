@@ -34,6 +34,8 @@ export interface GoogleEvent {
   allDay: boolean
   location: string | null
   link: string | null
+  /** Which Google calendar it came from (2026-10-24). */
+  account?: 'mine' | 'shared'
 }
 
 const NONE: GoogleStatus = { configured: false, connected: false }
@@ -99,10 +101,19 @@ async function loadGoogleEvents(): Promise<GoogleEvent[]> {
   const key = format(from, 'yyyy-MM-dd')
   if (eventsCache && eventsCache.key === key && Date.now() - eventsCache.at < 120_000) return eventsCache.events
   if (eventsInflight && eventsInflight.key === key) return eventsInflight.p
-  const p = fetch(`/api/google/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
-    .then(r => (r.ok ? (r.json() as Promise<{ events: GoogleEvent[] }>) : { events: [] as GoogleEvent[] }))
-    .catch(() => ({ events: [] as GoogleEvent[] }))
-    .then(j => { eventsCache = { key, at: Date.now(), events: j.events }; eventsInflight = null; return j.events })
+  // Both calendars (2026-10-24): your own and the household's shared one.
+  // Whichever is not connected (or not allowed here) just comes back empty.
+  const one = (account: 'mine' | 'shared') =>
+    fetch(`/api/google/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}${account === 'shared' ? '&account=shared' : ''}`)
+      .then(r => (r.ok ? (r.json() as Promise<{ events: GoogleEvent[] }>) : { events: [] as GoogleEvent[] }))
+      .catch(() => ({ events: [] as GoogleEvent[] }))
+      .then(j => j.events.map(e => ({ ...e, account })))
+  const p = Promise.all([one('mine'), one('shared')])
+    .then(([a, b]) => {
+      const seen = new Set(a.map(e => `${e.title}|${e.start}`))
+      const events = [...a, ...b.filter(e => !seen.has(`${e.title}|${e.start}`))]
+      eventsCache = { key, at: Date.now(), events }; eventsInflight = null; return events
+    })
   eventsInflight = { key, p }
   return p
 }
@@ -123,8 +134,9 @@ export function useGoogleEvents(enabled: boolean): GoogleEvent[] {
   return events
 }
 
-export async function createGoogleEvent(e: { title: string; date: string; time?: string | null; notes?: string | null }): Promise<string | null> {
-  const res = await fetch('/api/google/calendar', {
+export async function createGoogleEvent(e: { title: string; date: string; time?: string | null; notes?: string | null; account?: 'mine' | 'shared' }): Promise<string | null> {
+  eventsCache = null
+  const res = await fetch(`/api/google/calendar${e.account === 'shared' ? '?account=shared' : ''}`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ title: e.title, date: e.date, time: e.time ?? undefined, notes: e.notes ?? undefined }),
   })

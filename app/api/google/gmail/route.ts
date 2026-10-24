@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { googleFetch, requireGoogleUser, resolveOwner } from '@/lib/google/server'
+import { googleFetch, requireGoogleAccess } from '@/lib/google/server'
 import { header, textOf, type Msg } from '@/lib/google/gmail'
 
 // Gmail (2026-10-05). GET lists/searches (metadata only) or, with ?id=, reads
@@ -12,9 +12,9 @@ function fail(e: unknown) {
   return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
 }
 export async function GET(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'), false)
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
-  const gid = await resolveOwner(who.userId, new URL(request.url).searchParams.get('account')).catch(() => 'space:00000000-0000-0000-0000-000000000000')
+  const gid = who.owner
   const sp = new URL(request.url).searchParams
   const id = sp.get('id')
   try {
@@ -47,9 +47,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'), false)
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
-  const gid = await resolveOwner(who.userId, new URL(request.url).searchParams.get('account')).catch(() => 'space:00000000-0000-0000-0000-000000000000')
+  const gid = who.owner
   const b = await request.json().catch(() => ({})) as { to?: string; subject?: string; body?: string }
   const to = (b.to ?? '').trim()
   const subject = (b.subject ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200)

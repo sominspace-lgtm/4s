@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { googleFetch, requireGoogleUser, resolveOwner } from '@/lib/google/server'
+import { googleFetch, requireGoogleAccess } from '@/lib/google/server'
 import { listEvents, createEvent, GoogleError } from '@/lib/google/calendar'
 
 // Google Calendar, primary calendar (2026-10-05). GET lists a window of
@@ -17,9 +17,9 @@ function fail(e: unknown) {
 }
 
 export async function GET(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
-  const gid = await resolveOwner(who.userId, new URL(request.url).searchParams.get('account')).catch(() => 'space:00000000-0000-0000-0000-000000000000')
+  const gid = who.owner
   const sp = new URL(request.url).searchParams
   const from = new Date(sp.get('from') ?? '')
   const to = new Date(sp.get('to') ?? '')
@@ -32,9 +32,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
-  const gid = await resolveOwner(who.userId, new URL(request.url).searchParams.get('account')).catch(() => 'space:00000000-0000-0000-0000-000000000000')
+  const gid = who.owner
   const b = await request.json().catch(() => ({})) as { title?: string; date?: string; time?: string; endTime?: string; notes?: string; location?: string }
   const title = (b.title ?? '').trim().slice(0, 200)
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(b.date ?? '')) return NextResponse.json({ error: 'title and date (yyyy-mm-dd) are required' }, { status: 400 })
@@ -45,9 +45,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
-  const gid = await resolveOwner(who.userId, new URL(request.url).searchParams.get('account')).catch(() => 'space:00000000-0000-0000-0000-000000000000')
+  const gid = who.owner
   const id = new URL(request.url).searchParams.get('id') ?? ''
   if (!/^[a-zA-Z0-9_-]{5,1024}$/.test(id)) return NextResponse.json({ error: 'Bad id' }, { status: 400 })
   try {

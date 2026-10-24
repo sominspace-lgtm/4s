@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { FOR_COOKIE, STATE_COOKIE, householdOwner, redirectUri, requireGoogleUser, saveTokens } from '@/lib/google/server'
+import { FOR_COOKIE, STATE_COOKIE, householdOwner, redirectUri, requireGoogleAccess, saveTokens } from '@/lib/google/server'
 
 // Google sends the browser back here with ?code. Swap it for tokens, store
 // them (sealed, service-role only), then return to the dashboard.
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     return res
   }
 
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess((await cookies()).get(FOR_COOKIE)?.value === 'household' ? 'shared' : null)
   if (!who.ok) return back('denied')
 
   if (url.searchParams.get('error')) return back('cancelled')

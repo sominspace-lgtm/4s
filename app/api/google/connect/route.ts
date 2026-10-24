@@ -1,12 +1,12 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { FOR_COOKIE, GOOGLE_SCOPES, STATE_COOKIE, googleConfigured, householdOwner, redirectUri, requireGoogleUser } from '@/lib/google/server'
+import { FOR_COOKIE, GOOGLE_SCOPES, STATE_COOKIE, googleConfigured, householdOwner, redirectUri, requireGoogleAccess } from '@/lib/google/server'
 
 // Starts the Google sign-in (2026-10-05). A random `state` is also stored in
 // an httpOnly cookie and checked on the way back, so a callback this browser
 // did not start is rejected.
 export async function GET(request: Request) {
-  const who = await requireGoogleUser()
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('for') === 'household' ? 'shared' : null)
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
   if (!googleConfigured()) return NextResponse.json({ error: 'Google is not configured on the server.' }, { status: 503 })
 

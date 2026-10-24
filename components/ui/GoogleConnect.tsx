@@ -45,13 +45,15 @@ export default function GoogleConnect() {
   const muted: React.CSSProperties = { fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }
 
   if (loading) return <div style={muted}>Checking…</div>
-  if (status.blocked) return <div style={muted}>Google is only available when you are signed in as yourself, not on the shared screen.</div>
   if (!status.configured) return <div style={muted}>Google is not set up on the server yet.</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {result && <div style={{ ...muted, color: 'var(--text)' }}>{result}</div>}
-      {status.connected ? (
+      {/* The shared screen: personal Google stays off, the shared account works (2026-10-24). */}
+      {status.blocked ? (
+        <div style={muted}>Your own Google account connects when you are signed in as yourself. The shared account below works here too.</div>
+      ) : status.connected ? (
         <>
           <div style={muted}>
             Connected{status.email ? ` as ${status.email}` : ''}.
