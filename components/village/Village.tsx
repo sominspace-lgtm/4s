@@ -696,7 +696,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Google Calendar on the board too (2026-10-24): your own and the shared
   // one; on the shared iPad only the shared calendar comes back.
   const gStatus = useGoogleStatus().status
-  const googleEvents = useGoogleEvents(((gStatus.connected && !!gStatus.calendar) || !!gStatus.household?.connected) && !guestView)
+  const googleEvents = useGoogleEvents(gStatus.configured && !guestView && !guestLive)
   const structures = useMemo(() => {
     const now = new Date()
     const today = format(now, 'yyyy-MM-dd')

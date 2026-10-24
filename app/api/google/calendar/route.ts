@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
-import { googleFetch, requireGoogleAccess } from '@/lib/google/server'
+import { googleFetch, inSharedMode, requireGoogleAccess } from '@/lib/google/server'
+import { sharedCalendarEvents } from '@/lib/google/shares'
+import { createClient } from '@/lib/supabase/server'
 import { listEvents, createEvent, GoogleError } from '@/lib/google/calendar'
 
 // Google Calendar, primary calendar (2026-10-05). GET lists a window of
@@ -17,7 +19,23 @@ function fail(e: unknown) {
 }
 
 export async function GET(request: Request) {
-  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
+  // Calendars someone chose to share (2026-10-24): ?account=partner is the
+  // other person's (when signed in as yourself); ?account=members is what
+  // each of you shows on the shared screen (only on the shared screen).
+  const acc = new URL(request.url).searchParams.get('account')
+  if (acc === 'partner' || acc === 'members') {
+    const { data: { user } } = await (await createClient()).auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const shared = await inSharedMode()
+    if ((acc === 'partner') === shared) return NextResponse.json({ events: [] })
+    const sp0 = new URL(request.url).searchParams
+    const f0 = new Date(sp0.get('from') ?? ''), t0 = new Date(sp0.get('to') ?? '')
+    if (Number.isNaN(f0.getTime()) || Number.isNaN(t0.getTime()) || t0.getTime() - f0.getTime() > 100 * 86_400_000) return NextResponse.json({ error: 'Bad range' }, { status: 400 })
+    try {
+      return NextResponse.json({ events: await sharedCalendarEvents(user.id, acc === 'partner' ? 'partner' : 'household', f0, t0) })
+    } catch { return NextResponse.json({ events: [] }) }
+  }
+  const who = await requireGoogleAccess(acc)
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
   const gid = who.owner
   const sp = new URL(request.url).searchParams

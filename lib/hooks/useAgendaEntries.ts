@@ -71,7 +71,8 @@ export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
   const { items: sharedEvents } = useSharedEvents(spaceId)
   const { habits, completions } = useHabits()
   const google = useGoogleStatus().status
-  const googleEvents = useGoogleEvents((google.connected && !!google.calendar) || !!google.household?.connected)
+  // Always ask: a calendar shared with you can show even if yours is not connected.
+  const googleEvents = useGoogleEvents(google.configured)
   // De-duped by id — the space's own owner sees their event via both
   // useEvents (they own it) and useSharedEvents (RLS also grants it to
   // accepted members, which the owner usually also is), so without this a
@@ -117,7 +118,7 @@ export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
     // All-day end dates are exclusive in Google; show through the last real day.
     const last = g.allDay ? addDays(parseISO(g.end.slice(0, 10)), -1) : undefined
     entries.push({
-      key: `google-${g.account ?? 'mine'}-${g.id}-${g.start}`, date: day, label: g.account === 'shared' ? `${g.title} (shared)` : g.title, type: 'google', time,
+      key: `google-${g.account ?? 'mine'}-${g.id}-${g.start}`, date: day, label: g.account === 'shared' ? `${g.title} (shared)` : g.who ? `${g.title} (${g.who})` : g.title, type: 'google', time,
       endDate: last && last > day ? last : undefined,
     })
   }

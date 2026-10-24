@@ -36,7 +36,9 @@ export interface GoogleEvent {
   location: string | null
   link: string | null
   /** Which Google calendar it came from (2026-10-24). */
-  account?: 'mine' | 'shared'
+  account?: 'mine' | 'shared' | 'partner' | 'members'
+  /** For a calendar someone shared with you: whose it is. */
+  who?: string
 }
 
 const NONE: GoogleStatus = { configured: false, connected: false }
@@ -104,15 +106,19 @@ async function loadGoogleEvents(): Promise<GoogleEvent[]> {
   if (eventsInflight && eventsInflight.key === key) return eventsInflight.p
   // Both calendars (2026-10-24): your own and the household's shared one.
   // Whichever is not connected (or not allowed here) just comes back empty.
-  const one = (account: 'mine' | 'shared') =>
-    fetch(`/api/google/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}${account === 'shared' ? '&account=shared' : ''}`)
+  const one = (account: 'mine' | 'shared' | 'partner' | 'members') =>
+    fetch(`/api/google/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}${account === 'mine' ? '' : `&account=${account}`}`)
       .then(r => (r.ok ? (r.json() as Promise<{ events: GoogleEvent[] }>) : { events: [] as GoogleEvent[] }))
       .catch(() => ({ events: [] as GoogleEvent[] }))
       .then(j => j.events.map(e => ({ ...e, account })))
-  const p = Promise.all([one('mine'), one('shared')])
-    .then(([a, b]) => {
+  // Plus whatever the other person shares with you, and on the shared
+  // screen whatever each of you shows there. A call that does not apply
+  // here just comes back empty.
+  const p = Promise.all([one('mine'), one('shared'), one('partner'), one('members')])
+    .then(([a, b, c, d]) => {
       const seen = new Set(a.map(e => `${e.title}|${e.start}`))
-      const events = [...a, ...b.filter(e => !seen.has(`${e.title}|${e.start}`))]
+      const keep = (list: GoogleEvent[]) => list.filter(e => { const k = `${e.title}|${e.start}`; if (seen.has(k)) return false; seen.add(k); return true })
+      const events = [...a, ...keep(b), ...keep(c), ...keep(d)]
       eventsCache = { key, at: Date.now(), events }; eventsInflight = null; return events
     })
   eventsInflight = { key, p }

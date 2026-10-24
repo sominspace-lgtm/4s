@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import CalendarSharing from './CalendarSharing'
 import { useGoogleStatus, notifyGoogleChanged } from '@/lib/hooks/useGoogle'
 
 // Connect / disconnect Google (Calendar + Gmail) (2026-10-05). Lives in the
@@ -73,6 +74,7 @@ export default function GoogleConnect() {
             <Btn onClick={connect}>Reconnect</Btn>
             <Btn danger onClick={disconnect}>Disconnect</Btn>
           </div>
+          {status.calendar && <CalendarSharing />}
         </>
       ) : (
         <>

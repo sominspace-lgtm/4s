@@ -7,6 +7,7 @@ import { searchMail, readMail, saveDraft } from '@/lib/google/gmail'
 import { listTasks, addTask, updateTask } from '@/lib/google/tasks'
 import { searchDrive, readDrive } from '@/lib/google/drive'
 import { resolveOwner } from '@/lib/google/server'
+import { sharedCalendarEvents } from '@/lib/google/shares'
 
 // What Jarvis can do (2026-10-18). Each tool is a small server function with
 // a JSON schema the model sees. A `write` tool never runs straight from the
@@ -303,7 +304,29 @@ function withAccount(t: JarvisTool): JarvisTool {
   }
 }
 
+// The other person's calendar, only if they chose to share it (2026-10-24).
+const partnerCalendarTool: JarvisTool = {
+  name: 'calendar_partner_events',
+  description: 'List events on the partner\'s Google Calendar between two dates, only if they share it with this person. Events may show only as "Busy" if they share without details.',
+  input_schema: { type: 'object', properties: {
+    from: { type: 'string', description: 'First day, yyyy-MM-dd' },
+    to: { type: 'string', description: 'Last day, yyyy-MM-dd (inclusive), at most 31 days after from' },
+  }, required: ['from', 'to'] },
+  run: async ({ userId }, i) => {
+    const from = ymd(i.from, 'from'), to = ymd(i.to, 'to')
+    if (to < from) throw new ToolInputError('to is before from')
+    if (to > addDaysYmd(from, 31)) throw new ToolInputError('Ask for 31 days or fewer at a time')
+    const events = await sharedCalendarEvents(userId, 'partner', zoned(from), zoned(addDaysYmd(to, 1)))
+    if (events.length === 0) return { note: 'Nothing shared for these days. The partner may not share their calendar.' }
+    return events.map(e => {
+      const s = e.allDay ? { date: e.start.slice(0, 10), time: null } : wallClock(new Date(e.start))
+      return { who: e.who, title: e.title, date: s.date, start: s.time, allDay: e.allDay }
+    })
+  },
+}
+
 export const TOOLS: JarvisTool[] = [
+  partnerCalendarTool,
   ...calendarTools.map(withAccount), ...weatherTools, ...taskTools, ...googleTaskTools.map(withAccount),
   ...gmailTools.map(withAccount), ...driveTools.map(withAccount), ...foodTools,
 ]
