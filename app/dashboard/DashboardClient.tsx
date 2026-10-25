@@ -19,6 +19,7 @@ import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
 import YouTwo from '@/components/checkin/YouTwo'
 import MyCalendar from '@/components/calendar/MyCalendar'
+import SettingsPage from '@/components/settings/SettingsPage'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -93,6 +94,7 @@ interface Props {
 // top-level ids and are Personal sub-tabs as of this change, so any layout
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
+  'wishlist', 'vault',                               // Wishlist is in Money, Passwords in Settings (2026-10-25)
   'google', 'ourgoogle',                             // Google folded into the usual tabs (2026-10-25)
   'people',                                          // People page deleted (2026-10-23)
   'hhtoday',                                          // Household Today tab removed (2026-09-08)
@@ -185,6 +187,7 @@ const SECTION_GROUPS: Record<string, string> = {
   reference: 'ours',
   housecal:  'ours',
   mycalendar: 'mine',
+  settings:  'mine',
   mail:      'ours',
   kitchen:   'ours',
 }
@@ -238,7 +241,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'mycalendar', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'mycalendar', 'tasks', 'habits', 'notes', 'money', 'settings'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
@@ -437,7 +440,15 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Today tab rather than tabs of their own.
   useEffect(() => {
     function onNav(e: Event) {
-      const id = (e as CustomEvent<string>).detail
+      const raw = (e as CustomEvent<string>).detail
+      // Wishlist is a tab in Money and Passwords sit in Settings (2026-10-25).
+      if (raw === 'wishlist' || raw === 'vault') {
+        setActiveTab(raw === 'wishlist' ? 'money' : 'settings')
+        setTimeout(() => window.dispatchEvent(new CustomEvent(raw === 'wishlist' ? '4s:open-wishlist' : '4s:open-vault')), 80)
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+        return
+      }
+      const id = raw
       const anchor = ANCHORS.has(id) ? id : null
       if (!anchor) {
         // A deep link (search, a Brief card, a Village panel) to a section
@@ -601,7 +612,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // shared notes, and the two of you.
       reference: t('Collections', lang),
       // The Google pages (2026-10-24).
-      mycalendar: 'Calendar', housecal: 'Calendar',
+      mycalendar: 'Calendar', housecal: 'Calendar', settings: 'Settings',
       me: 'Me',
     }
 
@@ -646,6 +657,13 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         // Check-ins are their own page (2026-10-21), a tile in Me and a card on Today.
         // Google lives inside the usual tabs (2026-10-25): Calendar here and
         // in Home, the inbox in Tasks and Mail, Drive in Notes and Collections.
+        case 'settings': return <div key="settings" className="roomy"><SettingsPage userId={userId} actions={{
+          theme: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })),
+          connect: () => setConnectOpen(true), notifications: () => setNotificationsOpen(true),
+          customize: () => setCustomizeOpen(true), customizeToday: () => setTodayCustomizeOpen(true), archive: () => setArchiveOpen(true),
+          ipad: sharedMode ? () => setSharedSettingsOpen(true) : undefined,
+          signOut: async () => { await createClient().auth.signOut(); window.location.href = '/login' },
+        }} /></div>
         case 'mycalendar': return <div key="mycalendar" className="roomy"><MyCalendar userId={userId} /></div>
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
@@ -697,6 +715,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           initialTheme={theme} initialMode={mode} customTheme={customTheme}
           onThemeChange={setTheme} onModeChange={setMode} onCustomThemeChange={setCustomTheme}
           onCustomize={() => setCustomizeOpen(true)}
+          onSettings={() => go('settings')}
           onSearch={() => setSearchOpen(true)}
           onArchive={() => setArchiveOpen(true)}
           onConnect={() => setConnectOpen(true)}

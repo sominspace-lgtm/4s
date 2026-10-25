@@ -47,10 +47,9 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'habits',   label: 'Habits',   hidden: false },
   { id: 'notes',    label: 'Notes',    hidden: false },
   { id: 'money',    label: 'Money',    hidden: false },
-  { id: 'wishlist', label: 'Wishlist', hidden: false },
   { id: 'checkins', label: 'Check-ins', hidden: false },
   { id: 'mycalendar', label: 'Calendar', hidden: false },
-  { id: 'vault',    label: 'Passwords', hidden: false },
+  { id: 'settings', label: 'Settings', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
   // Household's own sub-tabs, promoted to real top-level sections

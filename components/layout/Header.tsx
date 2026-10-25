@@ -28,6 +28,8 @@ interface HeaderProps {
   onModeChange: (m: Mode) => void
   onCustomThemeChange: (seed: CustomThemeSeed) => void
   onCustomize: () => void
+  /** One Settings page (2026-10-25) replaces Connect, Notifications, Customize and Archive here. */
+  onSettings?: () => void
   onSearch: () => void
   onCapture: () => void
   onArchive: () => void
@@ -102,7 +104,7 @@ function MoreMenu({ items }: { items: { icon: string; label: string; onClick?: (
   )
 }
 
-export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread, guestView = false, onToggleGuestView, onOpenSharedSettings }: HeaderProps) {
+export default function Header({ email, userId, initialName, sharedMode = false, onUnlock, initialTheme, initialMode, customTheme, onThemeChange, onModeChange, onCustomThemeChange, onCustomize, onSettings, onSearch, onCapture, onArchive, onConnect, onNotifications, onMail, mailUnread, guestView = false, onToggleGuestView, onOpenSharedSettings }: HeaderProps) {
   const router = useRouter()
   // Guests have no email — greet them warmly instead of with an empty string.
   const fallback = email.split('@')[0] || 'friend'
@@ -282,6 +284,10 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           ...(onUnlock ? [{ icon: '⊙', label: 'Unlock with PIN', onClick: onUnlock }] : []),
           { icon: '⇄', label: 'Switch account', onClick: signOut },
           { icon: '←', label: 'Sign out', onClick: signOut },
+        ] : onSettings ? [
+          { icon: '⚙', label: 'Settings', onClick: onSettings },
+          { icon: '✉', label: mailUnread ? `Mail (${mailUnread})` : 'Mail', onClick: onMail },
+          { divider: true, icon: '', label: '' },
         ] : [
           { icon: '⇄', label: 'Connect', onClick: onConnect },
           { icon: '✉', label: mailUnread ? `Mail (${mailUnread})` : 'Mail', onClick: onMail },

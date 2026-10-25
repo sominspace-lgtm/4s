@@ -18,8 +18,7 @@ const TILES: { id: string; label: string; icon: IconName; tint: string }[] = [
   { id: 'habits',   label: 'Habits',    icon: 'sprout',    tint: 'var(--emerald)' },
   { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
   { id: 'money',    label: 'Money',     icon: 'scale',     tint: 'var(--emerald)' },
-  { id: 'wishlist', label: 'Wishlist',  icon: 'sparkle',   tint: 'var(--rose)' },
-  { id: 'vault',    label: 'Passwords', icon: 'lock',      tint: 'var(--muted)' },
+  { id: 'settings', label: 'Settings',  icon: 'gear',      tint: 'var(--muted)' },
 ]
 
 export default function MeGrid({ visible, onOpen, userId }: { visible: Set<string>; onOpen: (id: string) => void; userId: string }) {
@@ -42,9 +41,8 @@ export default function MeGrid({ visible, onOpen, userId }: { visible: Set<strin
     tasks: dueNow > 0 ? `${dueNow} due` : open.length > 0 ? `${open.length} open` : 'All clear',
     habits: activeHabits.length > 0 ? `${doneToday} of ${activeHabits.length} today` : 'Start one',
     notes: 'Thoughts and lists',
-    money: total > 0 ? `$${total.toFixed(0)} a month` : 'Bills and renewals',
-    wishlist: wanted > 0 ? `${wanted} wanted` : 'Things you want',
-    vault: 'Locked',
+    money: total > 0 ? `${total.toFixed(0)} a month${wanted ? ` · ${wanted} wished` : ''}` : wanted ? `${wanted} on the wishlist` : 'Bills, renewals, wishlist',
+    settings: 'Look, connections, passwords',
   }
 
   return (
