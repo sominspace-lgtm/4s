@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import MasterDashboard from './MasterDashboard'
 import GoalsSection from '@/components/goals/GoalsSection'
+import Segmented from '@/components/ui/Segmented'
+import GmailInbox from '@/components/mail/GmailInbox'
+import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 
 // The Tasks section (2026-09-03) — the task board, plus Goals folded in
 // below as a collapsible. Goals moved here from Habits: a goal is a
@@ -10,6 +13,10 @@ import GoalsSection from '@/components/goals/GoalsSection'
 // goToPersonal('goals') lands here and fires 4s:open-goals to expand it.
 export default function TasksTab({ userId }: { userId: string }) {
   const [goalsOpen, setGoalsOpen] = useState(true)
+  // Your Gmail lives here (2026-10-25): an email is often a task waiting to
+  // happen, and Find tasks and dates turns it into one.
+  const [view, setView] = useState<'tasks' | 'inbox'>('tasks')
+  const { status } = useGoogleStatus()
   const ref = useRef<HTMLDetailsElement>(null)
 
   useEffect(() => {
@@ -23,6 +30,10 @@ export default function TasksTab({ userId }: { userId: string }) {
 
   return (
     <div>
+      {status.connected && <Segmented value={view} onChange={setView} options={[['tasks', 'Tasks'], ['inbox', 'Inbox']]} />}
+      {view === 'inbox' && status.connected ? (
+        <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="mine" /></section>
+      ) : (<>
       <MasterDashboard userId={userId} />
 
       <details
@@ -43,6 +54,7 @@ export default function TasksTab({ userId }: { userId: string }) {
           <GoalsSection userId={userId} />
         </div>
       </details>
+      </>)}
     </div>
   )
 }

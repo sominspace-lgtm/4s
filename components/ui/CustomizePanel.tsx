@@ -49,7 +49,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'money',    label: 'Money',    hidden: false },
   { id: 'wishlist', label: 'Wishlist', hidden: false },
   { id: 'checkins', label: 'Check-ins', hidden: false },
-  { id: 'google',   label: 'Google',   hidden: false },
+  { id: 'mycalendar', label: 'Calendar', hidden: false },
   { id: 'vault',    label: 'Passwords', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },
@@ -71,7 +71,7 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // Kitchen (2026-10-13) — recipes, the meal plan, groceries, calories.
   { id: 'kitchen',  label: 'Kitchen',  hidden: false },
   { id: 'reference', label: 'Collections', hidden: false },
-  { id: 'ourgoogle', label: 'Shared (Google)', hidden: false },
+  { id: 'housecal', label: 'Home calendar', hidden: false },
   { id: 'mail',       label: 'Mail',      hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill
   // row under the Places icon like Household's own.

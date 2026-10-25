@@ -18,7 +18,7 @@ import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
 import YouTwo from '@/components/checkin/YouTwo'
-import GoogleHub from '@/components/google/GoogleHub'
+import MyCalendar from '@/components/calendar/MyCalendar'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
@@ -93,6 +93,7 @@ interface Props {
 // top-level ids and are Personal sub-tabs as of this change, so any layout
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
+  'google', 'ourgoogle',                             // Google folded into the usual tabs (2026-10-25)
   'people',                                          // People page deleted (2026-10-23)
   'hhtoday',                                          // Household Today tab removed (2026-09-08)
   // 'wishlist' is its own section again (2026-10-20), so it is no longer here.
@@ -182,8 +183,8 @@ const SECTION_GROUPS: Record<string, string> = {
   // now, not just in shared mode).
   home:      'ours',
   reference: 'ours',
-  ourgoogle: 'ours',
-  google:    'mine',
+  housecal:  'ours',
+  mycalendar: 'mine',
   mail:      'ours',
   kitchen:   'ours',
 }
@@ -236,14 +237,14 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'upkeep', 'kitchen', 'reference', 'ourgoogle', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'google', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
+  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'mycalendar', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'vault'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
 // The words on the top bar inside a place.
 const SUB_LABELS: Record<string, string> = {
-  home: 'Home', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', ourgoogle: 'Shared', mail: 'Mail',
+  home: 'Home', housecal: 'Calendar', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
   places: 'Map', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
 }
 
@@ -600,7 +601,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // shared notes, and the two of you.
       reference: t('Collections', lang),
       // The Google pages (2026-10-24).
-      google: 'Google', ourgoogle: 'Shared',
+      mycalendar: 'Calendar', housecal: 'Calendar',
       me: 'Me',
     }
 
@@ -638,13 +639,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'tasks':    return <TasksTab key="tasks" userId={userId} />
         case 'habits':   return <HabitsTab key="habits" userId={userId} />
         case 'notes':    return <div key="notes" className="roomy"><NotesHub userId={userId} /></div>
-        case 'mail':     return <MailHub key="mail" userId={userId} />
+        case 'mail':     return <MailHub key="mail" userId={userId} sharedMode={sharedMode} />
         case 'money':    return <div key="money" className="roomy"><MoneyHub userId={userId} /></div>
         // Wishlist left Money for its own tab (2026-10-20).
         case 'wishlist': return <div key="wishlist" className="roomy"><WishlistHub userId={userId} /></div>
         // Check-ins are their own page (2026-10-21), a tile in Me and a card on Today.
-        case 'google':    return <div key="google" className="roomy"><GoogleHub scope="mine" userId={userId} /></div>
-        case 'ourgoogle': return <div key="ourgoogle" className="roomy"><GoogleHub scope="shared" userId={userId} guestMode={guestMode} /></div>
+        // Google lives inside the usual tabs (2026-10-25): Calendar here and
+        // in Home, the inbox in Tasks and Mail, Drive in Notes and Collections.
+        case 'mycalendar': return <div key="mycalendar" className="roomy"><MyCalendar userId={userId} /></div>
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
@@ -655,6 +657,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'places-nearby': return <PlacesHub key="places-nearby" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="nearby" />
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.
+        case 'housecal':
+          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab="calendar" boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />
         case 'home': case 'upkeep': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />
         default: return null

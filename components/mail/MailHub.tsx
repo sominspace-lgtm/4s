@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useMail } from '@/lib/hooks/useMail'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { goToSection } from '@/lib/utils/navigate'
+import GmailInbox from '@/components/mail/GmailInbox'
+import Segmented from '@/components/ui/Segmented'
+import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -28,14 +30,22 @@ function timeAgo(iso: string): string {
 // accepted member, not spaces[0] (which can be an empty solo space).
 // Two inboxes: the household's own async mailbox, and (once Google is
 // connected) the person's Gmail. Household stays the default.
-export default function MailHub({ userId }: { userId: string }) {
+// Mail (2026-10-25): your letters to each other, and the shared email's
+// inbox. On the shared screen only the shared inbox shows; letters between
+// the two of you never do. Your own Gmail is in Me, Tasks, Inbox.
+export default function MailHub({ userId, sharedMode = false }: { userId: string; sharedMode?: boolean }) {
+  const { status } = useGoogleStatus()
+  const hasShared = !!status.household?.connected
+  const [tab, setTab] = useState<'letters' | 'shared'>(sharedMode ? 'shared' : 'letters')
+  const showShared = sharedMode || tab === 'shared'
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-      {/* Gmail moved to Me → Google and Home → Shared (2026-10-24). */}
-      <HouseholdMail userId={userId} />
-      <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-        Looking for Gmail? Your inbox is in <button className="press" onClick={() => goToSection('google')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 'inherit' }}>Me → Google</button>, the shared one in <button className="press" onClick={() => goToSection('ourgoogle')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontSize: 'inherit' }}>Home → Shared</button>.
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+      {!sharedMode && hasShared && <Segmented value={tab} onChange={setTab} options={[['letters', 'Letters'], ['shared', 'Shared inbox']]} />}
+      {showShared
+        ? (hasShared
+          ? <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="shared" /></section>
+          : <div style={{ fontSize: '0.86rem', color: 'var(--muted)' }}>Connect the shared Google account in Connect to read the shared inbox here.</div>)
+        : <HouseholdMail userId={userId} />}
     </div>
   )
 }

@@ -15,7 +15,8 @@
 // a guest sees when they come over, and letters between the two of you are
 // not for that. It needs the PIN like any personal section.
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
-  'home', 'upkeep', 'kitchen', 'reference', 'ourgoogle', 'village', 'places', 'places-trips', 'places-nearby',
+  // Mail on the shared screen shows only the shared inbox (2026-10-25).
+  'home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail', 'village', 'places', 'places-trips', 'places-nearby',
 ])
 
 // Nearby is in GUEST_MODE_IDS deliberately (2026-09-22, tab renamed from
@@ -26,7 +27,7 @@ export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
 // are saved through a pin's own sheet, not here), so this is an even easier
 // guest-visibility call than the old Info tab was.
 export const GUEST_MODE_IDS: ReadonlySet<string> = new Set([
-  'reference', 'ourgoogle', 'village', 'places', 'places-nearby',
+  'reference', 'village', 'places', 'places-nearby',
 ])
 
 /** Is `sectionId` reachable on a shared device right now? */

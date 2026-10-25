@@ -25,6 +25,9 @@ import IconButton from '@/components/ui/IconButton'
 import { openSmartHome, goToSection } from '@/lib/utils/navigate'
 import SectionCustomizer, { type SectionConfig } from '@/components/ui/SectionCustomizer'
 import Icon from '@/components/ui/Icon'
+import Segmented from '@/components/ui/Segmented'
+import GoogleCalendar from '@/components/google/GoogleCalendar'
+import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 import Sheet from '@/components/ui/Sheet'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
@@ -121,6 +124,8 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     setSpaceId((shared ?? spaces[0]).id)
   }, [spaces, members, spaceId])
   const tab = forcedTab ?? (sharedMode ? 'reference' : 'home')
+  const [calView, setCalView] = useState<'house' | 'google'>('house')
+  const { status: gStatus } = useGoogleStatus()
   const h = useHousehold(spaceId)
   // useTrips() itself doesn't filter by space (RLS returns mine-or-a-space-
   // I'm-in), so a personal solo-trip daydream would otherwise show up on
@@ -778,6 +783,17 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
       {/* Upkeep tab (2026-09-08) — its own tab between Home and Reference.
           Just chores since 2026-10-16: Somi's care and the house's upkeep
           are chores too (folders "Somi" and "House"), not a separate log. */}
+      {/* Home, Calendar (2026-10-25): the house's own calendar (chores,
+          meals, trips) and the shared Google account's calendar. */}
+      {tab === 'calendar' && (
+        <div>
+          {!guestMode && gStatus.household?.connected && <Segmented value={calView} onChange={setCalView} options={[['house', 'House'], ['google', 'Shared Google']]} />}
+          {calView === 'google' && gStatus.household?.connected && !guestMode
+            ? <GoogleCalendar scope="shared" />
+            : <HouseholdCalendar chores={h.chores} meals={h.meals} trips={trips} spaceId={spaceId} />}
+        </div>
+      )}
+
       {tab === 'upkeep' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           {!guestMode && spaceId && <AwayCard away={h.away} onSet={h.setAway} onEnd={h.endAway} />}

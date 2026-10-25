@@ -9,6 +9,8 @@ import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import Icon from '@/components/ui/Icon'
 import NoteView from '@/components/notes/NoteView'
 import CollectionsHub from '@/components/notes/CollectionsHub'
+import SharedDrive from '@/components/household/SharedDrive'
+import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 import {
   extractTags, backlinksFor, findByTitle, toggleCheckLine, checklistProgress, NOTE_TEMPLATES,
 } from '@/lib/notes/markdown'
@@ -447,7 +449,8 @@ function SummaryBox({ r, onAdd, onClose, addLabel }: { r: NoteSummary; onAdd?: (
 }
 
 export default function NotesHub({ userId }: { userId: string }) {
-  const [tab, setTab] = useState<'notes' | 'collections'>('notes')
+  const [tab, setTab] = useState<'notes' | 'collections' | 'drive'>('notes')
+  const { status: g } = useGoogleStatus()
   const seg = (active: boolean): React.CSSProperties => ({
     fontSize: '0.7rem', padding: '0.3em 0.9em', borderRadius: '7px', cursor: 'pointer', border: 'none',
     fontFamily: 'var(--font-body)', background: active ? 'var(--surface)' : 'transparent', color: active ? 'var(--text)' : 'var(--muted)',
@@ -457,8 +460,9 @@ export default function NotesHub({ userId }: { userId: string }) {
       <div style={{ display: 'flex', gap: '0.2rem', background: 'var(--hover-bg)', borderRadius: '8px', padding: '0.2rem', width: 'fit-content', marginBottom: '1rem' }}>
         <button className="press" onClick={() => setTab('notes')} style={seg(tab === 'notes')}>Notes</button>
         <button className="press" onClick={() => setTab('collections')} style={seg(tab === 'collections')}>Collections</button>
+        {g.connected && g.drive && <button className="press" onClick={() => setTab('drive')} style={seg(tab === 'drive')}>Drive</button>}
       </div>
-      {tab === 'notes' ? <NotesList userId={userId} /> : <CollectionsHub userId={userId} />}
+      {tab === 'notes' ? <NotesList userId={userId} /> : tab === 'drive' ? <SharedDrive account="mine" title="My Drive" /> : <CollectionsHub userId={userId} />}
     </div>
   )
 }
