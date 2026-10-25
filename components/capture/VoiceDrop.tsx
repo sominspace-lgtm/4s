@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { fileAction, type CaptureAction as FileAction } from '@/lib/capture/file'
 import { format } from 'date-fns'
 import { useHousehold } from '@/lib/hooks/useHousehold'
 import { useCareLog } from '@/lib/hooks/useCareLog'
@@ -18,7 +19,9 @@ import IconButton from '@/components/ui/IconButton'
 // same box takes typed text.
 
 interface CaptureAction {
-  type: 'shopping' | 'care' | 'event' | 'task' | 'note'
+  type: 'shopping' | 'care' | 'chore' | 'event' | 'task' | 'note'
+  done?: boolean | null
+  every_days?: number | null
   label: string
   name?: string | null
   qty?: string | null
@@ -129,6 +132,9 @@ export default function VoiceDrop({ spaceId, compact = false }: { spaceId: strin
     switch (a.type) {
       case 'shopping':
         return h.addShopping((a.name || a.label).slice(0, 120), a.qty ?? null, a.category ?? null)
+      // Chores (2026-10-25): just done, or a new one to keep up.
+      case 'chore':
+        return fileAction(a as unknown as FileAction)
       case 'care':
         return careHook(a.subject).log((a.careKind || 'note').slice(0, 40), { note: a.note ?? a.label })
       case 'event':

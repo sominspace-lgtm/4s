@@ -59,7 +59,7 @@ const CAPTURE_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          type: { type: 'string', enum: ['shopping', 'care', 'event', 'task', 'note'] },
+          type: { type: 'string', enum: ['shopping', 'care', 'chore', 'event', 'task', 'note'] },
           label: { type: 'string', description: 'Short human summary of this one action' },
           name: { type: ['string', 'null'], description: 'shopping: the item to buy' },
           qty: { type: ['string', 'null'], description: 'shopping: quantity if stated' },
@@ -72,8 +72,10 @@ const CAPTURE_SCHEMA = {
           time: { type: ['string', 'null'], description: 'HH:MM 24-hour' },
           energy: { type: ['string', 'null'], enum: ['light', 'medium', 'deep', null] },
           text: { type: ['string', 'null'], description: 'note: the full text to save' },
+          done: { type: ['boolean', 'null'], description: 'chore: true if it was just done, false if it is a new chore to keep up' },
+          every_days: { type: ['number', 'null'], description: 'chore: how often, in days, for a new chore' },
         },
-        required: ['type', 'label', 'name', 'qty', 'category', 'subject', 'careKind', 'note', 'title', 'date', 'time', 'energy', 'text'],
+        required: ['type', 'label', 'name', 'qty', 'category', 'subject', 'careKind', 'note', 'title', 'date', 'time', 'energy', 'text', 'done', 'every_days'],
         additionalProperties: false,
       },
     },
@@ -284,10 +286,15 @@ export async function POST(request: Request) {
       case 'route-capture': {
         const text: string = (body.text ?? '').slice(0, 500)
         if (!text.trim()) return NextResponse.json({ error: 'Missing text' }, { status: 400 })
-        const today = new Date().toISOString().slice(0, 10)
+        // The real dates of the next two weeks, in home time (2026-10-25): the
+        // model miscounted weekdays ("Friday" landed on a Wednesday) when it
+        // only had today's date to go on.
+        const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' })
+        const dayLine = (d: Date) => { const p = Object.fromEntries(fmt.formatToParts(d).map(x => [x.type, x.value])); return `${p.weekday} ${p.year}-${p.month}-${p.day}` }
+        const today = `${dayLine(new Date())}. The next 14 days: ${Array.from({ length: 14 }, (_, i) => dayLine(new Date(Date.now() + (i + 1) * 86_400_000))).join(', ')}`
         const out = await generateJson({
           maxTokens: 700, schema: CAPTURE_SCHEMA,
-          system: `Today is ${today}. Split one spoken note into zero or more concrete actions for a couple's home dashboard (their cat is Somi). Types: shopping = something to buy; care = something done for Somi, yourself, or the house (set subject and a short lowercase careKind); event = something dated or scheduled; task = a to-do with no fixed time; note = anything else or when a phrase is vague. Prefer note when unsure. Never invent specifics that were not said. Resolve relative dates against today.`,
+          system: `Today is ${today}. Split one spoken note into zero or more concrete actions for a couple's home dashboard (their cat is Somi). Types: shopping = something to buy (name, qty); chore = a household chore, either one just done (done true, name like "Clean Somi's litter") or a new one to keep up (done false, every_days); event = something dated or scheduled (title, date, time); task = a to-do with no fixed time (title, date if a deadline is said); note = anything else or when a phrase is vague. Never use care. Prefer note when unsure. Never invent specifics that were not said. Resolve relative dates against today.`,
           text: text,
         })
         return answer(out)
