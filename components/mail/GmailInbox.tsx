@@ -38,6 +38,9 @@ function senderAddress(from: string): string {
   return from.match(/<([^>]+)>/)?.[1] ?? from
 }
 
+// A filter, not a Gmail search (2026-10-25): see needsReply in the gmail route.
+const NEEDS_REPLY = '__needs_reply'
+
 export default function GmailInbox({ only }: { only?: 'mine' | 'shared' } = {}) {
   const { status, loading: statusLoading, connect } = useGoogleStatus()
   const { add: addTask } = useWorkItems()
@@ -66,7 +69,7 @@ export default function GmailInbox({ only }: { only?: 'mine' | 'shared' } = {}) 
 
   const list = useCallback(async (query: string) => {
     setBusy(true); setErr(null)
-    const res = await fetch(withAcct(`/api/google/gmail?${new URLSearchParams(query ? { q: query } : {})}`))
+    const res = await fetch(withAcct(`/api/google/gmail?${new URLSearchParams(query === NEEDS_REPLY ? { needsReply: '1' } : query ? { q: query } : {})}`))
     if (res.ok) setMessages(((await res.json()) as { messages: GmailSummary[] }).messages)
     else setErr(res.status === 409 ? 'Google needs to be connected again.' : (((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Could not load Gmail.'))
     setBusy(false)
@@ -196,7 +199,7 @@ ${open.body.slice(0, 6000)}`} />}
     color: on ? 'var(--gold)' : 'var(--muted)',
   })
   // Quick filters (2026-10-24): the searches people actually run.
-  const FILTERS: [string, string][] = [['Inbox', ''], ['Unread', 'is:unread'], ['This week', 'newer_than:7d'], ['Bills', 'subject:(bill OR invoice OR receipt OR statement OR payment)'], ['Travel', 'subject:(flight OR reservation OR booking OR itinerary OR confirmation)']]
+  const FILTERS: [string, string][] = [['Inbox', ''], ['Needs reply', NEEDS_REPLY], ['Unread', 'is:unread'], ['This week', 'newer_than:7d'], ['Bills', 'subject:(bill OR invoice OR receipt OR statement OR payment)'], ['Travel', 'subject:(flight OR reservation OR booking OR itinerary OR confirmation)']]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
       {!only && mineOk && sharedOk && (
@@ -215,7 +218,7 @@ ${open.body.slice(0, 6000)}`} />}
         ))}
       </div>
       <form onSubmit={e => { e.preventDefault(); list(q.trim()) }} style={{ display: 'flex', gap: '0.5rem' }}>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search Gmail (try from:airline or is:unread)" style={input} />
+        <input value={q === NEEDS_REPLY ? "" : q} onChange={e => setQ(e.target.value)} placeholder="Search Gmail (try from:airline or is:unread)" style={input} />
         <button className="btn btn-secondary press" style={{ fontSize: '0.72rem' }} disabled={busy}>{busy ? '…' : 'Search'}</button>
         {(status.send || account === 'shared') && <button type="button" className="btn btn-ghost press" style={{ fontSize: '0.72rem' }} onClick={() => { setCompose({ to: '', subject: '', body: '' }); setSendNote(null) }}>New</button>}
       </form>
