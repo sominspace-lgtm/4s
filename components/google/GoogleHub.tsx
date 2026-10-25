@@ -60,7 +60,7 @@ export default function GoogleHub({ scope, userId, guestMode = false }: { scope:
       )}
 
       {connected && current === 'inbox' && (
-        onSharedScreen
+        onSharedScreen && scope === 'mine'
           ? <section className="organic specimen" style={card}><div style={{ fontSize: '0.86rem', color: 'var(--muted)' }}>Mail is not on the shared screen. Sign in as yourself to read it.</div></section>
           : <section className="organic specimen" style={card}><GmailInbox only={scope} /></section>
       )}

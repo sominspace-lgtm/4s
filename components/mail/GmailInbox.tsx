@@ -122,7 +122,8 @@ export default function GmailInbox({ only }: { only?: 'mine' | 'shared' } = {}) 
   }
 
   if (statusLoading) return <div style={small}>Checking…</div>
-  if (status.blocked) return <div style={small}>Mail is not on the shared screen. Sign in as yourself to read it.</div>
+  // The shared screen reads the shared inbox only (2026-10-25); your own stays off it.
+  if (status.blocked && only !== 'shared') return <div style={small}>Your own mail is not on the shared screen. The shared inbox is in Home → Shared.</div>
   if (!status.configured) return <div style={small}>Google is not set up on the server yet.</div>
   if (only === 'shared' ? !sharedOk : only === 'mine' ? !mineOk : !mineOk && !sharedOk) {
     return (

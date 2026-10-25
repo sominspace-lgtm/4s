@@ -12,7 +12,7 @@ function fail(e: unknown) {
   return NextResponse.json({ error: 'Google request failed' }, { status: 502 })
 }
 export async function GET(request: Request) {
-  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'), false)
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
   const gid = who.owner
   const sp = new URL(request.url).searchParams
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'), false)
+  const who = await requireGoogleAccess(new URL(request.url).searchParams.get('account'))
   if (!who.ok) return NextResponse.json({ error: who.error }, { status: who.status })
   const gid = who.owner
   const b = await request.json().catch(() => ({})) as { to?: string; subject?: string; body?: string }
