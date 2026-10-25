@@ -1428,7 +1428,7 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
   shelf: { w: 40, h: 32 },  // kitchen.png — the pantry/kitchen stall
-  board: { w: 30, h: 27 },  // notice-board.png
+  board: { w: 58, h: 47 },  // the cork bulletin board (2026-10-25)
 }
 
 function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) {
@@ -1541,14 +1541,22 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
             style={{ imageRendering: 'pixelated' }} />
         </g>
       )
-    case 'board': // Notice board — notice-board.png cropped from
-      // village-civic-landmarks-alpha.png.
+    case 'board': // Notice board (2026-10-25): a real cork bulletin board on
+      // two posts, big enough to hold the partner note and a pinned photo
+      // (both drawn on top by VillageScene, in these same coordinates). Cork
+      // area: x -25..25, y -42..-14.
       return (
         <g>
-          <ellipse cx={0} cy={2} rx={13} ry={2.4} fill="var(--text)" opacity={0.17} />
-          <image href="/village-assets/notice-board.png" x={-15} y={-27} width={30} height={27}
-            style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cy={-15} r={10} fill="var(--amber)" opacity={0.22} filter="url(#vglow)" />}
+          <ellipse cx={0} cy={2} rx={24} ry={2.6} fill="var(--text)" opacity={0.17} />
+          <rect x={-21} y={-16} width={3} height={17} fill="#6b4426" />
+          <rect x={18} y={-16} width={3} height={17} fill="#6b4426" />
+          <rect x={-27} y={-44} width={54} height={32} rx={2} fill="#7a4b2a" />
+          <rect x={-25} y={-42} width={50} height={28} rx={1} fill="#c99a63" />
+          {[[-18, -36], [-9, -20], [4, -33], [15, -24], [21, -38], [-21, -18], [9, -17], [-2, -39]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={0.7} fill="#a9773f" opacity={0.6} />
+          ))}
+          <rect x={-29} y={-46.5} width={58} height={3.5} rx={1.5} fill="#5d391f" />
+          {dark && <circle cy={-28} r={18} fill="var(--amber)" opacity={0.18} filter="url(#vglow)" />}
         </g>
       )
     case 'shelf': // Kitchen — kitchen.png, the pantry/kitchen stall from

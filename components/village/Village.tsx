@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import VillagePhotoFrame from './VillagePhotoFrame'
+import { useHouseholdPhotos } from '@/lib/hooks/useHouseholdPhotos'
 import { useGoogleStatus, useGoogleEvents } from '@/lib/hooks/useGoogle'
 import { createPortal } from 'react-dom'
 import { format, parseISO, differenceInCalendarDays } from 'date-fns'
@@ -693,6 +693,16 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // Data-domain structures (2026-09-06) — the calendar building's
   // glance-card. Only its derived text reaches the hookless scene.
   const { items: calendarEvents } = useEvents()
+  // Our photos on the notice board (2026-10-25): one at a time, changing
+  // every 30 seconds. With guests over, only the photos marked for them.
+  const { items: boardPhotos } = useHouseholdPhotos(spaces[0]?.id ?? null, guestView || guestLive)
+  const [photoIdx, setPhotoIdx] = useState(0)
+  const [photoBig, setPhotoBig] = useState(false)
+  useEffect(() => {
+    if (boardPhotos.length < 2) return
+    const t = setInterval(() => setPhotoIdx(n => n + 1), 30_000)
+    return () => clearInterval(t)
+  }, [boardPhotos.length])
   // Google Calendar on the board too (2026-10-24): your own and the shared
   // one; on the shared iPad only the shared calendar comes back.
   const gStatus = useGoogleStatus().status
@@ -910,6 +920,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onOpenKitchen={() => setKitchenOpen(true)}
             onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } setPreview({ id, go }) }}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
+            boardPhoto={!compact && boardPhotos.length ? { url: boardPhotos[photoIdx % boardPhotos.length].url, onOpen: () => setPhotoBig(true) } : null}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -1307,7 +1318,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         )}
 
         {/* Our photos, framed in the corner (2026-10-24). Guests see only theirs. */}
-        {!compact && !arranging && !ambient && <VillagePhotoFrame spaceId={spaces[0]?.id ?? null} guestOnly={guestView || guestLive} />}
+        {/* A photo pinned on the notice board, opened big when tapped (2026-10-25). */}
+        {photoBig && boardPhotos[photoIdx % Math.max(1, boardPhotos.length)] && (
+          <div role="dialog" aria-modal="true" aria-label="Photo" onClick={() => setPhotoBig(false)} style={{
+            position: 'fixed', inset: 0, zIndex: 4100, background: 'rgba(10,8,6,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={boardPhotos[photoIdx % boardPhotos.length].url} alt="" style={{ maxWidth: '100%', maxHeight: '90dvh', borderRadius: 12, objectFit: 'contain' }} />
+          </div>
+        )}
 
         {hostingSetupOpen && onStartGathering && (
           <HostingSetup onStart={onStartGathering} onClose={() => setHostingSetupOpen(false)} />

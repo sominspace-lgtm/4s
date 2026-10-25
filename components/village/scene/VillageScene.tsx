@@ -171,7 +171,7 @@ export default function VillageScene({
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
-  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null,
+  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null, boardPhoto = null,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview, lite = false,
   sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
@@ -307,6 +307,9 @@ export default function VillageScene({
   hostPing?: { onPing: (who: 'sylvia' | 'harry', reason: string) => void } | null
   /** Live lines for the calendar district's glance-card (2026-09-06).
    *  Sourced in Village.tsx (hookless scene). */
+  /** A photo pinned on the notice board (2026-10-25), from Our photos; it
+   *  changes every so often. Tap opens it big. Guests only see theirs. */
+  boardPhoto?: { url: string; onOpen: () => void } | null
   structures?: {
     calendar: string[]
     /** The next few dated things — events, trips, birthdays (2026-09-08). */
@@ -2639,21 +2642,48 @@ export default function VillageScene({
         draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
       <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
-      {/* The partner note, pinned to the board as a little paper (2026-10-23). */}
-      {structures?.note && !hosting && !arranging && (() => {
+      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Notice board" onClick={openOrToggle('calendar', 'Notice board')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
+        draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
+      {/* Pinned on the board (2026-10-25), like a real bulletin board: the
+          partner note on the left, a photo from Our photos on the right
+          that changes every so often. Same coordinates as the board art
+          (DistrictLabel scale 1.08 times the art's own 1.3). */}
+      {!arranging && (structures?.note || boardPhoto) && (() => {
         const p = pos('calendar')
-        const t = structures.note.length > 22 ? structures.note.slice(0, 21) + '…' : structures.note
+        const lines: string[] = []
+        if (structures?.note) {
+          for (const w of structures.note.split(/\s+/)) {
+            const last = lines[lines.length - 1]
+            if (last !== undefined && (last + ' ' + w).length <= 12) lines[lines.length - 1] = last + ' ' + w
+            else lines.push(w.length > 12 ? w.slice(0, 11) + '…' : w)
+          }
+        }
+        const shown = lines.slice(0, 4)
+        if (lines.length > 4) shown[3] = shown[3].slice(0, 10) + '…'
+        const onlyPhoto = !structures?.note
         return (
-          <g transform={`translate(${p.x - 4} ${p.y - 50}) rotate(-5)`} onClick={openOrToggle('calendar', 'Notice board')} style={{ cursor: 'pointer' }}>
-            <rect x={-2} y={-1} width={70} height={22} rx={2} fill="var(--text)" opacity={0.12} transform="translate(1 2)" />
-            <rect x={-2} y={-1} width={70} height={22} rx={2} fill="#fff6dc" stroke="#e3cf9f" strokeWidth={0.6} />
-            <circle cx={33} cy={1} r={2.2} fill="#c9584f" />
-            <text x={33} y={13.5} textAnchor="middle" fontSize={7} fontStyle="italic" fill="#5a4630" fontFamily="var(--font-display)">{t}</text>
+          <g transform={`translate(${p.x} ${p.y}) scale(${1.08 * 1.3})`}>
+            {structures?.note && (
+              <g transform="rotate(-3 -12 -28)" onClick={openOrToggle('calendar', 'Notice board')} style={{ cursor: 'pointer' }}>
+                <rect x={-23} y={-40} width={22} height={23} rx={0.8} fill="#2a1a0c" opacity={0.18} transform="translate(0.6 0.8)" />
+                <rect x={-23} y={-40} width={22} height={23} rx={0.8} fill="#fff6dc" />
+                <circle cx={-12} cy={-38.6} r={1.1} fill="#c9584f" />
+                {shown.map((l, i) => (
+                  <text key={i} x={-12} y={-32.5 + i * 4.3} textAnchor="middle" fontSize={3.4} fontStyle="italic" fill="#5a4630" fontFamily="var(--font-display)">{l}</text>
+                ))}
+              </g>
+            )}
+            {boardPhoto && (
+              <g transform={onlyPhoto ? 'translate(-12 0) rotate(2 12 -28)' : 'rotate(3 12 -28)'} onClick={e => { e.stopPropagation(); boardPhoto.onOpen() }} style={{ cursor: 'zoom-in' }}>
+                <rect x={2} y={-41} width={21} height={25} rx={0.6} fill="#2a1a0c" opacity={0.18} transform="translate(0.6 0.8)" />
+                <rect x={2} y={-41} width={21} height={25} rx={0.6} fill="#fbf6ec" />
+                <image key={boardPhoto.url} href={boardPhoto.url} x={3.5} y={-39.5} width={18} height={18} preserveAspectRatio="xMidYMid slice" className="fade-in" />
+                <circle cx={12.5} cy={-40} r={1.1} fill="#3f7a5a" />
+              </g>
+            )}
           </g>
         )
       })()}
-      <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Notice board" onClick={openOrToggle('calendar', 'Notice board')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
-        draggable={arranging} dragging={draggingId === 'calendar'} onPointerDown={startDrag('calendar')} selected={openPanel === 'calendar'} />
       {/* Places and People (2026-08-24) — the same real-district mechanism
           as the five above, extended to the two other things 4S already
           tracks that had no presence in the village at all: your saved pins

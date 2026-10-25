@@ -96,7 +96,7 @@ export default function VillagePreviewClient() {
         </div>
         <div className={lite ? 'village-lite' : undefined} style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)', ...(aspect ? { aspectRatio: String(aspect) } : {}) }}>
           <VillageScene
-            village={bigV} live structures={{ calendar: [], week: [], note: 'i love you <3' }} palette={seasonPalette('summer', isLight)}
+            village={bigV} live structures={{ calendar: [], week: [], note: 'i love you <3 see you at dinner' }} boardPhoto={{ url: '/village-assets/kitchen.png', onOpen: () => {} }} palette={seasonPalette('summer', isLight)}
             celestial={celestialOf(new Date(2026, 6, 15, 19))}
             plantSlots={bigSlots.plantSlots} buildingSlots={bigSlots.buildingSlots}
             gathering guestToken="preview-fake-token" containerAspect={aspect} lite={lite}
