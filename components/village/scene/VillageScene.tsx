@@ -171,7 +171,7 @@ export default function VillageScene({
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
   menu = [], agenda = [], somi = null, hostPing = null, partnerPing = null,
-  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null, boardPhoto = null,
+  onOpenKitchen, homeCard = null, binLine = null, partOfDay = 'day', structures = null, boardPhoto = null, mailFlag = 0, postcardNew = false, onMailbox,
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview, lite = false,
   sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
@@ -310,6 +310,11 @@ export default function VillageScene({
   /** A photo pinned on the notice board (2026-10-25), from Our photos; it
    *  changes every so often. Tap opens it big. Guests only see theirs. */
   boardPhoto?: { url: string; onOpen: () => void } | null
+  /** The mailbox (2026-10-25): unread in the shared inbox raises the flag, a
+   *  new weekly postcard peeks out, and a tap opens the mailbox sheet. */
+  mailFlag?: number
+  postcardNew?: boolean
+  onMailbox?: () => void
   structures?: {
     calendar: string[]
     /** The next few dated things — events, trips, birthdays (2026-09-08). */
@@ -2326,8 +2331,9 @@ export default function VillageScene({
           so layering Draggable's onPointerDown underneath is safe. */}
       {(() => { const p = decorPos('mailbox'); return (
         <Draggable x={p.x} y={p.y} id="mailbox" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('mailbox')} r={14}>
-          <MailboxShape x={0} y={0} onClick={nav('Note', () => {
-            window.dispatchEvent(new CustomEvent('app:open-quick-capture'))
+          <MailboxShape x={0} y={0} flag={!!mailFlag} card={!!postcardNew} onClick={nav('Mailbox', () => {
+            if (onMailbox) onMailbox()
+            else window.dispatchEvent(new CustomEvent('app:open-quick-capture'))
           })} />
         </Draggable>
       ) })()}

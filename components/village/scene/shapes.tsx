@@ -673,17 +673,30 @@ export function WishingWellShape({ x, y, onClick, glow = false }: { x: number; y
 // in the scene again without needing a whole district for it.
 // Real sprite (round 9, 2026-08-27) — same pack as the cottage/cast, see
 // their own header comments.
-export function MailboxShape({ x, y, onClick }: { x: number; y: number; onClick?: () => void }) {
+export function MailboxShape({ x, y, onClick, flag = false, card = false }: {
+  x: number; y: number; onClick?: () => void
+  /** New mail in the shared inbox: the little red flag goes up (2026-10-25). */
+  flag?: boolean
+  /** A new weekly postcard is waiting: a card peeks out of the slot. */
+  card?: boolean
+}) {
   const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
   const w = 19.7, h = 20 // re-sourced round 23 from the master-assets folder (256×260), sized up rounds 24/35 for visibility
   return (
     <g transform={`translate(${x} ${y})`}>
       {onClick && <rect x={-w / 2 - 1.5} y={-h - 1.5} width={w + 3} height={h + 4} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
-        <title>Jot something down</title>
+        <title>{flag ? 'New mail in the shared inbox' : card ? 'A postcard came' : 'The mailbox'}</title>
         <ellipse cx={0} cy={1.5} rx={6} ry={1.6} fill="var(--text)" opacity={0.12} />
+        {card && <rect x={-4.5} y={-h + 1} width={9} height={6} rx={0.6} fill="#fbf6ec" stroke="#d9c4a0" strokeWidth={0.5} transform={`rotate(-10 0 ${-h + 4})`} />}
         <image href="/village-assets/mailbox2.png" x={-w / 2} y={-h} width={w} height={h}
           style={{ imageRendering: 'pixelated' }} />
+        {flag && (
+          <g>
+            <rect x={w / 2 - 2.2} y={-h + 3} width={1.4} height={9} fill="#6b4426" />
+            <rect x={w / 2 - 0.8} y={-h + 3} width={5.5} height={3.8} rx={0.4} fill="#c9584f" />
+          </g>
+        )}
       </g>
     </g>
   )

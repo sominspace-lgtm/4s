@@ -38,6 +38,11 @@ export default function MailHub({ userId, sharedMode = false }: { userId: string
   const hasShared = !!status.household?.connected
   const [tab, setTab] = useState<'letters' | 'shared'>(sharedMode ? 'shared' : 'letters')
   const showShared = sharedMode || tab === 'shared'
+  useEffect(() => {
+    const on = () => setTab('shared')
+    window.addEventListener('4s:mail-shared', on)
+    return () => window.removeEventListener('4s:mail-shared', on)
+  }, [])
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
       {!sharedMode && hasShared && <Segmented value={tab} onChange={setTab} options={[['letters', 'Letters'], ['shared', 'Shared inbox']]} />}

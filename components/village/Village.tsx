@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHouseholdPhotos } from '@/lib/hooks/useHouseholdPhotos'
+import Postcard, { lastWeekStart } from './Postcard'
+import Sheet from '@/components/ui/Sheet'
 import { useGoogleStatus, useGoogleEvents } from '@/lib/hooks/useGoogle'
 import { createPortal } from 'react-dom'
 import { format, parseISO, differenceInCalendarDays } from 'date-fns'
@@ -698,6 +700,25 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const { items: boardPhotos } = useHouseholdPhotos(spaces[0]?.id ?? null, guestView || guestLive)
   const [photoIdx, setPhotoIdx] = useState(0)
   const [photoBig, setPhotoBig] = useState(false)
+
+  // The mailbox (2026-10-25): the shared inbox's unread count raises its
+  // flag, and each Sunday a postcard for the week that ended waits inside.
+  const gStat = useGoogleStatus().status
+  const [mailUnread, setMailUnread] = useState(0)
+  useEffect(() => {
+    if (!gStat.household?.connected || guestView || guestLive) { setMailUnread(0); return }
+    let alive = true
+    const check = () => fetch('/api/google/gmail?unread=1&account=shared').then(r => (r.ok ? r.json() : { unread: 0 })).then((j: { unread?: number }) => { if (alive) setMailUnread(j.unread ?? 0) }).catch(() => {})
+    check()
+    const t = setInterval(check, 5 * 60_000)
+    return () => { alive = false; clearInterval(t) }
+  }, [gStat.household?.connected, guestView, guestLive])
+  const postcardKey = `4s:postcard-seen:${lastWeekStart()}`
+  const [postcardSeen, setPostcardSeen] = useState(true)
+  useEffect(() => { try { setPostcardSeen(localStorage.getItem(postcardKey) === '1') } catch { /* private mode */ } }, [postcardKey])
+  const [mailboxOpen, setMailboxOpen] = useState(false)
+  const [postcardOpen, setPostcardOpen] = useState(false)
+  const nameFor = useCallback((id: string) => (id === spaces[0]?.owner_id ? 'Sylvia' : 'Harry'), [spaces])
   useEffect(() => {
     if (boardPhotos.length < 2) return
     const t = setInterval(() => setPhotoIdx(n => n + 1), 30_000)
@@ -921,6 +942,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } setPreview({ id, go }) }}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
             boardPhoto={!compact && boardPhotos.length ? { url: boardPhotos[photoIdx % boardPhotos.length].url, onOpen: () => setPhotoBig(true) } : null}
+            mailFlag={mailUnread} postcardNew={!postcardSeen && !guestView && !guestLive} onMailbox={guestView || guestLive ? undefined : () => setMailboxOpen(true)}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
             onResizeItem={onChangeLayout ? (id, x, y, scale) => onChangeLayout({ ...layout, [id]: { x, y, scale } }) : undefined}
@@ -1318,6 +1340,23 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         )}
 
         {/* Our photos, framed in the corner (2026-10-24). Guests see only theirs. */}
+        {/* The mailbox sheet (2026-10-25). */}
+        <Sheet open={mailboxOpen} title="The mailbox" onClose={() => setMailboxOpen(false)}>
+          {[
+            { label: postcardSeen ? 'This week\'s postcard' : 'A postcard came', hint: 'The week that just ended, on a card', go: () => { setMailboxOpen(false); setPostcardOpen(true); setPostcardSeen(true); try { localStorage.setItem(postcardKey, '1') } catch { /* private mode */ } } },
+            ...(gStat.household?.connected ? [{ label: mailUnread ? `Shared inbox · ${mailUnread} new` : 'Shared inbox', hint: 'The email the two of you share', go: () => { setMailboxOpen(false); goToSection('mail'); setTimeout(() => window.dispatchEvent(new CustomEvent('4s:mail-shared')), 80) } }] : []),
+            ...(!locked ? [{ label: 'Jot something down', hint: 'A note, a chore, a plan, anything', go: () => { setMailboxOpen(false); window.dispatchEvent(new CustomEvent('app:open-quick-capture')) } }] : []),
+          ].map(row => (
+            <button key={row.label} onClick={row.go} className="press" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, width: '100%', minHeight: 56, padding: '0.6rem 0.8rem', textAlign: 'left', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              <span style={{ fontSize: '0.95rem', color: 'var(--text)' }}>{row.label}</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{row.hint}</span>
+            </button>
+          ))}
+        </Sheet>
+        <Sheet open={postcardOpen} title="Postcard" onClose={() => setPostcardOpen(false)}>
+          <Postcard spaceId={spaces[0]?.id ?? null} userId={userId} nameFor={nameFor} />
+        </Sheet>
+
         {/* A photo pinned on the notice board, opened big when tapped (2026-10-25). */}
         {photoBig && boardPhotos[photoIdx % Math.max(1, boardPhotos.length)] && (
           <div role="dialog" aria-modal="true" aria-label="Photo" onClick={() => setPhotoBig(false)} style={{
