@@ -5,8 +5,10 @@ import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 // live, and open back up when it ends.
 describe('sharedSectionVisible', () => {
   const GUEST_SAFE = ['reference', 'village', 'places', 'places-nearby']
-  const PLAIN_SHARED_EXTRA = ['home', 'upkeep', 'kitchen', 'places-trips']
-  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'smarthome', 'mail']
+  // Mail is on the shared screen since 2026-10-25, but only the shared
+  // inbox shows there (MailHub sharedMode); never during a gathering.
+  const PLAIN_SHARED_EXTRA = ['home', 'housecal', 'upkeep', 'kitchen', 'places-trips', 'mail']
+  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'smarthome']
 
   describe('plain shared view (no gathering)', () => {
     it('shows the household surfaces + village + places + trips', () => {
@@ -23,7 +25,7 @@ describe('sharedSectionVisible', () => {
     it('keeps only the guest-safe set', () => {
       for (const id of GUEST_SAFE) expect(sharedSectionVisible(id, true)).toBe(true)
     })
-    it('locks down Home, Upkeep, Kitchen and Trips', () => {
+    it('locks down Home, Calendar, Upkeep, Kitchen, Trips and Mail', () => {
       for (const id of PLAIN_SHARED_EXTRA) expect(sharedSectionVisible(id, true)).toBe(false)
     })
     it('still hides personal sections', () => {
