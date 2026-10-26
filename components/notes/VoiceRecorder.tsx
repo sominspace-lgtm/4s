@@ -26,13 +26,48 @@ export default function VoiceRecorder({ onText, label = 'Record', compact = fals
   const [secs, setSecs] = useState(0)
   const [err, setErr] = useState<string | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
-  const chunks = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
+  const parts = useRef<Promise<{ text: string; error: string | null }>[]>([])
+  const stopping = useRef(false)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const segTimer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => () => {
     if (timer.current) clearInterval(timer.current)
-    recRef.current?.stream.getTracks().forEach(t => t.stop())
+    if (segTimer.current) clearInterval(segTimer.current)
+    streamRef.current?.getTracks().forEach(t => t.stop())
   }, [])
+
+  // One piece of the recording to text. A long note is sent in two-minute
+  // pieces (2026-10-26): the server takes about 4.5 MB per upload, and a
+  // phone fills that in a few minutes. Each piece is a whole file of its own.
+  async function transcribe(blob: Blob): Promise<{ text: string; error: string | null }> {
+    try {
+      const fd = new FormData()
+      fd.append('audio', blob)
+      const res = await fetch('/api/notes/transcribe', { method: 'POST', body: fd })
+      const j = await res.json().catch(() => ({})) as { text?: string; error?: string }
+      if (!res.ok) return { text: '', error: j.error ?? 'Could not turn that into text.' }
+      // Whisper hears "Thank you." in silence; a piece that is only that is dropped.
+      const t = (j.text ?? '').trim()
+      return { text: /^(thank you|thanks for watching|you)[.!]?$/i.test(t) ? '' : t, error: null }
+    } catch { return { text: '', error: 'Could not send the recording.' } }
+  }
+
+  function startPiece(stream: MediaStream, type: string | undefined) {
+    const rec = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 64000 })
+    const bits: Blob[] = []
+    rec.ondataavailable = e => { if (e.data.size > 0) bits.push(e.data) }
+    rec.onstop = () => {
+      const blob = new Blob(bits, { type: rec.mimeType || type || 'audio/webm' })
+      if (blob.size > 2000) parts.current.push(transcribe(blob))
+      if (stopping.current) void finish()
+      else startPiece(stream, type)
+    }
+    // No timeslice: Safari's recordings come out whole this way.
+    rec.start()
+    recRef.current = rec
+  }
 
   async function start() {
     setErr(null)
@@ -42,34 +77,35 @@ export default function VoiceRecorder({ onText, label = 'Record', compact = fals
     let stream: MediaStream
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }) }
     catch { setErr('Allow the microphone to record a note.'); return }
-    const type = pickType()
-    const rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined)
-    chunks.current = []
-    rec.ondataavailable = e => { if (e.data.size > 0) chunks.current.push(e.data) }
-    rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); void send(new Blob(chunks.current, { type: rec.mimeType || type || 'audio/webm' })) }
-    recRef.current = rec
-    rec.start(1000)
+    streamRef.current = stream
+    parts.current = []
+    stopping.current = false
+    try { startPiece(stream, pickType()) }
+    catch { stream.getTracks().forEach(t => t.stop()); setErr('This browser cannot record. Try Safari or Chrome.'); return }
     setSecs(0); setState('recording')
     timer.current = setInterval(() => setSecs(s => s + 1), 1000)
+    segTimer.current = setInterval(() => { if (recRef.current?.state === 'recording') recRef.current.stop() }, 120_000)
   }
 
   function stop() {
     if (timer.current) { clearInterval(timer.current); timer.current = null }
-    if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop()
+    if (segTimer.current) { clearInterval(segTimer.current); segTimer.current = null }
+    stopping.current = true
     setState('working')
+    if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop()
+    else void finish()
   }
 
-  async function send(blob: Blob) {
-    try {
-      const fd = new FormData()
-      fd.append('audio', blob)
-      const res = await fetch('/api/notes/transcribe', { method: 'POST', body: fd })
-      const j = await res.json().catch(() => ({})) as { text?: string; error?: string }
-      if (!res.ok) { setErr(j.error ?? 'Could not turn that into text.'); return }
-      if (!j.text) { setErr('No words were heard.'); return }
-      await onText(j.text)
-    } catch { setErr('Could not send the recording.') }
-    finally { setState('idle') }
+  async function finish() {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    const done = await Promise.all(parts.current)
+    const text = done.map(d => d.text).filter(Boolean).join(' ').trim()
+    const problem = done.find(d => d.error)?.error ?? null
+    if (text) {
+      try { await onText(text) } catch { setErr('Could not save the note.') }
+      if (problem) setErr(`Part of it did not come through. ${problem}`)
+    } else setErr(problem ?? 'No words were heard.')
+    setState('idle')
   }
 
   // A long recording stops itself at ten minutes.

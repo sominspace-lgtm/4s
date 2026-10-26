@@ -7,6 +7,7 @@ import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
 import Sheet from '@/components/ui/Sheet'
 import GoogleCalendar from '@/components/google/GoogleCalendar'
+import VoiceRecorder from '@/components/notes/VoiceRecorder'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -43,7 +44,8 @@ export default function UiPreviewClient() {
               : null}
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
           {tab === 'brief' && <GoogleCalendar scope="mine" />}
-          {tab !== 'me' && tab !== 'brief' && (
+          {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
+          {tab !== 'me' && tab !== 'brief' && tab !== 'notes' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               {[1, 2, 3, 4].map(i => (
                 <section key={i} className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>
