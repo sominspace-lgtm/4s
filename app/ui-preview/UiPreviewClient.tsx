@@ -8,6 +8,8 @@ import MeGrid from '@/components/ui/MeGrid'
 import Sheet from '@/components/ui/Sheet'
 import GoogleCalendar from '@/components/google/GoogleCalendar'
 import VoiceRecorder from '@/components/notes/VoiceRecorder'
+import { HolidayDecor, type Holiday } from '@/components/village/scene/Holiday'
+import PlanWeek from '@/components/brief/PlanWeek'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -25,6 +27,7 @@ export default function UiPreviewClient() {
   const [tab, setTab] = useState('home')
   const [theme, setTheme] = useState('bloom')
   const [sheet, setSheet] = useState(false)
+  const [plan, setPlan] = useState(false)
   const g = GROUPS.find(x => x.members.includes(tab))!
   const all = new Set(Object.keys(LABELS))
 
@@ -45,7 +48,23 @@ export default function UiPreviewClient() {
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
           {tab === 'brief' && <GoogleCalendar scope="mine" />}
           {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
-          {tab !== 'me' && tab !== 'brief' && tab !== 'notes' && (
+          {tab === 'village' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {(['halloween', 'thanksgiving', 'christmas', 'newyear', 'seollal', 'valentine', 'july4'] as Holiday[]).flatMap(hd => [false, true].map(night => (
+                <figure key={hd + night} style={{ margin: 0 }}>
+                  <svg viewBox="-55 -110 110 118" style={{ width: '100%', background: night ? '#1f2a44' : '#cfe6f2', borderRadius: 10 }}>
+                    <defs><filter id="vglow" x="-250%" y="-250%" width="600%" height="600%"><feGaussianBlur stdDeviation="3" /></filter></defs>
+                    <rect x={-55} y={0} width={110} height={10} fill="#8fb07a" />
+                    <image href={`/village-assets/cottage-${night ? 'lit' : 'dark'}.png`} x={-45} y={-75.3} width={90} height={75.3} style={{ imageRendering: 'pixelated' }} />
+                    <HolidayDecor holiday={hd} night={night} />
+                  </svg>
+                  <figcaption style={{ fontSize: 12 }}>{hd} {night ? 'night' : 'day'}</figcaption>
+                </figure>
+              )))}
+            </div>
+          )}
+          {tab === 'tasks' && <><button className="btn btn-primary" onClick={() => setPlan(true)}>Plan the week</button><PlanWeek open={plan} onClose={() => setPlan(false)} userId="" /></>}
+          {tab !== 'me' && tab !== 'brief' && tab !== 'notes' && tab !== 'village' && tab !== 'tasks' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               {[1, 2, 3, 4].map(i => (
                 <section key={i} className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>

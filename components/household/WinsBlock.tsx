@@ -29,7 +29,8 @@ export default function WinsBlock({ spaceId, userId, nameFor }: { spaceId: strin
     const { data } = await createClient().from('household_wins')
       .select('id, user_id, kind, title, created_at').eq('space_id', spaceId)
       .gte('created_at', since).order('created_at', { ascending: false }).limit(80)
-    setWins((data as Win[] | null) ?? [])
+    // The evening lines (kind 'good') belong to the postcard, not this feed.
+    setWins(((data as Win[] | null) ?? []).filter(w => w.kind !== 'good'))
   }, [spaceId])
 
   useEffect(() => {

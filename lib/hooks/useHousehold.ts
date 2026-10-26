@@ -16,6 +16,8 @@ export interface Chore {
   // rather than a fixed list (2026-08-26) — see
   // supabase/migrations/household_chores_folders.sql.
   folder: string | null
+  /** Who takes it this week, set in Plan the week (2026-10-26). null = either of you. */
+  assigned_to?: string | null
 }
 
 export interface Meal {
@@ -175,7 +177,7 @@ export function useHousehold(spaceId: string | null) {
   }
 
   // Rename a chore or change how often it comes round (2026-10-15).
-  async function updateChore(id: string, patch: { name?: string; cadence_days?: number; folder?: string | null }) {
+  async function updateChore(id: string, patch: { name?: string; cadence_days?: number; folder?: string | null; assigned_to?: string | null }) {
     const { error } = await supabase.from('household_chores').update(patch).eq('id', id)
     if (error) { setError(error.message); return { error: error.message } }
     await load(); notify(); return { error: null }

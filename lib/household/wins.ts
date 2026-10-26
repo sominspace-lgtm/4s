@@ -4,7 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // date, so a feed needs its own log. Every "done" in a shared household
 // writes one line here. It never blocks the thing you just did: a failure to
 // log is swallowed.
-export type WinKind = 'chore' | 'routine' | 'meal' | 'win'
+// 'good' is the evening line, Today was good because (2026-10-26).
+export type WinKind = 'chore' | 'routine' | 'meal' | 'win' | 'good'
 
 export async function logWin(
   supabase: SupabaseClient, spaceId: string | null | undefined, userId: string, kind: WinKind, title: string,

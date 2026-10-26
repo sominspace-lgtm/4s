@@ -16,7 +16,7 @@ export function lastWeekStart(now = new Date()): string {
   return format(d, 'yyyy-MM-dd')
 }
 
-interface Card { wins: { title: string; who: string | null }[]; count: number; photo: string | null }
+interface Card { wins: { title: string; who: string | null }[]; count: number; photo: string | null; good: { title: string; who: string | null }[] }
 
 function line(c: Card): string {
   if (c.count === 0) return 'A quiet week. Those count too.'
@@ -36,11 +36,14 @@ export default function Postcard({ spaceId, userId, nameFor }: { spaceId: string
       const supabase = createClient()
       const from = parseISO(week), to = addDays(from, 7)
       const [{ data: w }, { data: ck }] = await Promise.all([
-        supabase.from('household_wins').select('title, user_id').eq('space_id', spaceId)
+        supabase.from('household_wins').select('title, user_id, kind').eq('space_id', spaceId)
           .gte('created_at', from.toISOString()).lt('created_at', to.toISOString()).order('created_at', { ascending: false }).limit(200),
         supabase.from('checkins').select('photo_path, user_id').eq('space_id', spaceId).eq('week_of', week).not('photo_path', 'is', null),
       ])
-      const rows = (w as { title: string; user_id: string }[] | null) ?? []
+      const all = (w as { title: string; user_id: string; kind: string }[] | null) ?? []
+      const rows = all.filter(r => r.kind !== 'good')
+      // Today was good because… lines, oldest first so they read through the week.
+      const good = all.filter(r => r.kind === 'good').reverse().map(r => ({ title: r.title, who: r.user_id === userId ? null : nameFor(r.user_id) }))
       const paths = ((ck as { photo_path: string; user_id: string }[] | null) ?? [])
       // Your own photo first if there is one, else your partner's (only
       // returned once the week is open to you both).
@@ -50,7 +53,7 @@ export default function Postcard({ spaceId, userId, nameFor }: { spaceId: string
         const { data: s } = await supabase.storage.from('checkin-photos').createSignedUrl(pick.photo_path, 3600)
         photo = s?.signedUrl ?? null
       }
-      if (alive) setCard({ count: rows.length, wins: rows.slice(0, 5).map(r => ({ title: r.title, who: r.user_id === userId ? null : nameFor(r.user_id) })), photo })
+      if (alive) setCard({ good, count: rows.length, wins: rows.slice(0, 5).map(r => ({ title: r.title, who: r.user_id === userId ? null : nameFor(r.user_id) })), photo })
     })()
     return () => { alive = false }
   }, [spaceId, week, userId, nameFor])
@@ -77,6 +80,12 @@ export default function Postcard({ spaceId, userId, nameFor }: { spaceId: string
             <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.86rem', lineHeight: 1.5 }}>
               {card.wins.map((w, i) => <li key={i}>{w.title}{w.who ? <span style={{ opacity: 0.7 }}> · {w.who}</span> : null}</li>)}
             </ul>
+          )}
+          {card && card.good.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.84rem', lineHeight: 1.45 }}>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.7 }}>Good because</div>
+              {card.good.slice(0, 4).map((g, i) => <div key={i} style={{ fontStyle: 'italic' }}>&ldquo;{g.title}&rdquo;{g.who ? <span style={{ opacity: 0.7, fontStyle: 'normal' }}> · {g.who}</span> : null}</div>)}
+            </div>
           )}
           <div style={{ fontSize: '0.8rem', opacity: 0.75, marginTop: 'auto' }}>Love, the village</div>
         </div>

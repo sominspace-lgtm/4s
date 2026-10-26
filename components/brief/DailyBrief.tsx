@@ -23,6 +23,8 @@ import type { Mode } from '@/lib/constants/modes'
 import PulseSection from '@/components/pulse/PulseSection'
 import AttentionBudget from '@/components/brief/AttentionBudget'
 import TodayRoutine from './TodayRoutine'
+import GoodBecause from './GoodBecause'
+import PlanWeek from './PlanWeek'
 import { REORDERABLE, type TodayBlockId, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
 import Breathing from '@/components/focus/Breathing'
 
@@ -96,6 +98,10 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
 
   // A whisper is dismissible for the day, so it never nags.
   const [whisperDismissed, setWhisperDismissed] = useState(false)
+  // Plan the week (2026-10-26): a card on Sundays, a button every day.
+  const [planOpen, setPlanOpen] = useState(false)
+  const [sunday, setSunday] = useState(false)
+  useEffect(() => { setSunday(new Date().getDay() === 0) }, [])
   useEffect(() => {
     const key = `4s-whisper-${format(new Date(), 'yyyy-MM-dd')}`
     setWhisperDismissed(localStorage.getItem(key) === '1')
@@ -369,8 +375,26 @@ export default function DailyBrief({ userId, mode = 'friend', calendarConnected 
       <div style={{ marginTop: '0.8rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
         <button onClick={() => { goToPersonal('tasks'); setTimeout(() => window.dispatchEvent(new CustomEvent('app:open-add-task')), 80) }} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ Add task</button>
         <button onClick={() => window.dispatchEvent(new CustomEvent('app:open-quick-capture'))} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>+ New note</button>
+        <button onClick={() => setPlanOpen(true)} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Plan the week</button>
       </div>
     </div>
+
+    {sunday && !recovery && (
+      <button onClick={() => setPlanOpen(true)} className="press organic" style={{
+        display: 'flex', alignItems: 'center', gap: '0.7rem', width: '100%', textAlign: 'left', cursor: 'pointer',
+        padding: '0.85rem 1rem', borderRadius: 14, fontFamily: 'var(--font-body)',
+        background: 'color-mix(in srgb, var(--emerald) 8%, var(--surface))', border: '1px solid color-mix(in srgb, var(--emerald) 24%, var(--border))',
+      }}>
+        <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text)' }}>Plan the week</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Tasks on days, dinners picked, chores split. A few minutes.</span>
+        </span>
+        <span aria-hidden style={{ color: 'var(--muted)' }}>›</span>
+      </button>
+    )}
+    <PlanWeek open={planOpen} onClose={() => setPlanOpen(false)} userId={userId} />
+
+    <GoodBecause userId={userId} />
 
     {/* Needs Attention and the household card are status, not preference —
         they're not part of the customizable block set, so they keep a fixed

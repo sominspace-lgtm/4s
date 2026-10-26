@@ -11,6 +11,7 @@ import type { WeatherCondition } from '@/lib/village/weather'
 import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/utils/navigate'
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { randomFortune } from '@/lib/village/fortunes'
+import { HolidayDecor, holidayOn, type Holiday } from './Holiday'
 import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
@@ -391,9 +392,14 @@ export default function VillageScene({
   // render's local `v.timeOfDay`, never the real clock or any stored data.
   const [vtodOverride, setVtodOverride] = useState<VillageState['timeOfDay'] | null>(null)
   const [vseasonOverride, setVseasonOverride] = useState<VillageState['season'] | null>(null)
+  // The holiday the cottage is dressed for (2026-10-26). Worked out on the
+  // client so the server's date never disagrees; ?vholiday=christmas previews one.
+  const [holiday, setHoliday] = useState<Holiday | null>(null)
   useEffect(() => {
     try {
       const q = new URLSearchParams(window.location.search)
+      const hv = q.get('vholiday')
+      setHoliday(hv && ['halloween', 'thanksgiving', 'christmas', 'newyear', 'seollal', 'valentine', 'july4'].includes(hv) ? hv as Holiday : holidayOn())
       const p = q.get('vtod')
       if (p === 'dawn' || p === 'day' || p === 'dusk' || p === 'night') setVtodOverride(p)
       const s = q.get('vseason')
@@ -2317,6 +2323,7 @@ export default function VillageScene({
         {v.buildings.length + v.plants.length > 6 && (
           <path d="M 24 -67 L 24 -79 L 30 -79 L 30 -67" fill="none" stroke="var(--border)" strokeWidth={2} />
         )}
+        {holiday && <HolidayDecor holiday={holiday} night={v.timeOfDay === 'night' || v.timeOfDay === 'dusk'} />}
         {arranging && (
           <rect x={-48} y={-78} width={96} height={82} rx={6} fill="none" stroke="var(--gold)"
             strokeWidth={1} strokeDasharray="3 3" opacity={draggingId === 'home' ? 0.9 : 0.45} />

@@ -572,6 +572,11 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           <div style={{ flex: 1, minWidth: 0 }}>
             <button onClick={() => setEditingChore({ id: c.id, name: c.name, cadence: String(c.cadence_days), folder: c.folder ?? '' })} title="Edit"
               style={{ fontSize: '0.78rem', color: 'var(--text)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}>{c.name} <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>✎</span></button>
+            {c.assigned_to && (
+              <div style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>
+                {c.assigned_to === userId ? 'Yours this week' : "Your partner's this week"}
+              </div>
+            )}
             {c.last_done_at && nameFor(c.last_done_by) && (
               <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
                 Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
