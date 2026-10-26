@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useState } from 'react'
 import PlacesSheet from '@/components/places/PlacesSheet'
 import { useTrips, type Trip, type TripStatus } from '@/lib/hooks/useTrips'
@@ -503,7 +504,7 @@ export default function TripDetail({ trip, open, onClose }: {
         </section>
 
         <button
-          onClick={() => { if (window.confirm(`Delete "${trip.title}"?`)) { removeTrip(trip.id); onClose() } }}
+          onClick={() => { onClose(); withUndo(`Deleting "${trip.title}"`, () => removeTrip(trip.id)) }}
           style={{ background: 'none', border: 'none', color: 'var(--muted)', opacity: 0.5, fontSize: '0.66rem', cursor: 'pointer', alignSelf: 'flex-start' }}
         >
           Delete trip

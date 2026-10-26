@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useMemo, useState } from 'react'
 import { useVault, type VaultEntry } from '@/lib/hooks/useVault'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -213,7 +214,7 @@ function Unlocked({ vault, household }: { vault: Vault; household: boolean }) {
         {shown.map(e => (
           <Row key={e.id} e={e} flags={{ weak: health.weak.has(e.id), reused: health.reused.has(e.id), old: health.old.has(e.id) }}
             onEdit={() => setEditing(e)} onNote={setNote}
-            onDelete={async () => { if (window.confirm(`Delete "${e.title}" from the vault? This cannot be undone.`)) await vault.remove(e.id) }}
+            onDelete={() => withUndo(`Deleting "${e.title}"`, () => vault.remove(e.id))}
             onStar={() => vault.save({ ...e, favorite: !e.favorite })} />
         ))}
       </div>

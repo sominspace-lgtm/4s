@@ -11,7 +11,6 @@ import { useHabits, isDueOn } from '@/lib/hooks/useHabits'
 import { careTypeLabel, careSubjectName, type CareSubject } from '@/lib/utils/careTypes'
 import { weekOfSunday } from '@/lib/utils/checkinQuestions'
 import { goToSection, goToHousehold, goToPersonal } from '@/lib/utils/navigate'
-import VoiceDrop from '@/components/capture/VoiceDrop'
 
 // The day, in order (2026-09-08). One scrollable read of what's happened
 // and what's still ahead — check-in, care logged, meals, chores, events —
@@ -225,7 +224,6 @@ export default function DailyThread({ userId }: { userId: string }) {
         <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.68, flex: 1 }}>
           The day, in order
         </div>
-        <VoiceDrop spaceId={spaceId} compact />
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 0.9rem' }}>

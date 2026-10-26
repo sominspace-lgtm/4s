@@ -1,55 +1,34 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Header from '@/components/layout/Header'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import type { CustomThemeSeed } from '@/lib/constants/themes'
 import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
 import QuickNote from '@/components/ui/QuickNote'
-import ConnectPanel from '@/components/ui/ConnectPanel'
+import UndoToast from '@/components/ui/UndoToast'
 import SearchModal from '@/components/search/SearchModal'
-import ShortcutHelp from '@/components/ui/ShortcutHelp'
-import NotificationsPanel from '@/components/ui/NotificationsPanel'
-import ArchivePanel from '@/components/archive/ArchivePanel'
-import WeekReview from '@/components/review/WeekReview'
 import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
 import MeGrid from '@/components/ui/MeGrid'
-import YouTwo from '@/components/checkin/YouTwo'
-import MyCalendar from '@/components/calendar/MyCalendar'
-import SettingsPage from '@/components/settings/SettingsPage'
 import { useIdleAmbient } from '@/lib/hooks/useIdleAmbient'
 import { useAutoRelock } from '@/lib/hooks/useAutoRelock'
 import { useSharedVillageLayout } from '@/lib/hooks/useSharedVillageLayout'
 import { useGathering } from '@/lib/hooks/useGathering'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useMail } from '@/lib/hooks/useMail'
-import MailPanel from '@/components/ui/MailPanel'
 import Village from '@/components/village/Village'
 import type { VillageLayout } from '@/lib/village/layout'
 import DailyBrief from '@/components/brief/DailyBrief'
-import TasksTab from '@/components/work/TasksTab'
-import HabitsTab from '@/components/habits/HabitsTab'
-import NotesHub from '@/components/notes/NotesHub'
-import MailHub from '@/components/mail/MailHub'
-import VaultHub from '@/components/vault/VaultHub'
-import KitchenHub from '@/components/kitchen/KitchenHub'
-import MoneyHub from '@/components/money/MoneyHub'
-import WishlistHub from '@/components/watchlist/WishlistHub'
-import HouseholdHub from '@/components/household/HouseholdHub'
-import SmartHomeOverlay from '@/components/household/SmartHomeOverlay'
-import PlacesHub from '@/components/places/PlacesHub'
 import UnlockPanel from '@/components/ui/UnlockPanel'
 import { createClient } from '@/lib/supabase/client'
 import { saveLayout, type LayoutState } from '@/lib/persistence/saveLayout'
-import ShareInbox from '@/components/share/ShareInbox'
-import Jarvis from '@/components/jarvis/Jarvis'
 import { scrollToAnchor, goToSection } from '@/lib/utils/navigate'
 import { ignoreShortcut } from '@/lib/utils/shortcuts'
 import { mergeTodayBlocks, type TodayBlockConfig } from '@/lib/utils/todayBlocks'
-import TodayCustomizePanel from '@/components/brief/TodayCustomizePanel'
 import { mergeHomeBlocks, type HouseholdTabId } from '@/lib/utils/householdLayout'
 import { mergeVillagePanelBlocks } from '@/lib/utils/villagePanel'
 import type { Mode } from '@/lib/constants/modes'
@@ -57,8 +36,59 @@ import { t } from '@/lib/i18n'
 import { LangContext } from '@/lib/LangContext'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import { useWakeLock } from '@/lib/hooks/useWakeLock'
-import SharedSettings from '@/components/layout/SharedSettings'
 import { DEVICE_EVENT, DEVICE_KEYS, readDevice, writeDevice } from '@/lib/utils/deviceSettings'
+
+// Faster first load (2026-10-26): Today and the village come with the page;
+// every other tab fetches its code the first time it opens, and all of them
+// are fetched quietly once the app is idle, so a tap still feels instant.
+function TabLoading() {
+  return <div aria-busy style={{ minHeight: 160, borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', opacity: 0.6 }} />
+}
+const loadConnectPanel = () => import('@/components/ui/ConnectPanel')
+const ConnectPanel = dynamic(loadConnectPanel, { loading: TabLoading })
+const loadShortcutHelp = () => import('@/components/ui/ShortcutHelp')
+const ShortcutHelp = dynamic(loadShortcutHelp, { loading: TabLoading })
+const loadNotificationsPanel = () => import('@/components/ui/NotificationsPanel')
+const NotificationsPanel = dynamic(loadNotificationsPanel, { loading: TabLoading })
+const loadArchivePanel = () => import('@/components/archive/ArchivePanel')
+const ArchivePanel = dynamic(loadArchivePanel, { loading: TabLoading })
+const loadYouTwo = () => import('@/components/checkin/YouTwo')
+const YouTwo = dynamic(loadYouTwo, { loading: TabLoading })
+const loadMyCalendar = () => import('@/components/calendar/MyCalendar')
+const MyCalendar = dynamic(loadMyCalendar, { loading: TabLoading })
+const loadSettingsPage = () => import('@/components/settings/SettingsPage')
+const SettingsPage = dynamic(loadSettingsPage, { loading: TabLoading })
+const loadMailPanel = () => import('@/components/ui/MailPanel')
+const MailPanel = dynamic(loadMailPanel, { loading: TabLoading })
+const loadTasksTab = () => import('@/components/work/TasksTab')
+const TasksTab = dynamic(loadTasksTab, { loading: TabLoading })
+const loadHabitsTab = () => import('@/components/habits/HabitsTab')
+const HabitsTab = dynamic(loadHabitsTab, { loading: TabLoading })
+const loadNotesHub = () => import('@/components/notes/NotesHub')
+const NotesHub = dynamic(loadNotesHub, { loading: TabLoading })
+const loadMailHub = () => import('@/components/mail/MailHub')
+const MailHub = dynamic(loadMailHub, { loading: TabLoading })
+const loadVaultHub = () => import('@/components/vault/VaultHub')
+const VaultHub = dynamic(loadVaultHub, { loading: TabLoading })
+const loadKitchenHub = () => import('@/components/kitchen/KitchenHub')
+const KitchenHub = dynamic(loadKitchenHub, { loading: TabLoading })
+const loadMoneyHub = () => import('@/components/money/MoneyHub')
+const MoneyHub = dynamic(loadMoneyHub, { loading: TabLoading })
+const loadWishlistHub = () => import('@/components/watchlist/WishlistHub')
+const WishlistHub = dynamic(loadWishlistHub, { loading: TabLoading })
+const loadHouseholdHub = () => import('@/components/household/HouseholdHub')
+const HouseholdHub = dynamic(loadHouseholdHub, { loading: TabLoading })
+const loadSmartHomeOverlay = () => import('@/components/household/SmartHomeOverlay')
+const SmartHomeOverlay = dynamic(loadSmartHomeOverlay, { loading: TabLoading })
+const loadPlacesHub = () => import('@/components/places/PlacesHub')
+const PlacesHub = dynamic(loadPlacesHub, { loading: TabLoading })
+const loadShareInbox = () => import('@/components/share/ShareInbox')
+const ShareInbox = dynamic(loadShareInbox, { loading: TabLoading })
+const loadJarvis = () => import('@/components/jarvis/Jarvis')
+const Jarvis = dynamic(loadJarvis, { loading: TabLoading })
+const loadSharedSettings = () => import('@/components/layout/SharedSettings')
+const SharedSettings = dynamic(loadSharedSettings, { loading: TabLoading })
+const PREFETCH = [loadConnectPanel, loadShortcutHelp, loadNotificationsPanel, loadArchivePanel, loadYouTwo, loadMyCalendar, loadSettingsPage, loadMailPanel, loadTasksTab, loadHabitsTab, loadNotesHub, loadMailHub, loadVaultHub, loadKitchenHub, loadMoneyHub, loadWishlistHub, loadHouseholdHub, loadSmartHomeOverlay, loadPlacesHub, loadShareInbox, loadJarvis, loadSharedSettings]
 
 interface Props {
   email: string
@@ -254,6 +284,13 @@ const SUB_LABELS: Record<string, string> = {
 export default function DashboardClient({ email, userId, isAnonymous, sharedMode, accountCreatedAt, initialVillageLastSeen, initialMilestonesSeen, initialName, initialTheme, initialCustomTheme, initialMode, initialLayout, initialTodayBlocks, initialNotifyPrefs, initialHouseholdHomeBlocks, initialVillagePanelBlocks, initialVillageLayout }: Props) {
   const [theme, setTheme] = useState(initialTheme)
   const [customTheme, setCustomTheme] = useState<CustomThemeSeed | null>(initialCustomTheme)
+  // Fetch every tab's code once the first screen has settled.
+  useEffect(() => {
+    const run = () => { for (const load of PREFETCH) void load().catch(() => {}) }
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number }
+    if (w.requestIdleCallback) w.requestIdleCallback(run)
+    else { const t = setTimeout(run, 2000); return () => clearTimeout(t) }
+  }, [])
   // Fetched here instead of on the server (see page.tsx's initialCustomTheme
   // comment) — this column may not exist yet if the migration hasn't been
   // run, and a failed select here just means "no custom theme", not a
@@ -275,7 +312,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // sections now, managed by the main Customize-layout panel.)
   const [householdHomeBlocks, setHouseholdHomeBlocks] = useState<SectionConfig[]>(mergeHomeBlocks(initialHouseholdHomeBlocks))
   const [villagePanelBlocks, setVillagePanelBlocks] = useState<SectionConfig[]>(mergeVillagePanelBlocks(initialVillagePanelBlocks))
-  const [todayBlocks, setTodayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
+  // Today has no blocks to arrange since 2026-10-26; the saved order is kept so old layouts still load.
+  const [todayBlocks] = useState<TodayBlockConfig[]>(mergeTodayBlocks(initialTodayBlocks))
   const [notifyPrefs, setNotifyPrefs] = useState<Record<string, boolean>>(initialNotifyPrefs ?? {})
   const [villageLayout, setVillageLayout] = useState<VillageLayout>(initialVillageLayout ?? {})
 
@@ -326,7 +364,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // string opens it with no specific destination (the header's own entry).
   const [unlockReason, setUnlockReason] = useState<string | null>(null)
   const [customizeOpen, setCustomizeOpen] = useState(false)
-  const [todayCustomizeOpen, setTodayCustomizeOpen] = useState(false)
   const [connectOpen, setConnectOpen] = useState(false)
   // Back from Google's sign-in (?google=…) — open Connect so the result shows.
   // GoogleConnect clears the param itself once it has read it.
@@ -643,7 +680,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
     const body = (() => {
       switch (id) {
         case 'me':       return <MeGrid key="me" visible={navIds} onOpen={go} userId={userId} />
-        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} calendarConnected blocks={todayBlocks} onOpenCustomize={() => setTodayCustomizeOpen(true)} />
+        case 'brief':    return <DailyBrief key="brief" userId={userId} mode={mode} />
         case 'village':  return <Village key="village" userId={userId} accountCreatedAt={accountCreatedAt} lastSeen={villageLastSeen} onSeen={markVillageSeen} locked={sharedMode} onLockedNavigate={setUnlockReason} layout={sharedVillage.layout} onChangeLayout={sharedVillage.setLayout} ambient={ambient} resetIdleTimer={resetIdleTimer} gathering={gathering.gathering} onStartGathering={gathering.startGathering} onOpenDoors={gathering.openDoors} onUpdatePrep={gathering.updatePrep} onCloseGathering={gathering.closeGathering} guestCount={gathering.contributions.filter(c => c.status === 'visible').length} contributions={gathering.contributions} memories={gathering.memories} onSetMusicUrl={gathering.setMusicUrl} onSetPhotoAlbumUrl={gathering.setPhotoAlbumUrl} onModerate={gathering.moderate} onRemoveContribution={gathering.removeContribution} onUpdateMemory={gathering.updateMemory} onDeleteMemory={gathering.deleteMemory} guestInfo={gathering.guestInfo} onSetGuestInfo={gathering.setGuestInfo} onSetMenu={gathering.setMenu} onSetAgenda={gathering.setAgenda} onSetPinnedContribution={gathering.setPinnedContribution} onSetPinnedNote={gathering.setPinnedNote} petInfo={gathering.petInfo} onSetPetInfo={gathering.setPetInfo} boardNote={gathering.boardNote} panelBlocks={villagePanelBlocks} onChangePanelBlocks={changeVillagePanelBlocks} milestonesSeen={milestonesSeen} onAckMilestone={ackMilestone} guestView={sharedMode && guestView} />
         // Personal areas — one section id each (2026-09-01). Goals folded
         // into the Tasks section 2026-09-03 (see TasksTab).
@@ -660,7 +697,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'settings': return <div key="settings" className="roomy"><SettingsPage userId={userId} actions={{
           theme: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })),
           connect: () => setConnectOpen(true), notifications: () => setNotificationsOpen(true),
-          customize: () => setCustomizeOpen(true), customizeToday: () => setTodayCustomizeOpen(true), archive: () => setArchiveOpen(true),
+          customize: () => setCustomizeOpen(true), archive: () => setArchiveOpen(true),
           ipad: sharedMode ? () => setSharedSettingsOpen(true) : undefined,
           signOut: async () => { await createClient().auth.signOut(); window.location.href = '/login' },
         }} /></div>
@@ -733,10 +770,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       <UnlockPanel open={unlockReason !== null} reason={unlockReason} onClose={() => setUnlockReason(null)} />
 
       {!sharedMode && <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />}
+      <UndoToast />
       <ShortcutHelp open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} />
       <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} userId={userId} accountCreatedAt={accountCreatedAt} />
       <CustomizePanel open={customizeOpen} sections={sections} current={layoutState()} userId={userId} onChange={setSections} onClose={() => setCustomizeOpen(false)} />
-      <TodayCustomizePanel open={todayCustomizeOpen} blocks={todayBlocks} current={layoutState()} userId={userId} onChange={setTodayBlocks} onClose={() => setTodayCustomizeOpen(false)} />
       {!sharedMode && <ShareInbox />}
       {sharedMode && (
         <SharedSettings open={sharedSettingsOpen} onClose={() => setSharedSettingsOpen(false)}
@@ -753,7 +790,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           (a context with sub-destinations open) is taller than the old
           mobile-only BottomNav this used to just clear. */}
       <main style={{ maxWidth: ambient ? 'none' : 'min(1240px, 94vw)', margin: '0 auto', padding: ambient ? 0 : '1.2rem 2rem 6rem' }}>
-        {currentTab === 'brief' && <div id="week-review"><WeekReview mode={mode} /></div>}
+        {/* The week review sits under More on Today now (2026-10-26). */}
         {/* A note from the other one on the board shows on Today until you
             say you saw it (2026-10-23). */}
         {currentTab === 'brief' && !sharedMode && gathering.boardNote && gathering.boardNoteBy && gathering.boardNoteBy !== userId && !gathering.boardNoteSeenAt && (

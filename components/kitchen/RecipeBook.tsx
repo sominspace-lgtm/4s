@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useEffect, useMemo, useState } from 'react'
 import type { useRecipes } from '@/lib/hooks/useRecipes'
 import type { useHousehold } from '@/lib/hooks/useHousehold'
@@ -106,7 +107,7 @@ export default function RecipeBook({ book, h, food, spaceId, openId, onOpen, inc
     return (
       <RecipeDetail r={open} h={h} food={food} canShare={!!spaceId && open.user_id !== undefined} shared={!!open.space_id}
         onBack={() => onOpen(null)} onEdit={() => setEditing(true)}
-        onDelete={async () => { if (window.confirm(`Delete "${open.title}"?`)) { await book.remove(open.id); onOpen(null) } }}
+        onDelete={() => { const r = open; onOpen(null); withUndo(`Deleting "${r.title}"`, () => book.remove(r.id)) }}
         onFavorite={() => book.update(open.id, { favorite: !open.favorite })}
         onRate={n => book.update(open.id, { rating: n || null } as Partial<RecipeDraft>)}
         onCooked={() => book.markCooked(open)}

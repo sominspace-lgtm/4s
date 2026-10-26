@@ -6,7 +6,7 @@ import { kindSpec, isBathroomIntent } from '@/lib/constants/placeKinds'
 
 export interface SearchResult {
   id: string
-  type: 'work' | 'wishlist' | 'habit' | 'note' | 'place'
+  type: 'work' | 'wishlist' | 'habit' | 'note' | 'place' | 'recipe' | 'chore' | 'thing'
   title: string
   subtitle?: string
   domain?: string
@@ -52,7 +52,7 @@ export function useSearch() {
       ? supabase.from('places').select('id, name, kind, city').eq('has_bathroom', true).limit(5)
       : Promise.resolve({ data: [] as { id: string; name: string; kind: string; city: string | null }[] })
 
-    const [work, wishlist, habits, notes, places, codeLists, bathroomFlagged] = await Promise.all([
+    const [work, wishlist, habits, notes, places, codeLists, bathroomFlagged, recipes, chores, things] = await Promise.all([
       supabase.from('work_items').select('id, title, status, project').ilike('title', term).limit(5),
       supabase.from('wish_items').select('id, name, list').eq('status', 'wanted').ilike('name', term).limit(5),
       supabase.from('habits').select('id, name, category').ilike('name', term).limit(4),
@@ -64,6 +64,10 @@ export function useSearch() {
       supabase.from('places').select('id, name, kind, city').or(`name.ilike.${term},kind.ilike.${term}`).limit(5),
       codeListLookup,
       bathroomFlaggedLookup,
+      // Recipes, chores and the things you own (2026-10-26).
+      supabase.from('recipes').select('id, title').ilike('title', term).limit(4),
+      supabase.from('household_chores').select('id, name, cadence_days').ilike('name', term).limit(3),
+      supabase.from('household_things').select('id, name, brand').or(`name.ilike.${term},brand.ilike.${term}`).limit(3),
     ])
 
     const out: SearchResult[] = []
@@ -71,6 +75,9 @@ export function useSearch() {
     for (const r of wishlist.data ?? []) out.push({ id: r.id, type: 'wishlist', title: r.name, subtitle: r.list ?? 'Wishlist' })
     for (const r of habits.data ?? []) out.push({ id: r.id, type: 'habit', title: r.name, subtitle: r.category ?? 'Habit' })
     for (const r of notes.data ?? []) out.push({ id: r.id, type: 'note', title: noteTitle(r), subtitle: r.pinned ? 'Pinned note' : 'Note' })
+    for (const r of (recipes.data ?? []) as { id: string; title: string }[]) out.push({ id: r.id, type: 'recipe', title: r.title, subtitle: 'Recipe' })
+    for (const r of (chores.data ?? []) as { id: string; name: string; cadence_days: number }[]) out.push({ id: r.id, type: 'chore', title: r.name, subtitle: `Chore, every ${r.cadence_days}d` })
+    for (const r of (things.data ?? []) as { id: string; name: string; brand: string | null }[]) out.push({ id: r.id, type: 'thing', title: r.name, subtitle: r.brand ? `Thing we own · ${r.brand}` : 'Thing we own' })
 
     const placeIds = new Set<string>()
     for (const r of places.data ?? []) {

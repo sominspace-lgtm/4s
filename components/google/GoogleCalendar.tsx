@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO,
@@ -94,12 +95,12 @@ export default function GoogleCalendar({ scope }: { scope: 'mine' | 'shared' }) 
   }
 
   async function del(e: Ev) {
-    if (!window.confirm(`Delete "${e.title}" from Google Calendar?`)) return
-    setBusy(true)
-    const res = await fetch(`/api/google/calendar?${[editable === 'shared' ? 'account=shared' : '', `id=${encodeURIComponent(e.id)}`].filter(Boolean).join('&')}`, { method: 'DELETE' })
-    setBusy(false)
-    if (!res.ok) { setErr('Could not delete that.'); return }
-    setOpen(null); notifyGoogleChanged(); void load()
+    setOpen(null)
+    withUndo(`Deleting "${e.title}"`, async () => {
+      const res = await fetch(`/api/google/calendar?${[editable === 'shared' ? 'account=shared' : '', `id=${encodeURIComponent(e.id)}`].filter(Boolean).join('&')}`, { method: 'DELETE' })
+      if (!res.ok) { setErr('Could not delete that.'); return }
+      notifyGoogleChanged(); void load()
+    })
   }
 
   function editFrom(e: Ev) {

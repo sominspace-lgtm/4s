@@ -5,8 +5,12 @@ import { useSearch, type SearchResult } from '@/lib/hooks/useSearch'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
+import { requestOpen } from '@/lib/utils/openItem'
 
 const TYPE_ICON: Record<string, string> = {
+  recipe:   '◍',
+  chore:    '✓',
+  thing:    '▣',
   work:     '◈',
   wishlist: '✦',
   habit:    '◉',
@@ -14,6 +18,9 @@ const TYPE_ICON: Record<string, string> = {
   place:    '◇',
 }
 const TYPE_COLOR: Record<string, string> = {
+  recipe:   'var(--rose)',
+  chore:    'var(--emerald)',
+  thing:    'var(--slate)',
   work:     'var(--gold)',
   wishlist: 'var(--amber)',
   habit:    'var(--emerald)',
@@ -56,6 +63,7 @@ function goTo(sectionId: string) {
 // if that ever changes.
 const RESULT_SECTION: Record<SearchResult['type'], string> = {
   work: 'tasks', wishlist: 'money', habit: 'habits', note: 'notes', place: 'places',
+  recipe: 'kitchen', chore: 'upkeep', thing: 'home',
 }
 
 interface Props {
@@ -84,10 +92,17 @@ export default function SearchModal({ open, onClose }: Props) {
     { id: 'go-places',   label: 'Go to Places',      icon: '◇', keywords: ['places', 'pin', 'pins', 'map', 'trip', 'trips', 'restaurant', 'travel'], run: () => goTo('places') },
     { id: 'go-money',    label: 'Go to Money',       icon: '✦', keywords: ['money', 'rent', 'pay', 'bill', 'budget', 'subscription', 'renewal', 'spend', 'finance', 'buy', 'refill', 'gift'], run: () => goToPersonal('money') },
     { id: 'go-wishlist', label: 'Go to Wishlist',    icon: '✦', keywords: ['wishlist', 'wish', 'want', 'someday', 'save for'], run: () => goToPersonal('wishlist') },
-    { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'plan', 'time'], run: () => goTo('brief-calendar') },
-    { id: 'add-task',    label: 'Add task',          hint: 'Tasks',  icon: '+', keywords: ['new task', 'create task', 'remind me'], run: () => { goToPersonal('tasks'); window.dispatchEvent(new CustomEvent('app:open-add-task')) } },
-    { id: 'add-habit',   label: 'Add habit',         hint: 'Habits', icon: '+', keywords: ['new habit', 'create habit', 'start routine'], run: () => { goToPersonal('habits'); window.dispatchEvent(new CustomEvent('app:open-add-habit')) } },
-    { id: 'new-note', label: 'New note', hint: 'Notes', icon: '+', keywords: ['note', 'capture', 'remember', 'idea', 'jot', 'quick add'], run: () => window.dispatchEvent(new CustomEvent('app:open-quick-capture')) },
+    { id: 'go-calendar', label: 'Go to Calendar',    icon: '◎', keywords: ['calendar', 'schedule', 'event', 'meeting', 'appointment', 'doctor', 'time'], run: () => goToPersonal('mycalendar') },
+    // Straight to the place (2026-10-26).
+    { id: 'go-kitchen',  label: 'Kitchen',           icon: '◍', keywords: ['kitchen', 'recipe', 'recipes', 'cook', 'dinner', 'meal plan', 'groceries', 'grocery'], run: () => goTo('kitchen') },
+    { id: 'go-chores',   label: 'Chores',            icon: '✓', keywords: ['chore', 'chores', 'clean', 'cleaning', 'upkeep', 'whose turn'], run: () => goTo('upkeep') },
+    { id: 'go-shopping', label: 'Shopping list',     icon: '◫', keywords: ['shopping', 'shop', 'buy', 'store', 'list', 'need'], run: () => goTo('home') },
+    { id: 'go-checkins', label: 'Weekly check-in',   icon: '♥', keywords: ['check in', 'checkin', 'check-in', 'us', 'weekly', 'relationship'], run: () => goToPersonal('checkins') },
+    { id: 'go-mail',     label: 'Mail',              icon: '✉', keywords: ['mail', 'email', 'inbox', 'gmail', 'letter', 'letters'], run: () => goTo('mail') },
+    { id: 'go-village',  label: 'The village',       icon: '⌂', keywords: ['village', 'somi', 'scene', 'postcard', 'mailbox'], run: () => goTo('village') },
+    { id: 'go-settings', label: 'Settings',          icon: '⚙', keywords: ['settings', 'account', 'connect', 'google', 'notifications', 'layout', 'sign out'], run: () => goToPersonal('settings') },
+    { id: 'go-vault',    label: 'Passwords',         icon: '⚿', keywords: ['password', 'passwords', 'vault', 'login', 'wifi password'], run: () => goToPersonal('vault') },
+    { id: 'plan-week',   label: 'Plan the week',     icon: '◷', keywords: ['plan', 'plan the week', 'week', 'sunday', 'dinners'], run: () => { goTo('brief'); setTimeout(() => window.dispatchEvent(new CustomEvent('4s:open-plan-week')), 150) } },
     { id: 'switch-theme', label: 'Switch theme',     icon: '◐', keywords: ['theme', 'appearance', 'color', 'dark', 'light'], run: () => window.dispatchEvent(new CustomEvent('app:open-theme-picker', { detail: { tab: 'theme' } })) },
   ]
 
@@ -121,17 +136,29 @@ export default function SearchModal({ open, onClose }: Props) {
     if (i < matchedCommands.length) { matchedCommands[i].run(); onClose(); return }
     const r = results[i - matchedCommands.length]
     if (r) {
+      // Open the thing itself where the page knows how (2026-10-26).
       if (r.type === 'habit') goToPersonal('habits')
       else if (r.type === 'wishlist') goToPersonal('wishlist')
       else if (r.type === 'work') goToPersonal('tasks')
-      else if (r.type === 'note') goToPersonal('notes')
+      else if (r.type === 'note') { goToPersonal('notes'); requestOpen('note', r.id) }
+      else if (r.type === 'place') { goTo('places'); requestOpen('place', r.id) }
+      else if (r.type === 'recipe') { try { sessionStorage.setItem('4s:kitchen-open', r.id) } catch { /* private mode */ } goTo('kitchen') }
       else goTo(RESULT_SECTION[r.type] ?? 'brief')
       onClose()
+      return
     }
+    // The last row: hand the words to the + to add them.
+    if (query.trim()) { addIt(); return }
+  }
+
+  function addIt() {
+    const text = query.trim()
+    onClose()
+    setTimeout(() => window.dispatchEvent(new CustomEvent('app:focus-capture', { detail: { text } })), 60)
   }
 
   function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'ArrowDown')  { e.preventDefault(); setIdx(i => Math.min(i + 1, totalCount - 1)) }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); setIdx(i => Math.min(i + 1, totalCount - (query.trim() ? 0 : 1))) }
     if (e.key === 'ArrowUp')    { e.preventDefault(); setIdx(i => Math.max(i - 1, 0)) }
     if (e.key === 'Escape')     onClose()
     if (e.key === 'Enter')      runAt(idx)
@@ -202,10 +229,9 @@ export default function SearchModal({ open, onClose }: Props) {
           </div>
         )}
 
-        {query && !loading && results.length === 0 && matchedCommands.length === 0 && !aiAnswer && (
-          <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.68 }}>
-            {lang === 'ko' ? `"${query}"에 대한 결과가 없습니다` : `No results for "${query}"`}
-          </div>
+        {query.trim() && (
+          <CommandRow command={{ id: 'add-this', label: `Add "${query.trim()}"`, hint: 'Task, note, chore, event, shopping', icon: '+', run: addIt }}
+            active={idx === totalCount} onHover={() => setIdx(totalCount)} onClick={addIt} />
         )}
 
         <div style={{ padding: '0.5rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>

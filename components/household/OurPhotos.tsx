@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useState } from 'react'
 import { useHouseholdPhotos, type AlbumItem } from '@/lib/hooks/useHouseholdPhotos'
 import { useGoogleStatus } from '@/lib/hooks/useGoogle'
@@ -101,7 +102,7 @@ export default function OurPhotos({ spaceId, guestMode = false }: { spaceId: str
                 {big.show_guests ? 'Hide from guests' : 'Let guests see it'}
               </button>
               {big.photo && (
-                <button className="btn btn-ghost press" style={{ color: '#f3c1b8' }} onClick={() => { if (window.confirm('Remove this photo from the album?')) { void remove(big.photo!); setBig(null) } }}>Remove</button>
+                <button className="btn btn-ghost press" style={{ color: '#f3c1b8' }} onClick={() => { const p = big.photo!; setBig(null); withUndo('Removing the photo', () => remove(p)) }}>Remove</button>
               )}
             </div>
           )}

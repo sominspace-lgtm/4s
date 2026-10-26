@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
@@ -176,12 +177,13 @@ export default function ThingsWeOwn({ spaceId, userId }: { spaceId: string | nul
 
   async function remove() {
     if (!draft?.id) return
-    if (!window.confirm(`Remove ${draft.name || 'this'}?`)) return
-    const supabase = createClient()
-    await deleteThingPhotos(draft.photo_paths)
-    await supabase.from('household_things').delete().eq('id', draft.id)
+    const { id, name, photo_paths } = draft
     setDraft(null)
-    await load()
+    withUndo(`Removing ${name || 'this'}`, async () => {
+      await deleteThingPhotos(photo_paths)
+      await createClient().from('household_things').delete().eq('id', id)
+      await load()
+    })
   }
 
   const set = (patch: Partial<Draft>) => setDraft(d => (d ? { ...d, ...patch } : d))

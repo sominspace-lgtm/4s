@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useState } from 'react'
 import { useCollections, COLLECTION_TEMPLATES, type CollectionProp } from '@/lib/hooks/useCollections'
 import { usePlaces } from '@/lib/hooks/usePlaces'
@@ -52,7 +53,7 @@ function ReferenceCollectionsInner({ spaceId, userId, guestMode = false }: {
     const c = shared.find(x => x.id === open.id)!
     body = (
       <UserCollectionView key={c.id} c={c} me={userId} spaceId={spaceId} backLabel="Collections" onBack={() => setOpen(null)} update={hub.update}
-        onDelete={async () => { if (window.confirm(`Delete "${c.name}" and everything in it?`)) { await hub.remove(c.id); setOpen(null) } }} />
+        onDelete={() => { setOpen(null); withUndo(`Deleting "${c.name}"`, () => hub.remove(c.id)) }} />
     )
   } else {
     body = (

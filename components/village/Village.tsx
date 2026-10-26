@@ -939,7 +939,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             hostPing={guestLive && guestUrl ? { onPing: pingHost } : null}
             partnerPing={!guestActive ? { selfIsOwner, onPing: pingPartner } : null}
             onOpenKitchen={() => setKitchenOpen(true)}
-            onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } setPreview({ id, go }) }}
+            onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } go() }}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
             boardPhoto={!compact && boardPhotos.length ? { url: boardPhotos[photoIdx % boardPhotos.length].url, onOpen: () => setPhotoBig(true) } : null}
             mailFlag={mailUnread} postcardNew={!postcardSeen && !guestView && !guestLive} onMailbox={guestView || guestLive ? undefined : () => setMailboxOpen(true)}

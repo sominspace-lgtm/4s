@@ -545,7 +545,8 @@ select, option {
    :hover; touch gets the same effect via DistrictLabel's own `selected`
    prop (the existing tap-triggered hover-board/openPanel state), forced
    visible with an inline style the same way `draggable` already was. */
-.village-district-name, .village-district-count { opacity: 0; transition: opacity 160ms ease; }
+.village-district-name, .village-district-count { opacity: 0; transition: opacity 400ms ease; }
+.village-labels-on .village-district-name, .village-labels-on .village-district-count { opacity: 0.85; }
 @media (hover: hover) and (pointer: fine) {
   .village-district:hover .village-district-name,
   .village-district:hover .village-district-count { opacity: 1; }

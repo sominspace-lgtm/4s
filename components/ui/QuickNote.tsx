@@ -6,6 +6,7 @@ import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
 import { fileAction, ACTION_WORD, type CaptureAction } from '@/lib/capture/file'
 import { useGoogleStatus } from '@/lib/hooks/useGoogle'
+import VoiceRecorder from '@/components/notes/VoiceRecorder'
 
 // The fast way to get a thought out of your head — ⌘K, the + button, the
 // `c` key, the village mailbox all open this. One field, Enter saves a
@@ -33,10 +34,13 @@ export default function QuickNote() {
       setText('')
       setActions(null)
     }
-    function forceOpen() {
+    // Search and others can open it with words already in it (2026-10-26).
+    function forceOpen(e: Event) {
+      const pre = (e as CustomEvent<{ text?: string } | undefined>).detail?.text
       setOpen(true)
       setSaved(false)
       setError(null)
+      if (pre) { setText(pre); setActions(null) }
     }
     function handle(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openFresh() }
@@ -186,7 +190,12 @@ export default function QuickNote() {
                 padding: '0 1.4rem 0.6rem',
               }}>{error}</div>
             )}
-            <div style={{ padding: '0.75rem 1.4rem', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <div style={{ padding: '0.75rem 1.4rem', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              {!actions && (
+                <span style={{ marginRight: 'auto' }}>
+                  <VoiceRecorder compact label="Say it" onText={said => setText(prev => (prev.trim() ? prev.trim() + ' ' : '') + said)} />
+                </span>
+              )}
               {actions && (
                 <button onClick={() => { setActions(null); void submit() }} disabled={busy}
                   style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8rem', minHeight: 40 }}>

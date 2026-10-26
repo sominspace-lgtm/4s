@@ -1,6 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { withUndo } from '@/lib/ui/undo'
+import { takeOpen, OPEN_ITEM_EVENT } from '@/lib/utils/openItem'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import VoiceRecorder from './VoiceRecorder'
 import { format } from 'date-fns'
@@ -99,6 +101,19 @@ function NotesList({ userId }: { userId: string }) {
   // while space_id is null, shared once it isn't. Needed because update/
   // remove have to hit the right useNotes instance's Supabase call.
   function hookFor(n: Note) { return n.space_id ? shared : personal }
+
+  // Search can ask for one note to be opened (2026-10-26).
+  useEffect(() => {
+    const check = () => {
+      const id = takeOpen('note', x => notes.some(n => n.id === x))
+      const n = id ? notes.find(x => x.id === id) : null
+      if (n) openNote(n, true)
+    }
+    check()
+    window.addEventListener(OPEN_ITEM_EVENT, check)
+    return () => window.removeEventListener(OPEN_ITEM_EVENT, check)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes])
 
   function openNote(n: Note, asReading?: boolean) {
     setNoteSum(null); setSumErr(null)
@@ -394,7 +409,7 @@ function NotesList({ userId }: { userId: string }) {
               )}
 
               <button
-                onClick={async () => { await hookFor(open).remove(open.id); setOpenId(null) }}
+                onClick={() => { const n = open; setOpenId(null); withUndo('Deleted the note', () => hookFor(n).remove(n.id)) }}
                 className="press"
                 style={{ fontSize: '0.68rem', padding: '0.3em 0.7em', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', opacity: 0.6 }}
               >Delete</button>

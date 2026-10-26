@@ -11,7 +11,6 @@ export interface SettingsActions {
   connect: () => void
   notifications: () => void
   customize: () => void
-  customizeToday: () => void
   archive: () => void
   ipad?: () => void
   signOut: () => void
@@ -65,7 +64,6 @@ export default function SettingsPage({ userId, actions }: { userId: string; acti
       </Group>
       <Group title="Layout">
         <Row label="Tabs and sections" hint="Show, hide and reorder" onClick={actions.customize} />
-        <Row label="Today" hint="What shows on Today" onClick={actions.customizeToday} />
         {actions.ipad && <Row label="iPad settings" hint="Guest view, screen on, bedtime" onClick={actions.ipad} />}
       </Group>
       <Group title="Private">

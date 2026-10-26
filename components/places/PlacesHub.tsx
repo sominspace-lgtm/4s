@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { takeOpen, OPEN_ITEM_EVENT } from '@/lib/utils/openItem'
+import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { usePlaces } from '@/lib/hooks/usePlaces'
 import { usePlaceFilters } from '@/lib/hooks/usePlaceFilters'
@@ -131,6 +132,13 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
     setFocusId(id + ':' + Date.now()) // force the effect even for the same pin
   }
   const focusPlaceId = focusId ? focusId.split(':')[0] : null
+  // Search can ask for one pin to be opened (2026-10-26).
+  useEffect(() => {
+    const check = () => { const id = takeOpen('place', x => places.some(p => p.id === x)); if (id) openPin(id) }
+    check()
+    window.addEventListener(OPEN_ITEM_EVENT, check)
+    return () => window.removeEventListener(OPEN_ITEM_EVENT, check)
+  }, [places])
 
   const chip = (active: boolean, color?: string): React.CSSProperties => ({
     fontSize: '0.66rem', padding: '0.3rem 0.65rem', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit',

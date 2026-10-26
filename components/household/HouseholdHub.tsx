@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useEffect, useState } from 'react'
 import { differenceInCalendarDays, differenceInMinutes, isSameDay, parseISO } from 'date-fns'
 import { useHousehold, choreDue, type Chore } from '@/lib/hooks/useHousehold'
@@ -29,6 +30,8 @@ import Segmented from '@/components/ui/Segmented'
 import GoogleCalendar from '@/components/google/GoogleCalendar'
 import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 import Sheet from '@/components/ui/Sheet'
+import SwipeRow from '@/components/ui/SwipeRow'
+import DoneCircle from '@/components/ui/DoneCircle'
 import { DEFAULT_HOME_BLOCKS, type HomeBlockId, type HouseholdTabId } from '@/lib/utils/householdLayout'
 
 /** The Millton, Redwood City CA — the move-in address the Move-In block is about. */
@@ -169,6 +172,13 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
   // Somi's chores show here again (2026-10-19): her care moved back from the
   // care log into chores, so the old filter that hid the "Somi" folder is gone.
   const sortedChores = [...h.chores].sort((a, b) => choreDue(a) - choreDue(b))
+
+  // Removing a shopping item waits behind Undo; it is hidden meanwhile.
+  const [hiddenShop, setHiddenShop] = useState<Set<string>>(new Set())
+  function removeShop(id: string, name: string) {
+    setHiddenShop(prev => new Set(prev).add(id))
+    withUndo(`Removed ${name}`, () => h.removeShopping(id), () => setHiddenShop(prev => { const n = new Set(prev); n.delete(id); return n }))
+  }
 
   async function doneChore(c: Chore) {
     setJustDone(c.id)
@@ -343,42 +353,28 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
           return (
             <div key={cat} style={{ marginBottom: '0.7rem' }}>
               <div className="t-label" style={{ marginBottom: '0.25rem' }}>{cat}</div>
-              {items.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.3rem 0', borderBottom: '1px solid var(--faint)' }}>
-                  <button
-                    onClick={() => h.toggleGot(s.id, !s.got)}
-                    aria-pressed={s.got}
-                    aria-label={`${s.name}${s.got ? ', got it' : ''}`}
-                    className="press"
-                    style={{
-                      width: 20, height: 20, borderRadius: '5px', flexShrink: 0, cursor: 'pointer', padding: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: `1px solid ${s.got ? 'var(--emerald)' : 'var(--border)'}`,
-                      background: s.got ? 'color-mix(in srgb, var(--emerald) 30%, transparent)' : 'transparent',
-                    }}
-                  >
-                    {s.got && (
-                      <svg className="tick" width={11} height={11} viewBox="0 0 12 12" aria-hidden>
-                        <path d="M2.5 6.2 L4.9 8.6 L9.5 3.6" fill="none" stroke="var(--emerald)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
+              {items.filter(s => !hiddenShop.has(s.id)).map(s => (
+                <SwipeRow key={s.id} onRight={() => void h.toggleGot(s.id, !s.got)} rightLabel={s.got ? 'Not yet' : 'Got it'}
+                  onLeft={() => removeShop(s.id, s.name)} leftLabel="Remove" style={{ borderBottom: '1px solid var(--faint)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.45rem 0' }}>
+                  <DoneCircle done={s.got} onClick={() => void h.toggleGot(s.id, !s.got)} label={`${s.name}${s.got ? ', got it' : ''}`} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text)', textDecoration: s.got ? 'line-through' : 'none', opacity: s.got ? 0.5 : 1 }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text)', textDecoration: s.got ? 'line-through' : 'none', opacity: s.got ? 0.5 : 1 }}>
                       {s.name}
                     </span>
                     {/* user_id/got_by/got_at were written on every add and
                         toggle already — this is the first place anything
                         reads them (2026-08-21). */}
-                    <div style={{ fontSize: '0.56rem', color: 'var(--muted)', opacity: 0.55 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                       {s.got && s.got_by
                         ? `Got by ${nameFor(s.got_by) ?? 'someone'}${s.got_at ? `, ${daysAgo(s.got_at)}` : ''}`
                         : nameFor(s.user_id) ? `Added by ${nameFor(s.user_id)}` : null}
                     </div>
                   </div>
-                  {s.qty && <span style={{ fontSize: '0.64rem', color: 'var(--muted)', flexShrink: 0 }}>{s.qty}</span>}
-                  <IconButton label={`Remove ${s.name}`} onClick={() => h.removeShopping(s.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
+                  {s.qty && <span style={{ fontSize: '0.75rem', color: 'var(--muted)', flexShrink: 0 }}>{s.qty}</span>}
+                  <IconButton label={`Remove ${s.name}`} onClick={() => removeShop(s.id, s.name)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
                 </div>
+                </SwipeRow>
               ))}
             </div>
           )
@@ -544,65 +540,35 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
     const grouped = existingFolders.length > 0
     const unfoldered = sortedChores.filter(c => !c.folder)
 
+    // One row look for every list (2026-10-26): the done circle, the name,
+    // one quiet line under it. Tap the name to edit (folder, how often,
+    // remove). Swipe right for done, left to take it this week.
     function renderChoreRow(c: Chore) {
       const due = dueLabel(c)
+      const meta = [
+        `every ${c.cadence_days}d`,
+        c.assigned_to ? (c.assigned_to === userId ? 'yours this week' : "your partner's this week") : null,
+        c.last_done_at && nameFor(c.last_done_by) ? `last ${nameFor(c.last_done_by)}, ${daysAgo(c.last_done_at)}` : null,
+      ].filter(Boolean).join(' · ')
       return (
-        <div key={c.id} className={`lift ${justDone === c.id ? 'did-it' : ''}`} style={{
-          display: 'flex', alignItems: 'center', gap: '0.6rem',
-          padding: '0.5rem 0.6rem', borderRadius: '9px', marginBottom: '0.35rem',
-          background: 'var(--hover-bg)', border: '1px solid var(--border)',
-          position: 'relative',
-        }}>
-          {justDone === c.id && (
-            <span className="praise" aria-hidden style={{
-              position: 'absolute', right: '0.6rem', top: '-0.4rem',
-              fontSize: '0.6rem', color: 'var(--emerald)', letterSpacing: '0.04em',
-            }}>done ✓</span>
-          )}
-          <button
-            onClick={() => doneChore(c)}
-            className={`press ${justDone === c.id ? 'settle' : ''}`}
-            title="Mark done, resets the clock"
-            style={{
-              background: 'none', border: '1.5px solid var(--emerald)', borderRadius: '50%',
-              width: 34, height: 34, cursor: 'pointer', color: 'var(--emerald)',
-              fontSize: '0.9rem', lineHeight: 1, flexShrink: 0,
-            }}
-          >✓</button>
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <SwipeRow key={c.id} onRight={() => void doneChore(c)} rightLabel="Done"
+          onLeft={() => void h.updateChore(c.id, { assigned_to: c.assigned_to === userId ? null : userId })}
+          leftLabel={c.assigned_to === userId ? 'Either of us' : 'Mine this week'}
+          className={justDone === c.id ? 'did-it' : undefined}
+          style={{ borderBottom: '1px solid var(--faint)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.55rem 0', position: 'relative' }}>
+            {justDone === c.id && (
+              <span className="praise" aria-hidden style={{ position: 'absolute', right: 0, top: '-0.2rem', fontSize: '0.7rem', color: 'var(--emerald)' }}>done ✓</span>
+            )}
+            <DoneCircle done={justDone === c.id} onClick={() => void doneChore(c)} label={`${c.name}: mark done`} />
             <button onClick={() => setEditingChore({ id: c.id, name: c.name, cadence: String(c.cadence_days), folder: c.folder ?? '' })} title="Edit"
-              style={{ fontSize: '0.78rem', color: 'var(--text)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}>{c.name} <span style={{ fontSize: '0.62rem', color: 'var(--muted)', opacity: 0.6 }}>✎</span></button>
-            {c.assigned_to && (
-              <div style={{ fontSize: '0.62rem', color: 'var(--gold)' }}>
-                {c.assigned_to === userId ? 'Yours this week' : "Your partner's this week"}
-              </div>
-            )}
-            {c.last_done_at && nameFor(c.last_done_by) && (
-              <div style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.6 }}>
-                Last done by {nameFor(c.last_done_by)}, {daysAgo(c.last_done_at)}
-              </div>
-            )}
+              style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-body)' }}>
+              <span style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text)' }}>{c.name}</span>
+              <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--muted)' }}>{meta}</span>
+            </button>
+            <span style={{ fontSize: '0.75rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
           </div>
-          <span style={{ fontSize: '0.62rem', color: due.color, flexShrink: 0 }}>{due.text}</span>
-          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', opacity: 0.55, flexShrink: 0 }}>every {c.cadence_days}d</span>
-          {/* Move to a folder — free text, committed on blur/Enter rather
-              than a fixed <select>, since folder names are whatever a
-              person decides to call them, not a preset list. */}
-          <input
-            key={c.folder ?? ''}
-            defaultValue={c.folder ?? ''}
-            list="chore-folders"
-            placeholder="folder"
-            title="Move to a folder"
-            onBlur={e => {
-              const v = e.target.value.trim()
-              if (v !== (c.folder ?? '')) h.setChoreFolder(c.id, v || null)
-            }}
-            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-            style={{ ...input, width: '80px', fontSize: '0.62rem', padding: '0.3rem 0.4rem', flexShrink: 0 }}
-          />
-          <IconButton label={`Remove ${c.name}`} onClick={() => h.removeChore(c.id)} size={10} style={{ opacity: 0.4 }}>✕</IconButton>
-        </div>
+        </SwipeRow>
       )
     }
 
@@ -825,10 +791,10 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
                   }}>Save</button>
                   <button className="btn btn-ghost press" onClick={() => setEditingChore(null)}>Cancel</button>
                   {editingChore.id && (
-                    <button className="btn btn-ghost press" style={{ marginLeft: 'auto', color: 'var(--rose)' }} onClick={async () => {
-                      if (!window.confirm(`Remove "${editingChore.name}"?`)) return
-                      await h.removeChore(editingChore.id!)
+                    <button className="btn btn-ghost press" style={{ marginLeft: 'auto', color: 'var(--rose)' }} onClick={() => {
+                      const id = editingChore.id!
                       setEditingChore(null)
+                      withUndo(`Removing "${editingChore.name}"`, () => h.removeChore(id))
                     }}>Remove</button>
                   )}
                 </>

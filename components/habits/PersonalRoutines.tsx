@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useEffect, useState } from 'react'
 import { usePersonalRoutines, routineDue } from '@/lib/hooks/usePersonalRoutines'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
@@ -131,7 +132,7 @@ export default function PersonalRoutines({ userId, embedded = false }: { userId:
               <RoutineEditor name={r.name} cadenceDays={r.cadence_days} items={r.items}
                 onCancel={() => setEditing(null)}
                 onSave={async p => { const e = await updateRoutine(r.id, p); if (!e) setEditing(null); return e }}
-                onDelete={() => { if (window.confirm(`Delete "${r.name}"?`)) { removeRoutine(r.id); setEditing(null) } }} />
+                onDelete={() => { setEditing(null); withUndo(`Deleting "${r.name}"`, () => removeRoutine(r.id)) }} />
             </div>
           )
         }

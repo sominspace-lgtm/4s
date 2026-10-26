@@ -10,6 +10,11 @@ import GoogleCalendar from '@/components/google/GoogleCalendar'
 import VoiceRecorder from '@/components/notes/VoiceRecorder'
 import { HolidayDecor, type Holiday } from '@/components/village/scene/Holiday'
 import PlanWeek from '@/components/brief/PlanWeek'
+import DailyBrief from '@/components/brief/DailyBrief'
+import SwipeRow from '@/components/ui/SwipeRow'
+import DoneCircle from '@/components/ui/DoneCircle'
+import UndoToast from '@/components/ui/UndoToast'
+import { withUndo } from '@/lib/ui/undo'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -46,7 +51,7 @@ export default function UiPreviewClient() {
               ? <SubNav items={g.members.map(m => ({ id: m, label: LABELS[m] }))} activeId={tab} onSelect={setTab} />
               : null}
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
-          {tab === 'brief' && <GoogleCalendar scope="mine" />}
+          
           {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
           {tab === 'village' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
@@ -63,8 +68,22 @@ export default function UiPreviewClient() {
               )))}
             </div>
           )}
+          {tab === 'habits' && (
+            <div>
+              <UndoToast />
+              {['Water the plants', 'Take out bins', 'Call the vet'].map(t => (
+                <SwipeRow key={t} onRight={() => alert('done ' + t)} onLeft={() => withUndo('Removed ' + t, () => console.log('committed ' + t), () => console.log('undone ' + t))} leftLabel="Remove" style={{ borderBottom: '1px solid var(--faint)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.55rem 0' }}>
+                    <DoneCircle done={false} onClick={() => withUndo('Removed ' + t, () => console.log('committed ' + t))} label={t} />
+                    <span style={{ fontSize: '0.9rem' }}>{t}</span>
+                  </div>
+                </SwipeRow>
+              ))}
+            </div>
+          )}
+          {tab === 'brief' && <DailyBrief userId="" />}
           {tab === 'tasks' && <><button className="btn btn-primary" onClick={() => setPlan(true)}>Plan the week</button><PlanWeek open={plan} onClose={() => setPlan(false)} userId="" /></>}
-          {tab !== 'me' && tab !== 'brief' && tab !== 'notes' && tab !== 'village' && tab !== 'tasks' && (
+          {tab !== 'me' && tab !== 'brief' && tab !== 'notes' && tab !== 'village' && tab !== 'tasks' && tab !== 'habits' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               {[1, 2, 3, 4].map(i => (
                 <section key={i} className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}>

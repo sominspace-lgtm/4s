@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { format, parseISO } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 import { useWorkItems, dueUrgency, type WorkItem, type Energy } from '@/lib/hooks/useWorkItems'
 import { parseTaskInput, type ParsedTask } from '@/lib/utils/parseTask'
 import { taskStage } from '@/lib/utils/taskStage'
@@ -11,6 +11,9 @@ import { useLang } from '@/lib/LangContext'
 import { t, domainLabel } from '@/lib/i18n'
 import Icon, { type IconName } from '@/components/ui/Icon'
 import IconButton from '@/components/ui/IconButton'
+import SwipeRow from '@/components/ui/SwipeRow'
+import { withUndo } from '@/lib/ui/undo'
+import DoneCircle from '@/components/ui/DoneCircle'
 
 // Energy, not priority — how much of a person a task takes, not a ranking of
 // what matters. No color implies urgency; the dot count is the only signal.
@@ -85,39 +88,6 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
   const urgency = dueUrgency(item.due_date)
   const stage = taskStage(item)
 
-  // Swipe right to complete — the primary mobile gesture. Only engages on a
-  // clearly horizontal drag so vertical scrolling and tapping controls still
-  // work. Right-swipe only (dx clamped ≥ 0); past the threshold marks done.
-  const [dragX, setDragX] = useState(0)
-  const startX = useRef<number | null>(null)
-  const startY = useRef(0)
-  const swiping = useRef(false)
-  const SWIPE_DONE = 72
-
-  function onTouchStart(e: React.TouchEvent) {
-    if (item.status === 'done') return
-    startX.current = e.touches[0].clientX
-    startY.current = e.touches[0].clientY
-    swiping.current = false
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    if (startX.current === null) return
-    const dx = e.touches[0].clientX - startX.current
-    const dy = e.touches[0].clientY - startY.current
-    if (!swiping.current) {
-      if (Math.abs(dx) < 10) return
-      if (Math.abs(dy) > Math.abs(dx)) { startX.current = null; return } // vertical scroll wins
-      swiping.current = true
-    }
-    setDragX(Math.max(0, Math.min(dx, 96)))
-  }
-  function onTouchEnd() {
-    if (swiping.current && dragX > SWIPE_DONE) onStatus(item.id, 'done')
-    startX.current = null
-    swiping.current = false
-    setDragX(0)
-  }
-
   async function saveNotes() {
     setEditingNotes(false)
     if (notesDraft !== (item.notes ?? '')) onUpdate(item.id, { notes: notesDraft || null })
@@ -138,39 +108,23 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
       // so this behaves like :focus-within.
       onFocus={() => setHovered(true)}
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHovered(false) }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
       className={celebrate ?? undefined}
-      style={{
-        borderBottom: '1px solid var(--faint)', padding: '0.55rem 0',
-        transform: dragX ? `translateX(${dragX}px)` : undefined,
-        transition: dragX ? 'none' : 'transform 0.2s ease',
-        background: dragX > SWIPE_DONE
-          ? 'linear-gradient(90deg, color-mix(in srgb, var(--emerald) 22%, transparent), transparent 60%)'
-          : dragX > 0
-            ? 'linear-gradient(90deg, color-mix(in srgb, var(--emerald) 10%, transparent), transparent 60%)'
-            : undefined,
-        touchAction: 'pan-y',
-      }}
+      style={{ borderBottom: '1px solid var(--faint)' }}
     >
+      {/* Swipe right for done, left to move it to tomorrow (2026-10-26). */}
+      <SwipeRow disabled={item.status === 'done'} onRight={() => onStatus(item.id, 'done')}
+        onLeft={() => onUpdate(item.id, { due_date: format(addDays(new Date(), 1), 'yyyy-MM-dd') })} leftLabel="Tomorrow">
+      <div style={{ padding: '0.55rem 0' }}>
       {/* Main row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem' }}>
         {/* Bigger than it looks — the hit area is padded out to a proper tap
             target while the glyph itself stays small. */}
-        <button
+        <DoneCircle done={item.status === 'done'} partial={item.status === 'in-progress'}
           onClick={() => onStatus(item.id, S_NEXT[item.status])}
-          aria-label={item.status === 'done' ? 'Mark not done' : 'Advance status'}
-          className="press"
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
-            fontSize: '0.85rem', color: S_COLOR[item.status], lineHeight: 1,
-            transition: 'color 0.15s', padding: '0.25rem 0.3rem', margin: '-0.25rem -0.1rem -0.25rem -0.3rem',
-          }}
-        >{S_ICON[item.status]}</button>
+          label={item.status === 'done' ? 'Mark not done' : item.status === 'todo' ? 'Start it' : 'Mark done'} />
 
         <span style={{
-          flex: 1, fontSize: '0.8rem', color: 'var(--text)', lineHeight: 1.4,
+          flex: 1, fontSize: '0.9rem', color: 'var(--text)', lineHeight: 1.4, alignSelf: 'center',
           textDecoration: item.status === 'done' ? 'line-through' : 'none',
           opacity: item.status === 'done' ? 0.45 : 1,
           userSelect: 'text',
@@ -219,7 +173,7 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
         }
 
         return (
-          <div style={{ marginLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap', marginTop: '0.2rem', minHeight: '1.05rem' }}>
+          <div style={{ marginLeft: 'calc(30px + 0.55rem)', display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap', marginTop: '0.2rem', minHeight: '1.05rem' }}>
             {/* Energy — moved out of the title row, where it used to sit
                 between the checkbox and the text and break the left edge
                 every title aligned to. */}
@@ -326,13 +280,23 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
           )}
         </div>
       )}
+      </div>
+      </SwipeRow>
     </div>
   )
 }
 
 export default function MasterDashboard({ userId }: { userId: string }) {
   const lang = useLang()
-  const { items, loading, add, setStatus, update, remove } = useWorkItems()
+  const { items: allItems, loading, add, setStatus, update, remove: removeNow } = useWorkItems()
+  // Removing a task waits behind Undo (2026-10-26); it is hidden meanwhile.
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const items = allItems.filter(i => !hidden.has(i.id))
+  function remove(id: string) {
+    const it = allItems.find(i => i.id === id)
+    setHidden(prev => new Set(prev).add(id))
+    withUndo(`Removed ${it?.title ?? 'the task'}`, () => removeNow(id), () => setHidden(prev => { const n = new Set(prev); n.delete(id); return n }))
+  }
   const [filter, setFilter] = useState<Filter>('all')
   const [view, setView] = useState<'board' | 'list'>('board')
   const [showAdd, setShowAdd] = useState(false)

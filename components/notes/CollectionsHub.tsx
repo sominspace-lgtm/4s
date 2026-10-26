@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useEffect, useMemo, useState } from 'react'
 import {
   useCollections, useCollectionRows, newProp, COLLECTION_TEMPLATES,
@@ -89,7 +90,7 @@ export default function CollectionsHub({ userId }: { userId: string }) {
     return (
       <UserCollectionView key={open.id} c={open} me={userId} spaceId={spaceId} backLabel="Collections" onBack={() => setOpenId(null)}
         update={hub.update}
-        onDelete={async () => { if (window.confirm(`Delete "${open.name}" and everything in it?`)) { await hub.remove(open.id); setOpenId(null) } }} />
+        onDelete={() => { const c = open; setOpenId(null); withUndo(`Deleting "${c.name}"`, () => hub.remove(c.id)) }} />
     )
   }
 

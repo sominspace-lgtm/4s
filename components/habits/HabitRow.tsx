@@ -8,6 +8,8 @@ import { scheduleSummary, isDueOn, type Habit } from '@/lib/hooks/useHabits'
 import { plantFor, STAGE_INDEX, completionsToNextStage } from '@/lib/village/state'
 import PlantGlyph from './PlantGlyph'
 import IconButton from '@/components/ui/IconButton'
+import SwipeRow from '@/components/ui/SwipeRow'
+import { withUndo } from '@/lib/ui/undo'
 
 interface HabitRowProps {
   habit: Habit & { shared?: boolean }
@@ -64,9 +66,13 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
     await createClient().from('habits').update({ shared: next }).eq('id', habit.id)
   }
 
+  const doneToday = done.has(today)
   return (
+    // Swipe right to water it today, left to pause it (2026-10-26).
+    <SwipeRow disabled={habit.paused} onRight={() => onToggle(habit.id, today)} rightLabel={doneToday ? 'Not today' : 'Done today'}
+      onLeft={() => onTogglePaused(habit.id)} leftLabel="Pause" style={{ borderBottom: '1px solid var(--faint)' }}>
     <div
-      style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.55rem 0', borderBottom: '1px solid var(--faint)', opacity: habit.paused ? 0.5 : 1 }}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.55rem 0', opacity: habit.paused ? 0.5 : 1 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -79,9 +85,9 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: '110px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: dueToday ? color : 'var(--faint)', flexShrink: 0, opacity: 0.9 }} />
-          <span style={{ fontSize: '0.82rem', color: 'var(--text)' }}>{habit.name}</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{habit.name}</span>
         </div>
-        <span style={{ fontSize: '0.58rem', color: 'var(--muted)', opacity: 0.68, marginLeft: '0.9rem' }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--muted)', marginLeft: '0.9rem' }}>
           {scheduleSummary(habit)}
           {/* "resting" and "due today" together read as a contradiction, so
               resting wins the slot — if it's been quiet a fortnight, that's
@@ -167,10 +173,11 @@ export default function HabitRow({ habit, completions, days, onToggle, onDelete,
 
       <IconButton
         label={`Delete ${habit.name}`}
-        onClick={() => onDelete(habit.id)}
+        onClick={() => withUndo(`Deleting ${habit.name}`, () => onDelete(habit.id))}
         size={10}
         style={{ opacity: hovered ? 0.4 : 0, transition: 'opacity 0.15s' }}
       >✕</IconButton>
     </div>
+    </SwipeRow>
   )
 }

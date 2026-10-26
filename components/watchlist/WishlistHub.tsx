@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Sheet from '@/components/ui/Sheet'
@@ -146,9 +147,8 @@ export default function WishlistHub({ userId }: { userId: string }) {
           onCancel={() => { setEditing(null); setSeed(null) }}
           onDelete={editing === 'new' ? undefined : async () => {
             const w = editing
-            if (!window.confirm(`Remove "${w.name}"?`)) return
-            const e = await remove(w.id)
-            setErr(e); if (!e) setEditing(null)
+            setEditing(null)
+            withUndo(`Removing "${w.name}"`, async () => setErr(await remove(w.id)))
           }}
           onChecked={editing === 'new' || editing.status !== 'wanted' ? undefined : async () => {
             const e = await update(editing.id, { last_checked: format(new Date(), 'yyyy-MM-dd') })

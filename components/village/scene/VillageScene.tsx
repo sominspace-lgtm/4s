@@ -589,6 +589,16 @@ export default function VillageScene({
   // click on its own button is what actually leaves the Village. Archive
   // is untouched — it already IS this pattern, via the real ArchivePanel.
   const [openPanel, setOpenPanel] = useState<LandmarkId | null>(null)
+  // Names show while you touch the scene and fade a few seconds later
+  // (2026-10-26), so the picture stays a picture.
+  const [labelsOn, setLabelsOn] = useState(false)
+  const labelsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showLabels = () => {
+    setLabelsOn(true)
+    if (labelsTimer.current) clearTimeout(labelsTimer.current)
+    labelsTimer.current = setTimeout(() => setLabelsOn(false), 3500)
+  }
+  useEffect(() => () => { if (labelsTimer.current) clearTimeout(labelsTimer.current) }, [])
 
   // Phone-width — the glance-card renders as a bottom sheet instead of the
   // cramped SVG popover (2026-09-07). Matches the `scroll` breakpoint in
@@ -1422,7 +1432,7 @@ export default function VillageScene({
       viewBox={viewBox}
       role="img"
       aria-label="Your village — a view of your habits, projects and history"
-      className={isFrozen ? 'village-idle-frozen' : undefined}
+      className={[isFrozen ? 'village-idle-frozen' : '', labelsOn ? 'village-labels-on' : ''].filter(Boolean).join(' ') || undefined}
       preserveAspectRatio="xMidYMid meet"
       style={{
         width: scroll ? 'auto' : '100%',
@@ -1452,7 +1462,7 @@ export default function VillageScene({
         fuzzyDistrictTap(e.clientX, e.clientY)
       }}
       onClickCapture={onSceneClickCapture}
-      onPointerDown={onScenePointerDown}
+      onPointerDown={e => { if (e.pointerType !== 'mouse') showLabels(); onScenePointerDown(e) }}
       onPointerMove={onScenePointerMove}
       onPointerUp={onScenePointerUp}
       onPointerLeave={onScenePointerUp}

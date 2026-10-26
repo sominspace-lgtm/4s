@@ -1,5 +1,6 @@
 'use client'
 
+import { withUndo } from '@/lib/ui/undo'
 import { Fragment, useMemo, useState } from 'react'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO, startOfDay, startOfWeek } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
@@ -221,7 +222,7 @@ export default function CalendarRoutines({ spaceId }: { spaceId: string | null }
                   <RoutineEditor name={src.name} cadenceDays={src.cadence_days} items={src.items}
                     onCancel={() => setEditing(null)}
                     onSave={async p => { const e = own ? await personal.updateRoutine(src.id, p) : await household.updateRoutine(src.id, p); if (!e) setEditing(null); return e }}
-                    onDelete={() => { if (window.confirm(`Delete "${src.name}"?`)) { if (own) personal.removeRoutine(src.id); else household.removeRoutine(src.id); setEditing(null) } }} />
+                    onDelete={() => { setEditing(null); withUndo(`Deleting "${src.name}"`, () => (own ? personal.removeRoutine(src.id) : household.removeRoutine(src.id))) }} />
                 </div>
               )
             })()}
