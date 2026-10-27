@@ -17,6 +17,7 @@ import UndoToast from '@/components/ui/UndoToast'
 import { withUndo } from '@/lib/ui/undo'
 import QuickNote from '@/components/ui/QuickNote'
 import Village from '@/components/village/Village'
+import AvoidRow from '@/components/habits/AvoidRow'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -37,6 +38,7 @@ export default function UiPreviewClient() {
   const [plan, setPlan] = useState(false)
   const [guestV, setGuestV] = useState(false)
   const [idleV, setIdleV] = useState(false)
+  const [avoidSlips, setAvoidSlips] = useState(['2026-10-12', '2026-10-21'])
   const g = GROUPS.find(x => x.members.includes(tab))!
   const all = new Set(Object.keys(LABELS))
 
@@ -78,6 +80,7 @@ export default function UiPreviewClient() {
           {tab === 'habits' && (
             <div>
               <UndoToast />
+              <AvoidRow habit={{ id: 'a1', name: 'Late-night snacks', category: null, schedule_type: 'daily', interval_days: null, days_of_week: null, paused: false, kind: 'avoid', created_at: '2026-10-05T10:00:00Z' }} slips={avoidSlips} onToggleSlip={async (_id, d) => setAvoidSlips(x => x.includes(d) ? x.filter(y => y !== d) : [...x, d])} onDelete={async () => {}} />
               {['Water the plants', 'Take out bins', 'Call the vet'].map(t => (
                 <SwipeRow key={t} onRight={() => alert('done ' + t)} onLeft={() => withUndo('Removed ' + t, () => console.log('committed ' + t), () => console.log('undone ' + t))} leftLabel="Remove" style={{ borderBottom: '1px solid var(--faint)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.55rem 0' }}>

@@ -14,6 +14,10 @@ export interface Habit {
   interval_days: number | null
   days_of_week: number[] | null
   paused: boolean
+  /** 'avoid' (2026-10-27): something to stay away from. Its rows in
+   *  habit_completions are slips, not wins. Missing on databases from
+   *  before the column, which means 'build'. */
+  kind?: 'build' | 'avoid'
   /** Already returned by the select('*') below; typed so the Village can tell
    *  a genuinely new plant from one that merely grew. */
   created_at: string
@@ -68,6 +72,10 @@ export function nextDueDate(habit: Habit, completions: string[]): string | null 
 export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [completions, setCompletions] = useState<Record<string, string[]>>({})
+  // Things to avoid live apart from habits (2026-10-27), so every place that
+  // counts habit wins (Today, the village, Somi) never counts a slip.
+  const [avoids, setAvoids] = useState<Habit[]>([])
+  const [slips, setSlips] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -77,15 +85,22 @@ export function useHabits() {
       supabase.from('habits').select('*').order('created_at'),
       supabase.from('habit_completions').select('habit_id, completed_date'),
     ])
-    if (h) setHabits(h)
+    const avoidIds = new Set((h ?? []).filter((x: Habit) => x.kind === 'avoid').map((x: Habit) => x.id))
+    if (h) {
+      setHabits(h.filter((x: Habit) => x.kind !== 'avoid'))
+      setAvoids(h.filter((x: Habit) => x.kind === 'avoid'))
+    }
     setLoading(false)
     if (c) {
       const map: Record<string, string[]> = {}
+      const slipMap: Record<string, string[]> = {}
       c.forEach(({ habit_id, completed_date }) => {
-        if (!map[habit_id]) map[habit_id] = []
-        map[habit_id].push(completed_date)
+        const m = avoidIds.has(habit_id) ? slipMap : map
+        if (!m[habit_id]) m[habit_id] = []
+        m[habit_id].push(completed_date)
       })
       setCompletions(map)
+      setSlips(slipMap)
     }
   }, [supabase])
 
@@ -101,7 +116,10 @@ export function useHabits() {
   }, [fetch])
 
   async function toggleDay(habitId: string, dateStr: string) {
-    const dates = completions[habitId] || []
+    // A slip on something you avoid is stored the same way, in its own map.
+    const isAvoid = avoids.some(a => a.id === habitId)
+    const setMap = isAvoid ? setSlips : setCompletions
+    const dates = (isAvoid ? slips : completions)[habitId] || []
     const done = dates.includes(dateStr)
 
     if (done) {
@@ -113,7 +131,7 @@ export function useHabits() {
         console.error('Failed to remove habit completion:', error.message)
         return { error }
       }
-      setCompletions(prev => ({ ...prev, [habitId]: prev[habitId].filter(d => d !== dateStr) }))
+      setMap(prev => ({ ...prev, [habitId]: (prev[habitId] ?? []).filter(d => d !== dateStr) }))
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return { error: new Error('Not signed in') }
@@ -122,7 +140,7 @@ export function useHabits() {
         console.error('Failed to record habit completion:', error.message)
         return { error }
       }
-      setCompletions(prev => ({ ...prev, [habitId]: [...(prev[habitId] || []), dateStr] }))
+      setMap(prev => ({ ...prev, [habitId]: [...(prev[habitId] || []), dateStr] }))
     }
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
     return { error: null }
@@ -134,7 +152,7 @@ export function useHabits() {
     days_of_week?: number[] | null
   }
 
-  async function addHabit(name: string, category: string, schedule?: ScheduleInput) {
+  async function addHabit(name: string, category: string, schedule?: ScheduleInput, kind: 'build' | 'avoid' = 'build') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: new Error('Not signed in') }
     const { data, error } = await supabase.from('habits').insert({
@@ -142,9 +160,13 @@ export function useHabits() {
       schedule_type: schedule?.schedule_type ?? 'daily',
       interval_days: schedule?.interval_days ?? null,
       days_of_week: schedule?.days_of_week ?? null,
+      // Only sent for an avoid, so adding a normal habit still works on a
+      // database without the column.
+      ...(kind === 'avoid' ? { kind } : {}),
     }).select().single()
-    if (error) return { error }
-    setHabits(prev => [...prev, data])
+    if (error) return { error: /kind/.test(error.message) ? new Error('Things to avoid need the new database step. Run the SQL, then try again.') : error }
+    if (kind === 'avoid') setAvoids(prev => [...prev, data])
+    else setHabits(prev => [...prev, data])
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
     return { error: null }
   }
@@ -172,10 +194,12 @@ export function useHabits() {
     const { error } = await supabase.from('habits').delete().eq('id', id)
     if (error) return { error }
     setHabits(prev => prev.filter(h => h.id !== id))
+    setAvoids(prev => prev.filter(h => h.id !== id))
     setCompletions(prev => { const n = { ...prev }; delete n[id]; return n })
+    setSlips(prev => { const n = { ...prev }; delete n[id]; return n })
     window.dispatchEvent(new CustomEvent('4s:habits-changed'))
     return { error: null }
   }
 
-  return { habits, completions, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit }
+  return { habits, completions, avoids, slips, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit }
 }

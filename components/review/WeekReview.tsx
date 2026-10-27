@@ -40,14 +40,16 @@ export default function WeekReview({ mode = 'friend' }: { mode?: Mode }) {
 
       const [workRes, habitsRes, completionsRes, capturesRes] = await Promise.all([
         supabase.from('work_items').select('id, status, project, completed_at'),
-        supabase.from('habits').select('id, name'),
+        supabase.from('habits').select('*'),
         supabase.from('habit_completions').select('habit_id, completed_on').gte('completed_on', format(prevStart, 'yyyy-MM-dd')),
         supabase.from('captures').select('id, created_at').gte('created_at', weekStart.toISOString()),
       ])
 
       const work       = workRes.data ?? []
-      const habits     = habitsRes.data ?? []
-      const completions = completionsRes.data ?? []
+      // Slips on things to avoid are stored as completions; leave them out.
+      const avoidIds = new Set((habitsRes.data ?? []).filter(h => h.kind === 'avoid').map(h => h.id))
+      const habits     = (habitsRes.data ?? []).filter(h => !avoidIds.has(h.id))
+      const completions = (completionsRes.data ?? []).filter(c => !avoidIds.has(c.habit_id))
       const caps       = capturesRes.data ?? []
 
       // Done this week

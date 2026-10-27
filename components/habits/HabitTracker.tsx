@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useHabits, type ScheduleType } from '@/lib/hooks/useHabits'
 import { getLast7Days, DOMAIN_COLORS } from '@/lib/utils/habits'
 import HabitRow from './HabitRow'
+import AvoidRow from './AvoidRow'
 import { SkeletonRow } from '@/components/ui/Skeleton'
 
 const DOW = [{ id: 0, label: 'S' }, { id: 1, label: 'M' }, { id: 2, label: 'T' }, { id: 3, label: 'W' }, { id: 4, label: 'T' }, { id: 5, label: 'F' }, { id: 6, label: 'S' }]
@@ -20,8 +21,11 @@ const DOMAINS = [
 ]
 
 export default function HabitTracker({ children }: { children?: React.ReactNode }) {
-  const { habits, completions, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit } = useHabits()
+  const { habits, completions, avoids, slips, loading, toggleDay, addHabit, updateSchedule, togglePaused, deleteHabit } = useHabits()
   const [showForm, setShowForm] = useState(false)
+  // Build a habit, or keep away from something (2026-10-27).
+  const [kind, setKind] = useState<'build' | 'avoid'>('build')
+  const [addError, setAddError] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [scheduleType, setScheduleType] = useState<ScheduleType>('daily')
@@ -41,11 +45,14 @@ export default function HabitTracker({ children }: { children?: React.ReactNode 
 
   async function handleAdd() {
     if (!name.trim()) return
-    await addHabit(name.trim(), category, {
+    const { error } = await addHabit(name.trim(), category, kind === 'avoid' ? undefined : {
       schedule_type: scheduleType,
       interval_days: scheduleType === 'interval' ? (parseInt(intervalDays) || 2) : null,
       days_of_week: scheduleType === 'weekly' ? (daysOfWeek.length > 0 ? daysOfWeek : [1]) : null,
-    })
+    }, kind)
+    if (error) { setAddError(error.message); return }
+    setAddError(null)
+    setKind('build')
     setName('')
     setCategory('')
     setScheduleType('daily')
@@ -96,14 +103,38 @@ export default function HabitTracker({ children }: { children?: React.ReactNode 
         <HabitRow key={h.id} habit={h} completions={completions[h.id] || []} days={days} onToggle={toggleDay} onDelete={deleteHabit} onTogglePaused={togglePaused} onUpdateSchedule={updateSchedule} />
       ))}
 
+      {!loading && avoids.length > 0 && (
+        <>
+          <div className="t-label" style={{ margin: '1.2rem 0 0.3rem' }}>Avoiding</div>
+          {avoids.map(a => (
+            <AvoidRow key={a.id} habit={a} slips={slips[a.id] || []} onToggleSlip={toggleDay} onDelete={deleteHabit} />
+          ))}
+        </>
+      )}
+
       {showForm && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid var(--faint)' }}>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            {(['build', 'avoid'] as const).map(k => (
+              <button key={k} onClick={() => setKind(k)} style={{
+                fontSize: '0.75rem', padding: '0.35em 0.9em', borderRadius: '99px', cursor: 'pointer', minHeight: 32,
+                border: kind === k ? '1px solid color-mix(in srgb, var(--gold) 40%, transparent)' : '1px solid var(--border)',
+                background: kind === k ? 'color-mix(in srgb, var(--gold) 10%, transparent)' : 'transparent',
+                color: kind === k ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-body)',
+              }}>{k === 'build' ? 'Build a habit' : 'Avoid something'}</button>
+            ))}
+          </div>
+          {kind === 'avoid' && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+              Every day counts as clean unless you tap I slipped. Only you can see this.
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="Habit name (e.g. Walk, Journal)"
+              placeholder={kind === 'avoid' ? 'What to avoid (e.g. Late-night snacks, Smoking)' : 'Habit name (e.g. Walk, Journal)'}
               aria-label="Habit name"
               style={{ ...inputStyle, flex: 2, minWidth: '140px' }}
             />
@@ -120,7 +151,7 @@ export default function HabitTracker({ children }: { children?: React.ReactNode 
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {kind === 'build' && <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.65rem', color: 'var(--muted)', opacity: 0.7 }}>Schedule</span>
             {(['daily', 'weekly', 'interval'] as ScheduleType[]).map(s => (
               <button key={s} onClick={() => setScheduleType(s)} style={{
@@ -150,7 +181,8 @@ export default function HabitTracker({ children }: { children?: React.ReactNode 
                 <span style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>days</span>
               </div>
             )}
-          </div>
+          </div>}
+          {addError && <div role="alert" style={{ fontSize: '0.72rem', color: 'var(--rose)' }}>{addError}</div>}
 
           <button onClick={handleAdd} style={{
             alignSelf: 'flex-start', padding: '0.45em 1em', borderRadius: '8px', border: '1px solid color-mix(in srgb, var(--gold) 30%, transparent)',

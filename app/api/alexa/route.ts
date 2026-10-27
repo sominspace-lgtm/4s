@@ -227,7 +227,8 @@ export async function POST(request: Request) {
       const { data: comps } = await admin.from('habit_completions').select('habit_id, completed_date').eq('user_id', userId)
       const byHabit: Record<string, string[]> = {}
       ;(comps ?? []).forEach(c => { (byHabit[c.habit_id] ??= []).push(c.completed_date) })
-      const due = (habits ?? []).filter(h => isHabitDue(h, byHabit[h.id] ?? [], today))
+      // Things to avoid (kind avoid) are not habits to do; their rows are slips.
+      const due = (habits ?? []).filter(h => h.kind !== 'avoid' && isHabitDue(h, byHabit[h.id] ?? [], today))
       if (due.length === 0) {
         return say((habits?.length ?? 0) === 0
           ? 'You have no habits yet. Say, add a habit, then its name.'
@@ -241,8 +242,8 @@ export async function POST(request: Request) {
     case 'CompleteHabitIntent': {
       const name = slot(body, 'HabitName')
       if (!name) return say('Which habit did you do?', { reprompt: 'Say the habit name.' })
-      const { data: habits } = await admin.from('habits').select('id, name').eq('user_id', userId)
-      const match = bestMatch(habits ?? [], name, h => h.name)
+      const { data: habits } = await admin.from('habits').select('*').eq('user_id', userId)
+      const match = bestMatch((habits ?? []).filter(h => h.kind !== 'avoid'), name, h => h.name)
       if (!match) return say(`I couldn't find a habit matching ${name}.`, { end: true })
       const today = format(new Date(), 'yyyy-MM-dd')
       const { data: exists } = await admin.from('habit_completions')
