@@ -126,16 +126,18 @@ export function useWorkItems() {
   async function add(fields: Pick<WorkItem, 'title' | 'notes' | 'due_date' | 'energy' | 'domain' | 'recur_days'>): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
-    const row = { ...fields, user_id: user.id, status: 'todo' }
+    const row: Record<string, unknown> = { ...fields, user_id: user.id, status: 'todo' }
     // Plain insert, no `.select().single()` chained on (2026-10-05, "adding
     // tasks is broken"): when the row-return is blocked by an RLS SELECT
     // policy gap, `.single()` errors with "no rows" even though the insert
     // landed, so the form showed a failure and the task never appeared.
-    let { error } = await supabase.from('work_items').insert({ ...row, space_id: spaceId })
+    let { error } = await supabase.from('work_items').insert(spaceId ? { ...row, space_id: spaceId } : row)
     // A household space the policy won't accept (stale membership, space
-    // not yet accepted) shouldn't block a personal task — retry unscoped.
+    // not yet accepted) shouldn't block a personal task: retry unscoped. The
+    // retry leaves space_id out entirely, so a database still missing that
+    // column (2026-10-27, "Could not find the 'space_id' column") saves too.
     if (error && spaceId) {
-      ;({ error } = await supabase.from('work_items').insert({ ...row, space_id: null }))
+      ;({ error } = await supabase.from('work_items').insert(row))
     }
     if (error) return error.message
     // Re-fetch from the DB as the source of truth.
@@ -160,7 +162,7 @@ export function useWorkItems() {
             .insert({
               user_id: user.id, title: item.title, notes: item.notes,
               due_date: nextDue, energy: item.energy, domain: item.domain,
-              recur_days: item.recur_days, status: 'todo', space_id: item.space_id,
+              recur_days: item.recur_days, status: 'todo', ...(item.space_id ? { space_id: item.space_id } : {}),
             })
             .select().single()
           if (newItem) {

@@ -12,6 +12,7 @@ import CheckinCard from '@/components/checkin/CheckinCard'
 import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import PulseSection from '@/components/pulse/PulseSection'
 import DoneCircle from '@/components/ui/DoneCircle'
+import CaptureBox from '@/components/capture/CaptureBox'
 import { goToSection, goToPersonal } from '@/lib/utils/navigate'
 import { guideGreetingLine } from '@/lib/utils/guideVoice'
 import type { Mode } from '@/lib/constants/modes'
@@ -116,6 +117,11 @@ export default function DailyBrief({ userId, mode = 'friend' }: { userId: string
             <span style={{ fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic' }}>{quote}</span>
           </div>
         )}
+
+        {/* Add anything from Today (2026-10-27), the same smart add as the +. */}
+        <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg)', overflow: 'hidden', marginBottom: '0.9rem' }}>
+          <CaptureBox inline />
+        </div>
 
         <div className="t-label" style={{ marginBottom: '0.2rem' }}>Up next</div>
         {shown.length === 0 ? (
