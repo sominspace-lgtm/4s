@@ -130,7 +130,7 @@ export default function VillageGuestPanel({
             style={{ ...S.input, resize: 'vertical', lineHeight: 1.5 }}
           />
           <button
-            onClick={() => onSetGuestInfo({ wifiName: wifiName.trim(), wifiPassword: wifiPassword.trim(), notes: houseNotes.trim() })}
+            onClick={() => onSetGuestInfo({ ...guestInfo, wifiName: wifiName.trim(), wifiPassword: wifiPassword.trim(), notes: houseNotes.trim() })}
             style={{ ...S.save, marginTop: '0.35rem', padding: '0.4rem 0.9rem' }}
           >Save house info</button>
         </Field>

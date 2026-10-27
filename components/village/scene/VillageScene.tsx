@@ -38,6 +38,16 @@ import {
 
 export { GROUND_Y }
 
+// Under the welcome sign: says what tapping it does (2026-10-27).
+function WelcomeTag() {
+  return (
+    <g pointerEvents="none">
+      <rect x={-14} y={3.5} width={28} height={7.5} rx={3.75} fill="#fffaf0" stroke="#c9a97a" strokeWidth={0.5} />
+      <text x={0} y={8.9} textAnchor="middle" fontSize={4} fill="#8a5a2c" fontFamily="var(--font-body)">Wi-Fi & info</text>
+    </g>
+  )
+}
+
 // The ping card's body — chips plus, for the partner variant, a free-text
 // field ("pick up flour" isn't a preset chip). Its own tiny component so
 // the free-text input's state doesn't have to live on VillageScene itself.
@@ -176,8 +186,20 @@ export default function VillageScene({
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview, lite = false,
   sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
+  onWelcome, somiMood = null, idle = false, dinnerTonight = null,
 }: {
   village: VillageState
+  /** Opens the guest page (2026-10-27). Set on the guest view and while
+   *  hosting; draws the welcome sign and makes it tappable. */
+  onWelcome?: () => void
+  /** How the house is doing, in Somi (2026-10-27): she naps when nothing is
+   *  due, paces when things are late, and plays after a good day. */
+  somiMood?: 'nap' | 'pace' | 'play' | null
+  /** The wall has gone idle: the scene recedes behind the corner readout,
+   *  but keeps moving unless it is also frozen (night). */
+  idle?: boolean
+  /** Tonight's dinner from the meal plan, for the chalkboard by the door. */
+  dinnerTonight?: string | null
   live: boolean
   /** Mobile horizontal-scroll strip: the SVG fills its container's height
    *  and overflows the width, so the wide scene renders large and the
@@ -991,11 +1013,22 @@ export default function VillageScene({
   const somiHome = decorPos('somi')
   const somiLife = useWanderer({
     // Somi settles for a hold scene too (curls up for Movie / Goodnight).
-    enabled: !arranging && !sceneHidesFigures && !settledNight && holdTarget == null && (!quiet || gathering),
+    enabled: !arranging && !sceneHidesFigures && !settledNight && holdTarget == null && (!quiet || gathering) && (somiMood !== 'nap' || !!gathering),
     home: somiHome,
     bounds: { x0: 60, x1: 740, y0: GROUND_Y - 6, y1: GROUND_Y + 78 },
-    restfulness: 0.62,
+    // Pacing: barely sits. Otherwise her usual long sits.
+    restfulness: somiMood === 'pace' ? 0.08 : 0.62,
   })
+  // Playing (2026-10-27): every few seconds she bats at a yarn ball.
+  const [somiPlayBeat, setSomiPlayBeat] = useState(false)
+  useEffect(() => {
+    if (somiMood !== 'play' || isFrozen) { setSomiPlayBeat(false); return }
+    const t = setInterval(() => {
+      setSomiPlayBeat(true)
+      setTimeout(() => setSomiPlayBeat(false), 1300)
+    }, 6500)
+    return () => clearInterval(t)
+  }, [somiMood, isFrozen])
 
   // Wishing well (round 57; round 60 "make cuter hover for thankful well")
   // — tapping it opens a small styled card with a real text field (a
@@ -2356,6 +2389,41 @@ export default function VillageScene({
       ) })()}
 
 
+      {/* Tonight's dinner on a little chalkboard by the door (2026-10-27).
+          The hosts' menu board takes over while there's a gathering. */}
+      {!gathering && dinnerTonight && !sceneHidesFigures && (() => {
+        const p = decorPos('dinnerBoard')
+        const words = dinnerTonight.length > 18 ? dinnerTonight.slice(0, 17) + '…' : dinnerTonight
+        return (
+          <Draggable x={p.x} y={p.y} id="dinnerBoard" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('dinnerBoard')} r={14}>
+            <g onClick={onOpenKitchen && !arranging ? (e => { e.stopPropagation(); onOpenKitchen() }) : undefined} style={onOpenKitchen ? { cursor: 'pointer' } : undefined}>
+              <title>{`Tonight: ${dinnerTonight}`}</title>
+              <ellipse cx={0} cy={1.5} rx={12} ry={2.2} fill="var(--text)" opacity={0.12} />
+              <path d="M -9 1 L -6 -24 M 9 1 L 6 -24" stroke="#8a6f52" strokeWidth={1.4} strokeLinecap="round" />
+              <rect x={-16} y={-26} width={32} height={17} rx={1.8} fill="#3a4038" stroke="#8a6f52" strokeWidth={1.2} />
+              <text x={0} y={-19.6} textAnchor="middle" fontSize={4} fill="#e8e0cf" fontFamily="var(--font-body)" letterSpacing={0.3}>Tonight</text>
+              <text x={0} y={-12.8} textAnchor="middle" fontSize={4.4} fill="#f4efe2" fontFamily="var(--font-display)" fontStyle="italic">{words}</text>
+            </g>
+          </Draggable>
+        )
+      })()}
+
+      {/* The welcome sign on the guest view (2026-10-27): tap it for the
+          guest page. While hosting, the gathering's own sign does this. */}
+      {!gathering && onWelcome && (() => {
+        const p = decorPos('welcomeSign')
+        return (
+          <Draggable x={p.x} y={p.y} id="welcomeSign" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('welcomeSign')} r={14}>
+            <g onClick={!arranging ? (e => { e.stopPropagation(); onWelcome() }) : undefined} style={{ cursor: 'pointer' }}>
+              <title>Welcome. Tap for Wi-Fi and house info.</title>
+              <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.15} />
+              <image href="/village-assets/welcome-sign.png" x={-13} y={-26} width={26} height={26.6} style={{ imageRendering: 'pixelated' }} />
+              <WelcomeTag />
+            </g>
+          </Draggable>
+        )
+      })()}
+
       {/* Bin by the gate — the evening before / morning of collection.
           Arrangeable now (round 80) — decorPos('bins') instead of a fixed
           offset off Home. */}
@@ -2576,7 +2644,7 @@ export default function VillageScene({
           grows and the rest of the picture recedes once the wall's gone
           idle, so attention lands on the one thing worth glancing at
           across the room. */}
-      {isFrozen && !gathering && (
+      {(isFrozen || idle) && !gathering && (
         <rect x={0} y={0} width={800} height={440} fill="#0b1024" opacity={0.22}
           pointerEvents="none" style={{ transition: 'opacity 1200ms ease' }} />
       )}
@@ -2671,11 +2739,14 @@ export default function VillageScene({
           partner note on the left, a photo from Our photos on the right
           that changes every so often. Same coordinates as the board art
           (DistrictLabel scale 1.08 times the art's own 1.3). */}
-      {!arranging && (structures?.note || boardPhoto) && (() => {
+      {!arranging && (structures?.note || structures?.calendar?.[0] || boardPhoto) && (() => {
         const p = pos('calendar')
         const lines: string[] = []
-        if (structures?.note) {
-          for (const w of structures.note.split(/\s+/)) {
+        // No note: the next thing on the calendar goes up instead (2026-10-27).
+        const nextUp = !structures?.note && structures?.calendar?.[0] ? structures.calendar[0] : null
+        const pinned = structures?.note || nextUp
+        if (pinned) {
+          for (const w of pinned.replace(' · ', ': ').split(/\s+/)) {
             const last = lines[lines.length - 1]
             if (last !== undefined && (last + ' ' + w).length <= 12) lines[lines.length - 1] = last + ' ' + w
             else lines.push(w.length > 12 ? w.slice(0, 11) + '…' : w)
@@ -2683,16 +2754,16 @@ export default function VillageScene({
         }
         const shown = lines.slice(0, 4)
         if (lines.length > 4) shown[3] = shown[3].slice(0, 10) + '…'
-        const onlyPhoto = !structures?.note
+        const onlyPhoto = !pinned
         return (
           <g transform={`translate(${p.x} ${p.y}) scale(${1.08 * 1.3})`}>
-            {structures?.note && (
+            {pinned && (
               <g transform="rotate(-3 -12 -28)" onClick={openOrToggle('calendar', 'Notice board')} style={{ cursor: 'pointer' }}>
                 <rect x={-23} y={-40} width={22} height={23} rx={0.8} fill="#2a1a0c" opacity={0.18} transform="translate(0.6 0.8)" />
                 <rect x={-23} y={-40} width={22} height={23} rx={0.8} fill="#fff6dc" />
-                <circle cx={-12} cy={-38.6} r={1.1} fill="#c9584f" />
+                <circle cx={-12} cy={-38.6} r={1.1} fill={nextUp ? '#4a7fa8' : '#c9584f'} />
                 {shown.map((l, i) => (
-                  <text key={i} x={-12} y={-32.5 + i * 4.3} textAnchor="middle" fontSize={3.4} fontStyle="italic" fill="#5a4630" fontFamily="var(--font-display)">{l}</text>
+                  <text key={i} x={-12} y={-32.5 + i * 4.3} textAnchor="middle" fontSize={3.4} fontStyle={nextUp ? 'normal' : 'italic'} fontWeight={nextUp && i === 0 ? 600 : 400} fill="#5a4630" fontFamily="var(--font-display)">{l}</text>
                 ))}
               </g>
             )}
@@ -2854,8 +2925,9 @@ export default function VillageScene({
             {/* Welcome sign — just the sign now; the QR lives on its own
                 easel to the left (2026-09-03, was a tiny unreadable overlay
                 here plus a huge floating one that collided with everything). */}
-            <g transform={`translate(${signX} ${signY})`}>
-              <title>Welcome</title>
+            <g transform={`translate(${signX} ${signY})`} onClick={onWelcome && !arranging ? (e => { e.stopPropagation(); onWelcome() }) : undefined} style={onWelcome ? { cursor: 'pointer' } : undefined}>
+              <title>Welcome. Tap for Wi-Fi and house info.</title>
+              {onWelcome && <WelcomeTag />}
               <ellipse cx={0} cy={1} rx={11} ry={2.4} fill="var(--text)" opacity={0.15} />
               <image href="/village-assets/welcome-sign.png" x={-13} y={-26} width={26} height={26.6}
                 style={{ imageRendering: 'pixelated' }} />
@@ -3082,7 +3154,7 @@ export default function VillageScene({
         }
         const active = !arranging && !settledNight && holdTarget == null
         // Curled asleep for real night AND for a Movie / Goodnight hold.
-        const catSleeps = (nightish || (holdTarget != null && activeMood.kind !== 'party')) && !arranging && !gathering
+        const catSleeps = (nightish || (holdTarget != null && activeMood.kind !== 'party') || somiMood === 'nap') && !arranging && !gathering
         return (
         <Draggable x={p.x} y={p.y} id="somi" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('somi')} r={13}>
           <g style={active ? { transform: `translate(${somiLife.x - p.x}px, ${somiLife.y - p.y}px)`, transition: `transform ${somiLife.dur}ms ease-in-out` } : undefined}>
@@ -3092,7 +3164,13 @@ export default function VillageScene({
             {!catSleeps && <circle cy={-8} r={11} fill="var(--amber)" opacity={0.16} filter="url(#vglow)" />}
             <CatShape x={0} y={0} scale={0.88 * itemScale('somi')} name="Somi"
               onClick={() => { if (arranging) return; reactFigure('somi'); somiLife.walkTo(p.x + 18, GROUND_Y + 68); openSomi() }}
-              wander={active} pose={reactingId === 'somi' && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={catSleeps} />
+              wander={active} pose={(reactingId === 'somi' || somiPlayBeat) && somiLife.pose === 'idle' ? 'react' : somiLife.pose} face={somiLife.face} sleeping={catSleeps} />
+            {somiMood === 'play' && !catSleeps && somiLife.pose === 'idle' && (
+              <g transform={`translate(${somiLife.face * 9} ${somiPlayBeat ? -3 : 0})`} style={{ transition: 'transform 400ms ease' }} pointerEvents="none">
+                <circle r={2.6} fill="#d9726a" />
+                <path d="M -2 -1 Q 0 1 2 -1 M -2 1 Q 0 -1 2 1" stroke="#f3d3c8" strokeWidth={0.45} fill="none" />
+              </g>
+            )}
           </g>
           <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
         </Draggable>
@@ -3284,6 +3362,7 @@ export default function VillageScene({
                       <div style={{ fontSize: 8, color: 'var(--muted)', opacity: 0.8 }}>{somiCard.birthdayLabel}</div>
                     </div>
                   </div>
+                  {somiMood && !gathering && <div style={{ fontSize: 8.5, color: 'var(--text)' }}>{somiMood === 'nap' ? 'Napping. Nothing is due.' : somiMood === 'pace' ? 'Pacing. A few things are late.' : 'Playing. Good day so far.'}</div>}
                   {somiCard.ageText && <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>{somiCard.ageText}</div>}
                   <div style={{ fontSize: 8.5, color: 'var(--muted)' }}>Favourite snack: {somiCard.snack}</div>
                   {somiCard.tricks.length > 0 && (

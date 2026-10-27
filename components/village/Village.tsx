@@ -43,6 +43,7 @@ import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import KitchenMode from './KitchenMode'
+import GuestPage from './GuestPage'
 import DistrictPreviewSheet from './DistrictPreviewSheet'
 import GatheringChecklistPopup from './GatheringChecklistPopup'
 import HostingSetup from './HostingSetup'
@@ -724,6 +725,39 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     const t = setInterval(() => setPhotoIdx(n => n + 1), 30_000)
     return () => clearInterval(t)
   }, [boardPhotos.length])
+  // Somi's mood (2026-10-27): the house's day, told by the cat. Late chores
+  // make her pace, three or more things finished today make her play, and
+  // with nothing due she naps through the afternoon.
+  const somiMood = useMemo((): 'nap' | 'pace' | 'play' | null => {
+    if (!clock) return null
+    const today = format(clock, 'yyyy-MM-dd')
+    const late = household.chores.filter(c => choreDue(c) < 0).length
+    if (late > 0) return 'pace'
+    const finished = household.chores.filter(c => c.last_done_at?.slice(0, 10) === today).length
+      + done.filter(i => i.completed_at?.slice(0, 10) === today).length
+      + Object.values(completions).filter(d => d.includes(today)).length
+    if (finished >= 3) return 'play'
+    if (partOfDay === 'day' && household.chores.every(c => choreDue(c) > 0)) return 'nap'
+    return null
+  }, [clock, household.chores, done, completions, partOfDay])
+
+  // Photo moments (2026-10-27): while the wall is idle, one of your photos
+  // comes up big in a frame for a little while, then the scene is back.
+  const [photoMoment, setPhotoMoment] = useState(false)
+  useEffect(() => {
+    if (!ambient || guestLive || boardPhotos.length === 0) { setPhotoMoment(false); return }
+    let hide: ReturnType<typeof setTimeout> | undefined
+    const show = () => {
+      setPhotoIdx(n => n + 1)
+      setPhotoMoment(true)
+      hide = setTimeout(() => setPhotoMoment(false), 25_000)
+    }
+    const first = setTimeout(show, 3 * 60_000)
+    const every = setInterval(show, 8 * 60_000)
+    return () => { clearTimeout(first); clearInterval(every); if (hide) clearTimeout(hide) }
+  }, [ambient, guestLive, boardPhotos.length])
+  const [guestPageOpen, setGuestPageOpen] = useState(false)
+
   // Google Calendar on the board too (2026-10-24): your own and the shared
   // one; on the shared iPad only the shared calendar comes back.
   const gStatus = useGoogleStatus().status
@@ -918,7 +952,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           <VillageScene village={v} live={clock !== null} palette={palette} scroll={scrollStrip}
             celestial={mood.forceNight ? null : celestial}
             sceneMood={mood}
-            frozen={ambient}
+            frozen={ambient && partOfDay === 'night'} idle={ambient}
             contextActivity={contextActivity}
             hosting={hosting}
             guestInfo={guestInfo}
@@ -955,7 +989,9 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
-            homeOccupied={homeOccupied} dateKey={dateKey} />
+            homeOccupied={homeOccupied} dateKey={dateKey}
+            somiMood={guestLive ? null : somiMood} dinnerTonight={guestView || guestLive ? null : homeCard.dinner}
+            onWelcome={guestView || guestActive ? () => setGuestPageOpen(true) : undefined} />
         </div>
 
         {/* Swipe affordance for the mobile scroll strip (2026-09-07) — a
@@ -982,7 +1018,28 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {!compact && !guestLive && (
           <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
             timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
-            partOfDay={partOfDay} binLine={binLine} ambient={ambient} />
+            partOfDay={partOfDay} binLine={binLine} ambient={ambient}
+            nextEvent={guestView ? null : structures.calendar[0] ?? null} />
+        )}
+
+        {/* A photo moment (2026-10-27) — a framed print over the idle scene. */}
+        {!compact && boardPhotos.length > 0 && (
+          <div aria-hidden style={{
+            position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            opacity: photoMoment ? 1 : 0, transition: 'opacity 2200ms ease',
+          }}>
+            {photoMoment && (
+              <div style={{
+                background: '#fbf6ec', padding: '0.9rem 0.9rem 2.4rem', borderRadius: 4,
+                boxShadow: '0 24px 60px rgba(20,12,4,0.45)', transform: 'rotate(-1.5deg)',
+                maxWidth: '58%', maxHeight: '72%', display: 'flex',
+              }}>
+                <img src={boardPhotos[photoIdx % boardPhotos.length].url} alt=""
+                  style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', display: 'block' }} />
+              </div>
+            )}
+          </div>
         )}
 
         {/* "Expecting guests" countdown (2026-09-08) — a calm strip while a
@@ -1103,6 +1160,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                   {([
                     ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
                     ...(!guestActive ? [{ label: 'Kitchen', on: () => setKitchenOpen(true) }] : []),
+                    { label: 'Guest page', on: () => setGuestPageOpen(true) },
                     ...(guestActive
                       ? [
                           { label: guestCount > 0 ? `Manage the gathering · ${guestCount}` : 'Manage the gathering', on: () => setGuestPanelOpen(true) },
@@ -1260,6 +1318,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
               </button>
             ))}
           </div>
+        )}
+
+        {guestPageOpen && (
+          <GuestPage info={guestInfo} somi={somi} menu={guestLive ? gathering?.menu ?? [] : []}
+            title={guestLive ? gathering?.title ?? null : null}
+            canEdit={!guestView} onSave={onSetGuestInfo}
+            onClose={() => setGuestPageOpen(false)} />
         )}
 
         {kitchenOpen && (

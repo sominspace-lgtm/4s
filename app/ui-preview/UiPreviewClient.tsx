@@ -16,6 +16,7 @@ import DoneCircle from '@/components/ui/DoneCircle'
 import UndoToast from '@/components/ui/UndoToast'
 import { withUndo } from '@/lib/ui/undo'
 import QuickNote from '@/components/ui/QuickNote'
+import Village from '@/components/village/Village'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
@@ -34,6 +35,8 @@ export default function UiPreviewClient() {
   const [theme, setTheme] = useState('bloom')
   const [sheet, setSheet] = useState(false)
   const [plan, setPlan] = useState(false)
+  const [guestV, setGuestV] = useState(false)
+  const [idleV, setIdleV] = useState(false)
   const g = GROUPS.find(x => x.members.includes(tab))!
   const all = new Set(Object.keys(LABELS))
 
@@ -44,6 +47,8 @@ export default function UiPreviewClient() {
           ui-preview · theme <select value={theme} onChange={e => setTheme(e.target.value)}>
             {['bloom', 'moonlight', 'ember', 'dusk', 'sage', 'obsidian', 'elegant', 'botanical', 'modern', 'warm'].map(t => <option key={t}>{t}</option>)}
           </select>
+          {' '}<button onClick={() => setTab('village')}>village</button>{' '}<label><input type="checkbox" checked={guestV} onChange={e => setGuestV(e.target.checked)} /> guest</label>
+          {' '}<label><input type="checkbox" checked={idleV} onChange={e => setIdleV(e.target.checked)} /> idle</label>
         </div>
         <main style={{ maxWidth: 'min(1240px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 6rem' }}>
           {g.id === 'me' && tab !== 'me'
@@ -54,6 +59,7 @@ export default function UiPreviewClient() {
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
           
           {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
+          {tab === 'village' && <Village userId="" guestView={guestV} ambient={idleV} guestInfo={{ welcome: 'Welcome to our home', wifiName: 'SoHome', wifiPassword: 'somi-loves-churu', places: 'Bathroom: down the hall, on the left\nTowels: hall closet', rules: 'Shoes off at the door\nKeep the back door shut for Somi' }} onSetGuestInfo={i => console.log('save', i)} />}
           {tab === 'village' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
               {(['halloween', 'thanksgiving', 'christmas', 'newyear', 'seollal', 'valentine', 'july4'] as Holiday[]).flatMap(hd => [false, true].map(night => (

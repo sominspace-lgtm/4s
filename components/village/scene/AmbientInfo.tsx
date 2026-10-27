@@ -11,7 +11,7 @@ import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 // in home mode. Grows and the scene dims around it once the wall goes
 // idle (`ambient`), so the same small habit of glancing at the corner
 // becomes the whole point of the picture from across the room.
-export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null, ambient = false }: {
+export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null, ambient = false, nextEvent = null }: {
   spaceId: string | null
   userId: string
   timeLabel: string | null
@@ -23,6 +23,8 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
   binLine?: string | null
   /** The wall has gone idle — grow the card, same content. */
   ambient?: boolean
+  /** "Tomorrow · Dentist" (2026-10-27), shown under the line once idle. */
+  nextEvent?: string | null
 }) {
   const { chores, meals } = useHousehold(spaceId)
   const { routines } = useRoutines(spaceId)
@@ -118,6 +120,11 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
       {ambient && line && (
         <div style={{ fontSize: '0.7rem', opacity: 0.85, marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {line}
+        </div>
+      )}
+      {ambient && nextEvent && (
+        <div style={{ fontSize: '0.7rem', opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          Next: {nextEvent}
         </div>
       )}
     </div>

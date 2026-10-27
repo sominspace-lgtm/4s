@@ -65,6 +65,11 @@ export interface GuestInfo {
   wifiPassword?: string
   /** Free text: bathroom, help yourself to drinks, house rules, etc. */
   notes?: string
+  /** The guest page (2026-10-27): its welcome line, "Bathroom: down the
+   *  hall" lines, and house rules, one per line. */
+  welcome?: string
+  places?: string
+  rules?: string
 }
 
 export interface GatheringMemory {

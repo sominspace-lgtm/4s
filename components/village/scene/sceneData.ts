@@ -553,6 +553,10 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   bins: { x: 454, y: 211 },
   dinnerTable: { x: 404, y: 268 },
   menuBoard: { x: 434, y: 264 },
+  // Everyday glance props (2026-10-27): tonight's dinner on a chalkboard by
+  // the door, and the welcome sign for guests on the iPad.
+  dinnerBoard: { x: 352, y: 228 },
+  welcomeSign: { x: 300, y: 252 },
   balloonsA: { x: 354, y: 244 },
   balloonsB: { x: 438, y: 264 },
   // Round 27's seven community-props items (well, clothesline, an
