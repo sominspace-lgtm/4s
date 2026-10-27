@@ -46,7 +46,8 @@ export function useCheckins(userId: string | null = null) {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data }, done] = await Promise.all([
-      supabase.from('checkins').select('*').order('week_of', { ascending: false }).limit(40),
+      // Every week since you started (2026-10-27): 40 cut off the oldest.
+      supabase.from('checkins').select('*').order('week_of', { ascending: false }).limit(1000),
       spaceId
         ? supabase.rpc('checkin_week_done', { p_space: spaceId, p_week: weekOfSunday() })
         : Promise.resolve({ data: null }),

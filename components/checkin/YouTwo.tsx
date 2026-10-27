@@ -135,7 +135,9 @@ export default function YouTwo({ userId }: { userId: string }) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                       {Object.entries(w.byUser).filter(([uid]) => !locked || uid === userId).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
-                        const questions = c.answers.filter(a => a.questionKey !== 'vibe')
+                        // The old form's photo is a Drive link (2026-10-27): shown as the photo, not as an answer.
+                        const drivePhoto = c.answers.find(a => /drive\.google\.com/.test(a.answer))?.answer ?? null
+                        const questions = c.answers.filter(a => a.questionKey !== 'vibe' && a.answer !== drivePhoto)
                         return (
                           <div key={uid} style={{ background: 'var(--surface2)', borderRadius: '10px', padding: '0.7rem 0.8rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
@@ -156,7 +158,7 @@ export default function YouTwo({ userId }: { userId: string }) {
                                 </div>
                               )}
                             </div>
-                            <CheckinPhoto path={c.photo_path} />
+                            <CheckinPhoto path={c.photo_path} driveUrl={drivePhoto} />
                           </div>
                         )
                       })}
