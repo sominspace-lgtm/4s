@@ -5,12 +5,12 @@ import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import Sheet from '@/components/ui/Sheet'
 import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
-import { useHousehold, choreDue } from '@/lib/hooks/useHousehold'
+import { useHousehold } from '@/lib/hooks/useHousehold'
 import { useRecipes } from '@/lib/hooks/useRecipes'
 
-// Plan the week (2026-10-26). One Sunday screen with three short steps: give
-// open tasks a day, pick the dinners, and split the chores coming due. Each
-// tap saves on its own, so it can be left halfway.
+// Plan the week (2026-10-26). One Sunday screen with two short steps: give
+// open tasks a day and pick the dinners. Each tap saves on its own, so it can
+// be left halfway.
 
 const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
 
@@ -55,7 +55,7 @@ export default function PlanWeek({ open, onClose, userId }: { open: boolean; onC
   const days = useMemo(() => planDays(), [])
   const first = ymd(days[0]), last = ymd(days[6])
   const { items, update } = useWorkItems()
-  const { spaces, members } = useSharedSpaces(userId)
+  const { spaces } = useSharedSpaces(userId)
   const spaceId = spaces[0]?.id ?? null
   const h = useHousehold(spaceId)
   const book = useRecipes(spaceId)
@@ -66,13 +66,6 @@ export default function PlanWeek({ open, onClose, userId }: { open: boolean; onC
   // Open tasks that have no day yet, are late, or fall inside the week.
   const tasks = items.filter(i => i.status !== 'done' && (!i.due_date || i.due_date.slice(0, 10) <= last)).slice(0, 25)
 
-  // The two of you, for splitting chores.
-  const ownerId = spaces[0]?.owner_id ?? null
-  const partnerId = ownerId === userId ? members.find(m => m.space_id === spaceId && m.status === 'accepted')?.member_id ?? null : ownerId
-  const nameOf = (id: string | null) => (id === userId ? 'Me' : id === spaces[0]?.owner_id ? 'Sylvia' : 'Harry')
-  const people = [userId, partnerId].filter((x): x is string => !!x)
-  const chores = h.chores.filter(c => choreDue(c) <= 7).sort((a, b) => choreDue(a) - choreDue(b))
-
   const dinnerOn = (d: Date) => h.meals.find(m => m.slot === 'dinner' && isSameDay(parseISO(m.meal_date), d)) ?? null
   const recipes = [...book.recipes].sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite) || a.times_cooked - b.times_cooked).slice(0, 10)
 
@@ -81,11 +74,6 @@ export default function PlanWeek({ open, onClose, userId }: { open: boolean; onC
     const r = await h.addMeal(date, 'dinner', title.trim(), null, recipeId ? { recipe_id: recipeId } : undefined)
     if (r.error) setErr(r.error)
     setPicking(null); setTyped('')
-  }
-
-  async function assign(id: string, who: string | null) {
-    const r = await h.updateChore(id, { assigned_to: who })
-    if (r.error) setErr(/assigned_to/.test(r.error) ? 'Splitting chores needs the new database step. Run the SQL, then try again.' : r.error)
   }
 
   const plannedDinners = days.filter(d => dinnerOn(d)).length
@@ -146,28 +134,6 @@ export default function PlanWeek({ open, onClose, userId }: { open: boolean; onC
                     </form>
                   </div>
                 )}
-              </div>
-            )
-          })}
-        </Step>
-      )}
-
-      {spaceId && (
-        <Step n={3} title="Split the chores" hint={chores.length ? 'Who takes each one this week.' : 'Nothing comes due this week.'}>
-          {chores.map(c => {
-            const d = choreDue(c)
-            return (
-              <div key={c.id} style={row}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>
-                  {c.name}
-                  <span style={{ fontSize: '0.75rem', color: d < 0 ? 'var(--rose)' : 'var(--muted)' }}>
-                    {' · '}{d < 0 ? `${-d}d late` : d === 0 ? 'due today' : `due ${format(addDays(new Date(), d), 'EEE')}`}
-                  </span>
-                </span>
-                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                  {people.map(p => <Chip key={p} wide on={c.assigned_to === p} onClick={() => void assign(c.id, c.assigned_to === p ? null : p)}>{nameOf(p)}</Chip>)}
-                  <Chip wide on={!c.assigned_to} onClick={() => void assign(c.id, null)}>Either</Chip>
-                </div>
               </div>
             )
           })}

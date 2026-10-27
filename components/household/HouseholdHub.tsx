@@ -542,18 +542,15 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
 
     // One row look for every list (2026-10-26): the done circle, the name,
     // one quiet line under it. Tap the name to edit (folder, how often,
-    // remove). Swipe right for done, left to take it this week.
+    // remove). Swipe right for done.
     function renderChoreRow(c: Chore) {
       const due = dueLabel(c)
       const meta = [
         `every ${c.cadence_days}d`,
-        c.assigned_to ? (c.assigned_to === userId ? 'yours this week' : "your partner's this week") : null,
         c.last_done_at && nameFor(c.last_done_by) ? `last ${nameFor(c.last_done_by)}, ${daysAgo(c.last_done_at)}` : null,
       ].filter(Boolean).join(' · ')
       return (
         <SwipeRow key={c.id} onRight={() => void doneChore(c)} rightLabel="Done"
-          onLeft={() => void h.updateChore(c.id, { assigned_to: c.assigned_to === userId ? null : userId })}
-          leftLabel={c.assigned_to === userId ? 'Either of us' : 'Mine this week'}
           className={justDone === c.id ? 'did-it' : undefined}
           style={{ borderBottom: '1px solid var(--faint)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.55rem 0', position: 'relative' }}>

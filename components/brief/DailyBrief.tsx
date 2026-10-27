@@ -81,7 +81,7 @@ export default function DailyBrief({ userId, mode = 'friend' }: { userId: string
     next.push({ key: `t-${t.id}`, title: t.title, kind: u === 'overdue' ? 'Task, late' : 'Task', late: u === 'overdue', finish: () => finish(`t-${t.id}`, () => setStatus(t.id, 'done')), open: () => goToPersonal('tasks') })
   }
   for (const c of h.chores) {
-    if (choreDue(c) > 0 || (c.assigned_to && c.assigned_to !== userId)) continue
+    if (choreDue(c) > 0) continue
     next.push({ key: `c-${c.id}`, title: c.name, kind: choreDue(c) < 0 ? 'Chore, late' : 'Chore', late: choreDue(c) < 0, finish: () => finish(`c-${c.id}`, () => h.markChoreDone(c.id)), open: () => goToSection('upkeep') })
   }
   for (const hb of habits) {
