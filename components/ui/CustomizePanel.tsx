@@ -49,6 +49,9 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'money',    label: 'Money',    hidden: false },
   { id: 'checkins', label: 'Check-ins', hidden: false },
   { id: 'mycalendar', label: 'Calendar', hidden: false },
+  // Gmail and Passwords are their own tiles in Me (2026-10-26).
+  { id: 'gmail',    label: 'Gmail',    hidden: false },
+  { id: 'vault',    label: 'Passwords', hidden: false },
   { id: 'settings', label: 'Settings', hidden: false },
   // The village — your life as a place, not a dashboard.
   { id: 'village',  label: 'Village',  hidden: false },

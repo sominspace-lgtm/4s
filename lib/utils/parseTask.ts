@@ -53,6 +53,8 @@ interface DateRule {
 
 const WD = Object.keys(WEEKDAYS).join('|')
 const MO = Object.keys(MONTHS).join('|')
+// Not 'sun' or 'sat' alone at the end: "enjoy the sun" is not a Sunday.
+const WD_END = Object.keys(WEEKDAYS).filter(w => w !== 'sun' && w !== 'sat').join('|')
 
 // Order matters: more specific first. All rules require a word boundary and
 // most require the "due"/"by"/"on" cue so ordinary words stay in the title;
@@ -93,6 +95,27 @@ const DATE_RULES: DateRule[] = [
       return /next\s/i.test(m[0]) ? addDays(base, 7) : base
     },
     describe: (_m, d) => `due ${format(d, 'EEEE')} (${format(d, 'MMM d')})`,
+  },
+  // A day said at the very end needs no "due" (2026-10-26): "call vet friday",
+  // "dentist oct 30", "pay rent 11/1". Only at the end, so "Friday drinks
+  // plan" stays a title.
+  {
+    re: new RegExp(`\\s(?:this\\s+|next\\s+)?(${WD_END})\\.?\\s*$`, 'i'),
+    resolve: (m, now) => {
+      const base = nextWeekday(now, WEEKDAYS[m[1].toLowerCase()])
+      return /next\s/i.test(m[0]) ? addDays(base, 7) : base
+    },
+    describe: (_m, d) => `due ${format(d, 'EEEE')} (${format(d, 'MMM d')})`,
+  },
+  {
+    re: new RegExp(`\\s(${MO})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*$`, 'i'),
+    resolve: (m, now) => upcomingDate(now, MONTHS[m[1].toLowerCase()], parseInt(m[2])),
+    describe: (_m, d) => `due ${format(d, 'MMM d')}`,
+  },
+  {
+    re: /\s(\d{1,2})\/(\d{1,2})\s*$/,
+    resolve: (m, now) => upcomingDate(now, parseInt(m[1]) - 1, parseInt(m[2])),
+    describe: (_m, d) => `due ${format(d, 'MMM d')}`,
   },
   {
     re: /\b(?:due\s+)?next\s+week\b/i,

@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import VaultHub from '@/components/vault/VaultHub'
+import { goToPersonal } from '@/lib/utils/navigate'
 
 // Settings (2026-10-25): everything that used to be spread across the ⋯
 // menu and Me, on one page. Each row opens the same panel as before.
@@ -44,14 +43,6 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export default function SettingsPage({ userId, actions }: { userId: string; actions: SettingsActions }) {
-  const [vault, setVault] = useState(false)
-  // Passwords opens here when something asks for it (it used to be its own page).
-  useEffect(() => {
-    const on = () => setVault(true)
-    window.addEventListener('4s:open-vault', on)
-    return () => window.removeEventListener('4s:open-vault', on)
-  }, [])
-
   return (
     <div>
       <Group title="You">
@@ -67,8 +58,7 @@ export default function SettingsPage({ userId, actions }: { userId: string; acti
         {actions.ipad && <Row label="iPad settings" hint="Guest view, screen on, bedtime" onClick={actions.ipad} />}
       </Group>
       <Group title="Private">
-        <Row label={vault ? 'Hide passwords' : 'Passwords'} hint="Your locked password vault" onClick={() => setVault(v => !v)} />
-        {vault && <div style={{ padding: '0.8rem 0' }}><VaultHub userId={userId} /></div>}
+        <Row label="Passwords" hint="Your locked password vault" onClick={() => goToPersonal('vault')} />
         <Row label="Archive" hint="What you have put away" onClick={actions.archive} />
       </Group>
       <Group title="Leave">

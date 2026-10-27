@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { format, parseISO } from 'date-fns'
+import { parseTaskInput } from '@/lib/utils/parseTask'
 import { createClient } from '@/lib/supabase/client'
 import { useLang } from '@/lib/LangContext'
 import { t } from '@/lib/i18n'
@@ -25,6 +27,12 @@ export default function QuickNote() {
   const [busy, setBusy] = useState(false)
   const { status: g } = useGoogleStatus()
   const supabase = createClient()
+  // Smart dates (2026-10-26): "call vet friday" is due Friday, no picker.
+  const when = useMemo(() => {
+    const p = parseTaskInput(text)
+    return p?.dueDate ? p : null
+  }, [text])
+  const niceDay = (d: string) => { try { return format(parseISO(d), 'EEE, MMM d') } catch { return d } }
 
   useEffect(() => {
     function openFresh() {
@@ -76,10 +84,23 @@ export default function QuickNote() {
       const res = await fetch('/api/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ task: 'route-capture', text: trimmed }) })
       const j = res.ok ? await res.json() as { result?: { actions?: CaptureAction[] } } : null
       const list = (j?.result?.actions ?? []).filter(a => a && a.type)
-      if (list.length === 0 || (list.length === 1 && list[0].type === 'note')) { setBusy(false); await submit(); return }
+        // A task the AI left undated gets the day you typed.
+        .map(a => (a.type === 'task' || a.type === 'event') && !a.date && when ? { ...a, date: when.dueDate } : a)
+      if (list.length === 0 || (list.length === 1 && list[0].type === 'note')) {
+        // No AI, or it saw only a note: a sentence with a day is still a task.
+        if (when) { setActions([dated(when)]); setBusy(false); return }
+        setBusy(false); await submit(); return
+      }
       setActions(list)
-    } catch { await submit() }
+    } catch {
+      if (when) setActions([dated(when)])
+      else await submit()
+    }
     setBusy(false)
+  }
+
+  function dated(p: { title: string; dueDate: string | null }): CaptureAction {
+    return { type: 'task', label: p.title, title: p.title, date: p.dueDate }
   }
 
   async function fileAll() {
@@ -172,13 +193,18 @@ export default function QuickNote() {
               />
             </div>
 
+            {!actions && when && (
+              <div style={{ padding: '0 1.4rem 0.6rem', fontSize: '0.78rem', color: 'var(--gold)' }}>
+                Due {niceDay(when.dueDate!)}
+              </div>
+            )}
             {actions && (
               <div style={{ padding: '0 1.4rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Here is what I will do. Remove anything that is wrong.</div>
                 {actions.map((a, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.6rem', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--gold) 30%, var(--border))', background: 'color-mix(in srgb, var(--gold) 6%, transparent)' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--gold)', minWidth: '4.5rem' }}>{ACTION_WORD[a.type]}{a.type === 'chore' && a.done ? ' done' : ''}</span>
-                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.88rem', color: 'var(--text)' }}>{a.label}{a.date ? ` · ${a.date}` : ''}{a.time ? ` ${a.time}` : ''}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.88rem', color: 'var(--text)' }}>{a.label}{a.date ? ` · ${niceDay(a.date)}` : ''}{a.time ? ` ${a.time}` : ''}</span>
                     <button onClick={() => setActions(list => { const n = (list ?? []).filter((_, k) => k !== i); return n.length ? n : null })} aria-label="Remove" style={{ minWidth: 36, minHeight: 36, border: 'none', background: 'none', color: 'var(--muted)', cursor: 'pointer' }}>×</button>
                   </div>
                 ))}

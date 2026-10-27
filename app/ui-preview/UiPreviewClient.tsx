@@ -15,17 +15,18 @@ import SwipeRow from '@/components/ui/SwipeRow'
 import DoneCircle from '@/components/ui/DoneCircle'
 import UndoToast from '@/components/ui/UndoToast'
 import { withUndo } from '@/lib/ui/undo'
+import QuickNote from '@/components/ui/QuickNote'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
   { id: 'home',   icon: 'household', label: 'Home',   members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',     icon: 'personal',  label: 'Me',     members: ['me', 'tasks', 'habits', 'notes', 'money', 'wishlist', 'people', 'vault', 'village'] },
+  { id: 'me',     icon: 'personal',  label: 'Me',     members: ['me', 'tasks', 'mycalendar', 'gmail', 'notes', 'habits', 'money', 'vault', 'checkins', 'settings', 'village'] },
   { id: 'places', icon: 'places',    label: 'Places', members: ['places', 'places-trips', 'places-nearby'] },
 ]
 const LABELS: Record<string, string> = {
   home: 'Home', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
   places: 'Map', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
-  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', wishlist: 'Wishlist', people: 'People', vault: 'Passwords', village: 'Village',
+  tasks: 'Tasks', habits: 'Habits', notes: 'Notes', money: 'Money', wishlist: 'Wishlist', people: 'People', vault: 'Passwords', village: 'Village', mycalendar: 'Calendar', gmail: 'Gmail', checkins: 'Check-ins', settings: 'Settings',
 }
 
 export default function UiPreviewClient() {
@@ -100,6 +101,7 @@ export default function UiPreviewClient() {
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: "0.78rem", color: "var(--muted)" }}>Chore<input placeholder="Water the plants" style={{ minHeight: 44, padding: "0 0.7rem", border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg)", color: "var(--text)" }} /></label>
           <div style={{ fontSize: "0.62rem", color: "var(--muted)" }}>small hint inside a sheet</div>
         </Sheet>
+        <QuickNote />
         <HomeBar groups={GROUPS} activeId={tab} onSelect={setTab} />
       </div>
     </ThemeProvider>

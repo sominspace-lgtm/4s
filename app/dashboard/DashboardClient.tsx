@@ -69,7 +69,9 @@ const NotesHub = dynamic(loadNotesHub, { loading: TabLoading })
 const loadMailHub = () => import('@/components/mail/MailHub')
 const MailHub = dynamic(loadMailHub, { loading: TabLoading })
 const loadVaultHub = () => import('@/components/vault/VaultHub')
+const loadGmailInbox = () => import('@/components/mail/GmailInbox')
 const VaultHub = dynamic(loadVaultHub, { loading: TabLoading })
+const GmailInbox = dynamic(loadGmailInbox, { loading: TabLoading })
 const loadKitchenHub = () => import('@/components/kitchen/KitchenHub')
 const KitchenHub = dynamic(loadKitchenHub, { loading: TabLoading })
 const loadMoneyHub = () => import('@/components/money/MoneyHub')
@@ -88,7 +90,7 @@ const loadJarvis = () => import('@/components/jarvis/Jarvis')
 const Jarvis = dynamic(loadJarvis, { loading: TabLoading })
 const loadSharedSettings = () => import('@/components/layout/SharedSettings')
 const SharedSettings = dynamic(loadSharedSettings, { loading: TabLoading })
-const PREFETCH = [loadConnectPanel, loadShortcutHelp, loadNotificationsPanel, loadArchivePanel, loadYouTwo, loadMyCalendar, loadSettingsPage, loadMailPanel, loadTasksTab, loadHabitsTab, loadNotesHub, loadMailHub, loadVaultHub, loadKitchenHub, loadMoneyHub, loadWishlistHub, loadHouseholdHub, loadSmartHomeOverlay, loadPlacesHub, loadShareInbox, loadJarvis, loadSharedSettings]
+const PREFETCH = [loadConnectPanel, loadShortcutHelp, loadNotificationsPanel, loadArchivePanel, loadYouTwo, loadMyCalendar, loadSettingsPage, loadMailPanel, loadTasksTab, loadHabitsTab, loadNotesHub, loadMailHub, loadVaultHub, loadGmailInbox, loadKitchenHub, loadMoneyHub, loadWishlistHub, loadHouseholdHub, loadSmartHomeOverlay, loadPlacesHub, loadShareInbox, loadJarvis, loadSharedSettings]
 
 interface Props {
   email: string
@@ -124,7 +126,7 @@ interface Props {
 // top-level ids and are Personal sub-tabs as of this change, so any layout
 // saved before it still names them.
 const DEPRECATED_SECTION_IDS = new Set([
-  'wishlist', 'vault',                               // Wishlist is in Money, Passwords in Settings (2026-10-25)
+  'wishlist',                                        // Wishlist is in Money (2026-10-25). Passwords has its own tile again (2026-10-26).
   'google', 'ourgoogle',                             // Google folded into the usual tabs (2026-10-25)
   'people',                                          // People page deleted (2026-10-23)
   'hhtoday',                                          // Household Today tab removed (2026-09-08)
@@ -203,6 +205,7 @@ const SECTION_GROUPS: Record<string, string> = {
   people:    'mine',
   checkins:  'mine',
   vault:     'mine',
+  gmail:     'mine',
   village:   'your world',
   places:    'ours',
   'places-trips': 'ours',
@@ -271,7 +274,7 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
   { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'checkins', 'mycalendar', 'tasks', 'habits', 'notes', 'money', 'settings'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'tasks', 'mycalendar', 'gmail', 'notes', 'habits', 'money', 'vault', 'checkins', 'settings'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
@@ -478,10 +481,10 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   useEffect(() => {
     function onNav(e: Event) {
       const raw = (e as CustomEvent<string>).detail
-      // Wishlist is a tab in Money and Passwords sit in Settings (2026-10-25).
-      if (raw === 'wishlist' || raw === 'vault') {
-        setActiveTab(raw === 'wishlist' ? 'money' : 'settings')
-        setTimeout(() => window.dispatchEvent(new CustomEvent(raw === 'wishlist' ? '4s:open-wishlist' : '4s:open-vault')), 80)
+      // Wishlist is a tab in Money (2026-10-25).
+      if (raw === 'wishlist') {
+        setActiveTab('money')
+        setTimeout(() => window.dispatchEvent(new CustomEvent('4s:open-wishlist')), 80)
         requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
         return
       }
@@ -649,7 +652,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // shared notes, and the two of you.
       reference: t('Collections', lang),
       // The Google pages (2026-10-24).
-      mycalendar: 'Calendar', housecal: 'Calendar', settings: 'Settings',
+      mycalendar: 'Calendar', housecal: 'Calendar', settings: 'Settings', gmail: 'Gmail',
       me: 'Me',
     }
 
@@ -704,6 +707,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'mycalendar': return <div key="mycalendar" className="roomy"><MyCalendar userId={userId} /></div>
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
+        // Your own Gmail, its own tile in Me (2026-10-26).
+        case 'gmail':    return <section key="gmail" className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="mine" /></section>
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
         // Places (2026-09-09) — the map carries a docked pin list, so it's
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.

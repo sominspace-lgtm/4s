@@ -18,7 +18,7 @@ export type IconName =
   | 'moon' | 'cloud' | 'cloudSun' | 'rain' | 'snow' | 'storm' | 'fog' | 'fire'
   | 'lightbulb' | 'brain' | 'check' | 'plane' | 'bed' | 'camera' | 'link'
   | 'walk' | 'bag' | 'sparkle' | 'thumbtack' | 'eye' | 'eyeOff' | 'handshake'
-  | 'party' | 'clipboard' | 'cake' | 'gamepad' | 'tv' | 'sunrise'
+  | 'party' | 'clipboard' | 'cake' | 'gamepad' | 'tv' | 'sunrise' | 'mail'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // Sun — a circle with short rays, today's own mark.
@@ -120,6 +120,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
   // A gear — settings/customize buttons.
   gear: (
     <path d="M 9 6.2 A 2.8 2.8 0 1 0 9 11.8 A 2.8 2.8 0 0 0 9 6.2 Z M 9 1.5 L 9.9 3.4 L 8.1 3.4 Z M 9 16.5 L 8.1 14.6 L 9.9 14.6 Z M 1.5 9 L 3.4 8.1 L 3.4 9.9 Z M 16.5 9 L 14.6 9.9 L 14.6 8.1 Z M 3.4 3.4 L 5 4.4 L 4.4 5 Z M 14.6 14.6 L 13 13.6 L 13.6 13 Z M 14.6 3.4 L 13.6 5 L 13 4.4 Z M 3.4 14.6 L 4.4 13 L 5 13.6 Z" fillRule="evenodd" />
+  ),
+  // An envelope, for Gmail.
+  mail: (
+    <>
+      <rect x="2.5" y="4.5" width="13" height="9.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M 3 5.2 L 9 10 L 15 5.2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </>
   ),
   // A padlock, shackle closed.
   lock: (
