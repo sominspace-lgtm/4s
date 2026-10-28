@@ -141,5 +141,5 @@ export function useHouseholdPhotos(spaceId: string | null, guestOnly = false) {
     ...extras.filter(x => !x.label || !captions.has(x.label)),
   ].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''))
 
-  return { photos, items, driveFolder, loading, add, setGuests, remove, shareWithGuests }
+  return { photos, items, driveFolder, loading, add, setGuests, remove, shareWithGuests, reload: load }
 }
