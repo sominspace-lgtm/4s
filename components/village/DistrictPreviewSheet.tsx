@@ -32,7 +32,7 @@ export interface DistrictPreviewData {
 
 const TITLES: Record<LandmarkId, string> = {
   forest: 'Habits', home: 'Smart Home', projects: 'Tasks', places: 'Places',
-  people: 'Memories', archive: 'Archive', references: 'Kitchen', calendar: 'Notice board',
+  people: 'Memories', references: 'Kitchen', calendar: 'Notice board',
 }
 
 export default function DistrictPreviewSheet({ district, data, onClose, onOpenFull }: {
@@ -110,10 +110,6 @@ function renderBody(district: LandmarkId, d: DistrictPreviewData) {
           : d.albums.slice(0, 6).map(a => <Line key={a.url} mark="·" tone="idle" label={a.label || 'Album'} meta="photo album" />)}
       </>
     )
-  }
-
-  if (district === 'archive') {
-    return <Line mark="·" tone="idle" label={d.treeRings > 0 ? `${d.treeRings} year${d.treeRings === 1 ? '' : 's'} kept` : 'Its first year'} meta="" />
   }
 
   if (district === 'references') {

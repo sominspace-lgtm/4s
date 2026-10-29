@@ -29,6 +29,7 @@ import { useVillageSparks } from '@/lib/hooks/useVillageSparks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { useMail } from '@/lib/hooks/useMail'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
+import { avoidRuns } from '@/components/habits/AvoidRow'
 import { forestSlots, districtSlots, LANDMARK_IDS, LANDMARKS_V2, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
@@ -44,6 +45,7 @@ import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
 import KitchenMode from './KitchenMode'
 import GuestPage from './GuestPage'
+import DinnerCard from './DinnerCard'
 import DistrictPreviewSheet from './DistrictPreviewSheet'
 import GatheringChecklistPopup from './GatheringChecklistPopup'
 import HostingSetup from './HostingSetup'
@@ -78,7 +80,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout: savedLayout = {}, onChangeLayout: saveLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', milestonesSeen = [], onAckMilestone, guestView = false }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout: savedLayout = {}, onChangeLayout: saveLayout, ambient = false, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', milestonesSeen = [], onAckMilestone, guestView = false }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -204,12 +206,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return () => { alive = false }
   }, [somiBase.photoPath])
   const somi = useMemo(() => ({ ...somiBase, photoUrl: somiPhotoUrl }), [somiBase, somiPhotoUrl])
-  const pinnedMessage = useMemo(() => {
-    const id = gathering?.pinned_contribution_id
-    if (!id) return null
-    const c = contributions.find(x => x.id === id && x.status === 'visible')
-    return c && c.body ? { name: c.guest_name, body: c.body } : null
-  }, [gathering?.pinned_contribution_id, contributions])
   const [qrDataUri, setQrDataUri] = useState<string | null>(null)
   const [guestPanelOpen, setGuestPanelOpen] = useState(false)
   const [keepsakesOpen, setKeepsakesOpen] = useState(false)
@@ -244,12 +240,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     return `${base.replace(/\/$/, '')}/g/${gathering.token}`
   }, [gathering])
   useEffect(() => {
-    if (!guestUrl) { setQrDataUri(null); return }
+    if (!guestUrl) return
     let alive = true
     QRCode.toDataURL(guestUrl, { margin: 1, width: 320 })
       .then(uri => { if (alive) setQrDataUri(uri) })
       .catch(() => { if (alive) setQrDataUri(null) })
-    return () => { alive = false }
+    return () => { alive = false; setQrDataUri(null) }
   }, [guestUrl])
   // Tapping Sylvia or Harry during a live gathering pings that host's
   // phone (web push). The scene renders the little "who / why" card; this
@@ -425,7 +421,17 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
   }, [fullscreen])
-  const { habits, completions } = useHabits()
+  const { habits, completions, avoids, slips } = useHabits()
+  // Things you're keeping away from, as lanterns in the garden (2026-10-29).
+  // Personal, so never on the shared screen, for guests, or in the preview.
+  const avoidLights = useMemo(() => {
+    if (locked || guestView || guestLive || compact) return []
+    const today = format(new Date(), 'yyyy-MM-dd')
+    return avoids.map(h => {
+      const s = slips[h.id] ?? []
+      return { id: h.id, name: h.name, days: avoidRuns(h.created_at, s).now, slippedToday: s.includes(today) }
+    })
+  }, [avoids, slips, locked, guestView, guestLive, compact])
   const { items: workItems } = useWorkItems()
   // Finished work, which useWorkItems deliberately excludes. Without this the
   // Project District can only ever show scaffolding — see useVillageWork.
@@ -511,7 +517,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // roughly a year (or 2, or 3) ago today, flipped up from the postcard rack.
   const onThisDay = useMemo(() => {
     const today = new Date()
-    const md = (d: string) => d.slice(5, 10)
     const near = (dateStr: string) => {
       const d = new Date(dateStr + 'T12:00:00')
       const years = today.getFullYear() - d.getFullYear()
@@ -655,6 +660,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const household = useHousehold(spaces[0]?.id ?? null)
   const routinesHook = useRoutines(spaces[0]?.id ?? null)
   const personalRoutines = usePersonalRoutines(locked ? null : spaces[0]?.id ?? null)
+  const [dinnerOpen, setDinnerOpen] = useState(false)
   const homeCard = useMemo(() => {
     const tonight = dinnerFor(household.meals)
     const dinner = tonight?.title ?? null
@@ -706,7 +712,22 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const { items: calendarEvents } = useEvents()
   // Our photos on the notice board (2026-10-25): one at a time, changing
   // every 30 seconds. With guests over, only the photos marked for them.
-  const { items: boardPhotos } = useHouseholdPhotos(spaces[0]?.id ?? null, guestView || guestLive)
+  const { items: allPhotos } = useHouseholdPhotos(spaces[0]?.id ?? null, guestView || guestLive)
+  // On this day (2026-10-29): when a photo from this week in an earlier year
+  // exists, the board shows those instead, with how long ago it was.
+  const boardPhotos = useMemo(() => {
+    const t = new Date()
+    const today = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime()
+    const past = allPhotos.flatMap(p => {
+      const d = p.at ? new Date(p.at.length === 10 ? p.at + 'T12:00:00' : p.at) : null
+      if (!d || isNaN(d.getTime())) return []
+      const years = t.getFullYear() - d.getFullYear()
+      if (years < 1) return []
+      const thisYear = new Date(t.getFullYear(), d.getMonth(), d.getDate()).getTime()
+      return Math.abs(thisYear - today) <= 3 * 86_400_000 ? [{ ...p, ago: years === 1 ? 'a year ago' : `${years} years ago` }] : []
+    })
+    return past.length ? past : allPhotos.map(p => ({ ...p, ago: null as string | null }))
+  }, [allPhotos])
   const [photoIdx, setPhotoIdx] = useState(0)
   const [photoBig, setPhotoBig] = useState(false)
 
@@ -715,12 +736,12 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   const gStat = useGoogleStatus().status
   const [mailUnread, setMailUnread] = useState(0)
   useEffect(() => {
-    if (!gStat.household?.connected || guestView || guestLive) { setMailUnread(0); return }
+    if (!gStat.household?.connected || guestView || guestLive) return
     let alive = true
     const check = () => fetch('/api/google/gmail?unread=1&account=shared').then(r => (r.ok ? r.json() : { unread: 0 })).then((j: { unread?: number }) => { if (alive) setMailUnread(j.unread ?? 0) }).catch(() => {})
     check()
     const t = setInterval(check, 5 * 60_000)
-    return () => { alive = false; clearInterval(t) }
+    return () => { alive = false; clearInterval(t); setMailUnread(0) }
   }, [gStat.household?.connected, guestView, guestLive])
   const postcardKey = `4s:postcard-seen:${lastWeekStart()}`
   const [postcardSeen, setPostcardSeen] = useState(true)
@@ -753,7 +774,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // comes up big in a frame for a little while, then the scene is back.
   const [photoMoment, setPhotoMoment] = useState(false)
   useEffect(() => {
-    if (!ambient || guestLive || boardPhotos.length === 0) { setPhotoMoment(false); return }
+    if (!ambient || guestLive || boardPhotos.length === 0) return
     let hide: ReturnType<typeof setTimeout> | undefined
     const show = () => {
       setPhotoIdx(n => n + 1)
@@ -762,7 +783,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     }
     const first = setTimeout(show, 3 * 60_000)
     const every = setInterval(show, 8 * 60_000)
-    return () => { clearTimeout(first); clearInterval(every); if (hide) clearTimeout(hide) }
+    return () => { clearTimeout(first); clearInterval(every); if (hide) clearTimeout(hide); setPhotoMoment(false) }
   }, [ambient, guestLive, boardPhotos.length])
   const [guestPageOpen, setGuestPageOpen] = useState(false)
 
@@ -967,11 +988,11 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             soloFigure={!bothHome && !guestActive}
             containerAspect={fullscreen ? viewportAspect : null}
             lite={villageLite.lite}
-            plantSlots={plantSlots} buildingSlots={buildingSlots}
+            plantSlots={plantSlots} buildingSlots={buildingSlots} avoidLights={avoidLights}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
-            gathering={guestLive} hostNote={guestLive ? gathering?.pinned_note ?? null : null} contributions={contributions} guestQrUri={qrDataUri}
+            gathering={guestLive} hostNote={guestLive ? gathering?.pinned_note ?? null : null} contributions={contributions}
             sparks={sparks} guestToken={guestLive ? gathering?.token ?? null : null}
             onThisDay={onThisDay} postcards={postcards}
             ringNotes={ringNotes} foundedYear={accountCreated ? accountCreated.getFullYear() : null}
@@ -983,7 +1004,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             onOpenKitchen={() => setKitchenOpen(true)}
             onOpenPreview={(id, go) => { if (id === 'references') { setKitchenOpen(true); return } go() }}
             homeCard={homeCard} binLine={binLine} partOfDay={partOfDay} structures={structures}
-            boardPhoto={!compact && boardPhotos.length ? { url: boardPhotos[photoIdx % boardPhotos.length].url, onOpen: () => setPhotoBig(true) } : null}
+            boardPhoto={!compact && boardPhotos.length ? { url: boardPhotos[photoIdx % boardPhotos.length].url, ago: boardPhotos[photoIdx % boardPhotos.length].ago, onOpen: () => setPhotoBig(true) } : null}
             mailFlag={mailUnread} postcardNew={!postcardSeen && !guestView && !guestLive} onMailbox={guestView || guestLive ? undefined : () => setMailboxOpen(true)}
             layout={layout} arranging={arranging}
             onMoveLandmark={onChangeLayout ? (id, x, y) => onChangeLayout({ ...layout, [id]: { ...layout[id], x, y } }) : undefined}
@@ -998,7 +1019,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             dateIdeaAreas={dateIdeaAreas} weather={weather}
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
             homeOccupied={homeOccupied} dateKey={dateKey}
-            somiMood={guestLive ? null : somiMood} dinnerTonight={guestView || guestLive ? null : homeCard.dinner}
+            somiMood={guestLive ? null : somiMood} dinnerTonight={guestView || guestLive ? null : homeCard.dinner} onDinner={() => setDinnerOpen(true)}
             onWelcome={guestView || guestActive ? () => setGuestPageOpen(true) : undefined} />
         </div>
 
@@ -1423,6 +1444,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         )}
 
         {/* Our photos, framed in the corner (2026-10-24). Guests see only theirs. */}
+        <DinnerCard meal={dinnerFor(household.meals)} open={dinnerOpen} onClose={() => setDinnerOpen(false)} onCook={() => setKitchenOpen(true)} />
         {/* The mailbox sheet (2026-10-25). */}
         <Sheet open={mailboxOpen} title="The mailbox" onClose={() => setMailboxOpen(false)}>
           {[
@@ -1443,10 +1465,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {/* A photo pinned on the notice board, opened big when tapped (2026-10-25). */}
         {photoBig && boardPhotos[photoIdx % Math.max(1, boardPhotos.length)] && (
           <div role="dialog" aria-modal="true" aria-label="Photo" onClick={() => setPhotoBig(false)} style={{
-            position: 'fixed', inset: 0, zIndex: 4100, background: 'rgba(10,8,6,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+            position: 'fixed', inset: 0, zIndex: 4100, background: 'rgba(10,8,6,0.85)', display: 'flex', flexDirection: 'column', gap: '0.7rem', alignItems: 'center', justifyContent: 'center', padding: '1rem',
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={boardPhotos[photoIdx % boardPhotos.length].url} alt="" style={{ maxWidth: '100%', maxHeight: '90dvh', borderRadius: 12, objectFit: 'contain' }} />
+            <img src={boardPhotos[photoIdx % boardPhotos.length].url} alt="" style={{ maxWidth: '100%', maxHeight: '84dvh', borderRadius: 12, objectFit: 'contain' }} />
+            {boardPhotos[photoIdx % boardPhotos.length].ago && (
+              <div style={{ color: '#f1e8d8', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '1rem' }}>
+                This week, {boardPhotos[photoIdx % boardPhotos.length].ago}
+              </div>
+            )}
           </div>
         )}
 

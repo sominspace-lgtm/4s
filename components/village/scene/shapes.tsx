@@ -702,30 +702,6 @@ export function MailboxShape({ x, y, onClick, flag = false, card = false }: {
   )
 }
 
-// A signpost toward Trips (2026-08-24) — Places' Trips sub-tab has no
-// district of its own; a signpost at the village edge, pointing off-canvas,
-// gives "somewhere else" a presence without inventing an eighth district.
-// Real sprite (round 11, 2026-08-27, village-matching-expansion-pack) — an
-// actual directional arrow-sign on a post, an even better fit for "points
-// toward Trips" than the hand-drawn flag it replaces.
-export function SignpostShape({ x, y, label, onClick }: { x: number; y: number; label: string; onClick?: () => void }) {
-  const handleClick = onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick() } : undefined
-  const w = 19.75, h = 26 // re-sourced round 23 from the master-assets folder (205×270), sized up rounds 24/35 for visibility
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      {/* Was an off-centre circle (cx 4, cy -9) that missed the post and
-          overhung the right (round 72). Now the sprite box + a hair. */}
-      {onClick && <rect x={-w / 2 - 1.5} y={-h} width={w + 3} height={h + 3} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
-      <g onClick={handleClick} className={onClick ? 'village-entity' : undefined}>
-        <title>{label}</title>
-        <ellipse cx={0} cy={1.5} rx={5} ry={1.3} fill="var(--text)" opacity={0.12} />
-        <image href="/village-assets/signpost2.png" x={-w / 2} y={-h + 1} width={w} height={h}
-          style={{ imageRendering: 'pixelated' }} />
-      </g>
-    </g>
-  )
-}
-
 // Birthday bunting (2026-08-24) — a small flag string over the People
 // district, only on the actual day (see VillageScene's use of
 // soonestBirthdayDays === 0). No new data: the same daysUntilBirthday
@@ -1299,7 +1275,7 @@ export function EntityCallout({ x, y, title, subtitle }: { x: number; y: number;
   )
 }
 
-export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'book' | 'places' | 'people' | 'shelf' | 'board'
+export type DistrictIconKind = 'leaf' | 'home' | 'building' | 'places' | 'people' | 'shelf' | 'board'
 
 // Small illustrated objects, not figures (2026-08-24, replaces the
 // illustrated-figure pass from earlier the same day) — the same "real prop,
@@ -1353,15 +1329,6 @@ export function FeatureIcon({ kind, x = 0, y = 0, scale = 1, opacity = 1 }: {
             <rect x={-3} y={-1.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
             <rect x={1} y={-1.5} width={2} height={2} fill="var(--surface)" opacity={0.85} />
             <path d="M 5 -8 L 8 -13" stroke="var(--gold)" strokeWidth={1} fill="none" strokeLinecap="round" />
-          </g>
-        )
-      case 'book': // Archive — a small stack of books
-        return (
-          <g>
-            <ellipse cx={0} cy={4.5} rx={6.5} ry={1.3} fill="var(--text)" opacity={0.12} />
-            <rect x={-6} y={0.5} width={12} height={3} rx={0.6} fill="var(--gold)" opacity={0.55} />
-            <rect x={-5} y={-2.5} width={10} height={3} rx={0.6} fill="var(--gold)" opacity={0.7} />
-            <rect x={-4} y={-5.5} width={8} height={3} rx={0.6} fill="var(--gold)" opacity={0.85} />
           </g>
         )
       case 'places': // Places — a map pin, planted
@@ -1437,7 +1404,6 @@ const DISTRICT_ART_BOX: Record<DistrictIconKind, { w: number; h: number }> = {
   home: { w: 0, h: 0 },
   building: { w: 0, h: 0 },
   leaf: { w: 30, h: 14 },   // the swaying-flower cluster
-  book: { w: 46, h: 41 },   // greenhouse.png
   places: { w: 32, h: 24 }, // car.png
   people: { w: 44, h: 53 }, // people-tree.png
   shelf: { w: 40, h: 32 },  // kitchen.png — the pantry/kitchen stall
@@ -1500,24 +1466,6 @@ function DistrictArt({ kind, dark }: { kind: DistrictIconKind; dark: boolean }) 
       // for one job. DistrictLabel still renders its glow + hit-rect + "Projects" label
       // here; the cabin a few pixels away is the symbol.
       return null
-    case 'book': // Archive — a real library building now (round 45, 2026-08-28, "update the
-      // village with these elements. relabel if makes more sense") — library.png, from
-      // village-social-town-spaces-alpha.png, an actual library (book-motif gable window),
-      // replacing the greenhouse crop (rounds 11-44) that had been standing in for "library/
-      // greenhouse" since there was no real library art yet. The Life Tree stays where it is,
-      // drawn separately in VillageScene (real years-of-account data, not decoration) — also
-      // upgraded this round to real tree art, see its own comment.
-      return (
-        <g>
-          <ellipse cx={0} cy={2} rx={20} ry={2.9} fill="var(--text)" opacity={0.17} />
-          {/* Back to greenhouse.png round 57 — library.png's source sheet
-              (village-social-town-spaces) is no longer in the master folder.
-              Sized up round 58 ("other buildings a bit bigger"). */}
-          <image href="/village-assets/greenhouse.png" x={-23} y={-41} width={46} height={41}
-            style={{ imageRendering: 'pixelated' }} />
-          {dark && <circle cx={0} cy={-22} r={12} fill="var(--amber)" opacity={0.26} filter="url(#vglow)" />}
-        </g>
-      )
     case 'places': // Places — the car (round 30, 2026-08-27, "make the car the symbol for
       // places") — car.png, the same sprite already used for the standalone car prop near
       // Home, reused here rather than re-cropped. "Somewhere to go" reads more directly as a

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import type { GuestInfo, MenuItem } from '@/lib/hooks/useGathering'
+import { printGuestCard } from './printGuestCard'
 
 // The guest page (2026-10-27): everything a guest would otherwise ask, one
 // tap from the welcome sign. Wi-Fi with a code their phone can scan, where
@@ -97,6 +98,7 @@ export default function GuestPage({ info, somi, menu = [], title = null, canEdit
         <div style={S.head}>
           <span style={S.kicker}>{title ?? 'For our guests'}</span>
           <span style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+            {canEdit && !empty && <button onClick={() => printGuestCard(info, qr)} style={S.link}>Print</button>}
             {canEdit && onSave && <button onClick={() => setEditing(true)} style={S.link}>Edit</button>}
             <button onClick={onClose} style={S.x} aria-label="Close">✕</button>
           </span>

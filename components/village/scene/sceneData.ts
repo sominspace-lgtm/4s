@@ -458,8 +458,8 @@ export function spellCount(n: number): string {
 // on purpose.
 // Three neighborhoods (2026-10-28), left to right: your goals (the garden
 // and projects), the house (notice board, home, kitchen), and memories
-// (the people tree and the car for places). Archive is no longer drawn; it
-// opens from the Memories card, so its spot here is never used.
+// (the people tree and the car for places). The Archive opens from the
+// Memories card.
 export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   forest: { x: 132, y: 204 },
   projects: { x: 110, y: 318 },
@@ -468,13 +468,12 @@ export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> 
   references: { x: 492, y: 300 },
   people: { x: 640, y: 304 },
   places: { x: 694, y: 212 },
-  archive: { x: 725, y: 204 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
 // spurPavers() above. Static, keyed to the default positions.
 export const SPUR_PAVERS = (Object.entries(DEFAULT_LANDMARK_POS) as [LandmarkId, { x: number; y: number }][])
-  .filter(([id]) => id !== 'home' && id !== 'archive') // Home sits on the path already; Archive isn't drawn
+  .filter(([id]) => id !== 'home') // Home sits on the path already
   .flatMap(([id, p]) => spurPavers(p.x, p.y, id))
 
 // Default positions for every purely-decorative prop (round 12, 2026-08-27,
@@ -520,7 +519,6 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   ...Object.fromEntries(PROPS.fences.map((p, i) => [`fence-${i}`, p])),
   ...Object.fromEntries(PROPS.lamps.map((p, i) => [`lamp-${i}`, p])),
   mailbox: { x: 462, y: GROUND_Y - 4 },
-  signpost: { x: 752, y: 322 },
   clockTower: { x: 212, y: 211 },
   wishingWell: { x: 297, y: 328 },
   picnicMat: { x: 430, y: 300 },

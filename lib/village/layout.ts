@@ -21,7 +21,7 @@ import { hashPos } from './state'
 // of data, so a saved position is actually meaningful and stable. See
 // VillageLayout below and VillageScene's arrange mode.
 
-export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people', 'references', 'calendar'] as const
+export const LANDMARK_IDS = ['forest', 'home', 'projects', 'places', 'people', 'references', 'calendar'] as const
 export type LandmarkId = typeof LANDMARK_IDS[number]
 /** Set in the layout once districts are arranged after the 2026-10-28 move
  *  into neighborhoods. District spots saved without it are from before. */

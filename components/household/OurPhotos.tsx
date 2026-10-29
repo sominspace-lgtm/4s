@@ -1,7 +1,7 @@
 'use client'
 
 import { withUndo } from '@/lib/ui/undo'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useHouseholdPhotos, type AlbumItem } from '@/lib/hooks/useHouseholdPhotos'
 import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 import GooglePhotosButton from '@/components/ui/GooglePhotosButton'
@@ -18,31 +18,11 @@ import GooglePhotosButton from '@/components/ui/GooglePhotosButton'
 const BADGE: Record<AlbumItem['source'], string | null> = { album: null, drive: 'Drive', checkin: 'Check-in' }
 
 export default function OurPhotos({ spaceId, guestMode = false }: { spaceId: string | null; guestMode?: boolean }) {
-  const { items, driveFolder, loading, add, setGuests, remove, shareWithGuests, reload } = useHouseholdPhotos(spaceId, guestMode)
+  const { items, driveFolder, loading, add, setGuests, remove, shareWithGuests } = useHouseholdPhotos(spaceId, guestMode)
   const { status } = useGoogleStatus()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [big, setBig] = useState<AlbumItem | null>(null)
-  const [moving, setMoving] = useState(false)
-
-  // The old form's check-in photos still sitting in Drive (2026-10-27) are
-  // copied into 4S the first time this opens, then show as check-in photos.
-  useEffect(() => {
-    if (guestMode || !spaceId) return
-    let alive = true
-    // Usually there is nothing to move; the note only shows if it takes a while.
-    const t = setTimeout(() => { if (alive) setMoving(true) }, 1200)
-    fetch('/api/checkin-photo', { method: 'POST' })
-      .then(r => r.ok ? r.json() as Promise<{ moved: number; failed: number }> : { moved: 0, failed: 0 })
-      .then(j => {
-        if (!alive) return
-        if (j.moved > 0) void reload()
-        if (j.failed > 0) setErr(`${j.failed} old check-in ${j.failed === 1 ? 'photo' : 'photos'} could not be opened in Drive. Make sure Google is connected in Connect.`)
-      })
-      .catch(() => {})
-      .finally(() => { clearTimeout(t); if (alive) setMoving(false) })
-    return () => { alive = false; clearTimeout(t) }
-  }, [guestMode, spaceId, reload])
 
   async function addFiles(files: Blob[]) {
     if (files.length === 0) return
@@ -82,7 +62,6 @@ export default function OurPhotos({ spaceId, guestMode = false }: { spaceId: str
           <GooglePhotosButton max={20} account="mine" label="Add one of mine" onPick={addFiles} />
         </div>
       )}
-      {moving && <div style={{ fontSize: '0.76rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>Bringing in your old check-in photos…</div>}
       {err && <div style={{ fontSize: '0.8rem', color: 'var(--rose)', marginBottom: '0.5rem' }}>{err}</div>}
 
       {!loading && items.length === 0 && (
