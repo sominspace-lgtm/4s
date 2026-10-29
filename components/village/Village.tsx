@@ -29,7 +29,7 @@ import { useVillageSparks } from '@/lib/hooks/useVillageSparks'
 import { useCareLog } from '@/lib/hooks/useCareLog'
 import { useMail } from '@/lib/hooks/useMail'
 import { buildVillage, villageChangesSince } from '@/lib/village/state'
-import { forestSlots, districtSlots, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
+import { forestSlots, districtSlots, LANDMARK_IDS, LANDMARKS_V2, type VillageLayout, type LandmarkId } from '@/lib/village/layout'
 import { seasonPalette } from '@/lib/village/palette'
 import { celestialOf, moonPhaseLabel } from '@/lib/village/sky'
 import { loadWeather, type WeatherNow } from '@/lib/village/weather'
@@ -78,7 +78,7 @@ const ARRIVAL_KEY = '4s-village-arrival'
 // This file is the orchestrator only: it gathers the real data, folds it into
 // one VillageState, and hands that to a scene that has no hooks and no dates in
 // it. Drawing lives in scene/.
-export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout = {}, onChangeLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', milestonesSeen = [], onAckMilestone, guestView = false }: {
+export default function Village({ userId, accountCreatedAt = null, lastSeen = null, onSeen, locked = false, onLockedNavigate, layout: savedLayout = {}, onChangeLayout: saveLayout, ambient = false, resetIdleTimer, compact = false, gathering = null, onStartGathering, onOpenDoors, onUpdatePrep, onCloseGathering, guestCount = 0, contributions = [], memories = [], onSetMusicUrl, onSetPhotoAlbumUrl, onModerate, onRemoveContribution, onUpdateMemory, onDeleteMemory, guestInfo = {}, onSetGuestInfo, onSetMenu, onSetAgenda, onSetPinnedContribution, onSetPinnedNote, petInfo = {}, onSetPetInfo, boardNote = '', milestonesSeen = [], onAckMilestone, guestView = false }: {
   userId: string
   /** ISO string from auth.users.created_at, via DashboardClient. */
   accountCreatedAt?: string | null
@@ -149,6 +149,14 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   milestonesSeen?: string[]
   onAckMilestone?: (id: string) => void
 }) {
+  // Three neighborhoods (2026-10-28): goals on the left, the house in the
+  // middle, memories on the right. The districts got new spots, so the ones
+  // dragged before then fall back to them; decor keeps where you put it.
+  // The marker is saved with the next change so later drags stick.
+  const layout = useMemo<VillageLayout>(() => savedLayout[LANDMARKS_V2]
+    ? savedLayout
+    : Object.fromEntries(Object.entries(savedLayout).filter(([k]) => !(LANDMARK_IDS as readonly string[]).includes(k))), [savedLayout])
+  const onChangeLayout = saveLayout ? (next: VillageLayout) => saveLayout({ ...next, [LANDMARKS_V2]: { x: 0, y: 0 } }) : undefined
   const [arranging, setArranging] = useState(false)
   // The single ⋯ control-menu on the full tab (2026-08-31) — everything the
   // scene used to float on top (Arrange, guest hosting, fullscreen) now
@@ -1157,9 +1165,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                   display: 'flex', flexDirection: 'column',
                   boxShadow: '0 6px 18px color-mix(in srgb, var(--text) 14%, transparent)',
                 }}>
+                  {/* Grouped (2026-10-28): guests, this screen, then arranging.
+                      The kitchen is the stall in the scene, not a menu item. */}
                   {([
-                    ...(onChangeLayout ? [{ label: 'Arrange the village', on: () => setArranging(true) }] : []),
-                    ...(!guestActive ? [{ label: 'Kitchen', on: () => setKitchenOpen(true) }] : []),
+                    { heading: 'Guests' },
                     { label: 'Guest page', on: () => setGuestPageOpen(true) },
                     ...(guestActive
                       ? [
@@ -1181,6 +1190,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                     ...(memories.length > 0 && !guestActive
                       ? [{ label: 'Village keepsakes', on: () => setKeepsakesOpen(true) }]
                       : []),
+                    { heading: 'This screen' },
                     // Zoom stays in the menu — the buttons repeat, so these
                     // keep it open instead of dismissing on each step.
                     { label: 'Zoom in', on: zoomIn, keepOpen: true, disabled: zoom >= 2 },
@@ -1195,7 +1205,15 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                       on: () => villageLite.setSetting(villageLite.setting === 'auto' ? 'on' : villageLite.setting === 'on' ? 'off' : 'auto'),
                       keepOpen: true,
                     },
-                  ] as { label: string; on: () => void; keepOpen?: boolean; disabled?: boolean }[]).map(item => (
+                    ...(onChangeLayout ? [{ divider: true }, { label: 'Arrange the village', on: () => setArranging(true) }] : []),
+                  ] as ({ heading: string } | { divider: true } | { label: string; on: () => void; keepOpen?: boolean; disabled?: boolean })[]).map((item, i) => 'heading' in item ? (
+                    <div key={`h${i}`} role="presentation" style={{
+                      padding: i === 0 ? '0.25rem 0.5rem 0.15rem' : '0.55rem 0.5rem 0.15rem',
+                      fontSize: '0.58rem', color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase',
+                    }}>{item.heading}</div>
+                  ) : 'divider' in item ? (
+                    <div key={`d${i}`} role="separator" style={{ height: 1, background: 'var(--border)', margin: '0.35rem 0.3rem' }} />
+                  ) : (
                     <button key={item.label} role="menuitem" className="press" disabled={item.disabled}
                       onClick={() => { item.on(); if (!item.keepOpen) setMenuOpen(false) }}
                       style={{

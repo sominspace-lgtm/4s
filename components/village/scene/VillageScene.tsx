@@ -12,7 +12,7 @@ import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/u
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { randomFortune } from '@/lib/village/fortunes'
 import { HolidayDecor, holidayOn, type Holiday } from './Holiday'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, SignpostShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 
 // The swaying flower cluster (round 13) and its FLOWER_SWAY_FRAMES were
@@ -757,7 +757,7 @@ export default function VillageScene({
     let best: LandmarkId | null = null
     let bestD = Infinity
     for (const id of LANDMARK_IDS) {
-      if (districtLocked(id)) continue
+      if (id === 'archive' || districtLocked(id)) continue
       const c = pos(id)
       const d = Math.hypot(p.x - c.x, p.y - c.y)
       if (d < bestD) { bestD = d; best = id }
@@ -841,6 +841,7 @@ export default function VillageScene({
         ...(placeNames.length ? [placeNames.slice(0, 3).join(', ')] : []),
       ],
       actionLabel: 'Go to Places', go: () => goToSection('places'),
+      secondary: tripCount > 0 ? { label: `${spellCount(tripCount)} upcoming trip${tripCount === 1 ? '' : 's'}`, go: () => goToSection('places-trips') } : undefined,
     },
     // People district → Memories (2026-09-07). The community tree is the
     // gallery: the household's shared photo albums, plus the trip
@@ -852,6 +853,7 @@ export default function VillageScene({
         const l: string[] = []
         if (memoryAlbums.length) l.push(`${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}`)
         { const n = postcards.length || POSTCARDS.length; l.push(`${spellCount(n)} postcard${n === 1 ? '' : 's'} on the rack`) }
+        if (v.treeRings > 0) l.push(`${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept`)
         if (memoryAlbums[0]?.label) l.push(memoryAlbums[0].label)
         return l.slice(0, 3)
       })(),
@@ -859,7 +861,8 @@ export default function VillageScene({
       go: memoryAlbums.length
         ? () => window.open(memoryAlbums[0].url, '_blank', 'noopener')
         : () => setPostcardsOpen(true),
-      secondary: memoryAlbums.length ? { label: 'See the postcards', go: () => setPostcardsOpen(true) } : undefined,
+      // The postcards also open from their rack; the Archive opens only here.
+      secondary: locked ? undefined : { label: 'Past years', go: () => window.dispatchEvent(new CustomEvent('app:open-archive')) },
     },
     archive: {
       title: 'Archive',
@@ -2390,13 +2393,14 @@ export default function VillageScene({
 
 
       {/* Tonight's dinner on a little chalkboard by the door (2026-10-27).
-          The hosts' menu board takes over while there's a gathering. */}
+          The hosts' menu board takes over while there's a gathering. Just
+          to read since 2026-10-28; the kitchen stall is the one way in. */}
       {!gathering && dinnerTonight && !sceneHidesFigures && (() => {
         const p = decorPos('dinnerBoard')
         const words = dinnerTonight.length > 18 ? dinnerTonight.slice(0, 17) + '…' : dinnerTonight
         return (
           <Draggable x={p.x} y={p.y} id="dinnerBoard" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('dinnerBoard')} r={14}>
-            <g onClick={onOpenKitchen && !arranging ? (e => { e.stopPropagation(); onOpenKitchen() }) : undefined} style={onOpenKitchen ? { cursor: 'pointer' } : undefined}>
+            <g>
               <title>{`Tonight: ${dinnerTonight}`}</title>
               <ellipse cx={0} cy={1.5} rx={12} ry={2.2} fill="var(--text)" opacity={0.12} />
               <path d="M -9 1 L -6 -24 M 9 1 L 6 -24" stroke="#8a6f52" strokeWidth={1.4} strokeLinecap="round" />
@@ -2728,9 +2732,7 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('projects')} icon="building" label="Projects" onClick={openOrToggle('projects', 'Projects')} {...hoverPreview('projects')} dark={dark} scale={1.12} freshness={pulse.projects}
         count={v.buildings.length === 0 ? 'quiet for now' : underwayCount === 0 ? 'all standing' : 'under construction'}
         draggable={arranging} dragging={draggingId === 'projects'} onPointerDown={startDrag('projects')} selected={openPanel === 'projects'} />
-      <DistrictLabel quiet={hosting} {...pos('archive')} icon="book" label="Archive" onClick={openOrToggle('archive', 'Archive')} {...hoverPreview('archive')} dark={dark} scale={1.12} freshness={pulse.archive}
-        count={v.treeRings > 0 ? `${spellCount(v.treeRings)} year${v.treeRings === 1 ? '' : 's'} kept` : 'its first year'}
-        draggable={arranging} dragging={draggingId === 'archive'} onPointerDown={startDrag('archive')} selected={openPanel === 'archive'} />
+      {/* Archive (the greenhouse) folded into Memories (2026-10-28). */}
       <DistrictLabel quiet={hosting} {...pos('references')} icon="shelf" label="Kitchen" onClick={openOrToggle('references', 'Kitchen')} {...hoverPreview('references')} dark={dark} scale={1.12}
         draggable={arranging} dragging={draggingId === 'references'} onPointerDown={startDrag('references')} selected={openPanel === 'references'} />
       <DistrictLabel quiet={hosting} {...pos('calendar')} icon="board" label="Notice board" onClick={openOrToggle('calendar', 'Notice board')} {...hoverPreview('calendar')} dark={dark} scale={1.08} freshness={pulse.calendar}
@@ -3176,16 +3178,7 @@ export default function VillageScene({
         </Draggable>
       ) })()}
 
-      {/* Signpost toward Trips (2026-08-24) — Places' own Trips sub-tab has
-          no district of its own; this points off-canvas at the village
-          edge instead of inventing an eighth district. Draggable too now
-          (round 27), same reasoning as the Mailbox above. */}
-      {tripCount > 0 && (() => { const p = decorPos('signpost'); return (
-        <Draggable x={p.x} y={p.y} id="signpost" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('signpost')} r={16}>
-          <SignpostShape x={0} y={0} label={`${tripCount} upcoming trip${tripCount === 1 ? '' : 's'}`}
-            onClick={nav('Trips', () => goToSection('places-trips'), false)} />
-        </Draggable>
-      ) })()}
+      {/* The Trips signpost is gone (2026-10-28): trips live on the Places card. */}
 
       {/* The near foreground (2026-08-27, round 6) — see FOREGROUND's own
           comment: everything above lives in one thin band (y 170..250ish),

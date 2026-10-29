@@ -23,6 +23,9 @@ import { hashPos } from './state'
 
 export const LANDMARK_IDS = ['forest', 'home', 'projects', 'archive', 'places', 'people', 'references', 'calendar'] as const
 export type LandmarkId = typeof LANDMARK_IDS[number]
+/** Set in the layout once districts are arranged after the 2026-10-28 move
+ *  into neighborhoods. District spots saved without it are from before. */
+export const LANDMARKS_V2 = 'landmarks-v2'
 /** Custom x/y per landmark (or, since round 12, per decorative prop — see
  *  VillageScene's own DECOR_DEFAULTS/DecorProp), only for the ones a user
  *  has actually dragged. Broadened from Partial<Record<LandmarkId, ...>>

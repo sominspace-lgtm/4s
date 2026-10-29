@@ -456,25 +456,25 @@ export function spellCount(n: number): string {
 // archive / home / places / clock tower on the ground line, people /
 // projects / gazebo / the well pulled forward into the near foreground
 // on purpose.
+// Three neighborhoods (2026-10-28), left to right: your goals (the garden
+// and projects), the house (notice board, home, kitchen), and memories
+// (the people tree and the car for places). Archive is no longer drawn; it
+// opens from the Memories card, so its spot here is never used.
 export const DEFAULT_LANDMARK_POS: Record<LandmarkId, { x: number; y: number }> = {
   forest: { x: 132, y: 204 },
+  projects: { x: 110, y: 318 },
+  calendar: { x: 300, y: 214 },
   home: { x: 400, y: 208 },
-  projects: { x: 114, y: 306 },
+  references: { x: 492, y: 300 },
+  people: { x: 640, y: 304 },
+  places: { x: 694, y: 212 },
   archive: { x: 725, y: 204 },
-  people: { x: 627, y: 317 },
-  places: { x: 512, y: 209 },
-  // Kitchen (2026-09-07) — the pantry/kitchen stall, back as its own
-  // district for the kitchen (recipes, the meal plan, groceries). Right-of-centre foreground pocket.
-  references: { x: 540, y: 300 },
-  // Notice board (2026-09-06) — calendar, notes and house info, in the
-  // open pocket left of centre. Hitbox non-overlap verified.
-  calendar: { x: 240, y: 234 },
 }
 
 // Spur cobblestones from the main path to each district (round 65) — see
 // spurPavers() above. Static, keyed to the default positions.
 export const SPUR_PAVERS = (Object.entries(DEFAULT_LANDMARK_POS) as [LandmarkId, { x: number; y: number }][])
-  .filter(([id]) => id !== 'home') // Home sits on the path already
+  .filter(([id]) => id !== 'home' && id !== 'archive') // Home sits on the path already; Archive isn't drawn
   .flatMap(([id, p]) => spurPavers(p.x, p.y, id))
 
 // Default positions for every purely-decorative prop (round 12, 2026-08-27,
