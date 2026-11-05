@@ -100,7 +100,7 @@ export default function DiscordConnect({ spaceId, spaceName }: { spaceId: string
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
-                  Connected ✓ — {conn.email ?? 'linked account'}
+                  Connected ✓ {conn.email ?? 'linked account'}
                 </span>
                 <button onClick={() => disconnect(conn)} className="btn btn-secondary" style={{ fontSize: '0.68rem' }}>
                   Disconnect

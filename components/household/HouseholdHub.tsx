@@ -415,7 +415,7 @@ export default function HouseholdHub({ userId, userEmail, homeBlocks, onChangeHo
             Open the move-in spreadsheet ↗
           </a>
           <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.65, lineHeight: 1.5 }}>
-            The sheet holds the buy-list detail — budgets, room-by-room, links.
+            The sheet has the buy-list detail: budgets, room by room, links.
           </div>
         </section>
       </div>

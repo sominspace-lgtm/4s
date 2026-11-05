@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useHabits, type ScheduleType } from '@/lib/hooks/useHabits'
-import { getLast7Days, DOMAIN_COLORS } from '@/lib/utils/habits'
+import { getLast7Days } from '@/lib/utils/habits'
 import HabitRow from './HabitRow'
 import AvoidRow from './AvoidRow'
 import { SkeletonRow } from '@/components/ui/Skeleton'

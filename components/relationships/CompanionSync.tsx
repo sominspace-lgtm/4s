@@ -75,8 +75,8 @@ function PairGate({ userId, userEmail }: { userId: string; userEmail: string }) 
     <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
       <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.4rem' }}>Confirm your relationship partner</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
-        Companion sync (check-ins, photos) only unlocks once the other person confirms too —
-        this is a separate, stricter step from a regular Friends invite.
+        Companion sync (check-ins, photos) only unlocks once the other person confirms too.
+        This is a separate, stricter step than a regular Friends invite.
       </div>
 
       {receivedPending.length > 0 && (
@@ -131,7 +131,7 @@ function ConnectionSetup({ onSave }: { onSave: (url: string, key: string) => Pro
     <div style={{ background: 'var(--surface)', borderRadius: '16px', padding: '1.4rem 1.5rem', border: '1px solid var(--border)' }}>
       <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.4rem' }}>Connect your Companion bot</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
-        Partner confirmed. Paste the tunnel URL and API key from your own Companion backend — this is
+        Partner confirmed. Paste the tunnel URL and API key from your own Companion backend. It is
         saved just for the two of you, never shared with any other 4S account.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -171,7 +171,7 @@ export default function CompanionSync({ userId, userEmail }: { userId: string; u
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '1.4rem' }}>
       {sync.degraded && (
         <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8 }}>
-          Companion sync is quiet for now — check back soon.
+          Companion sync is quiet for now. Check back soon.
         </div>
       )}
 

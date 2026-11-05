@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: Props) {
 
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon'
   if (throttled(`${g.id}:${ip}`)) {
-    return NextResponse.json({ error: 'One moment — that was quick. Try again in a sec.' }, { status: 429 })
+    return NextResponse.json({ error: 'That was quick. Try again in a few seconds.' }, { status: 429 })
   }
 
   const guestName = clip(body.guest_name, 40)

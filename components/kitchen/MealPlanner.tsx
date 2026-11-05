@@ -141,7 +141,7 @@ export default function MealPlanner({ h, book, onBuildList, onOpenRecipe }: {
                               {m.cook ?? 'who?'}
                             </button>
                           )}
-                          <button onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
+                          <button className="icon-btn" onClick={() => h.removeMeal(m.id)} aria-label={`Remove ${m.title}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
                         </div>
                       )
                     })}

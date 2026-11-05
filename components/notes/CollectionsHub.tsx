@@ -175,7 +175,7 @@ export function UserCollectionView({ c, me, spaceId, backLabel, onBack, update, 
 export function CollectionViewGeneric(v: ViewProps) {
   const { source, props, locked, actions } = v
   const places = v.places ?? []
-  const { rows, loading, add, setCell, remove } = source
+  const { rows, loading, add } = source
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<{ id: string; dir: 1 | -1 } | null>(null)
   const [addingProp, setAddingProp] = useState(false)
@@ -359,7 +359,7 @@ function Table({ v, rows, sort, setSort, places, addOption }: {
                   <button title="Sort" style={{ ...small, border: 'none', padding: '0 0.2rem' }} onClick={() => setSort(sort?.id === p.id ? (sort.dir === 1 ? { id: p.id, dir: -1 } : null) : { id: p.id, dir: 1 })}>
                     {sort?.id === p.id ? (sort.dir === 1 ? '↑' : '↓') : '↕'}
                   </button>
-                  {!locked.has(p.id) && props.length > 1 && <button title="Remove column" style={{ ...small, border: 'none', padding: '0 0.2rem', opacity: 0.5 }} onClick={() => removeProp(p)}>✕</button>}
+                  {!locked.has(p.id) && props.length > 1 && <button className="icon-btn" title="Remove column" style={{ ...small, border: 'none', padding: '0 0.2rem', opacity: 0.5 }} onClick={() => removeProp(p)}>✕</button>}
                 </div>
               </th>
             ))}
@@ -377,7 +377,7 @@ function Table({ v, rows, sort, setSort, places, addOption }: {
               ))}
               <td style={{ borderBottom: '1px solid var(--faint)', textAlign: 'center', whiteSpace: 'nowrap' }}>
                 <RowSendMenu props={props} row={r} />
-                <button title="Delete row" style={{ ...small, border: 'none', opacity: 0.45 }} onClick={() => source.remove(r.id)}>✕</button>
+                <button className="icon-btn" title="Delete row" style={{ ...small, border: 'none', opacity: 0.45 }} onClick={() => source.remove(r.id)}>✕</button>
               </td>
             </tr>
           ))}

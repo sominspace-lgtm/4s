@@ -40,7 +40,7 @@ export default async function KeepsakePage({ params }: { params: Promise<{ token
 
         {(s.guests?.length || s.fromPlaces?.length || s.photoCount) ? (
           <p style={{ ...P, marginBottom: '1rem' }}>
-            {s.guests?.length ? `${s.guests.length} ${s.guests.length === 1 ? 'guest' : 'guests'}${s.guests.length ? ' — ' + s.guests.slice(0, 8).join(', ') : ''}` : 'A quiet one'}
+            {s.guests?.length ? `${s.guests.length} ${s.guests.length === 1 ? 'guest' : 'guests'}${s.guests.length ? ': ' + s.guests.slice(0, 8).join(', ') : ''}` : 'A quiet one'}
             {s.fromPlaces?.length ? `. From ${s.fromPlaces.slice(0, 5).join(', ')}` : ''}
             {s.photoCount ? `. ${s.photoCount} ${s.photoCount === 1 ? 'photo' : 'photos'}` : ''}
           </p>
@@ -50,7 +50,7 @@ export default async function KeepsakePage({ params }: { params: Promise<{ token
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
             {(s.messages ?? []).map((m, i) => (
               <div key={i} style={{ fontSize: '0.92rem', color: '#4a3f35', lineHeight: 1.6 }}>
-                &ldquo;{m.text}&rdquo;{m.name && <span style={{ color: '#8a7d6f' }}> — {m.name}</span>}
+                &ldquo;{m.text}&rdquo;{m.name && <span style={{ color: '#8a7d6f' }}>, {m.name}</span>}
               </div>
             ))}
           </div>

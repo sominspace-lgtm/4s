@@ -102,7 +102,7 @@ export default function Jarvis() {
           <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--text)' }}>Jarvis</span>
           <span style={{ display: 'flex', gap: '0.3rem' }}>
             {msgs.length > 0 && <button onClick={() => { setMsgs([]); setErr(null) }} style={chromeBtn}>New chat</button>}
-            <button onClick={() => setOpen(false)} aria-label="Close" style={chromeBtn}>✕</button>
+            <button className="icon-btn" onClick={() => setOpen(false)} aria-label="Close" style={chromeBtn}>✕</button>
           </span>
         </div>
 

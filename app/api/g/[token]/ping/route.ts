@@ -46,7 +46,7 @@ export async function POST(request: Request, { params }: Props) {
   const who = body.who === 'host1' || body.who === 'host2' ? body.who : 'both'
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon'
   if (throttled(`${g.id}:${ip}:${who}`)) {
-    return NextResponse.json({ error: 'They know — give them a moment.' }, { status: 429 })
+    return NextResponse.json({ error: 'They know. Give them a moment.' }, { status: 429 })
   }
 
   const guestName = clip(body.guest_name, 40)
@@ -64,7 +64,7 @@ export async function POST(request: Request, { params }: Props) {
     recipients = (await resolveHostRecipients(g.spaceId)).filter(id => id !== from)
   }
 
-  const bodyText = [guestName ? `${guestName}:` : 'A guest:', reason || 'is looking for you', note ? `— ${note}` : '']
+  const bodyText = [guestName ? `${guestName}:` : 'A guest:', reason || 'is looking for you', note ? `: ${note}` : '']
     .filter(Boolean)
     .join(' ')
 

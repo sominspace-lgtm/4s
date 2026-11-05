@@ -68,7 +68,7 @@ export default function CookMode({ title, steps, ingredients, onClose, onDone }:
               <span style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
               <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{t.rang ? 'Done' : clock(t.left)}</strong>
               {!t.rang && <button onClick={() => (t.running ? timers.pause(t.id) : timers.start(t.id))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>{t.running ? 'Pause' : 'Start'}</button>}
-              <button onClick={() => timers.remove(t.id)} aria-label="Remove timer" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>✕</button>
+              <button className="icon-btn" onClick={() => timers.remove(t.id)} aria-label="Remove timer" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>✕</button>
             </span>
           ))}
         </div>

@@ -73,7 +73,7 @@ export default function RoutineEditor({ name: initialName, cadenceDays, items, o
                 placeholder={t.note ? 'A line to remember' : 'Step'} style={{ ...field, flex: 1, fontStyle: t.note ? 'italic' : 'normal' }} />
               <button type="button" style={tiny} aria-label="Move up" onClick={() => setSection(si, { steps: move(s.steps, ti, -1) })}>↑</button>
               <button type="button" style={tiny} aria-label="Move down" onClick={() => setSection(si, { steps: move(s.steps, ti, 1) })}>↓</button>
-              <button type="button" style={{ ...tiny, color: 'var(--rose)' }} aria-label="Remove step" onClick={() => setSection(si, { steps: s.steps.filter((_, k) => k !== ti) })}>✕</button>
+              <button className="icon-btn" type="button" style={{ ...tiny, color: 'var(--rose)' }} aria-label="Remove step" onClick={() => setSection(si, { steps: s.steps.filter((_, k) => k !== ti) })}>✕</button>
             </div>
           ))}
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>

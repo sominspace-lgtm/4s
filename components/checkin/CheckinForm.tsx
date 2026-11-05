@@ -124,7 +124,7 @@ export default function CheckinForm({ onSubmit, onClose }: {
                     <IconButton label={`Edit "${qq.text}"`} onClick={() => setStep(i)} color="var(--gold)" size={11} style={{ flexShrink: 0 }}>Edit</IconButton>
                   </div>
                   <div style={{ fontSize: qq.kind === 'emoji' ? '1.3rem' : '0.8rem', color: 'var(--text)', marginTop: '0.2rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                    {values[qq.key]?.trim() || '—'}
+                    {values[qq.key]?.trim() || 'Skipped'}
                   </div>
                 </div>
               ))}

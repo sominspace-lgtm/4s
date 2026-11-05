@@ -978,3 +978,10 @@ body:has([aria-modal="true"]) .mobile-nav { display: none !important; }
   body:has(main input:focus, main textarea:focus, main select:focus) .mobile-nav { display: none !important; }
   main { padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important; }
 }
+
+/* Hover-only controls (2026-11-04). Some quiet buttons, like the ✕ on a work
+   item, only fade in when a mouse hovers. A phone has no hover, so on touch
+   screens they stay softly visible instead of hidden. */
+@media (hover: none) {
+  .hover-reveal { opacity: 0.5 !important; }
+}

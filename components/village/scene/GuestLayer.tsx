@@ -136,7 +136,7 @@ export default function GuestLayer({ home, decorPos, arranging, draggingId, star
         onClick={openAlbum}
         className={openAlbum ? 'village-entity' : undefined}
         style={{ cursor: openAlbum ? 'pointer' : undefined }}>
-        <title>{guestAlbumUrl ? 'Photo booth — open the album' : 'Photo booth'}</title>
+        <title>{guestAlbumUrl ? 'Photo booth. Tap to open the album.' : 'Photo booth'}</title>
         <ellipse cx={0} cy={1} rx={9} ry={2.4} fill="var(--text)" opacity={0.15} />
         <image href="/village-assets/photo-booth.png" x={-9} y={-27} width={18} height={27.3}
           style={{ imageRendering: 'pixelated' }} />
@@ -162,7 +162,7 @@ export default function GuestLayer({ home, decorPos, arranging, draggingId, star
 
       {/* Guestbook — a page or two thicker for every signature */}
       <g transform={`translate(${bookX} ${bookY})`}>
-        <title>{`The guestbook — ${spellCount(near('guestbook').length)} ${near('guestbook').length === 1 ? 'signature' : 'signatures'}`}</title>
+        <title>{`The guestbook: ${spellCount(near('guestbook').length)} ${near('guestbook').length === 1 ? 'signature' : 'signatures'}`}</title>
         <ellipse cx={0} cy={1} rx={12} ry={2.6} fill="var(--text)" opacity={0.15} />
         <image href="/village-assets/guestbook-open.png" x={-12} y={-16} width={24} height={16.3}
           style={{ imageRendering: 'pixelated' }} />
@@ -239,7 +239,7 @@ export default function GuestLayer({ home, decorPos, arranging, draggingId, star
         const p = scatter(c.id, home.x, GROUND_Y - 6, 150, 7)
         return (
           <g key={c.id} transform={`translate(${p.x} ${p.y})`} className={'village-entity' + contribPulse(c.id)}>
-            <title>{`${c.guest_name || 'A guest'} — from ${(c.meta.place as string) || c.body || 'somewhere'}`}</title>
+            <title>{`${c.guest_name || 'A guest'}, from ${(c.meta.place as string) || c.body || 'somewhere'}`}</title>
             <path d="M 0 0 C -2.4 -4 -2.4 -6.4 0 -8 C 2.4 -6.4 2.4 -4 0 0 Z" fill="var(--blush)" stroke="var(--surface)" strokeWidth={0.4} />
             <circle cy={-5} r={1} fill="var(--surface)" />
           </g>

@@ -84,7 +84,7 @@ function HouseholdMail({ userId }: { userId: string }) {
   if (!spaceId) {
     return (
       <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-        Mail needs a household to send it to — create or accept a shared space in People → Spaces first.
+        Mail needs a household to send to. Create or accept a shared space in People → Spaces first.
       </div>
     )
   }

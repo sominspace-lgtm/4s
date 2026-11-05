@@ -152,7 +152,7 @@ export default function AddPlacePanel({ open, spaceId, hasSpace, onClose, initia
           )}
           {geoStatus === 'not-found' && (
             <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.7, marginTop: '0.3rem' }}>
-              Couldn&rsquo;t place that automatically — it&rsquo;ll save fine, just without map coordinates yet.
+              Couldn&rsquo;t find that on the map. It&rsquo;ll still save, just without a map spot for now.
             </div>
           )}
         </div>

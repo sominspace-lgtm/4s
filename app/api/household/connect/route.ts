@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (!row) return NextResponse.json({ error: 'That code is not valid.' }, { status: 404 })
     if (new Date(row.expires_at) < new Date()) {
       await admin.from('household_link_codes').delete().eq('code', code)
-      return NextResponse.json({ error: 'That code has expired — generate a new one in 4S.' }, { status: 410 })
+      return NextResponse.json({ error: 'That code has expired. Make a new one in 4S.' }, { status: 410 })
     }
 
     const { data: space } = await admin

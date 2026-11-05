@@ -71,7 +71,7 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
     setError(null)
     navigator.geolocation.getCurrentPosition(
       pos => { setOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false) },
-      () => { setError("Couldn't get your location — check the browser's location permission."); setLocating(false) },
+      () => { setError("Couldn't get your location. Check that the browser is allowed to use it."); setLocating(false) },
     )
   }
 
@@ -217,7 +217,7 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
                 that way), or a saved bathroom code on any pin at all. */}
             <input
               value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Search nearby — try “bathroom”" style={{
+              placeholder="Search nearby, like “bathroom”" style={{
                 width: '100%', boxSizing: 'border-box', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
                 padding: '0.45rem 0.65rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.76rem', outline: 'none',
                 marginBottom: '0.5rem',
@@ -230,7 +230,7 @@ export default function NearbyTab({ spaceId, hasSpace, theme, sharedOnly = false
                   ? `Nothing nearby matches "${query.trim()}".`
                   : category
                     ? 'Nothing nearby matches that right now.'
-                    : 'Nothing pinned near here yet — mark one above.'}
+                    : 'Nothing pinned near here yet. Mark one above.'}
               </div>
             )}
 

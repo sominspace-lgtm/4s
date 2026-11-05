@@ -75,11 +75,11 @@ export default function AlexaConnect({ userId }: { userId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.73rem', color: 'var(--emerald)' }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--emerald)', display: 'inline-block' }} />
-            Connected — your Echo is linked to this account.
+            Connected. Your Echo is linked to this account.
           </div>
           <span style={{ fontSize: '0.68rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Switching to a different Echo, or handing this off to someone else? Unlink first —
-            an Alexa device can only be bound to one 4S account at a time.
+            Switching to a different Echo, or handing this off to someone else? Unlink first.
+            An Alexa device can only be bound to one 4S account at a time.
           </span>
           <Btn onClick={unlink} disabled={unlinking} danger>{unlinking ? 'unlinking…' : 'Unlink Alexa'}</Btn>
         </div>

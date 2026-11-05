@@ -58,7 +58,7 @@ export default function HouseholdAtAGlance({ spaceId, chores, meals, shopping }:
         )}
         {todaysMeals.length === 0 && (
           <button onClick={() => goToHousehold('home')} className="press" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--muted)', fontStyle: 'italic', fontSize: '0.78rem' }}>
-            Nothing planned to eat today — add something below.
+            Nothing planned to eat today. Add something below.
           </button>
         )}
       </div>

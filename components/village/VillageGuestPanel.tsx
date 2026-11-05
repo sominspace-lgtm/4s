@@ -88,12 +88,12 @@ export default function VillageGuestPanel({
       <Row>
         {qrDataUri && <img src={qrDataUri} alt="" width={54} height={54} style={{ borderRadius: 6, flexShrink: 0 }} />}
         <div style={{ fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-          Guests scan the welcome sign in the village — or share{' '}
+          Guests scan the welcome sign in the village, or you can share{' '}
           {guestUrl && <button onClick={() => { try { navigator.clipboard?.writeText(guestUrl) } catch { /* */ } }} style={S.link}>this link</button>}.
         </div>
       </Row>
 
-      <Field label="Music playlist" hint="Paste a Spotify or YouTube playlist link — it becomes the player guests see.">
+      <Field label="Music playlist" hint="Paste a Spotify or YouTube playlist link. It becomes the player guests see.">
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <input value={music} onChange={e => setMusic(e.target.value)} placeholder="https://open.spotify.com/playlist/…" style={S.input} />
           <button onClick={() => onSetMusicUrl?.(music)} style={S.save}>Save</button>
@@ -110,14 +110,14 @@ export default function VillageGuestPanel({
       {onSetPinnedNote && (
         <Field label="Pin a line to the board" hint="One short line guests see first on the info board tonight. Change it as the night goes.">
           <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <input value={pinnedNote} onChange={e => setPinnedNote(e.target.value)} placeholder="Cake in 10 — kitchen" maxLength={120} style={S.input} />
+            <input value={pinnedNote} onChange={e => setPinnedNote(e.target.value)} placeholder="Cake in 10, in the kitchen" maxLength={120} style={S.input} />
             <button onClick={() => onSetPinnedNote(pinnedNote)} style={S.save}>Pin</button>
           </div>
         </Field>
       )}
 
       {onSetGuestInfo && (
-        <Field label="House info for guests" hint="Shown in the guest portal. Wifi, where the bathroom is, help yourself to drinks — whatever saves them asking.">
+        <Field label="House info for guests" hint="Shown in the guest portal. Wi-Fi, where the bathroom is, help yourself to drinks. Whatever saves them asking.">
           <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.35rem' }}>
             <input value={wifiName} onChange={e => setWifiName(e.target.value)} placeholder="Wifi name" style={S.input} />
             <input value={wifiPassword} onChange={e => setWifiPassword(e.target.value)} placeholder="Wifi password" style={S.input} />
@@ -163,7 +163,7 @@ export default function VillageGuestPanel({
             <div key={c.id} style={{ ...S.modRow, opacity: c.status === 'hidden' ? 0.5 : 1 }}>
               <span style={S.badge}>{KIND_LABEL[c.kind] ?? c.kind}</span>
               <span style={{ flex: 1, minWidth: 0, fontSize: '0.73rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {(c.meta.title as string) || (c.meta.place as string) || c.body || '—'}
+                {(c.meta.title as string) || (c.meta.place as string) || c.body || 'No details'}
                 {c.guest_name && <span style={{ color: 'var(--muted)' }}> · {c.guest_name}</span>}
               </span>
               {onSetPinnedContribution && (c.kind === 'thank_you' || c.kind === 'guestbook' || c.kind === 'note') && c.body && (
@@ -266,7 +266,7 @@ export function VillageKeepsakesPanel({ memories, onUpdateMemory, onDeleteMemory
                     {s.photoCount ? ` · ${s.photoCount} photo${s.photoCount === 1 ? '' : 's'}` : ''}
                   </div>
                   {(s.messages ?? []).map((msg, i) => (
-                    <div key={i}>“{msg.text}”{msg.name && <span style={{ color: 'var(--muted)' }}> — {msg.name}</span>}</div>
+                    <div key={i}>“{msg.text}”{msg.name && <span style={{ color: 'var(--muted)' }}>, {msg.name}</span>}</div>
                   ))}
                   {(s.songs ?? []).length > 0 && <div style={{ color: 'var(--muted)' }}>♪ {(s.songs ?? []).join(' · ')}</div>}
                   {s.photoAlbumUrl && (
@@ -341,7 +341,7 @@ function RecapEditor({ memory, onSave, onClose }: {
           {(s.messages ?? []).map((m, i) => (
             <label key={i} style={S.checkRow}>
               <input type="checkbox" checked={keepMsgs[i]} onChange={e => setKeepMsgs(k => k.map((v, j) => (j === i ? e.target.checked : v)))} />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>“{m.text}”{m.name && <span style={{ color: 'var(--muted)' }}> — {m.name}</span>}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text)' }}>“{m.text}”{m.name && <span style={{ color: 'var(--muted)' }}>, {m.name}</span>}</span>
             </label>
           ))}
         </div>
@@ -372,7 +372,7 @@ function MenuEditor({ items, onChange }: { items: MenuItem[]; onChange: (items: 
         <div key={it.id} style={{ display: 'flex', gap: '0.3rem' }}>
           <input value={it.name} onChange={e => set(i, { name: e.target.value })} placeholder="Dish" style={{ ...S.input, flex: 2 }} />
           <input value={it.note} onChange={e => set(i, { note: e.target.value })} placeholder="veg / has nuts" style={{ ...S.input, flex: 1 }} />
-          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
+          <button className="icon-btn" onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
         </div>
       ))}
       <button
@@ -396,7 +396,7 @@ function AgendaEditor({ items, onChange }: { items: AgendaItem[]; onChange: (ite
           />
           <input value={it.time} onChange={e => set(i, { time: e.target.value })} placeholder="7:00" style={{ ...S.input, flex: 1, textDecoration: it.done ? 'line-through' : 'none' }} />
           <input value={it.label} onChange={e => set(i, { label: e.target.value })} placeholder="Dinner" style={{ ...S.input, flex: 2, textDecoration: it.done ? 'line-through' : 'none' }} />
-          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
+          <button className="icon-btn" onClick={() => onChange(items.filter((_, j) => j !== i))} style={S.iconBtn} title="Remove">✕</button>
         </div>
       ))}
       <button
@@ -452,7 +452,7 @@ function SomiEditor({ info, onSave, spaceId }: { info: PetInfo; onSave: (info: P
           photoPath: photoPath || undefined,
         })}
         style={{ ...S.save, alignSelf: 'flex-start', padding: '0.4rem 0.9rem' }}
-      >Save Somi's card</button>
+      >Save Somi&rsquo;s card</button>
     </div>
   )
 }
@@ -463,7 +463,7 @@ function Shell({ title, onClose, children }: { title: string; onClose: () => voi
       <div style={S.panel} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
           <h3 style={{ margin: 0, fontSize: '0.95rem', fontFamily: 'var(--font-display, var(--font-body))', color: 'var(--text)' }}>{title}</h3>
-          <button onClick={onClose} style={{ ...S.iconBtn, fontSize: '0.9rem' }}>✕</button>
+          <button className="icon-btn" onClick={onClose} style={{ ...S.iconBtn, fontSize: '0.9rem' }}>✕</button>
         </div>
         {children}
       </div>

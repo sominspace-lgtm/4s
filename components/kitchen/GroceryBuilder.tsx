@@ -75,7 +75,7 @@ export default function GroceryBuilder({ h, book, weekStart: initialWeek }: {
           <div style={label}>Build from the plan</div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <select value={week} onChange={e => setWeek(e.target.value)} style={{ ...field, width: 'auto' }}>
-              {(weekOptions.includes(week) ? weekOptions : [week, ...weekOptions]).map((w, i) => (
+              {(weekOptions.includes(week) ? weekOptions : [week, ...weekOptions]).map(w => (
                 <option key={w} value={w}>{w === weekOptions[0] ? 'This week' : w === weekOptions[1] ? 'Next week' : w === weekOptions[2] ? 'The week after' : `Week of ${format(parseISO(w), 'MMM d')}`}</option>
               ))}
             </select>
@@ -148,7 +148,7 @@ export default function GroceryBuilder({ h, book, weekStart: initialWeek }: {
               <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0', fontSize: '0.84rem' }}>
                 <input type="checkbox" checked={false} onChange={() => h.toggleGot(s.id, true)} aria-label={`Got ${s.name}`} />
                 <span style={{ flex: 1 }}>{s.qty ? `${s.qty} ` : ''}{s.name}</span>
-                <button onClick={() => h.removeShopping(s.id)} aria-label={`Remove ${s.name}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
+                <button className="icon-btn" onClick={() => h.removeShopping(s.id)} aria-label={`Remove ${s.name}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
               </div>
             ))}
           </div>

@@ -206,7 +206,7 @@ export function PlantShape({ plant, x, y, scale = 1, changed = false, foliage = 
         {/* Native <title> stays as the a11y fallback (screen readers, and
             anyone hovering without JS) — the STYLED callout that appears on
             click lives in VillageScene, keyed off `selected`. */}
-        <title>{`${plant.name} — ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
+        <title>{`${plant.name}: ${plant.stage}${plant.dormant ? ', resting' : ''}`}</title>
         {/* A soft grounding shadow (2026-08-24) — every piece in BloomScan's
             garden sits on one of these, and its absence here was a real part
             of why the village read flatter/less charming: nothing looked
@@ -275,7 +275,7 @@ export function BuildingShape({ building, x, y, scale = 1, changed = false, sele
       {onClick && <rect x={-w / 2 - 3} y={-spec.h - 3} width={w + 6} height={spec.h + 6} fill="transparent" style={{ pointerEvents: 'all' }} onClick={handleClick} />}
       <g onClick={handleClick}
         className={[changed && 'village-changed', onClick && 'village-entity', selected && 'village-entity-selected', cared && 'village-tapped'].filter(Boolean).join(' ') || undefined}>
-        <title>{`${building.title} — ${building.phase}`}</title>
+        <title>{`${building.title}: ${building.phase}`}</title>
         {/* Grounding shadow — same reasoning as PlantShape's own. */}
         <ellipse cx={0} cy={1.5} rx={w / 2 + 3} ry={2} fill="var(--text)" opacity={0.12} />
         {/* Corners rounded up from 2 to 5 (2026-08-24) — a softer, more
@@ -730,7 +730,7 @@ export function MemoryMarker({ x, y, label, count, onClick }: {
 }) {
   return (
     <g transform={`translate(${x} ${y})`} onClick={onClick} style={{ cursor: onClick ? 'pointer' : undefined }}>
-      <title>{`${label} — ${count} idea${count === 1 ? '' : 's'}`}</title>
+      <title>{`${label}: ${count} idea${count === 1 ? '' : 's'}`}</title>
       <circle r={10} fill="transparent" style={{ pointerEvents: 'all' }} />
       <circle r={3.2} fill="var(--blush)" stroke="var(--surface)" strokeWidth={1} opacity={0.9} />
     </g>
@@ -1570,7 +1570,7 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
     <g transform={`translate(${x} ${y}) scale(${scale})`} onClick={onClick} onPointerDown={onPointerDown}
       onMouseEnter={draggable ? undefined : onHoverIn} onMouseLeave={draggable ? undefined : onHoverOut}
       className="village-district" style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'pointer' }}>
-      <title>{draggable ? `${label} — drag to move` : count ? `${label} — ${count}. Tap to open.` : `${label}. Tap to open.`}</title>
+      <title>{draggable ? `${label}. Drag to move.` : count ? `${label}: ${count}. Tap to open.` : `${label}. Tap to open.`}</title>
       {/* Invisible hit area, sized from the actual DistrictArt footprint
           plus the label/count text stack below (round 72; enlarged round
           80, 2026-09-04 — "make sure the hit boxes are big and

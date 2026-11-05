@@ -28,7 +28,8 @@ export default function DinnerCard({ meal, open, onClose, onCook }: {
   }, [open, recipeId, recipe?.id])
 
   const r = recipe?.id === recipeId ? recipe.r : null
-  const cook = meal?.cook ? (meal.cook === 'Together' ? 'Cooking together' : `${meal.cook} cooks`) : null
+  const out = meal?.kind === 'eating_out'
+  const cook = out ? 'Eating out' : meal?.cook ? (meal.cook === 'Together' ? 'Cooking together' : `${meal.cook} cooks`) : null
   const minutes = (r?.prep_minutes ?? 0) + (r?.cook_minutes ?? 0)
 
   return (
@@ -58,7 +59,7 @@ export default function DinnerCard({ meal, open, onClose, onCook }: {
             </div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-            <button className="btn btn-primary press" style={{ minHeight: 44 }} onClick={() => { onClose(); onCook() }}>Cook it</button>
+            {!out && <button className="btn btn-primary press" style={{ minHeight: 44 }} onClick={() => { onClose(); onCook() }}>Cook it</button>}
             {meal.recipe_url && (
               <a className="btn btn-secondary press" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
                 href={meal.recipe_url} target="_blank" rel="noopener noreferrer">Open the recipe</a>

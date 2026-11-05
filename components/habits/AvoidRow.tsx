@@ -48,7 +48,7 @@ export default function AvoidRow({ habit, slips, onToggleSlip, onDelete }: {
     <div style={{ padding: '0.7rem 0', borderBottom: '1px solid var(--faint)', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
         <span style={{ flex: 1, minWidth: 0, fontSize: '0.92rem', color: 'var(--text)' }}>{habit.name}</span>
-        <button onClick={() => { setHidden(true); withUndo(`Removed ${habit.name}`, () => void onDelete(habit.id), () => setHidden(false)) }}
+        <button className="icon-btn" onClick={() => { setHidden(true); withUndo(`Removed ${habit.name}`, () => void onDelete(habit.id), () => setHidden(false)) }}
           aria-label={`Remove ${habit.name}`}
           style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem', minWidth: 32, minHeight: 32 }}>✕</button>
       </div>

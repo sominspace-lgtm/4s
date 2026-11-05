@@ -230,7 +230,7 @@ export default function AddRefillFlow({ onSubmit, onCancel }: { onSubmit: (input
 
       <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.68rem', color: 'var(--muted)', cursor: 'pointer', marginBottom: '0.5rem' }}>
         <input type="checkbox" checked={advanced} onChange={e => setAdvanced(e.target.checked)} />
-        Smart Supply — I know the package/serving details
+        Smart Supply: I know the package and serving details
       </label>
 
       {advanced && (

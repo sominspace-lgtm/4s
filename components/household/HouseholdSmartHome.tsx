@@ -49,7 +49,7 @@ export default function HouseholdSmartHome({ spaceId }: { spaceId: string | null
 
       {devices.length === 0 && !loading && (
         <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-          Nothing added yet. Track what&rsquo;s connected — lights, locks, thermostat — and flip its state here.
+          Nothing added yet. Track what&rsquo;s connected, like lights, locks and the thermostat, and flip it on or off here.
         </div>
       )}
 

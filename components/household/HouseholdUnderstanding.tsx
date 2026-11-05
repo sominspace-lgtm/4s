@@ -68,7 +68,7 @@ export default function HouseholdUnderstanding({ spaceId, userId, partnerName, c
   const body = (
     <>
       <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6 }}>
-        How you each show care, communicate, handle conflict, recharge — private to the two of you.
+        How you each show care, talk, handle conflict and recharge. Just for the two of you.
       </div>
 
       {!spaceId && (
@@ -79,7 +79,7 @@ export default function HouseholdUnderstanding({ spaceId, userId, partnerName, c
 
       {spaceId && areas.length === 0 && !loading && (
         <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-          Nothing yet — add the first topic below.
+          Nothing yet. Add the first topic below.
         </div>
       )}
 

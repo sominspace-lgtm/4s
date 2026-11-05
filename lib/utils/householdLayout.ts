@@ -29,7 +29,7 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   tonight:   { label: 'Kitchen today',     hint: 'Today’s meals, and a way into recipes, the plan and groceries' },
   // The household calendar — its own section until 2026-09-02, a Home block
   // again now. First by default: it's the "what does this house have on" view.
-  calendar: { label: 'Calendar',          hint: 'The month — chores, meals, trips, shared events' },
+  calendar: { label: 'Calendar',          hint: 'The month: chores, meals, trips, shared events' },
   // The week in review (2026-08-18) — same computation the bot posts on Sundays.
   thisWeek: { label: 'This week',          hint: 'What got done, in one glance' },
   // The weekly relationship check-in prompt — renders on Sunday, or any day
@@ -47,7 +47,7 @@ export const HOME_BLOCK_META: Record<HomeBlockId, { label: string; hint: string 
   wins:      { label: 'Little wins',        hint: 'What the two of you got done lately' },
   notes:     { label: 'Household notes',   hint: 'Notes the two of you share' },
   smartHome: { label: 'Smart Home',        hint: 'The device and status list' },
-  moveIn:   { label: 'Move-in',            hint: 'The Millton — what’s around it, and the buy-list sheet' },
+  moveIn:   { label: 'Move-in',            hint: 'The Millton: what’s around it, and the buy-list sheet' },
 }
 
 // A short Home by default (2026-10-21 redesign): the everyday blocks show,

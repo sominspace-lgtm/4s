@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { format, isToday, parseISO } from 'date-fns'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { useCheckins, groupCheckinsByWeek } from '@/lib/hooks/useCheckins'

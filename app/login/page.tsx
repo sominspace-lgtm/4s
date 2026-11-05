@@ -210,7 +210,7 @@ export default function LoginPage() {
           {screen === 'create' && (
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column' }}>
               <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', marginBottom: '0.3rem' }}>
-                First time as {label} — choose a PIN
+                First time as {label}? Choose a PIN
               </p>
               <p style={{ textAlign: 'center', color: 'var(--muted)', opacity: 0.7, fontSize: '0.72rem', fontFamily: 'var(--font-body)', marginBottom: '0.9rem' }}>
                 At least 4 digits, 6 is safer.

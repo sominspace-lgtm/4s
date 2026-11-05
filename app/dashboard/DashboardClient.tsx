@@ -740,7 +740,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           padding: '0.45rem 1rem', borderBottom: '1px solid var(--border)',
           background: 'color-mix(in srgb, var(--gold) 6%, transparent)',
         }}>
-          You&apos;re exploring as a guest — your space lives only in this browser.{' '}
+          You&apos;re exploring as a guest. Your space lives only in this browser.{' '}
           <span style={{ color: 'var(--gold)' }}>Keep it →</span>
         </a>
       )}

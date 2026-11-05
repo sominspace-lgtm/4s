@@ -96,7 +96,7 @@ function renderBody(district: LandmarkId, d: DistrictPreviewData) {
       <>
         {d.activeScene && <Line mark="●" tone="done" label={`Scene: ${d.activeScene.name}`} meta="" />}
         {on.length === 0
-          ? <Empty>Everything's off.</Empty>
+          ? <Empty>Everything&rsquo;s off.</Empty>
           : on.slice(0, 8).map(x => <Line key={x.id} mark="●" tone="done" label={x.name} meta="on" />)}
       </>
     )

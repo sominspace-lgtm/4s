@@ -45,7 +45,7 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
     if (partOfDay === 'morning') {
       if (binLine) return binLine
       if (dueName) return `${dueName} is due`
-      if (dinner) return `Tonight — ${dinner.title}`
+      if (dinner) return `Tonight: ${dinner.title}`
       return checkin
     }
     if (partOfDay === 'evening') {
@@ -56,7 +56,7 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
       return null
     }
     // day / night — the original order
-    if (dinner) return `Tonight — ${dinner.title}`
+    if (dinner) return `Tonight: ${dinner.title}`
     if (binLine) return binLine
     if (dueName) return `${dueName} is due`
     return checkin

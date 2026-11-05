@@ -53,13 +53,13 @@ export async function POST(request: Request) {
   if (!spaceId) return NextResponse.json({ error: 'No shared space' }, { status: 404 })
 
   if (throttled(`${spaceId}:${user.id}`)) {
-    return NextResponse.json({ error: 'They know — give it a moment.' }, { status: 429 })
+    return NextResponse.json({ error: 'They know. Give it a moment.' }, { status: 429 })
   }
 
   const recipients = (await resolveHostRecipients(spaceId)).filter(id => id !== user.id)
   if (recipients.length === 0) return NextResponse.json({ ok: true, sent: 0 })
 
-  const bodyText = [reason, note].filter(Boolean).join(' — ') || 'is thinking of you'
+  const bodyText = [reason, note].filter(Boolean).join(': ') || 'is thinking of you'
 
   const admin = createAdminClient()
   let sent = 0

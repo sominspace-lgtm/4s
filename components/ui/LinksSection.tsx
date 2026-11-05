@@ -43,7 +43,7 @@ export default function LinksSection({ links, onAdd, onRemove }: {
         <input
           value={pasting} onChange={e => setPasting(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') save() }}
-          placeholder="Paste a link — Instagram, TikTok, anything" style={{
+          placeholder="Paste a link from Instagram, TikTok, anywhere" style={{
             flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px',
             padding: '0.4rem 0.6rem', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.74rem', outline: 'none',
           }}

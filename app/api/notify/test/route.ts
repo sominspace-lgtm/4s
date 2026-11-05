@@ -14,7 +14,7 @@ export async function POST() {
 
   try {
     const sent = await sendPushToUser(createAdminClient(), user.id, {
-      title: '4S', body: 'Test notification — push is working.', url: '/dashboard',
+      title: '4S', body: 'Test notification. Push is working.', url: '/dashboard',
     })
     return NextResponse.json({ sent })
   } catch (e) {

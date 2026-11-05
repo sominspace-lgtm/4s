@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AlexaConnect from '@/components/ui/AlexaConnect'
@@ -127,7 +127,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
     const res = await fetch('/api/account/delete', { method: 'POST' })
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      setDeleteMsg(body.error ?? "Couldn't delete your account — try again.")
+      setDeleteMsg(body.error ?? "Couldn't delete your account. Try again.")
       setDeleting(false)
       return
     }
@@ -163,7 +163,7 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
                 Everything you&apos;ve set up lives only in this browser for now. Add an email and
-                password to keep it — same space, reachable from any device.
+                password to keep it. Same space, on any device.
               </span>
               <input value={keepEmail} onChange={e => setKeepEmail(e.target.value)} placeholder="you@email.com" type="email" autoComplete="email" style={inputStyle} />
               <input value={keepPassword} onChange={e => setKeepPassword(e.target.value)} placeholder="Password (min 8 chars)" type="password" autoComplete="new-password" style={inputStyle} />

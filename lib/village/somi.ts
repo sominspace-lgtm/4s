@@ -39,7 +39,7 @@ export function somiAgeText(now: Date = new Date()): string {
   const [by, bm, bd] = SOMI_BIRTHDAY.split('-').map(Number)
   let years = now.getFullYear() - by
   let months = now.getMonth() - (bm - 1)
-  let days = now.getDate() - bd
+  const days = now.getDate() - bd
   if (days < 0) months -= 1
   if (months < 0) { months += 12; years -= 1 }
   if (years < 0) return 'not born yet'

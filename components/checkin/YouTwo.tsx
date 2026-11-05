@@ -100,7 +100,7 @@ export default function YouTwo({ userId }: { userId: string }) {
 
                 {weeks.length === 0 && !checkinsLoading && (
                   <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                    No check-ins yet — the first one you answer on Today shows up here.
+                    No check-ins yet. The first one you answer on Today shows up here.
                   </div>
                 )}
 

@@ -1,4 +1,4 @@
-import { format, subDays, startOfDay, parseISO, isToday, isYesterday } from 'date-fns'
+import { format, subDays, startOfDay, parseISO } from 'date-fns'
 
 export function getLast7Days(): string[] {
   return Array.from({ length: 7 }, (_, i) =>

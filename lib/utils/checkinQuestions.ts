@@ -55,7 +55,7 @@ const ROTATING_QUESTIONS: string[] = [
   "Is there a conversation we've been putting off that you'd like to have?",
   'What is something you are looking forward to doing together?',
   'What did I do this week that you would want me to do more often?',
-  'Where do you feel most at home with me — a place, a moment, an activity?',
+  'Where do you feel most at home with me? A place, a moment, an activity?',
   'What is a hard thing we got through together that you are glad we did?',
   'What is one thing you need from me next week that you have not asked for yet?',
   'What is a small kindness you saw from me lately?',

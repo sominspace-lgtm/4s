@@ -73,14 +73,14 @@ export default function MailPanel({ open, userId, onClose }: {
 
         {!spaceId ? (
           <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Create a household space first — Household → Setup, or Sharing → Spaces.
+            Create a household space first, in Household → Setup or Sharing → Spaces.
           </div>
         ) : (
           <>
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse', gap: '0.6rem', minHeight: 0 }}>
               {messages.length === 0 && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-                  Nothing yet — leave a note.
+                  Nothing yet. Leave a note.
                 </div>
               )}
               {messages.map(m => {

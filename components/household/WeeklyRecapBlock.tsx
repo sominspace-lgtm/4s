@@ -31,7 +31,7 @@ export default function WeeklyRecapBlock({ spaceId }: { spaceId: string | null }
 
       {spaceId && !loading && recap?.isEmpty && (
         <div style={{ fontSize: '0.74rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-          Quiet week — nothing logged {recap.weekStart} to {recap.weekEnd}.
+          Quiet week. Nothing logged {recap.weekStart} to {recap.weekEnd}.
         </div>
       )}
 

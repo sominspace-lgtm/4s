@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
   const { error: signInError } = await supabase.auth.signInWithPassword({ email: backing.email, password: backing.password })
-  if (signInError) return NextResponse.json({ error: 'PIN saved, but sign-in failed — try logging in again.' }, { status: 500 })
+  if (signInError) return NextResponse.json({ error: 'PIN saved, but sign-in failed. Try logging in again.' }, { status: 500 })
 
   const res = NextResponse.json({ ok: true })
   if (profile === 'shared') {

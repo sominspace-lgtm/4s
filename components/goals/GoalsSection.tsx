@@ -58,7 +58,7 @@ export default function GoalsSection({ userId }: { userId: string }) {
             {g.stale.length === 1 ? 'One thing has gone quiet.' : `${g.stale.length} things have gone quiet.`}
           </div>
           <div style={{ fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.7rem' }}>
-            Not a problem — worth a look though. Still choosing {g.stale.length === 1 ? 'it' : 'these'}?
+            Not a problem, just worth a look. Still choosing {g.stale.length === 1 ? 'it' : 'these'}?
           </div>
           {g.stale.map(goal => (
             <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', padding: '0.35rem 0' }}>
@@ -87,7 +87,7 @@ export default function GoalsSection({ userId }: { userId: string }) {
 
         {g.active.length === 0 && !g.loading && !adding && (
           <div style={{ fontSize: '0.76rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8, lineHeight: 1.6 }}>
-            Nothing yet. A goal here is something you&rsquo;re actively choosing — one or two is plenty.
+            Nothing yet. A goal here is something you&rsquo;re actively choosing. One or two is plenty.
           </div>
         )}
 

@@ -24,8 +24,6 @@ const DUE_COLOR: Record<string, string> = {
   overdue: 'var(--rose)', today: 'var(--amber)', soon: 'var(--gold)',
   fine: 'var(--muted)', none: 'var(--muted)',
 }
-const S_ICON:  Record<WorkItem['status'], string> = { 'todo': '○', 'in-progress': '◑', 'done': '●' }
-const S_COLOR: Record<WorkItem['status'], string> = { 'todo': 'var(--muted)', 'in-progress': 'var(--gold)', 'done': 'var(--emerald)' }
 const S_NEXT:  Record<WorkItem['status'], WorkItem['status']> = { 'todo': 'in-progress', 'in-progress': 'done', 'done': 'todo' }
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -141,6 +139,7 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
         )}
         {item.status === 'done' && stage === 'completed' && (
           <button
+            className="hover-reveal"
             onClick={() => onUpdate(item.id, { landmark: true })}
             title="Mark as a landmark: keep this one in the skyline"
             style={{
@@ -151,7 +150,7 @@ export function WorkRow({ item, onStatus, onRemove, onUpdate }: {
           >◇ landmark</button>
         )}
 
-        <IconButton label="Remove" onClick={() => onRemove(item.id)} size={9} style={{ opacity: hovered ? 0.35 : 0, transition: 'opacity 0.15s' }}>✕</IconButton>
+        <IconButton className="hover-reveal" label="Remove" onClick={() => onRemove(item.id)} size={9} style={{ opacity: hovered ? 0.35 : 0, transition: 'opacity 0.15s' }}>✕</IconButton>
       </div>
 
       {/* Meta row — DENSITY FIX (2026-08-07).
@@ -565,7 +564,7 @@ export default function MasterDashboard({ userId }: { userId: string }) {
 
           {addError && (
             <div style={{ fontSize: '0.68rem', color: 'var(--rose)', background: 'color-mix(in srgb, var(--rose) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)', borderRadius: '6px', padding: '0.4rem 0.6rem' }}>
-              Couldn't save: {addError}
+              Couldn’t save: {addError}
             </div>
           )}
 

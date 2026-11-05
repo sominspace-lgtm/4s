@@ -26,7 +26,7 @@ export default function BuylistCard({ userId }: { userId: string }) {
         <span style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>recurring purchases</span>
       </div>
       <p style={{ fontSize: '0.73rem', color: 'var(--muted)', fontStyle: 'italic', marginBottom: '0.8rem', lineHeight: 1.5 }}>
-        Add something once. 4S stays quiet until it's time to buy again.
+        Add something once. 4S stays quiet until it’s time to buy again.
       </p>
 
       {items.length > 0 && (
@@ -66,7 +66,7 @@ export default function BuylistCard({ userId }: { userId: string }) {
 
       {addError && (
         <div style={{ fontSize: '0.68rem', color: 'var(--rose)', background: 'color-mix(in srgb, var(--rose) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--rose) 25%, transparent)', borderRadius: '6px', padding: '0.4rem 0.6rem', marginTop: '0.6rem' }}>
-          Couldn't save: {addError}
+          Couldn’t save: {addError}
         </div>
       )}
 

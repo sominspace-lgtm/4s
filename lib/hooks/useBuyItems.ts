@@ -168,7 +168,7 @@ export function useBuyItems() {
       status: input.tracking_mode === 'smart-supply' ? 'backup-stock' : 'stocked',
     }).select().single()
     if (error) return error.message
-    if (!data) return 'Item was not saved — no error returned, but nothing came back either.'
+    if (!data) return 'The item did not save. Try again.'
     setItems(prev => [...prev, data])
     notifyChanged()
     return null

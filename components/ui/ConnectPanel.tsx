@@ -84,7 +84,7 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
             <DiscordConnect spaceId={primarySpace.id} spaceName={primarySpace.name} />
           ) : (
             <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-              Create a household space first — Household → Setup, or Sharing → Spaces.
+              Create a household space first, in Household → Setup or Sharing → Spaces.
             </div>
           )}
         </div>

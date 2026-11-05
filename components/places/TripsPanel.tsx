@@ -109,7 +109,7 @@ export default function TripsPanel({ spaceId, hasSpace, onSelect, sharedOnly = f
 
       {trips.length === 0 && !loading && !adding && (
         <div style={{ fontSize: '0.76rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.8, lineHeight: 1.6, padding: '1rem 0' }}>
-          Nothing planned yet. A trip can start as just a name and a dream — dates and an itinerary come later.
+          Nothing planned yet. A trip can start as just a name and a dream. Dates and plans come later.
         </div>
       )}
 

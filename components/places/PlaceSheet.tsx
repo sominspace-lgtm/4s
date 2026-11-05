@@ -228,7 +228,7 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
           </div>
           {place.kind === 'unset' && (
             <div style={{ fontSize: '0.68rem', color: 'var(--amber)', opacity: 0.85, marginTop: '0.3rem' }}>
-              Needs a type — pick one below in Details.
+              Needs a type. Pick one below in Details.
             </div>
           )}
         </div>
@@ -426,7 +426,7 @@ export default function PlaceSheet({ place, open, onClose, spaceId, hasSpace, tr
               )}
               {geoStatus === 'found' && (
                 <div style={{ fontSize: '0.64rem', color: 'var(--emerald)', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
-                  <Icon name="pin" size={10} /> Found it — filled in below
+                  <Icon name="pin" size={10} /> Found it. Filled in below.
                 </div>
               )}
               <div style={{ display: 'flex', gap: '0.4rem' }}>

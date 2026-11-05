@@ -222,7 +222,7 @@ function AgendaView({ today, entriesFor }: { today: Date; entriesFor: (day: Date
                 </div>
 
                 {entries.length === 0 && (
-                  <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.3, fontStyle: 'italic' }}>—</div>
+                  <div style={{ fontSize: '0.64rem', color: 'var(--muted)', opacity: 0.3, fontStyle: 'italic' }}>·</div>
                 )}
 
                 {entries.map((e, i) => (

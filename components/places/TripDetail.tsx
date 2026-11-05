@@ -79,7 +79,7 @@ function ItineraryTableRow({ item, onUpdate, onRemove }: {
           style={cellInput} {...focusStyle} />
       </td>
       <td style={{ ...cell, width: '5.5rem' }}>
-        <input value={time} onChange={e => setTime(e.target.value)} placeholder="—"
+        <input value={time} onChange={e => setTime(e.target.value)} placeholder="Time"
           onBlur={() => { const v = time.trim(); if (v !== (item.time_label ?? '')) onUpdate(item.id, { time_label: v || null }) }}
           style={cellInput} {...focusStyle} />
       </td>

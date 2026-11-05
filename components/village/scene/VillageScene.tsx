@@ -45,7 +45,7 @@ export { GROUND_Y }
 
 
 export default function VillageScene({
-  village: v, live, palette, celestial, plantSlots, buildingSlots,
+  village: villageIn, live, palette, celestial, plantSlots, buildingSlots,
   horizon = [], changes, locked = false, onLockedNavigate, gathering = false,
   contributions = [], guestAlbumUrl = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
@@ -303,6 +303,7 @@ export default function VillageScene({
       if (s === 'spring' || s === 'summer' || s === 'autumn' || s === 'winter') setVseasonOverride(s)
     } catch { /* ignore */ }
   }, [])
+  let v = villageIn
   if (vtodOverride) v = { ...v, timeOfDay: vtodOverride }
   if (vseasonOverride) v = { ...v, season: vseasonOverride }
 
@@ -1046,7 +1047,8 @@ export default function VillageScene({
   // are the item's real absolute scene position, passed straight through
   // to onResizeItem — using the relative render offset there instead would
   // silently teleport the item to (0,0) the first time it's resized.
-  function ResizeControls({ id, storeX, storeY, renderX, renderY }: {
+  // A plain function, not a component, so it isn't rebuilt on every render.
+  function resizeControls({ id, storeX, storeY, renderX, renderY }: {
     id: string; storeX: number; storeY: number; renderX: number; renderY: number
   }) {
     if (!arranging || resizingId !== id || !onResizeItem) return null
@@ -1330,7 +1332,7 @@ export default function VillageScene({
       ref={svgRef}
       viewBox={viewBox}
       role="img"
-      aria-label="Your village — a view of your habits, projects and history"
+      aria-label="Your village: your habits, projects and history as a little town"
       className={[isFrozen ? 'village-idle-frozen' : '', labelsOn ? 'village-labels-on' : ''].filter(Boolean).join(' ') || undefined}
       preserveAspectRatio="xMidYMid meet"
       style={{
@@ -2016,7 +2018,7 @@ export default function VillageScene({
                 fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
                 opacity={draggingId === p.id ? 0.9 : 0.4} />
             )}
-            <ResizeControls id={p.id} storeX={p0.x} storeY={p0.y} renderX={0} renderY={-ph - 4} />
+            {resizeControls({ id: p.id, storeX: p0.x, storeY: p0.y, renderX: 0, renderY: -ph - 4 })}
           </g>
         )
       })}
@@ -2060,7 +2062,7 @@ export default function VillageScene({
               </>
             )}
             {/* Above the remove button, not overlapping it. */}
-            <ResizeControls id={id} storeX={p.x} storeY={p.y} renderX={0} renderY={-h - 14} />
+            {resizeControls({ id: id, storeX: p.x, storeY: p.y, renderX: 0, renderY: -h - 14 })}
           </g>
         )
       })}
@@ -2210,7 +2212,7 @@ export default function VillageScene({
         onClick={arranging ? undefined : openOrToggle('home', 'Home')}
         onPointerDown={arranging ? startDrag('home') : undefined}
         style={{ cursor: arranging ? (draggingId === 'home' ? 'grabbing' : 'grab') : 'pointer' }}>
-        <title>Home — Smart Home</title>
+        <title>Home. Tap for Smart Home.</title>
         {/* Grounding shadow — same BloomScan-style reasoning as PlantShape/
             BuildingShape's own (2026-08-24). */}
         <ellipse cx={0} cy={1.5} rx={37} ry={3.2} fill="var(--text)" opacity={0.12} />
@@ -2393,7 +2395,7 @@ export default function VillageScene({
                   <image href="/village-assets/firewood.png" x={lx - bw / 2} y={ly - bh} width={bw} height={bh}
                     style={{ imageRendering: 'pixelated', cursor: 'pointer' }}
                     onClick={selectBuilding(building.id, lx, ly)} />
-                  <title>{`${building.title} — ${done ? 'finished' : 'in progress'}`}</title>
+                  <title>{`${building.title}: ${done ? 'finished' : 'in progress'}`}</title>
                 </g>
               )
             })}
@@ -2478,7 +2480,7 @@ export default function VillageScene({
 
       {/* Bloom Garden — waiting on BloomScan */}
       <g transform={`translate(300 418)`} opacity={v.flowers.length ? 1 : 0.35}>
-        <title>Bloom Garden — flowers you find in BloomScan appear here</title>
+        <title>Bloom Garden. Flowers you find in BloomScan grow here.</title>
         {[0, 1, 2].map(i => (
           <g key={i} transform={`translate(${i * 22 - 22} 0)`}>
             <rect x={-0.8} y={-10} width={1.6} height={10} fill="var(--emerald)" opacity={0.6} />
@@ -2733,7 +2735,7 @@ export default function VillageScene({
                   wander={active} pose={life.sylvia.pose} face={life.sylvia.face} outfit={outfit} scale={itemScale('sylvia')} />
               </g>
             )}
-            <ResizeControls id="sylvia" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
+            {resizeControls({ id: 'sylvia', storeX: p.x, storeY: p.y, renderX: 0, renderY: -32 })}
           </Draggable>
         ) })()}
         {(() => { const p = decorPos('harry'); const active = !arranging && !settledNight && !sceneHidesFigures; return (
@@ -2745,7 +2747,7 @@ export default function VillageScene({
                   wander={active} pose={life.harry.pose} face={life.harry.face} outfit={outfit} scale={itemScale('harry')} />
               </g>
             )}
-            <ResizeControls id="harry" storeX={p.x} storeY={p.y} renderX={0} renderY={-32} />
+            {resizeControls({ id: 'harry', storeX: p.x, storeY: p.y, renderX: 0, renderY: -32 })}
           </Draggable>
         ) })()}
         </g>
@@ -2819,7 +2821,7 @@ export default function VillageScene({
               </g>
             )}
           </g>
-          <ResizeControls id="somi" storeX={p.x} storeY={p.y} renderX={0} renderY={-22} />
+          {resizeControls({ id: 'somi', storeX: p.x, storeY: p.y, renderX: 0, renderY: -22 })}
         </Draggable>
       ) })()}
 

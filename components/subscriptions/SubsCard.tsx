@@ -79,7 +79,7 @@ export default function SubsCard() {
             <span style={{ fontSize: '0.82rem', color: 'var(--text)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
             <span style={{ fontSize: '0.72rem', color: 'var(--muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{priceLabel}</span>
             <span style={{ fontSize: '0.68rem', color: u === 'fine' || u === 'paid' ? 'var(--muted)' : URGENCY_COLOR[u], whiteSpace: 'nowrap', flexShrink: 0, textAlign: 'right' }}>
-              {s.renewal_date ? `${s.due_kind} ${format(parseISO(s.renewal_date), 'MMM d')}` : '—'}
+              {s.renewal_date ? `${s.due_kind} ${format(parseISO(s.renewal_date), 'MMM d')}` : 'No date'}
             </span>
             {/* Always faintly visible — there's no hover on touch. */}
             <IconButton label={`Delete ${s.name}`} onClick={() => remove(s.id)} size={11} style={{ opacity: 0.4 }}>✕</IconButton>

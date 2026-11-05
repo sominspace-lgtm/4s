@@ -248,7 +248,7 @@ export default function PlacesHub({ userId, theme, sharedOnly = false, forcedTab
                 <div style={{ fontSize: '0.8rem', color: 'var(--text)', fontWeight: 600 }}>{s.place}</div>
                 {s.why && <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.15rem', lineHeight: 1.4 }}>{s.why}</div>}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.45rem' }}>
-                  {s.guestName && <span style={{ fontSize: '0.66rem', color: 'var(--muted)', flex: 1 }}>— {s.guestName}</span>}
+                  {s.guestName && <span style={{ fontSize: '0.66rem', color: 'var(--muted)', flex: 1 }}>from {s.guestName}</span>}
                   <button
                     className="press"
                     onClick={async () => {

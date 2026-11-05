@@ -163,7 +163,7 @@ export default function CalorieTracker({ userId, book, h }: {
               <div key={e.id} style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', padding: '0.2rem 0', fontSize: '0.84rem' }}>
                 <span style={{ flex: 1 }}>{e.name}{e.servings && e.servings !== 1 ? <span style={muted}> · {e.servings} servings</span> : null}</span>
                 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{Math.round(e.calories)}</span>
-                <button onClick={() => log.remove(e.id)} aria-label={`Remove ${e.name}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
+                <button className="icon-btn" onClick={() => log.remove(e.id)} aria-label={`Remove ${e.name}`} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', opacity: 0.5 }}>✕</button>
               </div>
             ))}
           </div>

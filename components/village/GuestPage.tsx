@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import QRCode from 'qrcode'
 import type { GuestInfo, MenuItem } from '@/lib/hooks/useGathering'
 import { printGuestCard } from './printGuestCard'
@@ -20,7 +21,7 @@ function wifiCode(name: string, password: string): string {
 
 const lines = (s?: string) => (s ?? '').split('\n').map(l => l.trim()).filter(Boolean)
 
-export default function GuestPage({ info, somi, menu = [], title = null, canEdit = false, onSave, onClose }: {
+function GuestPageBody({ info, somi, menu = [], title = null, canEdit = false, onSave, onClose }: {
   info: GuestInfo
   somi?: { name: string; ageText: string; snack: string; tricks: string[]; notes: string | null } | null
   menu?: MenuItem[]
@@ -57,7 +58,7 @@ export default function GuestPage({ info, somi, menu = [], title = null, canEdit
           <div style={S.grabber} />
           <div style={S.head}>
             <span style={S.kicker}>Edit the guest page</span>
-            <button onClick={onClose} style={S.x} aria-label="Close">✕</button>
+            <button className="icon-btn" onClick={onClose} style={S.x} aria-label="Close">✕</button>
           </div>
           <label style={S.label}>Welcome line
             <input value={draft.welcome ?? ''} onChange={set('welcome')} placeholder="Welcome to our home" style={S.input} />
@@ -98,9 +99,9 @@ export default function GuestPage({ info, somi, menu = [], title = null, canEdit
         <div style={S.head}>
           <span style={S.kicker}>{title ?? 'For our guests'}</span>
           <span style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-            {canEdit && !empty && <button onClick={() => printGuestCard(info, qr)} style={S.link}>Print</button>}
+            {canEdit && !empty && <button onClick={() => { if (!printGuestCard(info, qr)) window.alert('Your browser blocked the print window. Allow pop-ups for 4S and try again.') }} style={S.link}>Print</button>}
             {canEdit && onSave && <button onClick={() => setEditing(true)} style={S.link}>Edit</button>}
-            <button onClick={onClose} style={S.x} aria-label="Close">✕</button>
+            <button className="icon-btn" onClick={onClose} style={S.x} aria-label="Close">✕</button>
           </span>
         </div>
         <div style={S.big}>{info.welcome || 'Welcome to our home'}</div>
@@ -169,6 +170,13 @@ export default function GuestPage({ info, somi, menu = [], title = null, canEdit
       </div>
     </div>
   )
+}
+
+// Rendered at the page level (2026-10-29): inside the village frame the
+// frame clipped the top of the sheet.
+export default function GuestPage(props: React.ComponentProps<typeof GuestPageBody>) {
+  if (typeof document === 'undefined') return null
+  return createPortal(<GuestPageBody {...props} />, document.body)
 }
 
 const S: Record<string, React.CSSProperties> = {

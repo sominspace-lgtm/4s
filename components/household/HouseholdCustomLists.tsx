@@ -27,7 +27,7 @@ export default function HouseholdCustomLists({ spaceId }: { spaceId: string | nu
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {lists.length === 0 && !loading && !addingList && (
         <div style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', opacity: 0.75 }}>
-          No lists yet — bathroom codes, dream hotels, whatever you want to keep track of.
+          No lists yet. Bathroom codes, dream hotels, whatever you want to keep track of.
         </div>
       )}
 
@@ -56,7 +56,7 @@ export default function HouseholdCustomLists({ spaceId }: { spaceId: string | nu
           style={{ display: 'flex', gap: '0.35rem' }}
         >
           <input autoFocus value={newListName} onChange={e => setNewListName(e.target.value)}
-            placeholder="List name — e.g. Bathroom codes" style={{ ...inputStyle, flex: 1 }} />
+            placeholder="List name, like Bathroom codes" style={{ ...inputStyle, flex: 1 }} />
           <button type="submit" className="btn btn-secondary press" style={{ fontSize: '0.68rem' }}>Create</button>
           <button type="button" onClick={() => setAddingList(false)} className="btn btn-ghost press" style={{ fontSize: '0.68rem' }}>Cancel</button>
         </form>
@@ -168,7 +168,7 @@ export function ListCard({ list, places, onAddItem, onUpdateItem, onToggleItem, 
               three required fields for "buy milk". */}
           {label.trim() && (
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note — e.g. a code" style={{ ...inputStyle, flex: 1, minWidth: '8rem' }} />
+              <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note, like a code" style={{ ...inputStyle, flex: 1, minWidth: '8rem' }} />
               <input type="date" value={remindOn} onChange={e => setRemindOn(e.target.value)} title="Remind me on"
                 style={{ ...inputStyle, cursor: 'pointer' }} />
               {places.length > 0 && (

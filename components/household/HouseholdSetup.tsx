@@ -70,7 +70,7 @@ export default function HouseholdSetup({ userId, userEmail }: { userId: string; 
         <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.8rem' }}>Memories</div>
         {!spaceId ? (
           <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-            Create a shared space first — memories are attached to the space, not to you alone.
+            Create a shared space first. Memories belong to the space, not to you alone.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -122,7 +122,7 @@ export default function HouseholdSetup({ userId, userEmail }: { userId: string; 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {memories.links.length === 0 && (
                   <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-                    No albums linked yet. Paste a Google Photos, iCloud, or Drive link — opens in a new tab, no login through 4S OS required.
+                    No albums linked yet. Paste a Google Photos, iCloud, or Drive link. It opens in a new tab, no login through 4S needed.
                   </div>
                 )}
                 <button
@@ -138,7 +138,7 @@ export default function HouseholdSetup({ userId, userEmail }: { userId: string; 
             {/* Distinct from the link-outs above: photos actually uploaded
                 through a Places pin live in the pin's own Photos section. */}
             <div style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.6, borderTop: '1px solid var(--faint)', paddingTop: '0.5rem' }}>
-              Photos you&rsquo;ve uploaded to a specific pin live on that pin, under Places → Photos — not here.
+              Photos you&rsquo;ve uploaded to a specific pin live on that pin, under Places → Photos, not here.
             </div>
           </div>
         )}

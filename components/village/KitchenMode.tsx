@@ -44,7 +44,7 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
         <div style={S.grabber} />
         <div style={S.head}>
           <span style={S.kicker}>The kitchen</span>
-          <button onClick={onClose} style={S.x}>✕</button>
+          <button className="icon-btn" onClick={onClose} style={S.x}>✕</button>
         </div>
 
         <section style={S.block}>
@@ -92,7 +92,7 @@ export default function KitchenMode({ spaceId, onClose }: { spaceId: string | nu
                     ? <button onClick={() => timers.pause(t.id)} style={S.mini}>pause</button>
                     : <button onClick={() => timers.start(t.id)} style={S.mini}>start</button>)}
                   <button onClick={() => timers.reset(t.id)} style={S.mini}>reset</button>
-                  <button onClick={() => timers.remove(t.id)} style={{ ...S.mini, color: '#a8987f' }}>✕</button>
+                  <button className="icon-btn" onClick={() => timers.remove(t.id)} style={{ ...S.mini, color: '#a8987f' }}>✕</button>
                 </div>
               ))}
             </div>

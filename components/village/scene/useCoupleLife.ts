@@ -234,7 +234,6 @@ export function useCoupleLife(opts: {
     const greet = (who: 'sylvia' | 'harry') => {
       const L = liveRef.current
       const cx = who === 'sylvia' ? L.sx : L.hx
-      const cy = who === 'sylvia' ? L.sy : L.hy
       const set = who === 'sylvia' ? setSylvia : setHarry
       const home = who === 'sylvia' ? { x: shx, y: shy } : { x: hhx, y: hhy }
       // Walk right down to the front of the yard and a bit toward centre —

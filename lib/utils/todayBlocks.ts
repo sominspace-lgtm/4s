@@ -27,12 +27,12 @@ export const TODAY_BLOCK_META: Record<TodayBlockId, { label: string; hint: strin
   routine:    { label: 'Routine now',    hint: 'Morning routine, then the night routine after dinner' },
   // The day in order (2026-09-08) — check-in, care, meals, chores, events,
   // merge-sorted by time. A timeline, read morning and night. See DailyThread.
-  thread:     { label: 'Daily thread',   hint: 'The day in order — check-in, care, meals, what’s due' },
+  thread:     { label: 'Daily thread',   hint: 'The day in order: check-in, care, meals, what’s due' },
   budget:     { label: 'Capacity',       hint: 'Deep/medium/light slots for today' },
   // The weekly relationship check-in (2026-09-01) — shows near the weekend
   // if you haven't done it, then who's answered. Self-hides otherwise.
   checkin:    { label: 'Weekly check-in', hint: 'The relationship check-in, toward the weekend' },
-  areas:      { label: 'Area index',     hint: 'One line per area — Tasks, Habits, Money…' },
+  areas:      { label: 'Area index',     hint: 'One line per area: Tasks, Habits, Money…' },
   calendar:   { label: 'Calendar',       hint: 'Month view by default' },
   // A real "what needs you" panel, not a shortcut (2026-08-25 round two) —
   // see TodayHouseholdNeeds.

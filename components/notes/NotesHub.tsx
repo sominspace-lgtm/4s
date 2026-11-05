@@ -267,7 +267,7 @@ function NotesList({ userId }: { userId: string }) {
 
       {!loading && notes.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.7 }}>
-          Nothing here yet. Jot down whatever's on your mind, or start from a template. Add #tags to find things later and [[Note name]] to link notes together.
+          Nothing here yet. Jot down whatever’s on your mind, or start from a template. Add #tags to find things later and [[Note name]] to link notes together.
         </div>
       )}
       {notes.length > 0 && shown.length === 0 && (

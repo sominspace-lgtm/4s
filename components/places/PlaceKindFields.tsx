@@ -81,7 +81,7 @@ function FieldRow({ field, value, editing, provenance, onChange }: {
         <input type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} />
       ) : field.type === 'select' ? (
         <select value={String(value ?? '')} onChange={e => onChange(e.target.value)} style={inputStyle}>
-          <option value="">—</option>
+          <option value="">Choose…</option>
           {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : (

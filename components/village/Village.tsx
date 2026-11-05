@@ -531,7 +531,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     for (const p of places) {
       if (!p.first_visited_on) continue
       const y = near(p.first_visited_on)
-      if (y) return { text: `${p.name}${p.note ? ` — ${p.note.trim()}` : ''}`, yearsAgo: y }
+      if (y) return { text: `${p.name}${p.note ? `: ${p.note.trim()}` : ''}`, yearsAgo: y }
     }
     for (const t of trips) {
       if (!t.start_date) continue
@@ -816,7 +816,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
     for (const t of trips) {
       if (!t.start_date || t.status === 'cancelled' || t.status === 'done') continue
       if (t.start_date < today || parseISO(t.start_date) > horizon) continue
-      week.push({ kind: 'trip', text: t.destination ? `${t.title} — ${t.destination}` : t.title, when: whenLabel(t.start_date), sort: t.start_date })
+      week.push({ kind: 'trip', text: t.destination ? `${t.title}, ${t.destination}` : t.title, when: whenLabel(t.start_date), sort: t.start_date })
     }
     for (const p of people) {
       const days = daysUntilBirthday(p.birthday)
@@ -1496,7 +1496,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       {!compact && arranging && (
         <p style={{ fontSize: '0.68rem', color: 'var(--muted)', opacity: 0.75, marginTop: '0.5rem', textAlign: 'center' }}>
           Drag any landmark or prop to move it, or tap it once for size controls. Inventory adds
-          something new — tap × on it to remove it. Your layout is saved automatically.
+          something new. Tap × on it to remove it. Your layout is saved automatically.
         </p>
       )}
 
