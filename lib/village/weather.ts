@@ -63,8 +63,9 @@ function conditionFromCode(code: number): WeatherCondition {
 let cached: WeatherNow | null = null
 let cachedPromise: Promise<WeatherNow | null> | null = null
 
-export async function loadWeather(): Promise<WeatherNow | null> {
-  if (cached) return cached
+/** `fresh` skips the saved reading, for a screen that stays on all day. */
+export async function loadWeather(fresh = false): Promise<WeatherNow | null> {
+  if (cached && !fresh) return cached
   if (cachedPromise) return cachedPromise
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${HOME_LAT}&longitude=${HOME_LON}&current=temperature_2m,weather_code&daily=sunrise,sunset&timezone=auto&temperature_unit=fahrenheit`
   cachedPromise = fetch(url, { signal: AbortSignal.timeout(8000) })

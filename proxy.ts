@@ -83,6 +83,7 @@ export async function proxy(request: NextRequest) {
     || pathname === '/api/devices/pair/start'
     || pathname === '/api/devices/pair/poll'
     || pathname === '/api/devices/me'
+    || pathname === '/api/home/state'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands

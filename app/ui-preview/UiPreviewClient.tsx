@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import HomeView from '@/components/home/HomeView'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
 import SubNav from '@/components/ui/SubNav'
@@ -38,7 +39,7 @@ export default function UiPreviewClient() {
   const [guestV, setGuestV] = useState(false)
   const [idleV, setIdleV] = useState(false)
   const [avoidSlips, setAvoidSlips] = useState(['2026-10-12', '2026-10-21'])
-  const g = GROUPS.find(x => x.members.includes(tab))!
+  const g = GROUPS.find(x => x.members.includes(tab)) ?? GROUPS[0]
   const all = new Set(Object.keys(LABELS))
 
   return (
@@ -48,7 +49,7 @@ export default function UiPreviewClient() {
           ui-preview · theme <select value={theme} onChange={e => setTheme(e.target.value)}>
             {['bloom', 'moonlight', 'ember', 'dusk', 'sage', 'obsidian', 'elegant', 'botanical', 'modern', 'warm'].map(t => <option key={t}>{t}</option>)}
           </select>
-          {' '}<button onClick={() => setTab('village')}>village</button>{' '}<label><input type="checkbox" checked={guestV} onChange={e => setGuestV(e.target.checked)} /> guest</label>
+          {' '}<button onClick={() => setTab('village')}>village</button>{' '}<button onClick={() => setTab('homeview')}>homeview</button>{' '}<label><input type="checkbox" checked={guestV} onChange={e => setGuestV(e.target.checked)} /> guest</label>
           {' '}<label><input type="checkbox" checked={idleV} onChange={e => setIdleV(e.target.checked)} /> idle</label>
         </div>
         <main style={{ maxWidth: 'min(1240px, 94vw)', margin: '0 auto', padding: '1.2rem 2rem 6rem' }}>
@@ -60,6 +61,7 @@ export default function UiPreviewClient() {
           {tab === 'me' && <MeGrid visible={all} onOpen={setTab} userId="" />}
           
           {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
+          {tab === 'homeview' && <HomeView screenName="Wall iPad" preview={{ household: 'Our home', habits: [0,1,2,3,4,5].map(i => ({ id: 'h' + i, name: '', category: null, schedule_type: 'daily', interval_days: null, days_of_week: null, paused: false, created_at: '2026-01-01' })), completions: Object.fromEntries([0,1,2,3,4,5].map(i => ['h' + i, Array.from({ length: i * 6 }, (_, d) => `2026-10-${String(d % 28 + 1).padStart(2, '0')}`)])), workItems: [], accountCreated: '2025-06-01T00:00:00Z', layout: {}, grown: 5, activeScene: null, binDays: { trash: 1 }, dinner: 'Pasta night' }} />}
           {tab === 'village' && <Village userId="" guestView={guestV} ambient={idleV} guestInfo={{ welcome: 'Welcome to our home', wifiName: 'SoHome', wifiPassword: 'somi-loves-churu', places: 'Bathroom: down the hall, on the left\nTowels: hall closet', rules: 'Shoes off at the door\nKeep the back door shut for Somi' }} onSetGuestInfo={i => console.log('save', i)} />}
           {tab === 'village' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
