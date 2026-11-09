@@ -8,6 +8,61 @@ import type { LandmarkId } from '@/lib/village/layout'
 
 export const GROUND_Y = 210
 
+// Pixel steps (2026-11-05, "the pixel art should be like the digital art
+// piece itself"). The sprites were always pixel art, but the land under them
+// was smooth vector curves, so the two read as different pictures. The hills
+// and the ground line now keep their old silhouettes, snapped to a grid of
+// square steps, so the land is drawn in the same pixels as everything on it.
+type Pt = [number, number]
+function quadSampler(start: Pt, segs: [Pt, Pt][]): (x: number) => number {
+  const pts: Pt[] = []
+  let p0 = start
+  for (const [c, e] of segs) {
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40, u = 1 - t
+      pts.push([u * u * p0[0] + 2 * u * t * c[0] + t * t * e[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * e[1]])
+    }
+    p0 = e
+  }
+  return x => {
+    for (let i = 1; i < pts.length; i++) {
+      const [x1, y1] = pts[i - 1], [x2, y2] = pts[i]
+      if (x <= x2 || i === pts.length - 1) {
+        const k = x2 === x1 ? 0 : Math.max(0, Math.min(1, (x - x1) / (x2 - x1)))
+        return y1 + (y2 - y1) * k
+      }
+    }
+    return pts[0][1]
+  }
+}
+/** A stepped outline along f from x0 to x1. With `bottom`, closed down to it. */
+function steppedPath(f: (x: number) => number, x0: number, x1: number, px: number, bottom?: number): string {
+  let d = ''
+  for (let x = x0; x < x1; x += px) {
+    const y = Math.round(f(x + px / 2) / px) * px
+    d += d ? ` V ${y} H ${Math.min(x + px, x1)}` : `M ${x} ${bottom ?? y} V ${y} H ${Math.min(x + px, x1)}`
+  }
+  return bottom === undefined ? d : `${d} V ${bottom} Z`
+}
+const G = GROUND_Y
+const groundCurve = quadSampler([0, G], [[[200, G - 26], [400, G - 8]], [[600, G + 10], [800, G - 18]]])
+export const HILL_FAR = steppedPath(quadSampler([-20, G - 18], [[[140, G - 62], [320, G - 30]], [[480, G - 58], [640, G - 24]], [[740, G - 40], [820, G - 20]]]), -20, 820, 4, G + 4)
+export const HILL_NEAR = steppedPath(quadSampler([-20, G - 8], [[[220, G - 34], [420, G - 14]], [[600, G - 32], [820, G - 10]]]), -20, 820, 4, G + 6)
+export const GROUND_SHAPE = steppedPath(groundCurve, 0, 800, 3, 440)
+export const GROUND_LINE = steppedPath(groundCurve, 0, 800, 3)
+
+/** A distant pine as stacked pixel rows: the old triangle, in steps. */
+export function pixelPine(apexX: number, apexY: number, h: number, widthK: number, px = 2): string {
+  const x = Math.round(apexX / px) * px
+  const rows = Math.max(3, Math.round(h / px))
+  let d = ''
+  for (let r = 0; r < rows; r++) {
+    const w = Math.max(px, Math.round((h * widthK * (r + 1) / rows) / (px * 2)) * px * 2)
+    d += `M ${x - w / 2} ${Math.round(apexY / px) * px + r * px} h ${w} v ${px} h ${-w} Z `
+  }
+  return d
+}
+
 // A fixed scatter of grass tufts along the ground line (2026-08-21) — one
 // of the concrete things making the scene read as sparse rather than calm:
 // a wide gap of bare ground between the tree line and the district row with
@@ -15,7 +70,7 @@ export const GROUND_Y = 210
 // tuft's position and height stable across renders — same "pure function of
 // an id" rule the rest of the village runs under, just with a literal index
 // standing in for a real entity id since these aren't tied to any data.
-export const GRASS_TUFTS = Array.from({ length: 82 }, (_, i) => {
+export const GRASS_TUFTS = Array.from({ length: 44 }, (_, i) => {
   const seed = `grass-${i}`
   const x = 20 + hashPos(seed) * 760
   const h = 4 + hashPos(seed + 'h') * 6
@@ -27,7 +82,7 @@ export const GRASS_TUFTS = Array.from({ length: 82 }, (_, i) => {
 // 14 stones AND a distant treeline AND pollen motes, where Village had only
 // the grass. Stones sit a little further from the path line than the grass
 // does, low opacity, so they read as texture rather than as things.
-export const STONES = Array.from({ length: 32 }, (_, i) => {
+export const STONES = Array.from({ length: 12 }, (_, i) => {
   const seed = `stone-${i}`
   const x = 15 + hashPos(seed) * 770
   const r = 1.4 + hashPos(seed + 'r') * 2.2
@@ -84,7 +139,7 @@ export const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#
 // fewer, fuller clumps gather in the two bottom corners like the frame of a
 // painting, and the middle stays open so the eye travels up the path to the
 // cottage. Nearer clumps are bigger and fuller, as before.
-export const FOREGROUND_COUNT = 24
+export const FOREGROUND_COUNT = 16
 export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')
@@ -111,7 +166,7 @@ export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
 // district row, the other band that was mostly bare. Smaller and lighter
 // than FOREGROUND, so the two layers read as different distances rather
 // than as the same scatter repeated twice.
-export const MIDGROUND_COUNT = 30
+export const MIDGROUND_COUNT = 20
 export const MIDGROUND_BUSHES = Array.from({ length: MIDGROUND_COUNT }, (_, i) => {
   const seed = `mg-${i}`
   // Bucketed x, same reasoning as FOREGROUND above (round 7 fix); every
@@ -565,3 +620,30 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // the user's master-assets folder (replaced by a foliage/path-tile sheet
   // and a festival-props sheet, neither of which covers the same items).
 }
+
+// What grows back as the collection grows (2026-11-05): the decorations taken
+// out for being clutter return one at a time, every few finds, so the village
+// fills in slowly alongside you. Same sprites, sizes and spots as before
+// (DECOR_DEFAULTS), and draggable in Arrange like the rest.
+export const GROWTH: { id: string; title: string; href: string; w: number; h: number }[] = [
+  { id: 'flowerPlanter', title: 'A flower planter', href: 'flower-planter.png', w: 14 * (286 / 172), h: 14 },
+  { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
+  { id: 'gardenBed', title: 'A raised garden bed', href: 'garden-bed.png', w: 16 * (289 / 171), h: 16 },
+  { id: 'hobbyBookCoffee', title: 'A book and coffee', href: 'hobby-book-coffee.png', w: 11 * (348 / 166), h: 11 },
+  { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 17.2, h: 13 },
+  { id: 'hobbyGardenBasket', title: 'A gardening basket', href: 'hobby-garden-basket.png', w: 10 * (293 / 216), h: 10 },
+  { id: 'waterPumpScene', title: 'A water pump', href: 'water-pump.png', w: 15 * (207 / 253), h: 15 },
+  { id: 'hobbyBicycle', title: 'A bicycle', href: 'hobby-bicycle.png', w: 13 * (292 / 253), h: 13 },
+  { id: 'hobbyEasel', title: 'A painting easel', href: 'hobby-easel.png', w: 12 * (146 / 271), h: 12 },
+  { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
+  { id: 'hobbyMusicStand', title: 'A music stand', href: 'hobby-music-stand.png', w: 11 * (152 / 253), h: 11 },
+  { id: 'hobbyTennis', title: 'A tennis racket', href: 'hobby-tennis.png', w: 9 * (235 / 247), h: 9 },
+  { id: 'hobbyInstrumentCase', title: 'An instrument case', href: 'hobby-instrument-case.png', w: 12 * (334 / 182), h: 12 },
+]
+
+// Open ground where a find can turn up (2026-11-05), clear of the buildings
+// and the path. Ten spots, so three finds never pile onto each other.
+export const FIND_SPOTS: { x: number; y: number }[] = [
+  { x: 205, y: 256 }, { x: 345, y: 330 }, { x: 560, y: 256 }, { x: 590, y: 346 }, { x: 250, y: 386 },
+  { x: 470, y: 396 }, { x: 170, y: 322 }, { x: 735, y: 302 }, { x: 385, y: 276 }, { x: 530, y: 318 },
+]

@@ -61,6 +61,27 @@ export default function Ambient({ village: v, palette, groundY, weatherCondition
         </g>
       )}
 
+      {/* Cloud shadows (2026-11-05, "more atmosphere"): two wide, soft
+          shadows sliding across the fields on a day with sky in it. Very
+          slow, very faint, so the light seems to change rather than move. */}
+      {bright && weatherCondition !== 'rain' && weatherCondition !== 'storm' && weatherCondition !== 'fog' && (
+        <g opacity={weatherCondition === 'cloudy' ? 0.1 : 0.06}>
+          <ellipse cx={0} cy={groundY + 70} rx={150} ry={34} fill="#2d3a2a" filter="url(#vglow)" className="village-cloud-shadow" />
+          <ellipse cx={0} cy={groundY + 150} rx={190} ry={40} fill="#2d3a2a" filter="url(#vglow)" className="village-cloud-shadow village-cloud-shadow-1" />
+        </g>
+      )}
+
+      {/* Morning mist (2026-11-05): a low white haze lying on the ground at
+          dawn, and all day when it is actually foggy out. It drifts a little
+          so it reads as air, not a stripe. */}
+      {(v.timeOfDay === 'dawn' || weatherCondition === 'fog') && (
+        <g opacity={weatherCondition === 'fog' ? 0.5 : 0.32} className="village-mist">
+          <ellipse cx={220} cy={groundY + 12} rx={260} ry={18} fill="#f4f1ea" filter="url(#vglow)" />
+          <ellipse cx={600} cy={groundY + 22} rx={240} ry={16} fill="#f4f1ea" filter="url(#vglow)" />
+          {weatherCondition === 'fog' && <ellipse cx={400} cy={groundY + 90} rx={420} ry={30} fill="#f4f1ea" filter="url(#vglow)" />}
+        </g>
+      )}
+
       {/* Warm glow pooling on the ground after dark (round 53; round 74 —
           also during Guest Mode). Under Home and a couple of spots along
           the path, the light everyone's windows and lamps are casting. */}

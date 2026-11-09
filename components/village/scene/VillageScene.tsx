@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playTap } from '@/lib/village/tapSound'
+import { FindIcon } from '../Finds'
+import type { Find } from '@/lib/village/finds'
 import { createPortal } from 'react-dom'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
@@ -31,7 +34,7 @@ import { useWanderer } from './useWanderer'
 import { DEFAULT_SCENE_MOOD, type SceneMood } from '@/lib/smarthome/sceneMood'
 import {
   GRASS_TUFTS, STONES, DISTANT_TREES, POLLEN, FOREGROUND, MIDGROUND_BUSHES, EXTRA_TREES,
-  PATH_D, NATURE_DETAILS, PATH_PAVERS, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
+  PATH_D, PATH_PAVERS, GROWTH, FIND_SPOTS, HILL_FAR, HILL_NEAR, GROUND_SHAPE, GROUND_LINE, pixelPine, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
   DEFAULT_LANDMARK_POS, SPUR_PAVERS, DECOR_DEFAULTS, GROUND_Y,
 } from './sceneData'
 
@@ -43,6 +46,10 @@ export { GROUND_Y }
  * `village`, so this file can be read top to bottom as a draw order.
  */
 
+// The far-hill haze takes the color of the low sky at each hour.
+const HAZE: Record<'dawn' | 'day' | 'dusk' | 'night', string> = {
+  dawn: '#f3dccb', day: '#e2ebef', dusk: '#eab99c', night: '#3b4668',
+}
 
 export default function VillageScene({
   village: villageIn, live, palette, celestial, plantSlots, buildingSlots,
@@ -50,7 +57,7 @@ export default function VillageScene({
   contributions = [], guestAlbumUrl = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  tripCount = 0, avoidLights = [], zoom = 1,
+  tripCount = 0, avoidLights = [], zoom = 1, finds, grown = 0,
   homeOccupied = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
@@ -132,6 +139,12 @@ export default function VillageScene({
   /** Avoid habits (2026-10-29): one lantern each, brighter with every clean
    *  day, dim on a day you slipped. Empty on the shared screen. */
   avoidLights?: { id: string; name: string; days: number; slippedToday: boolean }[]
+  /** Little finds (2026-11-05): what is lying around to pick up, and pick,
+   *  which keeps one and says what it was. Left out for guests, the shared
+   *  screen and while arranging. */
+  finds?: { waiting: Find[]; onPick: (id: string) => string | null }
+  /** How many GROWTH decorations the collection has brought back so far. */
+  grown?: number
   /** Round 16 (2026-08-27) — real Smart Home signal: true if any device in
    *  the household is currently on, null while unknown/no space yet. Drives
    *  Home's window glow independent of time-of-day (a lit window means
@@ -1111,7 +1124,43 @@ export default function VillageScene({
       e.stopPropagation()
       e.preventDefault()
       suppressClickRef.current = false
+      return
     }
+    juice(e)
+  }
+
+  // Juicy taps (2026-11-05). Anything in the scene you can tap gives a little
+  // pixel hop, a burst of pixel sparkles (hearts for creatures), and a blip if
+  // tap sounds are on. Found by what the tap landed on rather than wired into
+  // each of the sixty-odd tappable things one by one, so new ones get it free.
+  function juice(e: React.MouseEvent) {
+    if (arranging) return
+    const svg = svgRef.current
+    let el = e.target as Element | null
+    let hit: Element | null = null
+    while (el && el !== svg) {
+      if (getComputedStyle(el).cursor === 'pointer') { hit = el; break }
+      el = el.parentElement
+    }
+    if (!hit) return
+    let title = ''
+    for (let a: Element | null = hit; a && a !== svg && !title; a = a.parentElement) {
+      title = a.querySelector(':scope > title')?.textContent ?? ''
+    }
+    const heart = /^(somi|sylvia|harry)\b/i.test(title.trim())
+    playTap(heart ? 'heart' : 'pop')
+    const still = isFrozen || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (still) return
+    const g = hit.tagName === 'g' ? hit : hit.parentElement
+    if (g && g !== svg && (g as SVGGraphicsElement).getBBox?.().width < 260) {
+      g.animate([{ translate: '0 0' }, { translate: '0 -4px' }, { translate: '0 1px' }, { translate: '0 0' }],
+        { duration: 380, easing: 'ease-out' })
+    }
+    const pt = toSvgPoint(e.clientX, e.clientY)
+    if (!pt) return
+    const burst = Array.from({ length: heart ? 4 : 6 }, (_, i) => ({ id: `tap-${Date.now()}-${i}`, x: pt.x, y: pt.y, heart }))
+    setSparkles(prev => [...prev, ...burst])
+    setTimeout(() => setSparkles(prev => prev.filter(s => !burst.some(b => b.id === s.id))), 700)
   }
   const grew = new Set(changes?.grownPlantIds ?? [])
   const planted = new Set(changes?.newPlantIds ?? [])
@@ -1127,11 +1176,11 @@ export default function VillageScene({
 
   // Click-to-care (2026-08-24) — a tap already opened the name/stage
   // callout; this is the tactile half. careFor() bounces the tapped shape
-  // (village-tapped, see shapes.tsx) and throws a few sparkles from its
-  // spot, both self-clearing so the state stays a pure "is this happening
-  // right now" flag rather than something that needs manual reset.
+  // (village-tapped, see shapes.tsx), self-clearing so the state stays a
+  // pure "is this happening right now" flag. The sparkles come from juice().
   const [caredId, setCaredId] = useState<string | null>(null)
-  const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number }[]>([])
+  const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number; heart?: boolean }[]>([])
+  const [findPop, setFindPop] = useState<{ key: number; x: number; y: number; name: string } | null>(null)
 
   // A guest's contribution just landed — pulse it in (2026-09-04). First
   // population isn't "new"; only ids that appear after the scene already had
@@ -1151,15 +1200,12 @@ export default function VillageScene({
     return () => clearTimeout(t)
   }, [contributions])
   const contribPulse = (id: string) => (freshContribs.has(id) ? ' village-changed' : '')
-  function careFor(id: string, x: number, y: number) {
+  function careFor(id: string) {
     setCaredId(id)
     setTimeout(() => setCaredId(c => (c === id ? null : c)), 480)
-    const burst = Array.from({ length: 5 }, (_, i) => ({ id: `${id}-${Date.now()}-${i}`, x, y }))
-    setSparkles(prev => [...prev, ...burst])
-    setTimeout(() => setSparkles(prev => prev.filter(s => !burst.some(b => b.id === s.id))), 650)
   }
 
-  const selectPlant = (id: string, x: number, y: number) => () => {
+  const selectPlant = (id: string) => () => {
     // arranging guard added round 33 (2026-08-27, "can move them around once
     // planted") — plants are draggable now (see the render block below), and
     // without this a drag-arrange tap would also fire the click-to-care
@@ -1167,12 +1213,12 @@ export default function VillageScene({
     if (arranging) return
     if (locked) { onLockedNavigate?.('Growth Garden'); return }
     setSelected(s => (s?.type === 'plant' && s.id === id ? null : { type: 'plant', id }))
-    careFor(id, x, y)
+    careFor(id)
   }
-  const selectBuilding = (id: string, x: number, y: number) => () => {
+  const selectBuilding = (id: string) => () => {
     if (locked) { onLockedNavigate?.('Projects'); return }
     setSelected(s => (s?.type === 'building' && s.id === id ? null : { type: 'building', id }))
-    careFor(id, x, y)
+    careFor(id)
   }
   const selectedPlant = selected?.type === 'plant' ? plantSlots.find(p => p.plant.id === selected.id) : null
   const selectedBuilding = selected?.type === 'building' ? buildingSlots.find(b => b.building.id === selected.id) : null
@@ -1525,10 +1571,10 @@ export default function VillageScene({
             village's own backdrop, not a mountain range. Fixed shapes, no
             data behind them, same "pure atmosphere" rule as DISTANT_TREES. */}
         <g opacity={0.28}>
-          <path d={`M -20 ${GROUND_Y - 18} Q 140 ${GROUND_Y - 62} 320 ${GROUND_Y - 30} Q 480 ${GROUND_Y - 58} 640 ${GROUND_Y - 24} Q 740 ${GROUND_Y - 40} 820 ${GROUND_Y - 20} L 820 ${GROUND_Y + 4} L -20 ${GROUND_Y + 4} Z`} fill="#9FB08A" />
+          <path d={HILL_FAR} fill="#9FB08A" shapeRendering="crispEdges" />
         </g>
         <g opacity={0.38}>
-          <path d={`M -20 ${GROUND_Y - 8} Q 220 ${GROUND_Y - 34} 420 ${GROUND_Y - 14} Q 600 ${GROUND_Y - 32} 820 ${GROUND_Y - 10} L 820 ${GROUND_Y + 6} L -20 ${GROUND_Y + 6} Z`} fill="#8FA57E" />
+          <path d={HILL_NEAR} fill="#8FA57E" shapeRendering="crispEdges" />
         </g>
         {/* Distant treeline (2026-08-24) — the gap between the sky and the
             ground line used to be empty air, which is a lot of the reason the
@@ -1536,17 +1582,30 @@ export default function VillageScene({
             ground, two overlapping rows so it has some depth of its own. */}
         <g opacity={0.55}>
           {DISTANT_TREES.map(t => (
-            <path key={t.id} d={`M ${t.x} ${GROUND_Y - 22} l ${-t.h * 0.6} ${t.h} h ${t.h * 1.2} Z`} fill="#8FA582" />
+            <path key={t.id} d={pixelPine(t.x, GROUND_Y - 22, t.h, 1.2)} fill="#8FA582" shapeRendering="crispEdges" />
           ))}
         </g>
         <g opacity={0.7}>
           {DISTANT_TREES.map(t => (
-            <path key={t.id} d={`M ${t.x + 9} ${GROUND_Y - 14} l ${-t.h * 0.55} ${t.h * 0.85} h ${t.h * 1.1} Z`} fill="#7E9673" />
+            <path key={t.id} d={pixelPine(t.x + 9, GROUND_Y - 14, t.h * 0.85, 1.3)} fill="#7E9673" shapeRendering="crispEdges" />
           ))}
         </g>
 
+        {/* Haze on the far hills (2026-11-05, "more atmosphere"): the
+            distance fades into the sky color, so the hills sit back and the
+            village in front reads crisp. Lighter at night, when there is
+            less light to scatter. */}
+        <defs>
+          <linearGradient id="vhaze" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={HAZE[v.timeOfDay]} stopOpacity={0} />
+            <stop offset="0.65" stopColor={HAZE[v.timeOfDay]} stopOpacity={dark ? 0.18 : 0.42} />
+            <stop offset="1" stopColor={HAZE[v.timeOfDay]} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <rect x={-20} y={GROUND_Y - 66} width={840} height={72} fill="url(#vhaze)" pointerEvents="none" />
+
         {/* Rolling ground — a top-to-bottom gradient now, not one flat tone */}
-        <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+        <path d={GROUND_SHAPE} shapeRendering="crispEdges"
           fill="url(#vground)" opacity={0.95} />
         {/* The season, laid over the ground rather than replacing it: the land
             keeps its shape, it just goes gold or goes cold. Same opacity bug
@@ -1555,43 +1614,19 @@ export default function VillageScene({
             own opacity:1 end-state can't override the intended low wash. */}
         {live && palette.ground && (
           <g opacity={palette.groundOpacity}>
-            <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18} L 800 440 L 0 440 Z`}
+            <path d={GROUND_SHAPE} shapeRendering="crispEdges"
               fill={palette.ground} className="village-fade" />
           </g>
         )}
-        {/* Seasonal ground freckle (round 74, "cozy atmosphere" / "the
-            ground itself should turn with the season") — a light scatter of
-            tiny marks across the grass: fallen leaves in autumn, snow
-            patches in winter, flower flecks in spring, clover in summer.
-            Deterministic per index, same hashPos idiom as GRASS_TUFTS. */}
-        {live && (() => {
-          const spec = {
-            autumn: { fills: ['#c86a3a', '#b9532e', '#d98b45'], r: [0.8, 1.7], op: 0.5, n: 44 },
-            winter: { fills: ['#eef2f6', '#e2e9f0'], r: [1.4, 3.2], op: 0.55, n: 30 },
-            spring: { fills: ['#e8899f', '#f0c65a', '#ffffff'], r: [0.6, 1.1], op: 0.6, n: 40 },
-            summer: { fills: ['#5f8f4e', '#6fa057'], r: [0.7, 1.3], op: 0.3, n: 24 },
-          }[v.season]
-          return (
-            <g className="village-fade">
-              {Array.from({ length: spec.n }, (_, i) => {
-                const s = `frk-${v.season}-${i}`
-                const x = 12 + hashPos(s) * 776
-                const y = GROUND_Y + 6 + hashPos(s + 'y') * 150
-                const r = spec.r[0] + hashPos(s + 'r') * (spec.r[1] - spec.r[0])
-                const fill = spec.fills[Math.floor(hashPos(s + 'f') * spec.fills.length) % spec.fills.length]
-                return <circle key={i} cx={x} cy={y} r={r} fill={fill} opacity={spec.op * (0.5 + hashPos(s + 'o') * 0.5)} />
-              })}
-            </g>
-          )
-        })()}
+        {/* The seasonal ground speckle is gone (2026-11-05, "simple and
+            clean"): it read as dirt on the grass, not as texture. */}
       </g>
 
       {/* Behind the ground line and above the sky: places you've both been.
           Drawn before the ground stroke so the hills sit properly behind it. */}
       <Horizon places={horizon} groundY={GROUND_Y} />
 
-      <path d={`M 0 ${GROUND_Y} Q 200 ${GROUND_Y - 26} 400 ${GROUND_Y - 8} T 800 ${GROUND_Y - 18}`}
-        fill="none" stroke="var(--border)" strokeWidth="1.5" />
+      <path d={GROUND_LINE} fill="none" stroke="var(--border)" strokeWidth="1.5" shapeRendering="crispEdges" />
 
       {/* Tap the open ground to send Sylvia & Harry over there for an
           interaction (round 53). Sits under every prop/figure/district in
@@ -1665,9 +1700,9 @@ export default function VillageScene({
             rather than clash with it. */}
         <g opacity={0.9}>
           {GRASS_TUFTS.map((t, i) => (
-            <path key={t.id}
-              d={`M ${t.x - 2} ${GROUND_Y + 6} Q ${t.x} ${GROUND_Y + 6 - t.h} ${t.x + 2} ${GROUND_Y + 6}`}
-              fill="none" stroke={i % 2 === 0 ? '#8CA57C' : '#94AD84'} strokeWidth={1.2} strokeLinecap="round" />
+            <path key={t.id} shapeRendering="crispEdges"
+              d={`M ${Math.round(t.x)} ${GROUND_Y + 6 - Math.round(t.h * 0.5) * 2} h 2 V ${GROUND_Y + 6} h -2 Z M ${Math.round(t.x) + 2} ${GROUND_Y + 6 - Math.round(t.h * 0.3) * 2} h 2 V ${GROUND_Y + 6} h -2 Z`}
+              fill={i % 2 === 0 ? '#8CA57C' : '#94AD84'} />
           ))}
         </g>
 
@@ -1675,7 +1710,10 @@ export default function VillageScene({
             above. */}
         <g opacity={0.5}>
           {STONES.map(st => (
-            <ellipse key={st.id} cx={st.x} cy={GROUND_Y + 10 + (st.r * 1.5)} rx={st.r} ry={st.r * 0.62} fill="#C9C6B2" />
+            <g key={st.id} shapeRendering="crispEdges">
+              <rect x={Math.round(st.x - st.r)} y={Math.round(GROUND_Y + 9 + st.r * 1.5)} width={Math.max(2, Math.round(st.r * 2))} height={2} fill="#C9C6B2" />
+              <rect x={Math.round(st.x - st.r) + 1} y={Math.round(GROUND_Y + 8 + st.r * 1.5)} width={Math.max(1, Math.round(st.r * 2) - 2)} height={1} fill="#DEDBC9" />
+            </g>
           ))}
         </g>
 
@@ -1722,25 +1760,8 @@ export default function VillageScene({
               greenery now. */}
         </g>
 
-        {/* Fixed cozy nature details — boulders, wildflower meadows, a
-            firewood bundle (round 74). See NATURE_DETAILS above. */}
-        <g pointerEvents="none">
-          {NATURE_DETAILS.map((d, i) => {
-            const ar: Record<string, number> = {
-              'boulder-cluster.png': 258 / 161, 'rock-cluster.png': 183 / 125,
-              'wildflower-meadow.png': 680 / 204, 'flower-patch.png': 1.55,
-              'firewood-bundle.png': 174 / 120,
-            }
-            const w = d.w * 1.22, h = w / (ar[d.src] ?? 1.5)
-            return (
-              <g key={i} transform={d.flip ? `translate(${d.x} ${d.y}) scale(-1 1)` : `translate(${d.x} ${d.y})`}>
-                <ellipse cx={0} cy={0.5} rx={w * 0.44} ry={h * 0.14} fill="var(--text)" opacity={0.12} />
-                <image href={`/village-assets/${d.src}`} x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated' }} />
-              </g>
-            )
-          })}
-        </g>
+        {/* The fixed nature details (boulders, meadows, a firewood bundle)
+            are gone (2026-11-05, "simple and clean"). */}
 
         {/* Seasonal ground litter (round 75) — the master weather-ground
             sheet's leaf piles / mushrooms / acorns in autumn, snow mounds in
@@ -1774,41 +1795,8 @@ export default function VillageScene({
           </g>
         )}
 
-        {/* Cozy fixed features (round 74) — a flowering arbor bench to sit
-            under, two path lamps that catch the light at dusk / during a
-            gathering, tulip planters by the garden and the house. Static
-            scenery, not draggable — same idiom as the nature details. */}
-        <g pointerEvents="none">
-          {/* Flower arbor + bench */}
-          {(() => { const w = 28, h = w / (301 / 235), x = 348, y = GROUND_Y + 74; return (
-            <g transform={`translate(${x} ${y})`}>
-              <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={2} fill="var(--text)" opacity={0.13} />
-              <image href="/village-assets/arbor-bench.png" x={-w / 2} y={-h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
-            </g>
-          ) })()}
-          {/* Path lamps */}
-          {[{ x: 176, y: GROUND_Y + 20 }, { x: 528, y: GROUND_Y + 24 }].map((p, i) => {
-            const w = 10, h = w / (136 / 242)
-            return (
-              <g key={i} transform={`translate(${p.x} ${p.y})`}>
-                {warm && <circle cx={0} cy={-h + 3} r={7} fill="var(--amber)" opacity={0.4} filter="url(#vglow)" className="village-glow" />}
-                <ellipse cx={0} cy={0.5} rx={3} ry={1.3} fill="var(--text)" opacity={0.14} />
-                <image href="/village-assets/street-lamp.png" x={-w / 2} y={-h} width={w} height={h}
-                  style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
-              </g>
-            )
-          })}
-          {/* Tulip planters */}
-          {[{ x: 40, y: GROUND_Y + 52 }, { x: 366, y: GROUND_Y + 28 }].map((p, i) => {
-            const w = 16, h = w / (251 / 115)
-            return (
-              <g key={i} transform={`translate(${p.x} ${p.y})`}>
-                <ellipse cx={0} cy={0.5} rx={w * 0.42} ry={1.4} fill="var(--text)" opacity={0.12} />
-                <image href="/village-assets/flower-planter-tulips.png" x={-w / 2} y={-h} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
-              </g>
-            )
-          })}
-        </g>
+        {/* The arbor bench, two extra path lamps and tulip planters are gone
+            (2026-11-05, "simple and clean"); PROPS.lamps still light the path. */}
       </g>
 
       {/* Small props along the path — see PROPS above. */}
@@ -1870,7 +1858,7 @@ export default function VillageScene({
           <BenchShape x={0} y={0} scale={1.38} />
         </Draggable>
       ) })}
-      {PROPS.flowerBeds.map((f, i) => { const id = `flowerBed-${i}`; const p = decorPos(id); return (
+      {PROPS.flowerBeds.map((f, i) => { if (i % 2 === 1) return null; const id = `flowerBed-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
           <FlowerBedShape x={0} y={0} scale={1.38} hue={f.hue} onClick={!arranging ? () => life.walkTo(p.x, p.y + 6) : undefined} />
         </Draggable>
@@ -1897,21 +1885,6 @@ export default function VillageScene({
       {(() => { const p = decorPos('wishingWell'); return (
         <Draggable x={p.x} y={p.y} id="wishingWell" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('wishingWell')} r={22}>
           <WishingWellShape x={0} y={0} glow={wellGlow} onClick={!arranging ? submitGratitude : undefined} />
-        </Draggable>
-      ) })()}
-      {/* A standing garden lantern (round 63, "import all elements ... place
-          some too") — garden-lantern.png from the village/ decor-lanterns
-          sheet. Warm all the time, brighter after dark, same dark-gated
-          vglow idiom as LampShape. */}
-      {(() => { const p = decorPos('gardenLantern'); const s = itemScale('gardenLantern'); const h = 15 * s, w = h * (115 / 176); return (
-        <Draggable x={p.x} y={p.y} id="gardenLantern" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('gardenLantern')} r={11}>
-          <g>
-            <title>A garden lantern</title>
-            <ellipse cx={0} cy={1.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.12} />
-            <circle cx={0} cy={-h * 0.5} r={warm ? 8 : 5} fill="var(--amber)" opacity={warm ? 0.4 : 0.22} filter="url(#vglow)" className="village-glow" />
-            <image href="/village-assets/garden-lantern.png" x={-w / 2} y={-h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
-          </g>
         </Draggable>
       ) })()}
       {/* Postcard rack (round 66) — flip through your trip postcards. */}
@@ -1969,36 +1942,18 @@ export default function VillageScene({
         // master-folder source still exists).
         { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 46 * (346 / 338), h: 46 },
         { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 15 * (256 / 155), h: 15 },
-        { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
-        { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
-        { id: 'waterPumpScene', title: 'A water pump', href: 'water-pump.png', w: 15 * (207 / 253), h: 15 },
-        // Round 63 — near Growth Garden. A raised bed and a planter box of
-        // flowers; decorative, not a second way to plant a habit (real
-        // plants only ever come from habit data, see PlantShape).
-        { id: 'gardenBed', title: 'A raised garden bed', href: 'garden-bed.png', w: 16 * (289 / 171), h: 16 },
-        { id: 'flowerPlanter', title: 'A flower planter', href: 'flower-planter.png', w: 14 * (286 / 172), h: 14 },
-        // Round 65 — village-community-hobby-elements-alpha.png. Little
-        // traces of what Sylvia & Harry get up to, scattered around the
-        // gathering end of the village.
-        { id: 'hobbyEasel', title: 'A painting easel', href: 'hobby-easel.png', w: 12 * (146 / 271), h: 12 },
-        { id: 'hobbyTennis', title: 'A tennis racket', href: 'hobby-tennis.png', w: 9 * (235 / 247), h: 9 },
-        { id: 'hobbyBookCoffee', title: 'A book and coffee', href: 'hobby-book-coffee.png', w: 11 * (348 / 166), h: 11 },
-        { id: 'hobbyMusicStand', title: 'A music stand', href: 'hobby-music-stand.png', w: 11 * (152 / 253), h: 11 },
-        { id: 'hobbyInstrumentCase', title: 'An instrument case', href: 'hobby-instrument-case.png', w: 12 * (334 / 182), h: 12 },
-        { id: 'hobbyBicycle', title: 'A bicycle', href: 'hobby-bicycle.png', w: 13 * (292 / 253), h: 13 },
-        { id: 'hobbyGardenBasket', title: 'A gardening basket', href: 'hobby-garden-basket.png', w: 10 * (293 / 216), h: 10 },
-        // Sized up round 29 ("fix the sizing of everything, try to scale
-        // but do not make anything too tiny") — these four read noticeably
-        // smaller than everything else in the scene.
-        { id: 'bushMound', title: 'A bush', href: 'bush-mound.png', w: 20.4, h: 12 },
-        { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 17.2, h: 13 },
-        { id: 'tallGrass', title: 'Tall grass', href: 'tall-grass.png', w: 13.8, h: 13 },
-        { id: 'rockCluster', title: 'A few rocks', href: 'rock-cluster.png', w: 18.3, h: 12.5 },
+        // The garden bed, planters, hobby props, water pump, firewood,
+        // wildflowers and the four ground-cover accents are gone
+        // (2026-11-05, "simple and clean"). They grow back one at a time as
+        // the collection grows (GROWTH, appended below), and each is in the
+        // Inventory too.
         // Round 27's seven community-props items are gone (round 32,
         // 2026-08-27, "delete any elements that are not from my folder and
         // currently not in my folder right now") — see DECOR_DEFAULTS' own
         // comment above on why (their source sheet is no longer in the
         // folder).
+        // What the collection has grown back so far (2026-11-05), see GROWTH.
+        ...GROWTH.slice(0, grown),
       ].map(p => {
         const p0 = decorPos(p.id)
         // Resizable in arrange (round 48, 2026-08-28) — itemScale(id)
@@ -2170,7 +2125,7 @@ export default function VillageScene({
             changed={grew.has(plant.id) || planted.has(plant.id)}
             selected={selected?.type === 'plant' && selected.id === plant.id}
             cared={caredId === plant.id}
-            onClick={selectPlant(plant.id, x, y)} />
+            onClick={selectPlant(plant.id)} />
           {arranging && (
             <circle cx={x} cy={y - 12} r={22} fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
               opacity={draggingId === plant.id ? 0.9 : 0.4} />
@@ -2394,7 +2349,7 @@ export default function VillageScene({
                 <g key={building.id} opacity={done ? 1 : 0.45} className={landmarked.has(building.id) ? 'village-changed' : undefined}>
                   <image href="/village-assets/firewood.png" x={lx - bw / 2} y={ly - bh} width={bw} height={bh}
                     style={{ imageRendering: 'pixelated', cursor: 'pointer' }}
-                    onClick={selectBuilding(building.id, lx, ly)} />
+                    onClick={selectBuilding(building.id)} />
                   <title>{`${building.title}: ${done ? 'finished' : 'in progress'}`}</title>
                 </g>
               )
@@ -2519,15 +2474,24 @@ export default function VillageScene({
           pointerEvents="none" style={{ transition: 'opacity 1200ms ease' }} />
       )}
 
-      {/* Click-to-care sparkles — see careFor() above. Self-removing via its
+      {/* Tap sparkles — see juice() above. Self-removing via its
           own setTimeout, so this array is only ever non-empty for ~650ms. */}
       {sparkles.map((s, i) => {
         const angle = (i / 5) * Math.PI * 2 + (i * 0.7)
-        const dist = 18 + (i % 3) * 6
-        return (
-          <circle key={s.id} cx={s.x} cy={s.y} r={2} fill="var(--gold)" className="village-sparkle"
-            style={{ '--sx': `${Math.cos(angle) * dist}px`, '--sy': `${Math.sin(angle) * dist - 10}px` } as React.CSSProperties}
-            pointerEvents="none" />
+        const dist = s.heart ? 10 + (i % 2) * 5 : 18 + (i % 3) * 6
+        const style = s.heart
+          ? { '--sx': `${(i % 2 ? 1 : -1) * (4 + i * 3)}px`, '--sy': `${-14 - dist}px` }
+          : { '--sx': `${Math.cos(angle) * dist}px`, '--sy': `${Math.sin(angle) * dist - 10}px` }
+        // Pixel shapes (2026-11-05): a square glint, or a 5x4 pixel heart.
+        return s.heart ? (
+          <g key={s.id} transform={`translate(${s.x - 2.5} ${s.y - 6})`} pointerEvents="none">
+            <path className="village-sparkle" style={style as React.CSSProperties} shapeRendering="crispEdges" fill="#e8708a"
+              d="M0 0h2v1h1V0h2v2h-1v1h-1v1h-1V3H1V2H0z" />
+          </g>
+        ) : (
+          <rect key={s.id} x={s.x - 1.5} y={s.y - 1.5} width={3} height={3} shapeRendering="crispEdges"
+            fill={i % 3 === 0 ? '#fff6d8' : i % 3 === 1 ? 'var(--gold)' : '#f2b35e'} className="village-sparkle"
+            style={style as React.CSSProperties} pointerEvents="none" />
         )
       })}
 
@@ -2661,6 +2625,37 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="Memories" onClick={openOrToggle('people', 'Memories')} {...hoverPreview('people')} dark={dark} scale={1.12}
         count={memoryAlbums.length ? `${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}` : 'trips, parties, and Somi'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
+      {/* Little finds (2026-11-05). Whatever has turned up lies on the ground
+          with a slow glint, so it reads as something to pick up. Tapping keeps
+          it, and its name floats up for a moment. */}
+      {finds?.waiting.map(fd => {
+        const p = FIND_SPOTS[fd.spot]
+        if (!p) return null
+        return (
+          <g key={fd.id} transform={`translate(${p.x} ${p.y})`}>
+            <g className="village-find-bob" style={{ cursor: 'pointer' }}
+              onClick={e => {
+                e.stopPropagation()
+                const name = finds.onPick(fd.id)
+                if (!name) return
+                const key = Date.now()
+                setFindPop({ key, x: p.x, y: p.y - 20, name })
+                setTimeout(() => setFindPop(d => (d?.key === key ? null : d)), 1400)
+              }}>
+              <title>Something little. Tap to keep it.</title>
+              <circle r={13} cy={-7} fill="transparent" style={{ pointerEvents: 'all' }} />
+              <ellipse cx={0} cy={0.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.15} />
+              <g transform="translate(-8 -16)"><FindIcon kind={fd.kind} size={16} inSvg /></g>
+              <rect x={6} y={-18} width={2} height={2} fill="#fff8e6" className="village-find-glint" />
+            </g>
+          </g>
+        )
+      })}
+      {findPop && (
+        <text key={findPop.key} x={findPop.x} y={findPop.y} textAnchor="middle" className="village-find-pop"
+          fontSize={8} fontWeight={600} fill="#7a5a3a" stroke="#fff8e6" strokeWidth={2} paintOrder="stroke" pointerEvents="none">{findPop.name}</text>
+      )}
+
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
       {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}

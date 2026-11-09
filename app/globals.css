@@ -687,6 +687,14 @@ select, option {
 .village-mote-2 { animation-duration: 21s; animation-delay: -9s; }
 .village-mote-3 { animation-duration: 16s; animation-delay: -13s; }
 
+/* Cloud shadows and morning mist (2026-11-05). The shadows cross the whole
+   scene in about a minute and a half; the mist only sways. */
+@keyframes village-cloud-shadow { from { transform: translateX(-220px); } to { transform: translateX(1020px); } }
+.village-cloud-shadow   { animation: village-cloud-shadow 95s linear infinite; }
+.village-cloud-shadow-1 { animation-duration: 130s; animation-delay: -70s; }
+@keyframes village-mist { 0%,100% { transform: translateX(-14px); } 50% { transform: translateX(14px); } }
+.village-mist { animation: village-mist 26s ease-in-out infinite; }
+
 /* Petals drift, leaves sway wider, snow just falls. All fall the full height
    of the scene and restart, so there's no visible seam. */
 @keyframes village-petal {
@@ -851,7 +859,7 @@ select, option {
   .village-koi-0, .village-koi-1, .village-koi-rise, .village-crumb, .village-ripple,
   .village-butterfly-0, .village-butterfly-1,
   .village-petal, .village-leaf, .village-snow, .village-rain, .village-changed, .village-cloud, .village-twinkle,
-  .village-tapped, .village-sparkle,
+  .village-tapped, .village-sparkle, .village-cloud-shadow, .village-mist, .village-find-bob, .village-find-glint, .village-find-pop,
   .settle, .grew,
   .tab-in, .stagger > *, .tick path, .completed-row,
   .did-it, .finished, .landmark-moment, .praise { animation: none !important; }
@@ -985,3 +993,23 @@ body:has([aria-modal="true"]) .mobile-nav { display: none !important; }
 @media (hover: none) {
   .hover-reveal { opacity: 0.5 !important; }
 }
+
+/* Tap outlines (2026-11-05, "juicy taps"). On a mouse, whatever you can tap
+   in the village gets a crisp one-pixel light outline around its sprite, the
+   way pixel games mark something you can use. Sprites only, so a big ground
+   shape never lights up. */
+@media (hover: hover) {
+  svg[aria-label^="Your village"] g[style*="cursor: pointer"]:hover image,
+  svg[aria-label^="Your village"] .village-entity:hover image {
+    filter: drop-shadow(1px 0 0 #fff8e6) drop-shadow(-1px 0 0 #fff8e6) drop-shadow(0 1px 0 #fff8e6) drop-shadow(0 -1px 0 #fff8e6);
+  }
+}
+
+/* Little finds (2026-11-05): a slow bob and a blinking glint so a find reads
+   as something to pick up, and its name floating away once kept. */
+@keyframes village-find-bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -1.5px; } }
+.village-find-bob { animation: village-find-bob 2.6s ease-in-out infinite; }
+@keyframes village-find-glint { 0%,70%,100% { opacity: 0; } 80% { opacity: 1; } }
+.village-find-glint { animation: village-find-glint 3.2s ease-in-out infinite; }
+@keyframes village-find-pop { 0% { opacity: 0; translate: 0 2px; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; translate: 0 -12px; } }
+.village-find-pop { animation: village-find-pop 1.4s ease-out forwards; }
