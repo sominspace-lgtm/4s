@@ -74,6 +74,15 @@ export async function proxy(request: NextRequest) {
     // this the cron request never reaches that check; it just gets bounced
     // to /login, and the route's own auth logic never runs.
     || pathname.startsWith('/api/cron/')
+    // A paired screen (2026-11-08): the wall iPad has no person signed in.
+    // /pair shows its QR, /home and /api/devices/me run on the screen's own
+    // key (an httpOnly cookie checked inside each), and start/poll are the
+    // pairing handshake. /pair/<code>, where a phone approves, stays gated.
+    || pathname === '/pair'
+    || pathname === '/home'
+    || pathname === '/api/devices/pair/start'
+    || pathname === '/api/devices/pair/poll'
+    || pathname === '/api/devices/me'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands
