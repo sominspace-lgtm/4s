@@ -142,9 +142,9 @@ export default function RecipeImport({ onDraft, onWrite, onClose, prefill, auto 
           <div style={{ ...muted, marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div>Some sites block automatic reading. This button reads the page in your own browser instead, so it works on any site you can open, and sends it here.</div>
             <div>On a computer: drag this to your bookmarks bar, then click it on any recipe page.</div>
-            <a ref={linkRef} onClick={e => e.preventDefault()} draggable className="btn btn-secondary press" style={{ alignSelf: 'flex-start', fontSize: '0.74rem', cursor: 'grab' }}>Save to 4S</a>
-            <div>On an Android phone: open 4S in Chrome, tap the menu, then Install app. After that, 4S shows up in the Share menu of every app. Share a recipe link to 4S and pick what it is.</div>
-            <div>On an iPhone: open Shortcuts, make a new shortcut, and turn on Show in Share Sheet. Add the action Open URLs with this address, using the shared link at the end: <span style={{ color: 'var(--text)', wordBreak: 'break-all' }}>{typeof window !== 'undefined' ? window.location.origin : ''}/share-target?url=</span> Name it 4S. It then appears when you tap Share in Safari, TikTok or Instagram.</div>
+            <a ref={linkRef} onClick={e => e.preventDefault()} draggable className="btn btn-secondary press" style={{ alignSelf: 'flex-start', fontSize: '0.74rem', cursor: 'grab' }}>Save to SS</a>
+            <div>On an Android phone: open SS in Chrome, tap the menu, then Install app. After that, SS shows up in the Share menu of every app. Share a recipe link to SS and pick what it is.</div>
+            <div>On an iPhone: open Shortcuts, make a new shortcut, and turn on Show in Share Sheet. Add the action Open URLs with this address, using the shared link at the end: <span style={{ color: 'var(--text)', wordBreak: 'break-all' }}>{typeof window !== 'undefined' ? window.location.origin : ''}/share-target?url=</span> Name it SS. It then appears when you tap Share in Safari, TikTok or Instagram.</div>
             <div>Or open the page, copy the text, and use Paste text. A screenshot works too.</div>
             <button style={{ ...small, alignSelf: 'flex-start' }} onClick={() => { try { navigator.clipboard.writeText(buildBookmarklet(window.location.origin)) } catch { /* no clipboard */ } }}>Copy the bookmark code</button>
           </div>

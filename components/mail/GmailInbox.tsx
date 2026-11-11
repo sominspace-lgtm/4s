@@ -7,10 +7,10 @@ import { useEvents } from '@/lib/hooks/useEvents'
 import { useSubscriptions } from '@/lib/hooks/useSubscriptions'
 import { useTrips } from '@/lib/hooks/useTrips'
 
-// Gmail inside 4S (2026-10-05): a read-only inbox with search, a way to turn
+// Gmail inside SS (2026-10-05): a read-only inbox with search, a way to turn
 // one email into tasks / events / bills / trips (AI suggests, nothing is
 // saved until you confirm each chip), and a plain compose-and-send. Mail is
-// fetched live through /api/google/gmail on demand and never stored in 4S.
+// fetched live through /api/google/gmail on demand and never stored in SS.
 
 interface Suggestion {
   type: 'task' | 'event' | 'bill' | 'trip'

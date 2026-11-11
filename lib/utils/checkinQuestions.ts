@@ -1,5 +1,5 @@
 // The weekly relationship check-in — ported verbatim from the companion
-// Discord bot (companion/src/checkin/questions.ts) so 4S is now where you
+// Discord bot (companion/src/checkin/questions.ts) so SS is now where you
 // answer it, not a DM. The fixed questions mirror the columns of a Google
 // Sheet with years of history; a final "reflection" question rotates weekly,
 // deterministically by ISO week number (no LLM). Answers land in the

@@ -25,7 +25,7 @@ export default async function ApprovePage({ params }: { params: Promise<{ code: 
       <main style={SHELL}>
         <div style={CARD}>
           <h1 style={H1}>{code ? 'No household yet' : 'That link is not right'}</h1>
-          <p style={P}>{code ? 'Set up your household in 4S first, then scan again.' : 'Scan the code on the screen again.'}</p>
+          <p style={P}>{code ? 'Set up your household in SS first, then scan again.' : 'Scan the code on the screen again.'}</p>
         </div>
       </main>
     )

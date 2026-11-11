@@ -183,6 +183,7 @@ export function CollectionViewGeneric(v: ViewProps) {
   const [pType, setPType] = useState<PropType>('text')
   const [pOpts, setPOpts] = useState('')
   const [err, setErr] = useState<string | null>(null)
+  const [quick, setQuick] = useState('')
 
   const titleProp = props[0]
   const boardProp = props.find(p => p.id === v.boardPropId && p.type === 'select') ?? props.find(p => p.type === 'select') ?? null
@@ -240,7 +241,11 @@ export function CollectionViewGeneric(v: ViewProps) {
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search" style={{ ...field, maxWidth: '14rem' }} />
         <button style={small} onClick={() => setAddingProp(a => !a)}>+ Column</button>
-        <button className="btn btn-primary press" style={{ fontSize: '0.7rem' }} onClick={async () => setErr(await add({}))}>+ New row</button>
+        {/* Quick add (2026-11-10): type the first column and press Enter,
+            instead of adding a blank row and filling it in after. */}
+        <input value={quick} onChange={e => setQuick(e.target.value)} aria-label={'New ' + (titleProp?.name ?? 'row')}
+          onKeyDown={async e => { if (e.key === 'Enter' && quick.trim() && titleProp) { const t = quick.trim(); setQuick(''); setErr(await add({ [titleProp.id]: t })) } }}
+          placeholder={`Add ${(titleProp?.name ?? 'a row').toLowerCase()}, press Enter`} style={{ ...field, flex: '1 1 12rem', maxWidth: '22rem' }} />
       </div>
 
       {addingProp && (

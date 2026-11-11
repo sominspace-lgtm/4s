@@ -79,14 +79,14 @@ export default function AlexaConnect({ userId }: { userId: string }) {
           </div>
           <span style={{ fontSize: '0.68rem', color: 'var(--muted)', lineHeight: 1.6 }}>
             Switching to a different Echo, or handing this off to someone else? Unlink first.
-            An Alexa device can only be bound to one 4S account at a time.
+            An Alexa device can only be bound to one SS account at a time.
           </span>
           <Btn onClick={unlink} disabled={unlinking} danger>{unlinking ? 'unlinking…' : 'Unlink Alexa'}</Btn>
         </div>
       ) : (
         <>
           <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link&rdquo;</em> and read it out. Links your Echo to this account.
+            Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask olympus to link&rdquo;</em> and read it out. Links your Echo to this account.
           </span>
           {!code ? (
             <Btn onClick={connect} disabled={loading}>{loading ? 'generating…' : 'Get my code'}</Btn>
@@ -99,7 +99,7 @@ export default function AlexaConnect({ userId }: { userId: string }) {
                 border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
               }}>{code}</div>
               <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center' }}>
-                Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask four s to link {code.split('').join(' ')}&rdquo;</strong>
+                Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask olympus to link {code.split('').join(' ')}&rdquo;</strong>
               </span>
               <Btn onClick={connect} disabled={loading}>New code</Btn>
             </div>

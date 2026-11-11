@@ -1,8 +1,8 @@
-// "Save to 4S" from any page (2026-10-13). Plenty of recipe sites (and every
+// "Save to SS" from any page (2026-10-13). Plenty of recipe sites (and every
 // social site) turn away a server that tries to read them, but the page is
 // already open and readable in the person's own browser. A bookmarklet runs
 // there: it pulls the page's recipe markup (or, failing that, its visible
-// text), packs it into a link, and opens 4S with it. No server ever has to
+// text), packs it into a link, and opens SS with it. No server ever has to
 // get past the site's bot check, and recipe markup needs no AI at all.
 
 import type { RecipeDraft } from './types'
@@ -15,7 +15,7 @@ export type Incoming =
 export const INCOMING_KEY = '4s:recipe-import'
 const MAX_PARAM = 90_000
 
-/** The code to save as a bookmark. Runs on the recipe page, opens 4S with the result. */
+/** The code to save as a bookmark. Runs on the recipe page, opens SS with the result. */
 export function buildBookmarklet(origin: string): string {
   const code = `(()=>{try{
 var ld=[].slice.call(document.querySelectorAll('script[type="application/ld+json"]')).map(function(s){return s.textContent||''}).filter(function(t){return /"Recipe"/.test(t)}).slice(0,3).map(function(t){return t.slice(0,30000)});

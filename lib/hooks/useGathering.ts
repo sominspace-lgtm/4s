@@ -13,7 +13,7 @@ export interface MenuItem { id: string; name: string; note: string }
 /** One beat of the evening. `time` is free text ("7:00", "later"). */
 export interface AgendaItem { id: string; time: string; label: string; done: boolean }
 
-// Guest Mode (2026-08-29, "4S VILLAGE — GUEST MODE"). One row in `gatherings`
+// Guest Mode (2026-08-29, "SS VILLAGE — GUEST MODE"). One row in `gatherings`
 // with active=true, per shared space, IS "the village is open to guests".
 // Guests never hold a Supabase session — their writes come through
 // /api/g/[token] with the admin client, and land in `guest_contributions`.

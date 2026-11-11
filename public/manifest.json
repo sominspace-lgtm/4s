@@ -1,6 +1,6 @@
 {
-  "name": "4S Home",
-  "short_name": "4S",
+  "name": "SS Home",
+  "short_name": "SS",
   "description": "Your private family life OS",
   "start_url": "/dashboard",
   "display": "standalone",

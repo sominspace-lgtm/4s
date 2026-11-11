@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
-// Task stage evolution, from the 4S Village vision: a task isn't just
+// Task stage evolution, from the SS Village vision: a task isn't just
 // todo/in-progress/done, it's something that grows. Deliberately pure and
 // derived, never stored — same reasoning as habit peak_stage will use: one
 // source of truth (status, dates, the landmark pin) instead of a second
@@ -12,7 +12,7 @@ import { differenceInCalendarDays, parseISO } from 'date-fns'
 // days from creation to completion (a real project, not a quick task), or
 // the user pins it by hand for something that mattered regardless of how
 // long it took. There is no third automatic trigger (e.g. "had subtasks")
-// because 4S has no subtask model yet — better to have two honest triggers
+// because SS has no subtask model yet — better to have two honest triggers
 // than a third one that's actually always false.
 export type TaskStage = 'seed' | 'growing' | 'completed' | 'landmark'
 

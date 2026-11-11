@@ -1,17 +1,17 @@
-# Connecting 4S Home to Amazon Alexa
+# Connecting SS Home to Amazon Alexa
 
-4S talks to Alexa through a **custom Alexa Skill**. The skill's endpoint is a
-webhook already built into this app, and Alexa figures out *which* 4S user is
+SS talks to Alexa through a **custom Alexa Skill**. The skill's endpoint is a
+webhook already built into this app, and Alexa figures out *which* SS user is
 speaking through **account linking**. Nothing runs on an Alexa device — Alexa
 sends a JSON request to your deployed app, the app reads/writes Supabase, and
 replies with speech.
 
 Once set up you can say things like:
 
-- *"Alexa, ask four s to add a task to call the dentist tomorrow."*
-- *"Alexa, tell four s to capture: remember to water the plants."*
-- *"Alexa, ask four s to remind me to buy coffee."* (defaults to a 30-day reminder; adjust the interval in the app)
-- *"Alexa, ask four s what needs attention."*
+- *"Alexa, ask olympus to add a task to call the dentist tomorrow."*
+- *"Alexa, tell olympus to capture: remember to water the plants."*
+- *"Alexa, ask olympus to remind me to buy coffee."* (defaults to a 30-day reminder; adjust the interval in the app)
+- *"Alexa, ask olympus what needs attention."*
 
 ---
 
@@ -20,7 +20,7 @@ Once set up you can say things like:
 | Piece | Where | Purpose |
 |---|---|---|
 | Skill webhook | `app/api/alexa/route.ts` | Handles Launch + Intent requests, writes tasks / captures / refills, speaks your brief |
-| Account linking | code-based — spoken 4-digit code, see step 5 below | Maps each Alexa account to a 4S user |
+| Account linking | code-based — spoken 4-digit code, see step 5 below | Maps each Alexa account to a SS user |
 | Link tables | `supabase/migrations/alexa_account_linking.sql` then `alexa_code_linking.sql` | `alexa_links` (+ `alexa_user_id` col) and `alexa_link_codes` (run both migrations once, in order) |
 
 > `app/api/alexa/authorize/route.ts` (OAuth implicit-grant) also exists in the
@@ -41,13 +41,13 @@ In the Supabase SQL editor, run **`alexa_account_linking.sql`, then
 ### 1. Create the skill
 
 1. Go to **developer.amazon.com/alexa/console/ask** → **Create Skill**.
-2. Name it `4S Home`. Model: **Custom**. Hosting: **Provision your own**.
+2. Name it `SS Home`. Model: **Custom**. Hosting: **Provision your own**.
 3. Create it, then open the **Build** tab.
 
 ### 2. Set the invocation name
 
-**Build → Invocation** → set the invocation name to `four s`. (It can't start
-with a digit, so "4 s" is rejected — "four s" is what you say aloud.) Save.
+**Build → Invocation** → set the invocation name to `olympus`. Save.
+
 
 ### 3. Paste the interaction model
 
@@ -85,21 +85,21 @@ developer account **unless you invite them as beta testers**:
 
 Each person opens the emailed invite link on the browser or phone they use
 for Alexa, taps **Accept and enable**, which turns the skill on for their
-Amazon account. Only after this step can they say *"Alexa, open four s"* on
+Amazon account. Only after this step can they say *"Alexa, open olympus"* on
 their own devices. Do this for every household/friend who'll use it — it is
-separate from and required in addition to the 4S account linking below.
+separate from and required in addition to the SS account linking below.
 
-### 7. Each person links their own 4S account
+### 7. Each person links their own SS account
 
 Every person does this once, on their own device, after accepting the beta
 invite above:
 
-1. Open **4S → Account → Connect Alexa** → tap **Get my code**. A 4-digit
-   code appears, tied to their 4S login.
-2. Say to their Echo/Alexa app: *"Alexa, ask four s to link"* then read the
-   4 digits when asked (or in one breath: *"Alexa, ask four s to link 4 2 9 1"*).
+1. Open **SS → Account → Connect Alexa** → tap **Get my code**. A 4-digit
+   code appears, tied to their SS login.
+2. Say to their Echo/Alexa app: *"Alexa, ask olympus to link"* then read the
+   4 digits when asked (or in one breath: *"Alexa, ask olympus to link 4 2 9 1"*).
 3. Alexa confirms *"You're linked."* From then on, that Alexa account always
-   resolves to that person's 4S data — everyone's tasks, habits, and money
+   resolves to that person's SS data — everyone's tasks, habits, and money
    stay private to them even though they share one skill.
 
 Codes expire when a new one is generated and are deleted immediately after a
@@ -113,7 +113,7 @@ successful link, so there's no lingering code to guess.
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "four s",
+      "invocationName": "olympus",
       "intents": [
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
@@ -275,6 +275,25 @@ successful link, so there's no lingering code to guess.
           ]
         },
         {
+          "name": "SceneIntent",
+          "slots": [{ "name": "Scene", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "start {Scene}",
+            "run {Scene}",
+            "turn on {Scene}",
+            "set the house to {Scene}"
+          ]
+        },
+        {
+          "name": "AllOffIntent",
+          "samples": [
+            "turn everything off",
+            "all off",
+            "turn off everything",
+            "turn off all the lights"
+          ]
+        },
+        {
           "name": "LinkAccountIntent",
           "slots": [{ "name": "Code", "type": "AMAZON.FOUR_DIGIT_NUMBER" }],
           "samples": [
@@ -331,13 +350,13 @@ linking fails, it's almost always one of these, in order of likelihood:
    says "just say the four digits," but that only works after the interaction
    model above (with the `"{Code}"` sample) is pasted in **and Build Model is
    run**. Until then, say the digits *with* a carrier word:
-   *"Alexa, ask four s to link four two nine one."*
+   *"Alexa, ask olympus to link four two nine one."*
 2. **The interaction model wasn't (re)built.** Any time the model changes,
    **Build → Interaction Model → JSON Editor → Save Model → Build Model**.
    Without a build, new/updated intents don't exist for Alexa's speech matching.
 3. **The skill isn't enabled for that person's Amazon account.** Your own dev
    account has it automatically; everyone else needs a **Beta Test invite**
-   (step 6) accepted first, or Alexa won't recognize "four s" at all.
+   (step 6) accepted first, or Alexa won't recognize "olympus" at all.
 4. **The endpoint isn't pointed at prod.** Build → Endpoint must be
    `https://4s-coral.vercel.app/api/alexa` (HTTPS, wildcard-cert option).
 5. **No code came back in the app.** If Account → Connect Alexa → "Get my code"
@@ -362,7 +381,7 @@ means `ALEXA_SKILL_ID` on Vercel doesn't match your skill.
   anonymous `userId`, not a bearer token) — so only a linked Alexa account can
   read or write that person's data.
 - Links live in `alexa_links`, keyed by `alexa_user_id` with a unique index —
-  one Alexa account maps to exactly one 4S user, and each 4S user can have at
+  one Alexa account maps to exactly one SS user, and each SS user can have at
   most one linked Alexa account. Only read server-side with the service-role
   client. Delete your row (or ask another linked person to delete theirs) to
   unlink; generating a fresh code and re-linking overwrites the old row.

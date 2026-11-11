@@ -34,7 +34,7 @@ export const THEMES: Record<string, Record<string, string>> = {
   //
   // Palette lifted from the live Bloom app rather than approximated by eye:
   // cream paper, sage, warm brown ink, and its soft botanical pastels. The
-  // brief says BloomScan and 4S are two products sharing one world — this is
+  // brief says BloomScan and SS are two products sharing one world — this is
   // the seam where that becomes visible instead of just being asserted.
   //
   // Two things here exist only for this theme:
@@ -248,7 +248,7 @@ export const LEGACY_THEME_MAP: Record<string, string> = {
 }
 
 // Moonlight (dark) is the default (2026-10-05) — it was Bloom's cream/sage
-// paper from 2026-08-07 so 4S and BloomScan read as one world, but the app
+// paper from 2026-08-07 so SS and BloomScan read as one world, but the app
 // is lived in after dark far more than at a desk, so a new account now opens
 // dark. Bloom is still a stored-value theme and the Village scene itself is
 // always drawn in Bloom regardless. Only affects accounts with no stored

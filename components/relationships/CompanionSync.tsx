@@ -83,7 +83,7 @@ function PairGate({ userId, userEmail }: { userId: string; userEmail: string }) 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
           {receivedPending.map(p => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--gold) 35%, var(--border))', background: 'color-mix(in srgb, var(--gold) 8%, transparent)' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1 }}>Invitation from a 4S user pending your confirmation</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text)', flex: 1 }}>Invitation from a SS user pending your confirmation</span>
               <button onClick={() => confirm(p.id)} className="btn btn-primary" style={{ fontSize: '0.68rem' }}>Confirm</button>
               <button onClick={() => remove(p.id)} className="btn btn-ghost" style={{ fontSize: '0.68rem' }}>Decline</button>
             </div>
@@ -132,7 +132,7 @@ function ConnectionSetup({ onSave }: { onSave: (url: string, key: string) => Pro
       <div style={{ fontSize: '0.9rem', color: 'var(--text)', fontWeight: 400, marginBottom: '0.4rem' }}>Connect your Companion bot</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
         Partner confirmed. Paste the tunnel URL and API key from your own Companion backend. It is
-        saved just for the two of you, never shared with any other 4S account.
+        saved just for the two of you, never shared with any other SS account.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <input style={inputStyle} placeholder="https://your-tunnel-url" value={apiUrl} onChange={e => setApiUrl(e.target.value)} />

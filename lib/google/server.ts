@@ -221,7 +221,7 @@ export async function googleReason(res: Response, api: string): Promise<string> 
     return `The ${api} is switched off in your Google Cloud project. Turn it on in APIs & Services → Library, wait a minute, then try again.`
   }
   if (res.status === 403 && /insufficient|scope|PERMISSION_DENIED/i.test(reason + ' ' + message)) {
-    return 'Google has not given 4S permission for this. Reconnect Google in Connect and tick every box.'
+    return 'Google has not given SS permission for this. Reconnect Google in Connect and tick every box.'
   }
   if (res.status === 401) return 'Google needs to be connected again. Reconnect it in Connect.'
   if (res.status === 429) return 'Google says slow down. Try again in a minute.'

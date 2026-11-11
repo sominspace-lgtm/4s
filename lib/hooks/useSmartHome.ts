@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { applySceneToDevices, type Scene } from '@/lib/smarthome/apply'
+import { isRestingScene, type Scene } from '@/lib/smarthome/apply'
+import { isOn, kindOf, stateOf, sceneTarget, type DeviceKind, type DeviceState } from '@/lib/smarthome/capabilities'
 
 export interface SmartHomeDevice {
   id: string
@@ -13,6 +14,17 @@ export interface SmartHomeDevice {
   note: string | null
   created_at: string
   updated_at: string
+  /** The Controller's columns (2026-11-08). Missing until its SQL is run. */
+  room?: string | null
+  kind?: string | null
+  provider?: string | null
+  state?: DeviceState | null
+}
+
+/** A device's kind and full state, with sensible fallbacks for old rows. */
+export function deviceView(d: SmartHomeDevice): { kind: DeviceKind; state: DeviceState; practice: boolean; real: boolean; room: string } {
+  const kind = kindOf(d.kind)
+  return { kind, state: stateOf(kind, d.state, d.on_state), practice: d.provider === 'practice', real: d.provider === 'home_assistant', room: d.room?.trim() || d.category?.trim() || 'Other' }
 }
 
 // Which scene is currently applied to the space. Persisted on
@@ -113,24 +125,65 @@ export function useSmartHome(spaceId: string | null) {
     await supabase.from('shared_spaces').update({ active_scene: next }).eq('id', spaceId)
   }
 
-  async function addDevice(name: string, category: string | null): Promise<string | null> {
+  async function addDevice(name: string, room: string | null, kind: DeviceKind = 'switch'): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return 'Not signed in'
-    const { data, error } = await supabase.from('household_smarthome_devices')
-      .insert({ user_id: user.id, space_id: spaceId, name, category })
+    let res = await supabase.from('household_smarthome_devices')
+      .insert({ user_id: user.id, space_id: spaceId, name, category: room, room, kind, provider: 'manual' })
       .select().single()
-    if (error) return error.message
-    setDevices(prev => [...prev, data as SmartHomeDevice])
+    // Before the Controller's SQL is run there are no room/kind columns.
+    if (res.error && (res.error.code === 'PGRST204' || res.error.code === '42703')) {
+      res = await supabase.from('household_smarthome_devices')
+        .insert({ user_id: user.id, space_id: spaceId, name, category: room })
+        .select().single()
+    }
+    if (res.error) return res.error.message
+    setDevices(prev => [...prev, res.data as SmartHomeDevice])
     return null
   }
 
+  /** Any change a device can take, checked and sent by the server. */
+  async function setDevice(id: string, change: DeviceState): Promise<string | null> {
+    const before = devices
+    setDevices(prev => prev.map(d => {
+      if (d.id !== id) return d
+      const v = deviceView(d)
+      const next = { ...v.state, ...change }
+      return { ...d, state: next, on_state: isOn(v.kind, next) }
+    }))
+    if (activeScene) { lastSceneWriteRef.current = 'null'; setActiveScene(null) }
+    const res = await fetch('/api/smarthome/device', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ spaceId, deviceId: id, change }),
+    }).catch(() => null)
+    if (res?.ok) return null
+    setDevices(before)
+    const data = res ? await res.json().catch(() => ({})) : {}
+    return data.error ?? 'No connection. Try again.'
+  }
+
   async function toggleDevice(id: string, on: boolean) {
+    const d = devices.find(x => x.id === id)
+    if (!d) return
+    const kind = kindOf(d.kind)
+    await setDevice(id, sceneTarget(kind, on))
+  }
+
+  async function updateRoom(id: string, room: string | null) {
     const { error } = await supabase.from('household_smarthome_devices')
-      .update({ on_state: on, updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) return
-    setDevices(prev => prev.map(d => (d.id === id ? { ...d, on_state: on } : d)))
-    // A hands-on toggle means the scene no longer describes the room.
-    if (activeScene) await persistActiveScene(null)
+      .update({ room, category: room, updated_at: new Date().toISOString() }).eq('id', id)
+    if (!error) setDevices(prev => prev.map(d => (d.id === id ? { ...d, room, category: room } : d)))
+  }
+
+  /** The Practice home: pretend devices to try the Controller with. */
+  async function practice(action: 'add' | 'remove'): Promise<string | null> {
+    const res = await fetch('/api/smarthome/practice', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId, action }),
+    }).catch(() => null)
+    await load()
+    if (res?.ok) return null
+    const data = res ? await res.json().catch(() => ({})) : {}
+    return data.error ?? 'No connection. Try again.'
   }
 
   async function updateNote(id: string, note: string | null) {
@@ -162,8 +215,8 @@ export function useSmartHome(spaceId: string | null) {
   async function saveScene(name: string, icon: string) {
     const clean = name.trim()
     if (!clean) return
-    const snapshot: Record<string, boolean> = {}
-    for (const d of devices) snapshot[d.id] = d.on_state
+    const snapshot: Record<string, DeviceState> = {}
+    for (const d of devices) snapshot[d.id] = deviceView(d).state
     const existing = scenes.find(s => s.name.toLowerCase() === clean.toLowerCase())
     const scene: Scene = { id: existing?.id ?? crypto.randomUUID(), name: clean, icon, devices: snapshot }
     await persistScenes(existing ? scenes.map(s => (s.id === existing.id ? scene : s)) : [...scenes, scene])
@@ -174,15 +227,24 @@ export function useSmartHome(spaceId: string | null) {
     if (activeScene?.id === id) await persistActiveScene(null)
   }
 
-  const isHome = (name: string) => name.trim().toLowerCase().replace(/'/g, '') === 'were home'
-
   async function runScene(scene: Scene): Promise<string | null> {
-    setDevices(prev => prev.map(d => (d.id in scene.devices ? { ...d, on_state: scene.devices[d.id] } : d)))
-    const { error } = await applySceneToDevices(supabase, scene)
-    if (error) return error
-    // "We're home" is the resting state — applying it clears the mood.
-    await persistActiveScene(isHome(scene.name) ? null : { id: scene.id, name: scene.name, appliedAt: new Date().toISOString() })
-    return null
+    setDevices(prev => prev.map(d => {
+      const target = scene.devices[d.id]
+      if (target === undefined) return d
+      const v = deviceView(d)
+      const next = { ...v.state, ...sceneTarget(v.kind, target) }
+      return { ...d, state: next, on_state: isOn(v.kind, next) }
+    }))
+    const next = isRestingScene(scene.name) ? null : { id: scene.id, name: scene.name, appliedAt: new Date().toISOString() }
+    lastSceneWriteRef.current = JSON.stringify(next)
+    setActiveScene(next)
+    const res = await fetch('/api/smarthome/scene', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId, sceneId: scene.id }),
+    }).catch(() => null)
+    if (res?.ok) return null
+    await load()
+    const data = res ? await res.json().catch(() => ({})) : {}
+    return data.error ?? 'No connection. Try again.'
   }
 
   /** Flip every device the scene names to its target state, and record it as
@@ -201,17 +263,27 @@ export function useSmartHome(spaceId: string | null) {
     const key = name.trim().toLowerCase()
     let scene = scenes.find(s => s.name.trim().toLowerCase() === key)
     if (!scene) {
-      const snapshot: Record<string, boolean> = {}
-      for (const d of devices) snapshot[d.id] = d.on_state
+      const snapshot: Record<string, DeviceState> = {}
+      for (const d of devices) snapshot[d.id] = deviceView(d).state
       scene = { id: crypto.randomUUID(), name: name.trim(), icon, devices: snapshot }
       await persistScenes([...scenes, scene])
     }
     return runScene(scene)
   }
 
+  /** Lights, plugs, switches, fans, speakers and TVs off. */
+  async function allOff(): Promise<string | null> {
+    const res = await fetch('/api/smarthome/all-off', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spaceId }),
+    }).catch(() => null)
+    await load()
+    if (res?.ok) { const d = await res.json().catch(() => ({})); return d.failed ? `${d.failed} could not be turned off.` : null }
+    return 'No connection. Try again.'
+  }
+
   return {
-    devices, scenes, activeScene, binDays, loading,
-    addDevice, toggleDevice, updateNote, removeDevice,
+    devices, scenes, activeScene, binDays, loading, reload: load, allOff,
+    addDevice, setDevice, toggleDevice, updateNote, updateRoom, removeDevice, practice,
     saveScene, deleteScene, applyScene, applyPreset, saveBinDays,
   }
 }

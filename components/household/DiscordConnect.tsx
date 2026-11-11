@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-// The 4S half of the Discord link (integration spec §12). Generates a
+// The SS half of the Discord link (integration spec §12). Generates a
 // short-lived pairing code that someone redeems once with /connect in Discord,
 // and lists who's already linked with per-person notification toggles.
 //

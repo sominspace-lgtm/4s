@@ -51,7 +51,7 @@ export default function SettingsPage({ userId, actions }: { userId: string; acti
       </Group>
       <Group title="Connections">
         <Row label="Google and apps" hint="Your Google, the shared account, calendar sharing, Alexa" onClick={actions.connect} />
-        <Row label="Notifications" hint="What 4S may tell you, and when" onClick={actions.notifications} />
+        <Row label="Notifications" hint="What SS may tell you, and when" onClick={actions.notifications} />
       </Group>
       <Group title="Layout">
         <Row label="Tabs and sections" hint="Show, hide and reorder" onClick={actions.customize} />

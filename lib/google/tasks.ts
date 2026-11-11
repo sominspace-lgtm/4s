@@ -1,7 +1,7 @@
 import { gfetch, GoogleError } from './calendar'
 
 // Google Tasks, the default list (2026-10-18). For when the person asks for
-// Google Tasks by name; ordinary tasks go to 4S's own Tasks tab.
+// Google Tasks by name; ordinary tasks go to SS's own Tasks tab.
 
 const BASE = 'https://tasks.googleapis.com/tasks/v1/lists/@default/tasks'
 

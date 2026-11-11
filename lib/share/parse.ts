@@ -1,4 +1,4 @@
-// Something shared to 4S from the phone's share sheet (2026-10-13). Android
+// Something shared to SS from the phone's share sheet (2026-10-13). Android
 // often puts the link in `text` rather than `url`, so the first link found in
 // any of the three fields is the link, and what is left is the words.
 

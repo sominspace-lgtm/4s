@@ -132,13 +132,13 @@ const weatherTools: JarvisTool[] = [
   },
 ]
 
-// ── 4S tasks (the Tasks tab) ────────────────────────────────────────────────
-// The person's own task list in 4S. Jarvis adds here unless they ask for
+// ── SS tasks (the Tasks tab) ────────────────────────────────────────────────
+// The person's own task list in SS. Jarvis adds here unless they ask for
 // Google Tasks by name, so a task does not end up in two places.
 const taskTools: JarvisTool[] = [
   {
     name: 'tasks_list',
-    description: 'The person\'s open tasks in 4S (the Tasks tab), with due dates.',
+    description: 'The person\'s open tasks in SS (the Tasks tab), with due dates.',
     input_schema: { type: 'object', properties: {} },
     run: async ({ userId, supabase }) => {
       const { data, error } = await supabase.from('work_items').select('title, due_date, energy, notes')
@@ -149,20 +149,20 @@ const taskTools: JarvisTool[] = [
   },
   {
     name: 'tasks_add',
-    description: 'Add a task to the person\'s 4S task list. Use this for tasks unless they ask for Google Tasks. The person confirms first.',
+    description: 'Add a task to the person\'s SS task list. Use this for tasks unless they ask for Google Tasks. The person confirms first.',
     write: true,
     input_schema: { type: 'object', properties: {
       title: { type: 'string' },
       due_date: { type: 'string', description: 'yyyy-MM-dd, only if a day was given or clearly implied' },
       notes: { type: 'string' },
     }, required: ['title'] },
-    summarize: i => `Add the task "${str(i.title, 200)}" to 4S${typeof i.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(i.due_date) ? `, due ${niceDate(i.due_date)}` : ''}`,
+    summarize: i => `Add the task "${str(i.title, 200)}" to SS${typeof i.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(i.due_date) ? `, due ${niceDate(i.due_date)}` : ''}`,
     run: async ({ userId, supabase }, i) => {
       const title = str(i.title, 200)
       if (!title) throw new ToolInputError('A task needs a title')
       const due = typeof i.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(i.due_date) ? i.due_date : null
       const { error } = await supabase.from('work_items').insert({ user_id: userId, title, notes: str(i.notes, 2000), due_date: due, status: 'todo' })
-      if (error) throw new ToolInputError('4S could not save the task.')
+      if (error) throw new ToolInputError('SS could not save the task.')
       return { added: true }
     },
   },

@@ -88,7 +88,7 @@ export async function GET(request: Request) {
       const waiting = (items ?? []).filter(i => dueUrgency(i.due_date as string | null) === 'overdue')
       if (waiting.length > 0) {
         await safePush(admin, userId, {
-          title: '4S',
+          title: 'SS',
           body: waiting.length === 1
             ? `"${waiting[0].title}" is still waiting for you.`
             : `"${waiting[0].title}" and a few others are still waiting for you.`,
@@ -108,7 +108,7 @@ export async function GET(request: Request) {
         const days = Math.round((Date.parse(`${rd}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000)
         const key = `sub:${s.id}:${rd}`
         if (days >= 0 && days <= 1 && sent[key] === undefined) {
-          await safePush(admin, userId, { title: '4S', body: `${s.name} renews ${days === 0 ? 'today' : 'tomorrow'}.`, url: '/dashboard' })
+          await safePush(admin, userId, { title: 'SS', body: `${s.name} renews ${days === 0 ? 'today' : 'tomorrow'}.`, url: '/dashboard' })
           fresh[key] = today
           notified++
         }
@@ -161,7 +161,7 @@ export async function GET(request: Request) {
         if (now.getTime() - Date.parse(touchedAt) < staleCutoffMs) continue
         const key = `goal:${g.id}:${touchedAt}`
         if (sent[key] !== undefined) continue
-        await safePush(admin, userId, { title: '4S', body: `Still choosing "${g.title}"? It's been quiet a while.`, url: '/dashboard' })
+        await safePush(admin, userId, { title: 'SS', body: `Still choosing "${g.title}"? It's been quiet a while.`, url: '/dashboard' })
         fresh[key] = today
         notified++
       }
@@ -232,7 +232,7 @@ export async function GET(request: Request) {
       if (due.length > 0) {
         const first = due[0]
         await safePush(admin, userId, {
-          title: '4S',
+          title: 'SS',
           body: due.length === 1
             ? `"${first.name}" is due${first.late > 0 ? ` (${first.late} day${first.late === 1 ? '' : 's'} late)` : ''}.`
             : `"${first.name}" and ${due.length - 1} other chore${due.length === 2 ? '' : 's'} are due.`,
@@ -257,7 +257,7 @@ export async function GET(request: Request) {
         const key = `warranty:${t.id}:${mark}`
         if (sent[key] !== undefined) continue
         await safePush(admin, userId, {
-          title: '4S',
+          title: 'SS',
           body: left === 0 ? `The warranty on "${t.name}" ends today.` : `The warranty on "${t.name}" ends in ${left} day${left === 1 ? '' : 's'}.`,
           url: '/dashboard?go=reference',
         })

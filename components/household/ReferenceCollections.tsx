@@ -8,6 +8,8 @@ import { SYSTEM_SPECS, SYSTEM_KEYS, type SystemKey } from '@/lib/collections/sys
 import { useSystemDef, useDateIdeaSource, useWatchSource } from '@/lib/hooks/useSystemCollection'
 import { RowSendAllowed } from '@/components/notes/RowSendMenu'
 import { CollectionViewGeneric, UserCollectionView, CollectionCards, type RowSource } from '@/components/notes/CollectionsHub'
+import WatchList from './WatchList'
+import DateIdeasList from './DateIdeasList'
 
 // The household's Reference lists, as collections (2026-10-12): date ideas,
 // movies and shows, games, and anything else the two of you have shared as a
@@ -104,11 +106,26 @@ function ReferenceCollectionsInner({ spaceId, userId, guestMode = false }: {
   )
 }
 
-// One built-in list, shown through the shared table/board view.
+// One built-in list (2026-11-10): the plain list first, the table/board one
+// tap away for anyone who wants columns.
 function SystemView({ spaceId, sysKey, onBack }: { spaceId: string; sysKey: SystemKey; onBack: () => void }) {
-  return sysKey === 'date_ideas'
-    ? <DateIdeasView spaceId={spaceId} onBack={onBack} />
-    : <WatchView spaceId={spaceId} sysKey={sysKey} onBack={onBack} />
+  const [table, setTable] = useState(false)
+  if (table) {
+    return sysKey === 'date_ideas'
+      ? <DateIdeasView spaceId={spaceId} onBack={() => setTable(false)} />
+      : <WatchView spaceId={spaceId} sysKey={sysKey} onBack={() => setTable(false)} />
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.7rem', padding: 0 }}>‹ Collections</button>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem' }}>{SYSTEM_SPECS[sysKey].name}</div>
+      </div>
+      {sysKey === 'date_ideas'
+        ? <DateIdeasList spaceId={spaceId} onTable={() => setTable(true)} />
+        : <WatchList spaceId={spaceId} domain={sysKey === 'games' ? 'game' : 'media'} onTable={() => setTable(true)} />}
+    </div>
+  )
 }
 
 function DateIdeasView({ spaceId, onBack }: { spaceId: string; onBack: () => void }) {
@@ -132,7 +149,7 @@ function SystemShell({ spaceId, sysKey, source, places, onBack }: {
   return (
     <CollectionViewGeneric
       name={spec.name} props={props} view={def.view} boardPropId={def.boardProp} locked={coreIds}
-      source={source} places={places} backLabel="Collections" onBack={onBack}
+      source={source} places={places} backLabel="List view" onBack={onBack}
       actions={{
         rename: () => {}, remove: () => {}, toggleShare: () => {},
         // Only your own columns are saved on the collection; the built-in

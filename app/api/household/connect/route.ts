@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (!row) return NextResponse.json({ error: 'That code is not valid.' }, { status: 404 })
     if (new Date(row.expires_at) < new Date()) {
       await admin.from('household_link_codes').delete().eq('code', code)
-      return NextResponse.json({ error: 'That code has expired. Make a new one in 4S.' }, { status: 410 })
+      return NextResponse.json({ error: 'That code has expired. Make a new one in SS.' }, { status: 410 })
     }
 
     const { data: space } = await admin
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       .eq('status', 'accepted')
 
     const token = generateToken()
-    // Who this Discord account belongs to: if the redeemer's 4S identity can't
+    // Who this Discord account belongs to: if the redeemer's SS identity can't
     // be established yet, fall back to the code's issuer. A first connection is
     // always the owner's own, and additional members re-run /connect with their
     // own code once they've been invited to the space.

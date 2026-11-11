@@ -10,7 +10,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
           <div style={{ textAlign: 'center', maxWidth: '22rem' }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Something went wrong</div>
             <p style={{ fontSize: '0.95rem', color: '#7a6f60', lineHeight: 1.6, margin: '0 0 1.4rem' }}>
-              Nothing you saved is lost. Try again, or reload 4S.
+              Nothing you saved is lost. Try again, or reload SS.
             </p>
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
               <button onClick={reset} style={btn('#3b342b', '#fff')}>Try again</button>

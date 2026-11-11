@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { googleFetch, googleReason, requireGoogleAccess } from '@/lib/google/server'
 
 // Google Photos (2026-10-24), through Google's Photos Picker: you choose the
-// photos in Google's own picker, and 4S only ever sees the ones you chose.
+// photos in Google's own picker, and SS only ever sees the ones you chose.
 // (Google closed whole-library access to apps in 2025; the picker is the way
 // in now.) Steps: POST makes a picking session and returns the picker link;
 // GET ?session= reports when you are done; GET ?session=&list=1 lists what

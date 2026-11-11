@@ -23,6 +23,8 @@ export interface HomeSnapshot {
   layout: VillageLayout
   grown: number
   activeScene: ActiveScene | null
+  /** Saved scenes, just names and icons, for the screen's Scenes menu. */
+  scenes: { id: string; name: string; icon: string }[]
   binDays: BinDays
   dinner: string | null
 }
@@ -34,7 +36,7 @@ export async function homeSnapshot(spaceId: string, today: string): Promise<Home
   const day = isDate(today) ? today : new Date().toISOString().slice(0, 10)
 
   const [{ data: space }, { data: members }] = await Promise.all([
-    admin.from('shared_spaces').select('name, owner_id, active_scene, bin_days').eq('id', spaceId).maybeSingle(),
+    admin.from('shared_spaces').select('name, owner_id, active_scene, bin_days, scenes').eq('id', spaceId).maybeSingle(),
     admin.from('shared_space_members').select('member_id').eq('space_id', spaceId).eq('status', 'accepted'),
   ])
   const people = [...new Set([space?.owner_id, ...(members ?? []).map(m => m.member_id)].filter((x): x is string => !!x))]
@@ -74,6 +76,9 @@ export async function homeSnapshot(spaceId: string, today: string): Promise<Home
     layout: (layoutRes.data?.layout as VillageLayout | undefined) ?? {},
     grown: findsRes.data ? grownCount(parseFinds(findsRes.data.state, new Date()).kept.length) : 0,
     activeScene: (space?.active_scene as ActiveScene | null) ?? null,
+    scenes: ((space?.scenes ?? []) as { id: string; name: string; icon: string }[])
+      .filter(s => s && typeof s.id === 'string' && typeof s.name === 'string')
+      .map(s => ({ id: s.id, name: s.name, icon: s.icon ?? '' })),
     binDays: (space?.bin_days as BinDays | undefined) ?? {},
     dinner: meal?.title?.trim() || null,
   }

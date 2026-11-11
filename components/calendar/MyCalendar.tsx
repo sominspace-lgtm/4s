@@ -6,7 +6,7 @@ import CalendarEmbed from '@/components/calendar/CalendarEmbed'
 import GoogleCalendar from '@/components/google/GoogleCalendar'
 import { useGoogleStatus } from '@/lib/hooks/useGoogle'
 
-// Me → Calendar (2026-10-25). Everything: every dated thing in 4S (tasks,
+// Me → Calendar (2026-10-25). Everything: every dated thing in SS (tasks,
 // events, renewals, habits) with your Google events mixed in. Google: your
 // Google Calendar to add, change and delete, plus your partner's if shared.
 

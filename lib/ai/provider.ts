@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-// Which AI 4S uses (2026-10-19). Free first: Groq, then Google Gemini when
+// Which AI SS uses (2026-10-19). Free first: Groq, then Google Gemini when
 // Groq is at its daily limit or down, then Claude only if a key for it is set.
 // Groq and Gemini both speak the OpenAI chat format, so one adapter covers
 // them. Order can be changed with AI_PROVIDERS (e.g. "gemini,groq").
@@ -25,7 +25,7 @@ function openAiLike(id: 'groq' | 'gemini'): OpenAiLike | null {
   return key ? {
     id, key, base: 'https://generativelanguage.googleapis.com/v1beta/openai',
     // The "latest" alias follows Google's current Flash model, so a retired
-    // version name never breaks 4S (2.5 Flash was closed to new keys).
+    // version name never breaks SS (2.5 Flash was closed to new keys).
     model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
     visionModel: process.env.GEMINI_MODEL || 'gemini-flash-latest',
   } : null

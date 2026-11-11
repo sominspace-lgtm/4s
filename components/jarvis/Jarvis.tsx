@@ -65,7 +65,7 @@ export default function Jarvis() {
         role: 'assistant', content: j.reply ?? '',
         pending: (j.pending ?? []).map(p => ({ ...p, state: 'waiting' as const })),
       }])
-    } catch { setErr('Could not reach 4S. Check your connection.') }
+    } catch { setErr('Could not reach SS. Check your connection.') }
     finally { setBusy(false) }
   }
 
@@ -85,7 +85,7 @@ export default function Jarvis() {
         // A plain note in the conversation, so Jarvis knows it happened.
         setMsgs(m => [...m, { role: 'assistant', content: `Done: ${p.summary}.` }])
       } else setPending(mi, pi, { state: 'failed', note: j.error ?? 'That did not go through.' })
-    } catch { setPending(mi, pi, { state: 'failed', note: 'Could not reach 4S. It may not have gone through; check before trying again.' }) }
+    } catch { setPending(mi, pi, { state: 'failed', note: 'Could not reach SS. It may not have gone through; check before trying again.' }) }
   }
 
   const sheet = open && (

@@ -110,7 +110,7 @@ export default function HomeView({ screenName, preview }: { screenName: string; 
   }
 
   function hint() {
-    setToast('Open 4S on your phone for that')
+    setToast('Open SS on your phone for that')
     setTimeout(() => setToast(null), 2200)
   }
 
@@ -119,12 +119,32 @@ export default function HomeView({ screenName, preview }: { screenName: string; 
   useEffect(() => {
     const names = ['4s:navigate', '4s:open-goals', 'app:open-smarthome', 'app:open-archive']
     const on = () => {
-      setToast('Open 4S on your phone for that')
+      setToast('Open SS on your phone for that')
       setTimeout(() => setToast(null), 2200)
     }
     names.forEach(n => window.addEventListener(n, on))
     return () => names.forEach(n => window.removeEventListener(n, on))
   }, [])
+
+  async function runScene(id: string, name: string) {
+    setMenu(false)
+    setSnap(s => (s ? { ...s, activeScene: { id, name, appliedAt: new Date().toISOString() } } : s))
+    if (preview) return
+    const res = await fetch('/api/smarthome/scene', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sceneId: id }),
+    }).catch(() => null)
+    if (!res?.ok) { setToast('That scene did not run. Try again.'); setTimeout(() => setToast(null), 2200) }
+    refresh()
+  }
+
+  async function allOff() {
+    setMenu(false)
+    if (preview) return
+    const res = await fetch('/api/smarthome/all-off', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null)
+    setToast(res?.ok ? 'Everything is off.' : 'That did not work. Try again.')
+    setTimeout(() => setToast(null), 2200)
+    refresh()
+  }
 
   async function forget() {
     if (!window.confirm('Unpair this screen? It goes back to the pairing code.')) return
@@ -205,6 +225,22 @@ export default function HomeView({ screenName, preview }: { screenName: string; 
               background: f === face ? '#f3e7cf' : 'transparent', color: 'inherit', fontSize: '0.98rem', fontFamily: 'inherit',
             }}>{FACE_LABEL[f]}</button>
           ))}
+          {(snap?.scenes.length ?? 0) > 0 && (
+            <>
+              <div style={{ height: 1, background: '#eee2cc', margin: '0.4rem 0' }} />
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.55, padding: '0.3rem 0.5rem' }}>Scenes</div>
+              {snap!.scenes.map(sc => (
+                <button key={sc.id} onClick={() => runScene(sc.id, sc.name)} style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '0.65rem 0.6rem', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: snap?.activeScene?.id === sc.id ? '#f3e7cf' : 'transparent', color: 'inherit', fontSize: '0.98rem', fontFamily: 'inherit',
+                }}>{sc.name}</button>
+              ))}
+            </>
+          )}
+          <button onClick={allOff} style={{
+            display: 'block', width: '100%', textAlign: 'left', padding: '0.65rem 0.6rem', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'transparent', color: 'inherit', fontSize: '0.98rem', fontFamily: 'inherit',
+          }}>All off</button>
           <div style={{ height: 1, background: '#eee2cc', margin: '0.4rem 0' }} />
           <div style={{ fontSize: '0.78rem', opacity: 0.6, padding: '0.3rem 0.6rem' }}>{screenName}{snap?.household ? ` · ${snap.household}` : ''}</div>
           <button onClick={forget} style={{

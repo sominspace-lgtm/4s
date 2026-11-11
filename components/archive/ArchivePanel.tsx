@@ -26,7 +26,7 @@ interface Props {
   accountCreatedAt?: string | null
 }
 
-// Archive Grove, from the 4S Village vision: this is where finished work
+// Archive Grove, from the SS Village vision: this is where finished work
 // stops being a task and becomes personal history. Landmarks (see
 // lib/utils/taskStage.ts) are the earned ones — surfaced with their own
 // filter and a ◆ so they read as monuments, not just another line in a list.

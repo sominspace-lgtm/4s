@@ -8,7 +8,7 @@ import { parseTaskInput } from '@/lib/utils/parseTask'
 //
 // Identity: the user links the skill once (see /api/alexa/authorize), after
 // which Alexa sends context.System.user.accessToken on every request. We map
-// that token to a 4S user via the alexa_links table (service-role client).
+// that token to a SS user via the alexa_links table (service-role client).
 //
 // Security boundary for this private skill: skill-id check + request-timestamp
 // freshness + a valid link token. NOTE(before publishing publicly): Amazon
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ version: '1.0', response: {} })
   }
 
-  // 3. Resolve the linked 4S user by the stable anonymous Alexa user id.
+  // 3. Resolve the linked SS user by the stable anonymous Alexa user id.
   const alexaUserId = body.context?.System?.user?.userId
   if (!alexaUserId) {
     return say('I could not identify your Alexa account. Please try again.', { end: true })
@@ -126,20 +126,20 @@ export async function POST(request: Request) {
     const intentName = body.request.intent?.name ?? ''
     if (body.request.type === 'IntentRequest' && intentName === 'LinkAccountIntent') {
       const code = slot(body, 'Code')
-      if (!code) return say('What is your four digit code? You can find it in the 4S app under Account, Connect Alexa.', { reprompt: 'Say your four digit code.' })
+      if (!code) return say('What is your four digit code? You can find it in the SS app under Account, Connect Alexa.', { reprompt: 'Say your four digit code.' })
       const { data: match } = await admin
         .from('alexa_link_codes').select('user_id').eq('code', code).maybeSingle()
-      if (!match) return say("That code didn't match. Open 4S, tap Connect Alexa for a fresh code, and try again.", { end: true })
+      if (!match) return say("That code didn't match. Open SS, tap Connect Alexa for a fresh code, and try again.", { end: true })
       // Bind this Alexa account, then clear the user's codes.
       const { error: linkErr } = await admin.from('alexa_links').upsert({ user_id: match.user_id, alexa_user_id: alexaUserId })
       if (linkErr) return say(`I found your code but could not save the link. ${linkErr.message}`, { end: true })
       await admin.from('alexa_link_codes').delete().eq('user_id', match.user_id)
-      return say("You're linked. Try saying: ask four s what needs attention.", { end: true })
+      return say("You're linked. Try saying: ask olympus what needs attention.", { end: true })
     }
     // Keep the session open and take the code conversationally — one-shot
-    // "ask four s to link 1234" is unreliable to parse, but reading four digits
+    // "ask olympus to link 1234" is unreliable to parse, but reading four digits
     // inside an open session is not.
-    return say('You are not linked yet. Get a code from the 4S app under Account, Connect Alexa, then just say the four digits now.', { reprompt: 'Say your four digit code from the app.' })
+    return say('You are not linked yet. Get a code from the SS app under Account, Connect Alexa, then just say the four digits now.', { reprompt: 'Say your four digit code from the app.' })
   }
   const userId = link.user_id as string
 
@@ -338,8 +338,32 @@ export async function POST(request: Request) {
       return say(`Coming up: ${items.slice(0, 6).map(i => i.label).join('; ')}.`, { end: true })
     }
 
+    // Home controls by voice (2026-11-10): run a saved scene, or turn
+    // everything off, in the household you belong to.
+    case 'SceneIntent':
+    case 'AllOffIntent': {
+      const { spacesFor } = await import('@/lib/devices/members')
+      const { runScene, allOff } = await import('@/lib/smarthome/command')
+      const space = (await spacesFor(userId))[0]
+      if (!space) return say('You need a household in SS for that.', { end: true })
+      if (intent === 'AllOffIntent') {
+        const r = await allOff(space.id)
+        return say(r.count === 0 ? 'Everything was already off.' : r.failed ? `Done, but ${r.failed} did not answer.` : 'Everything is off.', { end: true })
+      }
+      const want = slot(body, 'Scene').toLowerCase().replace(/\b(scene|mode|the)\b/g, '').trim()
+      const { data: row } = await admin.from('shared_spaces').select('scenes').eq('id', space.id).maybeSingle()
+      const scenes = ((row?.scenes ?? []) as { id: string; name: string }[])
+      const match = want ? scenes.find(s => s.name.toLowerCase() === want) ?? scenes.find(s => s.name.toLowerCase().includes(want) || want.includes(s.name.toLowerCase())) : undefined
+      if (!match) {
+        const names = scenes.map(s => s.name).join(', ')
+        return say(names ? `I couldn't find that scene. You have ${names}.` : 'You have no scenes saved yet. Save one in SS under Home controls.', { end: true })
+      }
+      const r = await runScene(space.id, match.id)
+      return say(r.ok && !r.failed ? `${match.name} is on.` : `${match.name} is on, but some devices did not answer.`, { end: true })
+    }
+
     case 'LinkAccountIntent':
-      return say("You're already linked. Say: ask four s what needs attention.", { end: true })
+      return say("You're already linked. Say: ask olympus what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
       return say('You can add a task, make a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, pause or resume a habit, snooze a refill, or say you bought something. Or ask about your money or what is coming up. What would you like?', {

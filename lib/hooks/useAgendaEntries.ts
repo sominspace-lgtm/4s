@@ -108,9 +108,9 @@ export function useAgendaEntries(spaceId: string | null = null): AgendaEntry[] {
       endDate: e.end_date ? parseISO(e.end_date) : undefined,
     })
   }
-  // Google Calendar events (2026-10-05) — a read layer, never stored in 4S.
-  // An event made in 4S and also sent to Google would show twice, so a
-  // Google event matching a 4S one (same title, day and time) is dropped.
+  // Google Calendar events (2026-10-05) — a read layer, never stored in SS.
+  // An event made in SS and also sent to Google would show twice, so a
+  // Google event matching a SS one (same title, day and time) is dropped.
   for (const g of googleEvents) {
     const day = parseISO(g.start.slice(0, 10))
     const time = g.allDay ? undefined : format(parseISO(g.start), 'HH:mm')

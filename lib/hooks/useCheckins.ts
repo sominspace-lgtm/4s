@@ -23,7 +23,7 @@ export interface Checkin {
   completed_at: string
 }
 
-// One row per (space, person, week). Answered natively in 4S now
+// One row per (space, person, week). Answered natively in SS now
 // (components/checkin) — the companion bot still pushes rows too, and both
 // paths land here. `checkins_write_own` RLS (for all on user_id = auth.uid())
 // lets the browser upsert directly, so no admin route is needed.

@@ -26,7 +26,7 @@ export type { SectionConfig }
 // being opened far less often than Today or Tasks.
 //
 // Calendar stopped being a tab (2026-08-07). A calendar isn't a place you go
-// to live, it's something you check — and once it was 4S's own data rather
+// to live, it's something you check — and once it was SS's own data rather
 // than a Google iframe, "Calendar" and "Today" were the same question asked
 // twice. It's a panel inside Today now.
 // The personal areas (Tasks/Habits/Notes/Money/People) are their own

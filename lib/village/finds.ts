@@ -7,7 +7,7 @@ import { hashPos } from './state'
 // keep goes into a shared collection, and as the collection grows the
 // village slowly grows too. No score, no prices, nothing to lose.
 //
-// Doing everyday things in 4S (habits, chores, Somi's care, the check-in)
+// Doing everyday things in SS (habits, chores, Somi's care, the check-in)
 // brings the next find sooner, and a really good day can turn up a gold star.
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter'

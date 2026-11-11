@@ -14,7 +14,7 @@ const RESULT: Record<string, string> = {
   badstate: 'That sign-in did not match this browser. Try again.',
   tokenfail: 'Google did not accept the sign-in. Try again.',
   savefail: 'Connected to Google but could not save it. Try again.',
-  denied: 'Sign in to 4S first, then connect Google.',
+  denied: 'Sign in to SS first, then connect Google.',
 }
 
 function Btn({ onClick, children, danger }: { onClick: () => void; children: React.ReactNode; danger?: boolean }) {
@@ -79,7 +79,7 @@ export default function GoogleConnect() {
       ) : (
         <>
           <div style={muted}>
-            Bring Google Calendar into the calendar, read your inbox and send mail inside 4S, and let Jarvis use your calendar, Google Tasks, Gmail drafts and Drive (read only). You can disconnect any time.
+            Bring Google Calendar into the calendar, read your inbox and send mail inside SS, and let Jarvis use your calendar, Google Tasks, Gmail drafts and Drive (read only). You can disconnect any time.
           </div>
           <div><Btn onClick={connect}>Connect Google</Btn></div>
         </>

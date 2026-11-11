@@ -10,7 +10,7 @@ import { KITCHEN_OPEN_KEY } from '@/components/kitchen/KitchenHub'
 // kitchen stall in the scene). Tonight's meal, a one-tap add to the
 // shopping list, and a couple of timers, with the full kitchen (recipes, the
 // meal plan, groceries, calories) one tap away. The two external cheat-sheet
-// apps it used to link to are gone (2026-10-13); this is all in 4S now.
+// apps it used to link to are gone (2026-10-13); this is all in SS now.
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 

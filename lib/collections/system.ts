@@ -52,7 +52,7 @@ export const SYSTEM_SPECS: Record<SystemKey, SystemSpec> = {
       { id: 'title', name: 'Idea', type: 'text' },
       select('status', 'Status', Object.values(IDEA_STATUS)),
       select('category', 'Kind', Object.values(IDEA_CATEGORY)),
-      { id: 'area', name: 'Area', type: 'text' },
+      { id: 'area', name: 'Section', type: 'text' },
       select('energy', 'Energy', Object.values(ENERGY)),
       select('price', 'Price', ['$', '$$', '$$$', '$$$$']),
       select('setting', 'Setting', Object.values(SETTING)),
@@ -65,7 +65,7 @@ export const SYSTEM_SPECS: Record<SystemKey, SystemSpec> = {
   movies: {
     key: 'movies', name: 'Movies and shows', view: 'board', boardProp: 'status',
     blurb: 'What to watch, what you are watching, what you finished.',
-    core: watchCore('Title'),
+    core: [{ id: 'title', name: 'Title', type: 'text' }, select('type', 'Type', ['Movie', 'Show']), select('status', 'Status', Object.values(WATCH_STATUS))],
   },
   games: {
     key: 'games', name: 'Games', view: 'board', boardProp: 'status',

@@ -7,7 +7,7 @@ import { useWorkItems } from '@/lib/hooks/useWorkItems'
 import { goToSection } from '@/lib/utils/navigate'
 import { RECIPE_URL_KEY, decodeShared, SHARE_PARAM, type SharedItem } from '@/lib/share/parse'
 
-// "Share to 4S" lands here (2026-10-13): whatever came from the phone's share
+// "Share to SS" lands here (2026-10-13): whatever came from the phone's share
 // sheet, and one question: what is this? One tap files it where it belongs.
 
 const btn = { minHeight: 48, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'var(--font-body)', textAlign: 'left' as const, padding: '0 1rem' }

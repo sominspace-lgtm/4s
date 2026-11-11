@@ -84,6 +84,10 @@ export async function proxy(request: NextRequest) {
     || pathname === '/api/devices/pair/poll'
     || pathname === '/api/devices/me'
     || pathname === '/api/home/state'
+    // Scenes can be run from the wall screen too; the route checks for a
+    // signed-in member or the screen's own key itself.
+    || pathname === '/api/smarthome/scene'
+    || pathname === '/api/smarthome/all-off'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands

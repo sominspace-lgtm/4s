@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const { data: prefs } = await supabase
     .from('user_prefs')
     // calendar_url is no longer read — the Google Calendar embed is gone and
-    // the calendar is 4S's own data now. The column is left in place rather
+    // the calendar is SS's own data now. The column is left in place rather
     // than dropped, in case an ICS-import feature wants a home later.
     .select('display_name, theme, mode, layout, onboarded')
     .eq('user_id', user.id)

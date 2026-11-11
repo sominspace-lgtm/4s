@@ -5,7 +5,7 @@ import { resolveHouseholdToken } from '@/lib/household/resources'
 // A photo attached to a #pins Discord message → appended to that place's
 // photo_paths (2026-08-13). Raw image bytes in the body, not multipart —
 // the bot already has the bytes in hand from Discord's CDN, no form to
-// parse. Same private 'place-photos' bucket the 4S web app's own photo
+// parse. Same private 'place-photos' bucket the SS web app's own photo
 // upload uses (lib/storage/placePhotos.ts); this route just does it with a
 // service-role client since the bot has no Supabase session of its own.
 const MAX_BYTES = 8 * 1024 * 1024 // 8MB — generous for a phone photo, not for abuse

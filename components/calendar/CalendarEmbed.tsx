@@ -9,13 +9,13 @@ import CalendarQuickAdd from './CalendarQuickAdd'
 import CalendarRoutines from './CalendarRoutines'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 
-// 4S's own calendar. The Google Calendar iframe that used to sit below this
+// SS's own calendar. The Google Calendar iframe that used to sit below this
 // is gone (2026-08-07): an embed we couldn't read, search, theme, or connect
 // to anything else in the app was a foreign object in the middle of the
 // product — it couldn't feed the Brief or the village, and it looked like
 // someone else's software inside ours.
 //
-// Everything here is 4S data: dated tasks, renewals, refill run-outs, gift
+// Everything here is SS data: dated tasks, renewals, refill run-outs, gift
 // dates, and standalone events you create right in the month view. External
 // calendars come back later as an ICS *import* (one implementation covers
 // Google, Apple and Outlook) — as a layer on top of this, never the

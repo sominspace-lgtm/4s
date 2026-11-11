@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePushNotifications } from '@/lib/hooks/usePushNotifications'
 
-// What 4S is allowed to push, and whether pushes are on at all. The daily
+// What SS is allowed to push, and whether pushes are on at all. The daily
 // cron (app/api/cron/daily) reads notifyPrefs;
 // a missing key means on.
 
@@ -74,7 +74,7 @@ export default function NotificationsPanel({ open, prefs, onChange, onClose }: {
             <div style={{ fontSize: '0.76rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '0.8rem' }}>
               {push.status === 'denied'
                 ? 'Blocked in your browser settings. Allow notifications for this site, then reload.'
-                : 'Turn on push notifications on this device to choose what 4S tells you about.'}
+                : 'Turn on push notifications on this device to choose what SS tells you about.'}
             </div>
             {push.status !== 'denied' && (
               <button onClick={push.subscribe} className="btn btn-primary" style={{ fontSize: '0.74rem' }}>

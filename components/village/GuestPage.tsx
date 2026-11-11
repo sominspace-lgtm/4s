@@ -99,7 +99,7 @@ function GuestPageBody({ info, somi, menu = [], title = null, canEdit = false, o
         <div style={S.head}>
           <span style={S.kicker}>{title ?? 'For our guests'}</span>
           <span style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-            {canEdit && !empty && <button onClick={() => { if (!printGuestCard(info, qr)) window.alert('Your browser blocked the print window. Allow pop-ups for 4S and try again.') }} style={S.link}>Print</button>}
+            {canEdit && !empty && <button onClick={() => { if (!printGuestCard(info, qr)) window.alert('Your browser blocked the print window. Allow pop-ups for SS and try again.') }} style={S.link}>Print</button>}
             {canEdit && onSave && <button onClick={() => setEditing(true)} style={S.link}>Edit</button>}
             <button className="icon-btn" onClick={onClose} style={S.x} aria-label="Close">✕</button>
           </span>

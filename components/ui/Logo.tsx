@@ -1,4 +1,4 @@
-// The 4S mark — "4S" is the hero, wrapped in a ring of SOS Morse code
+// The SS mark — "SS" is the hero, wrapped in a ring of SOS Morse code
 // (··· ––– ···) orbiting it like a quiet distress signal. Theme-reactive:
 // uses var(--gold) for the monogram and the ring so it stays monochrome in
 // whatever theme is active. The fixed-palette PWA / Alexa exports (in
@@ -21,7 +21,7 @@ const RING = Array.from({ length: 9 }, (_, i) => {
 
 export default function Logo({ size = 40, glow = true }: { size?: number; glow?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="4S" role="img">
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="SS" role="img">
       <defs>
         <radialGradient id="lg-bg" cx="50%" cy="30%" r="85%">
           <stop offset="0%" stopColor="var(--surface2)" />
@@ -49,10 +49,10 @@ export default function Logo({ size = 40, glow = true }: { size?: number; glow?:
         )}
       </g>
 
-      {/* 4S hero */}
+      {/* SS hero */}
       <text x="50" y="52" textAnchor="middle" dominantBaseline="central"
         fontFamily="var(--font-display), Georgia, serif" fontWeight="600" fontSize="42"
-        letterSpacing="-2" fill="var(--gold)">4S</text>
+        letterSpacing="-2" fill="var(--gold)">SS</text>
     </svg>
   )
 }
@@ -63,7 +63,7 @@ export function Wordmark({ size = 40, subtitle = 'personal operating system' }: 
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
       <Logo size={size} />
       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: `${size * 0.55}px`, fontWeight: 400, color: 'var(--text)', letterSpacing: '0.04em' }}>4S</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: `${size * 0.55}px`, fontWeight: 400, color: 'var(--text)', letterSpacing: '0.04em' }}>SS</span>
         {subtitle && (
           <span style={{ fontSize: `${Math.max(9, size * 0.18)}px`, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.7 }}>{subtitle}</span>
         )}

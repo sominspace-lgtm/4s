@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 //
 // SECURITY: the connection (api_url + api_key) is looked up per CONFIRMED
 // relationship_pairs row, never from a global env var. A global key would
-// mean every 4S user hitting this route sees the same couple's Discord bot
+// mean every SS user hitting this route sees the same couple's Discord bot
 // data — fine for a single developer, broken the moment a second couple
 // signs up. Each pair gets its own row in companion_connections, gated by
 // RLS to only the two confirmed people in that pair (see

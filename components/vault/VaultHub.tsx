@@ -8,7 +8,7 @@ import { DEFAULT_GEN, generatePassword, strengthOf, type GenOptions } from '@/li
 import IconButton from '@/components/ui/IconButton'
 
 // Passwords (2026-10-12). Everything here is encrypted on this device before
-// it is saved; 4S cannot read it and cannot reset it. See lib/vault/crypto.ts.
+// it is saved; SS cannot read it and cannot reset it. See lib/vault/crypto.ts.
 
 const CATEGORIES = ['Login', 'Email', 'Bank', 'Shopping', 'Streaming', 'Utilities', 'Home & Wi-Fi', 'Work', 'Travel', 'Other']
 const YEAR_MS = 365 * 86_400_000

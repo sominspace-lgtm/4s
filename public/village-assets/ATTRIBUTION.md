@@ -13,8 +13,8 @@ https://shubibubi.itch.io/cozy-farm
 > as you wish. This asset pack can't be used in any commercial project, resold or
 > redistributed, even if modified.
 
-4S is a private household app, not sold or distributed — this fits the free tier's terms.
-**If that ever changes** (4S becomes a paid/distributed product), these assets need to be
+SS is a private household app, not sold or distributed — this fits the free tier's terms.
+**If that ever changes** (SS becomes a paid/distributed product), these assets need to be
 either replaced or the full paid version purchased (unlocks commercial use — see the
 pack's own page for current pricing).
 
@@ -93,7 +93,7 @@ Imported, not yet wired (real crops, ready for a future round):
   `fx-water-droplet.png`, `fx-house-dark.png`, `fx-house-lit.png`, `fx-light-ray.png`,
   `fx-glow-ring.png`, `fx-lantern-tree.png` (from `village-moment-effects.png`) — everyday/
   meaningful/major reaction effects. No "significance classifier" exists yet to decide which
-  real 4S events should trigger which tier — that's real design/engineering work of its own,
+  real SS events should trigger which tier — that's real design/engineering work of its own,
   not asset placement.
 
 Not imported at all yet: `sylvia-harry-tennis-actions.png`, the rest of `sylvia-harry-outfit-

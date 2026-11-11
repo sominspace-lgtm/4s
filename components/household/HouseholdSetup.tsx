@@ -122,7 +122,7 @@ export default function HouseholdSetup({ userId, userEmail }: { userId: string; 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {memories.links.length === 0 && (
                   <div style={{ fontSize: '0.76rem', color: 'var(--muted)', opacity: 0.75 }}>
-                    No albums linked yet. Paste a Google Photos, iCloud, or Drive link. It opens in a new tab, no login through 4S needed.
+                    No albums linked yet. Paste a Google Photos, iCloud, or Drive link. It opens in a new tab, no login through SS needed.
                   </div>
                 )}
                 <button

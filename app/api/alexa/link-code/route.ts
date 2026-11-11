@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Issues a fresh 4-digit pairing code for the logged-in user. They speak it to
-// Alexa once ("ask four s to link 4 2 9 1"); the skill webhook matches the code
+// Alexa once ("ask olympus to link 4 2 9 1"); the skill webhook matches the code
 // and binds their Alexa account. One active code per user — generating a new
 // one replaces the old.
 export async function POST() {

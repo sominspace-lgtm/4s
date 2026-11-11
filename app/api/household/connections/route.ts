@@ -25,8 +25,8 @@ export async function GET(request: Request) {
     .eq('space_id', spaceId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Discord usernames aren't known to 4S (the bot never sends them) — show
-  // whose 4S account it is instead, which is the identifying detail that
+  // Discord usernames aren't known to SS (the bot never sends them) — show
+  // whose SS account it is instead, which is the identifying detail that
   // actually matters here.
   const withEmail = await Promise.all(
     (links ?? []).map(async (l) => {

@@ -101,7 +101,7 @@ export async function GET(request: Request) {
         ? 'Time for your weekly check-in.'
         : 'Still time for your weekly check-in.'
 
-    const n = await safePush(admin, userId, { title: '4S', body, url: '/dashboard' })
+    const n = await safePush(admin, userId, { title: 'SS', body, url: '/dashboard' })
     if (n > 0) notified++
 
     // Merge + prune keys older than ~30 days.

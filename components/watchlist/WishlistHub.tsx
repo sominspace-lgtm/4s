@@ -361,7 +361,7 @@ function Editor({ initial, seed, spaceId, onSave, onCancel, onDelete, onChecked 
 }
 
 // Share the list (2026-10-12): two ways. With your household, where your
-// partner sees it inside 4S and can claim a gift. With anyone else, by a link
+// partner sees it inside SS and can claim a gift. With anyone else, by a link
 // that needs no account: they see the list (or one list), and can tell you
 // something is covered. You only ever see "covered", not who.
 function SharePanel({ lists, spaceId, mineWanted, onShareAll }: {
@@ -392,7 +392,7 @@ function SharePanel({ lists, spaceId, mineWanted, onShareAll }: {
       {spaceId && (
         <div>
           <div style={{ fontSize: '0.62rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.3rem' }}>With your household</div>
-          <div style={{ ...muted, marginBottom: '0.4rem' }}>Your partner sees these in 4S and can quietly claim one as a gift. You can also do it one wish at a time when you edit it.</div>
+          <div style={{ ...muted, marginBottom: '0.4rem' }}>Your partner sees these in SS and can quietly claim one as a gift. You can also do it one wish at a time when you edit it.</div>
           <button className="btn btn-secondary press" style={{ fontSize: '0.7rem' }} disabled={unsharedCount === 0} onClick={onShareAll}>
             {unsharedCount === 0 ? 'Everything is already shared' : `Share ${unsharedCount} wish${unsharedCount === 1 ? '' : 'es'} with the household`}
           </button>

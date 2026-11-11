@@ -679,7 +679,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
       nextTask: chore ?? routine,
       binLine,
       sceneName: activeScene?.name ?? null,
-      // Matches 4S as it is now (2026-10-19): who cooks from the meal plan,
+      // Matches SS as it is now (2026-10-19): who cooks from the meal plan,
       // how many chores are due in Upkeep, and the routine for right now.
       cook: tonight?.cook ?? null,
       choresDue: due.length,
@@ -703,7 +703,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
 
   // Little finds (2026-11-05): small things turn up around the village every
   // few hours, you two tap to keep them, and the village slowly grows as the
-  // collection does. Everyday things done in 4S today (habits, chores, Somi's
+  // collection does. Everyday things done in SS today (habits, chores, Somi's
   // care, this week's check-in) bring the next one sooner. Picking up is for
   // you two only; what has grown shows for everyone.
   const villageFinds = useVillageFinds(userId)

@@ -2,7 +2,7 @@
 
 Lives under Money → Buy Again. Data model: `buy_items` table (see
 `supabase/migrations/refill_intelligence.sql`), hook: `lib/hooks/useBuyItems.ts`.
-4S is always the source of truth — nothing here depends on Amazon, Alexa, or
+SS is always the source of truth — nothing here depends on Amazon, Alexa, or
 any external service actually existing yet.
 
 ## What's real today
@@ -48,13 +48,13 @@ instead) before anything is saved, regardless of extraction confidence.
 - **Alexa Skill**: would need a separate Lambda/endpoint authenticated
   against the same Supabase project (service-role key, same pattern as
   `scripts/reset-onboarding.mjs`), translating utterances like:
-  - "Alexa, ask 4S what is running out." → query `buy_items` for
+  - "Alexa, ask SS what is running out." → query `buy_items` for
     `due-to-buy`/`overdue` status.
-  - "Alexa, ask 4S to add Vitamin D to Buy Again." → `useBuyItems().add()`
+  - "Alexa, ask SS to add Vitamin D to Buy Again." → `useBuyItems().add()`
     with `tracking_mode: 'simple-interval'` and category defaults.
-  - "Alexa, ask 4S to mark shampoo as bought." → fuzzy-match name, call
+  - "Alexa, ask SS to mark shampoo as bought." → fuzzy-match name, call
     `markBought(id)`.
-  - "Alexa, ask 4S what needs attention." / "…for my daily briefing." →
+  - "Alexa, ask SS what needs attention." / "…for my daily briefing." →
     reuse the same aggregation logic already in `DailyBrief.tsx`
     (`refillsDue`, `moneyDueSoon`, `domainsNeedingReview`, etc.) via a
     small shared server-side summary function instead of duplicating it.

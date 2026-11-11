@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { EMPTY_DRAFT } from '@/lib/recipes/types'
 import type { CellValue, CollectionProp, CollectionRow } from '@/lib/hooks/useCollections'
 
-// One tap from a collection row to the rest of 4S (2026-10-19): make it a
+// One tap from a collection row to the rest of SS (2026-10-19): make it a
 // task, a trip idea, or a recipe to try. The row stays where it is; the new
 // item takes the row's name, its link if it has one, and its other columns
 // as notes.

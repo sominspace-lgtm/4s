@@ -150,7 +150,7 @@ const KO: Record<string, string> = {
   'cancel (btn)': '취소',
   'send': '전송',
   'sending…': '전송 중…',
-  'What would make 4S better? Bug, feature idea, anything…': '4S를 더 좋게 만들 방법은? 버그, 기능 아이디어 등...',
+  'What would make SS better? Bug, feature idea, anything…': 'SS를 더 좋게 만들 방법은? 버그, 기능 아이디어 등...',
   'I read every message.': '모든 메시지를 읽습니다.',
 
   // ── Subscriptions / Money ─────────────────────────────────────────────

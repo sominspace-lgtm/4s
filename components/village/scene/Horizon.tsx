@@ -12,7 +12,7 @@ import type { HorizonPlace } from '@/lib/hooks/useSharedHorizon'
  * rather than as another district competing for attention.
  *
  * Returns null when there's nothing, which is the important bit: a solo user
- * sees sky here, not an empty band with a prompt in it. 4S is a personal OS
+ * sees sky here, not an empty band with a prompt in it. SS is a personal OS
  * first, and the version of this that says "invite someone to fill this in"
  * would make being alone feel like a missing feature.
  */

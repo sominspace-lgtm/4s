@@ -81,7 +81,7 @@ export function CollectionSheet({ open, state, onClose }: { open: boolean; state
     <Sheet open={open} title="Our collection" onClose={onClose}>
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6, margin: '0 0 1rem' }}>
         Little things turn up around the village every few hours. Tap one to keep it here.
-        Doing your everyday things in 4S brings them sooner.
+        Doing your everyday things in SS brings them sooner.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(5.5rem, 1fr))', gap: '0.6rem' }}>

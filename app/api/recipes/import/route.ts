@@ -23,7 +23,7 @@ function limited(userId: string): boolean {
   return hits.length > 40
 }
 
-const BLOCKED = "That site won't let 4S read it automatically. Use \"Save from any page\" below, which reads the page in your own browser, or paste the recipe text."
+const BLOCKED = "That site won't let SS read it automatically. Use \"Save from any page\" below, which reads the page in your own browser, or paste the recipe text."
 const NEEDS_TEXT = "That site would not let me read the recipe. Paste the caption or the recipe text instead, or upload a screenshot."
 
 export async function POST(request: Request) {

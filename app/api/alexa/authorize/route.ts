@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Alexa account linking — OAuth 2.0 Implicit Grant authorize endpoint.
 //
 // Alexa opens this URL in the Alexa app when the user links the skill. If the
-// user has a live 4S session (Supabase cookie), we mint/reuse a stable opaque
+// user has a live SS session (Supabase cookie), we mint/reuse a stable opaque
 // token for them and redirect back to Alexa's redirect_uri with the token in
 // the URL fragment. Alexa stores it and sends it as
 // context.System.user.accessToken on every skill request, which /api/alexa

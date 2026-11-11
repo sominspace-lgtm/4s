@@ -6,7 +6,7 @@ import { resolveHouseholdToken } from '@/lib/household/resources'
 // /api/household/[resource] insert stamps the caller's household space_id,
 // which would make every need shared by default — the opposite of the
 // point. This route always writes space_id = null, private to the author.
-// Sharing a need with the household happens later, from 4S OS directly
+// Sharing a need with the household happens later, from SS OS directly
 // (an authenticated `update` setting space_id), never through the bot.
 
 export async function POST(request: Request) {

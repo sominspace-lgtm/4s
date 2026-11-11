@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { encodeShared, SHARE_PARAM } from '@/lib/share/parse'
 
-// Where a share from another app lands: "share to 4S" from your phone's share
+// Where a share from another app lands: "share to SS" from your phone's share
 // sheet (Android installed app, or an iPhone Shortcut that opens this address).
 // GET, because that is the one form every mobile browser honors for shares.
 //

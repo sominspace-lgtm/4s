@@ -2613,7 +2613,7 @@ export default function VillageScene({
         )
       })()}
       {/* Places and People (2026-08-24) — the same real-district mechanism
-          as the five above, extended to the two other things 4S already
+          as the five above, extended to the two other things SS already
           tracks that had no presence in the village at all: your saved pins
           and the people in your life. Counts come straight from
           usePlaces()/usePeople() in Village.tsx, no new data model. */}

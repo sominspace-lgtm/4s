@@ -198,10 +198,10 @@ const instrumentSans = localFont({
 })
 
 export const metadata: Metadata = {
-  title: '4S Home',
+  title: 'SS Home',
   description: 'Your private family life OS',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: '4S' },
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'SS' },
 }
 
 export const viewport: Viewport = {

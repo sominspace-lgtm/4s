@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Logo from '@/components/ui/Logo'
 
-// Three fixed profiles, PIN to unlock (2026-08-20) — 4S is just Harry and
+// Three fixed profiles, PIN to unlock (2026-08-20) — SS is just Harry and
 // Sylvia now. Harry and Sylvia each choose their own PIN the first time they
 // open this page (pin-status says whether a profile still needs that);
 // Shared's PIN is fixed and pre-seeded, so it always goes straight to "enter
@@ -151,7 +151,7 @@ export default function LoginPage() {
           <h1 style={{
             fontFamily: 'var(--font-display)', fontSize: '2.8rem', fontWeight: 300,
             color: 'var(--text)', margin: '1rem 0 0.2rem', letterSpacing: '0.02em', lineHeight: 1,
-          }}>4S</h1>
+          }}>SS</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.95rem', fontFamily: 'var(--font-body)', letterSpacing: '0.02em' }}>
             Your personal operating system
           </p>

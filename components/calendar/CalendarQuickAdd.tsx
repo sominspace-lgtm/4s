@@ -68,7 +68,7 @@ export default function CalendarQuickAdd() {
       if (error) { setErr(error.message); setSaving(false); return }
       if (canGoogle && toGoogle) {
         const gErr = await createGoogleEvent({ title: title.trim(), date, time: time || null, account })
-        if (gErr) { setErr(`Saved in 4S. ${gErr}`); setSaving(false); return }
+        if (gErr) { setErr(`Saved in SS. ${gErr}`); setSaving(false); return }
       }
     } else {
       const error = await addTask({ title: title.trim(), notes: null, due_date: date, energy: null, domain: null, recur_days: null })

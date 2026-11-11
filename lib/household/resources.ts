@@ -53,7 +53,7 @@ export const RESOURCES = {
   // write here stamps space_id from the caller's space), so a preference
   // captured via Discord is inherently shared with the household, same as
   // every other Discord-writable resource. Genuinely personal-only
-  // (space_id null) preferences only come from 4S OS directly.
+  // (space_id null) preferences only come from SS OS directly.
   preferences: {
     table: 'preferences',
     columns: 'id, category, text, note, created_at, updated_at',
@@ -95,7 +95,7 @@ export const RESOURCES = {
   // the bot can only ever see places explicitly shared with the household.
   // `details`, `provenance` and `verified_at` are NOT in insert/update — the
   // bot must not be able to stamp a field as looked-up/verified. Enrichment
-  // happens in 4S, where the lookup provider lives, or not at all.
+  // happens in SS, where the lookup provider lives, or not at all.
   places: {
     table: 'places',
     columns: 'id, name, kind, note, address, city, country, lat, lng, status, tags, maps_url, provider, provider_place_id, verified_at, channel_id, discord_message_id, first_visited_on, created_at',
@@ -145,7 +145,7 @@ export function isResource(name: string): name is ResourceName {
 
 export interface HouseholdCaller {
   spaceId: string
-  /** The 4S user whose Discord account was linked — writes are attributed here,
+  /** The SS user whose Discord account was linked — writes are attributed here,
    *  so "who added this" stays true instead of collapsing onto whoever set the
    *  integration up. */
   userId: string

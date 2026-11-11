@@ -21,11 +21,11 @@ self.addEventListener('activate', e => {
 
 // Real push (2026-08-20) — everything above this was offline app-shell
 // caching only; this is what lets a server trigger (see
-// app/api/cron/waiting-notice) reach a device even when no 4S tab is open.
+// app/api/cron/waiting-notice) reach a device even when no SS tab is open.
 self.addEventListener('push', e => {
-  let data = { title: '4S', body: '' }
+  let data = { title: 'SS', body: '' }
   try { data = e.data.json() } catch { /* not JSON, use the default */ }
-  e.waitUntil(self.registration.showNotification(data.title || '4S', {
+  e.waitUntil(self.registration.showNotification(data.title || 'SS', {
     body: data.body,
     icon: '/icons/192.png',
     badge: '/icons/192.png',

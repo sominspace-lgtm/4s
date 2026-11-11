@@ -53,7 +53,7 @@ export async function PATCH(request: Request, { params }: Props) {
 }
 
 // Removing a row entirely — used for watchlist/date-idea deletes from Discord,
-// which don't have a 4S soft-delete concept the way rules go inactive.
+// which don't have a SS soft-delete concept the way rules go inactive.
 export async function DELETE(request: Request, { params }: Props) {
   const { resource, id } = await params
   if (!isResource(resource)) return NextResponse.json({ error: 'Unknown resource' }, { status: 404 })

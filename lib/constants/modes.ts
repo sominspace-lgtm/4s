@@ -1,4 +1,4 @@
-// The voice of 4S OS. There used to be several Guides to pick from
+// The voice of SS OS. There used to be several Guides to pick from
 // (Peaceful, Friend, Executive); since 2026-10-21 there is one warm voice,
 // Friend, and nothing to choose. user_prefs.mode is still read, but every
 // stored value lands here, so old rows never break.

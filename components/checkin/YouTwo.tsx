@@ -135,7 +135,7 @@ export default function YouTwo({ userId }: { userId: string }) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.8rem', marginTop: '0.6rem' }}>
                       {Object.entries(w.byUser).filter(([uid]) => !locked || uid === userId).map(([uid, c]) => {
                         const vibe = c.answers.find(a => a.questionKey === 'vibe')
-                        // The old form's photos were copied into 4S (2026-10-27); a Drive link that
+                        // The old form's photos were copied into SS (2026-10-27); a Drive link that
                         // could not be copied is left out rather than shown as an answer.
                         const questions = c.answers.filter(a => a.questionKey !== 'vibe' && !/drive\.google\.com/.test(a.answer))
                         return (

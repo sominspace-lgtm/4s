@@ -46,7 +46,7 @@ export async function POST() {
   for (const id of people) {
     try {
       count += await sendPushToUser(admin, id, {
-        title: '4S',
+        title: 'SS',
         body: "You've both checked in this week.",
         url: '/dashboard',
       })
