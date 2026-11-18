@@ -9,7 +9,6 @@ import SectionLabel from '@/components/ui/SectionLabel'
 import CustomizePanel, { DEFAULT_SECTIONS, type SectionConfig } from '@/components/ui/CustomizePanel'
 import QuickNote from '@/components/ui/QuickNote'
 import UndoToast from '@/components/ui/UndoToast'
-import MusicBar from '@/components/home/MusicBar'
 import SearchModal from '@/components/search/SearchModal'
 import MobileNav from '@/components/ui/MobileNav'
 import HomeBar, { type HomeBarGroup } from '@/components/ui/HomeBar'
@@ -840,8 +839,6 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           }}
         />
       )}
-      {/* Spotify (2026-11-18): over the Village, on the iPad and on your own login. */}
-      {!ambient && currentTab === 'village' && <MusicBar calm={false} dock />}
       <SmartHomeOverlay
         open={smartHomeOpen} onClose={() => setSmartHomeOpen(false)}
         userId={userId} userEmail={email}

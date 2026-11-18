@@ -91,6 +91,7 @@ export async function proxy(request: NextRequest) {
     // Music on the wall screen; same rule, checked in the route.
     || pathname === '/api/home/music'
     || pathname === '/api/home/music/choices'
+    || pathname === '/api/home/music/queue'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands

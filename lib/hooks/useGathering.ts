@@ -61,6 +61,8 @@ const DEFAULT_PREP: Omit<PrepItem, 'id'>[] = [
 ]
 
 export interface GuestInfo {
+  /** Guests may add songs to the hosts' Spotify queue while hosting (2026-11-18). On unless false. */
+  songQueue?: boolean
   wifiName?: string
   wifiPassword?: string
   /** Free text: bathroom, help yourself to drinks, house rules, etc. */

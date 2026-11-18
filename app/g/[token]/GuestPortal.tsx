@@ -107,7 +107,7 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
         )}
 
         {showQueue && !open && !done && (
-          <SongQueue token={token} musicUrl={musicUrl} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
+          <SongQueue token={token} musicUrl={musicUrl} guestName={name} onBack={() => setShowQueue(false)} onAddSong={() => { setShowQueue(false); setOpen('song') }} />
         )}
 
         {showBye && !open && !done && (
@@ -210,17 +210,133 @@ export default function GuestPortal({ token, title, photoAlbumUrl, musicUrl, gue
   )
 }
 
-function SongQueue({ token, musicUrl, onBack, onAddSong }: {
+// The hosts' Spotify, live (2026-11-18): what is playing, what is next and
+// who picked it, and a search to add a song straight into the queue. Shown
+// instead of the request list whenever the hosts are playing Spotify and
+// taking songs; otherwise the request list below is used as before.
+interface LiveTrack { title: string; artist: string; art: string | null; by?: string | null }
+interface LiveMusic { on: boolean; now: (LiveTrack & { isPlaying: boolean }) | null; upNext: LiveTrack[] }
+interface FoundTrack { uri: string; title: string; artist: string; art: string | null }
+
+function SongArt({ src, size }: { src: string | null; size: number }) {
+  return (
+    <span style={{ width: size, height: size, borderRadius: 8, overflow: 'hidden', flexShrink: 0, display: 'grid', placeItems: 'center', background: '#efe3cc', fontSize: size * 0.4 }}>
+      {src ? <img src={src} alt="" width={size} height={size} style={{ width: size, height: size, objectFit: 'cover' }} /> : '♪'}
+    </span>
+  )
+}
+
+const ellipsis: React.CSSProperties = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+
+function LiveQueue({ token, guestName, live, reload }: { token: string; guestName: string; live: LiveMusic; reload: () => void }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<FoundTrack[] | null>(null)
+  const [added, setAdded] = useState<Set<string>>(new Set())
+  const [note, setNote] = useState<string | null>(null)
+
+  useEffect(() => {
+    const text = q.trim()
+    if (text.length < 2) { setResults(null); return }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/g/${token}/music?q=${encodeURIComponent(text)}`)
+        const data = await res.json()
+        setResults(res.ok ? data.results ?? [] : [])
+      } catch { setResults([]) }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [q, token])
+
+  const add = async (t: FoundTrack) => {
+    if (added.has(t.uri)) return
+    setNote(null)
+    try {
+      const res = await fetch(`/api/g/${token}/music`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...t, guest_name: guestName.trim() || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setNote(data.error || 'That did not work. Try again.'); return }
+      setAdded(s => new Set(s).add(t.uri))
+      setNote(`${t.title} is in the queue.`)
+      setQ(''); setResults(null)
+      reload()
+    } catch { setNote('That did not work. Try again.') }
+  }
+
+  return (
+    <div style={{ textAlign: 'left' }}>
+      {live.now && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem', borderRadius: 14, background: '#fff8ec', border: '1px solid #efe3c8', marginBottom: '0.9rem' }}>
+          <SongArt src={live.now.art} size={56} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '0.66rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#a8987f' }}>{live.now.isPlaying ? 'Playing now' : 'Paused'}</div>
+            <div style={{ fontSize: '0.95rem', color: '#463b30', fontWeight: 600, ...ellipsis }}>{live.now.title}</div>
+            <div style={{ fontSize: '0.76rem', color: '#8a7d6f', ...ellipsis }}>{live.now.artist}</div>
+          </div>
+        </div>
+      )}
+
+      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search for a song to add"
+        style={{ width: '100%', boxSizing: 'border-box', padding: '0.75rem 0.9rem', borderRadius: 12, border: '1px solid #e6d8bd', background: '#fffdf7', fontSize: '1rem', color: '#463b30', outline: 'none' }} />
+      {note && <p style={{ fontSize: '0.8rem', color: '#8a6d4f', margin: '0.5rem 0 0' }}>{note}</p>}
+
+      {results && (
+        <div style={{ margin: '0.5rem 0 0.8rem' }}>
+          {results.length === 0 && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>No songs found.</p>}
+          {results.map(t => (
+            <button key={t.uri} onClick={() => add(t)} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', padding: '0.45rem 0', background: 'none', border: 'none', borderBottom: '1px solid #efe3c8', cursor: 'pointer', textAlign: 'left' }}>
+              <SongArt src={t.art} size={40} />
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ display: 'block', fontSize: '0.86rem', color: '#463b30', ...ellipsis }}>{t.title}</span>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: '#a8987f', ...ellipsis }}>{t.artist}</span>
+              </span>
+              <span style={{ fontSize: '0.78rem', color: added.has(t.uri) ? '#a8987f' : '#e8896b', fontWeight: 600 }}>{added.has(t.uri) ? 'Added' : '+ Add'}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!results && (
+        <div style={{ margin: '0.9rem 0 0.2rem' }}>
+          <div style={{ fontSize: '0.72rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#a8987f', marginBottom: '0.2rem' }}>Up next</div>
+          {live.upNext.length === 0 && <p style={{ fontSize: '0.82rem', color: '#9a8b76' }}>Nothing queued yet. Add the first song.</p>}
+          {live.upNext.map((t, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0', borderBottom: '1px solid #efe3c8' }}>
+              <SongArt src={t.art} size={36} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.84rem', color: '#463b30', ...ellipsis }}>{t.title}</div>
+                <div style={{ fontSize: '0.7rem', color: '#a8987f', ...ellipsis }}>{t.artist}{t.by ? ` · from ${t.by}` : ''}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SongQueue({ token, musicUrl, guestName = '', onBack, onAddSong }: {
   token: string
   musicUrl?: string | null
+  guestName?: string
   onBack: () => void
   onAddSong: () => void
 }) {
   const [songs, setSongs] = useState<{ id: string; title: string; by: string | null; votes: number }[]>([])
   const [voted, setVoted] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [live, setLive] = useState<LiveMusic | null>(null)
+
+  const loadLive = async () => {
+    try {
+      const res = await fetch(`/api/g/${token}/music`)
+      if (res.ok) setLive(await res.json())
+    } catch { /* ignore */ }
+  }
 
   const load = async () => {
+    loadLive()
     try {
       const res = await fetch(`/api/g/${token}/vote`)
       const data = await res.json()
@@ -252,6 +368,9 @@ function SongQueue({ token, musicUrl, onBack, onAddSong }: {
       <div style={{ fontSize: '1.9rem' }}>🎧</div>
       <h2 style={S.h2}>What’s playing</h2>
 
+      {live?.on ? (
+        <LiveQueue token={token} guestName={guestName} live={live} reload={loadLive} />
+      ) : (<>
       {embed && (
         <iframe
           src={embed}
@@ -283,6 +402,7 @@ function SongQueue({ token, musicUrl, onBack, onAddSong }: {
       </div>
 
       <button onClick={onAddSong} style={S.primary}>Add a song 🎵</button>
+      </>)}
     </div>
   )
 }

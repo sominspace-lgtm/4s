@@ -43,6 +43,7 @@ import VillageGuestPanel, { VillageKeepsakesPanel } from './VillageGuestPanel'
 import { useVillageClock } from './useVillageClock'
 import VillageScene, { GROUND_Y } from './scene/VillageScene'
 import AmbientInfo from './scene/AmbientInfo'
+import MusicChip from './scene/MusicChip'
 import KitchenMode from './KitchenMode'
 import GuestPage from './GuestPage'
 import DinnerCard from './DinnerCard'
@@ -1084,11 +1085,24 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
         {/* The corner readout (2026-09-06). A discreet time-only chip on
             the personal dashboard; on the wall it's the same small tag
             normally and grows + dims the scene once idle (`ambient`). */}
-        {!compact && !guestLive && (
-          <AmbientInfo spaceId={spaces[0]?.id ?? null} userId={userId}
-            timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
-            partOfDay={partOfDay} binLine={binLine} ambient={ambient}
-            nextEvent={guestView ? null : structures.calendar[0] ?? null} />
+        {/* The top-left stack: the clock, and under it the music (2026-11-18).
+            While you host the clock steps aside and the music keeps its corner. */}
+        {!compact && (
+          <div style={{
+            position: 'absolute', top: ambient ? '5%' : '3.5%', left: ambient ? '5%' : '3.5%', zIndex: 4,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: ambient ? '0.7rem' : '0.4rem',
+            pointerEvents: 'none', transition: 'all 500ms ease',
+          }}>
+            {!guestLive && (
+              <AmbientInfo inline spaceId={spaces[0]?.id ?? null} userId={userId}
+                timeLabel={timeLabel} dateLabel={dateLabel} weather={weather}
+                partOfDay={partOfDay} binLine={binLine} ambient={ambient}
+                nextEvent={guestView ? null : structures.calendar[0] ?? null} />
+            )}
+            <MusicChip ambient={ambient} hosting={guestLive}
+              queueOn={guestInfo.songQueue !== false}
+              onQueueOn={onSetGuestInfo ? on => onSetGuestInfo({ ...guestInfo, songQueue: on }) : undefined} />
+          </div>
         )}
 
         {/* A photo moment (2026-10-27) — a framed print over the idle scene. */}

@@ -60,7 +60,7 @@ export async function unlinkSpotify(userId: string) {
   await createAdminClient().from('spotify_links').delete().eq('user_id', userId)
 }
 
-interface Link { user_id: string; access_token: string; refresh_token: string; expires_at: string; display_name: string | null }
+export interface Link { user_id: string; access_token: string; refresh_token: string; expires_at: string; display_name: string | null }
 
 export async function linksFor(userIds: string[]): Promise<Link[]> {
   if (!userIds.length) return []
@@ -128,6 +128,7 @@ export type Control =
   | { action: 'play' | 'pause' | 'next' | 'previous' }
   | { action: 'playlist'; uri: string; deviceId?: string }
   | { action: 'transfer'; deviceId: string }
+  | { action: 'queue'; uri: string }
 
 const isUri = (u: unknown): u is string => typeof u === 'string' && /^spotify:(playlist|album|artist|show):[A-Za-z0-9]{10,40}$/.test(u)
 const isDevice = (d: unknown): d is string => typeof d === 'string' && /^[A-Za-z0-9]{10,80}$/.test(d)
@@ -137,6 +138,7 @@ export function parseControl(b: Record<string, unknown>): Control | null {
   if (b.action === 'play' || b.action === 'pause' || b.action === 'next' || b.action === 'previous') return { action: b.action }
   if (b.action === 'playlist' && isUri(b.uri)) return { action: 'playlist', uri: b.uri, ...(isDevice(b.deviceId) ? { deviceId: b.deviceId } : {}) }
   if (b.action === 'transfer' && isDevice(b.deviceId)) return { action: 'transfer', deviceId: b.deviceId }
+  if (b.action === 'queue' && typeof b.uri === 'string' && /^spotify:track:[A-Za-z0-9]{10,40}$/.test(b.uri)) return { action: 'queue', uri: b.uri }
   return null
 }
 
@@ -148,6 +150,7 @@ export async function control(link: Link, c: Control): Promise<{ ok: true } | { 
     case 'previous': return sp(link, '/me/player/previous', { method: 'POST' })
     case 'playlist': return sp(link, `/me/player/play${c.deviceId ? `?device_id=${c.deviceId}` : ''}`, { method: 'PUT', body: { context_uri: c.uri } })
     case 'transfer': return sp(link, '/me/player', { method: 'PUT', body: { device_ids: [c.deviceId], play: true } })
+    case 'queue': return addToQueue(link, c.uri)
   }
 }
 
@@ -165,4 +168,52 @@ export async function choices(link: Link): Promise<Choices> {
     playlists: ((pl.ok ? pl.data?.items : []) ?? []).filter(Boolean).map(p => ({ uri: p.uri, name: p.name, art: p.images?.[0]?.url ?? null })),
     devices: ((dv.ok ? dv.data?.devices : []) ?? []).filter(d => d.id && !d.is_restricted).map(d => ({ id: d.id!, name: d.name, type: d.type, active: d.is_active })),
   }
+}
+
+// --- the queue (2026-11-18) -------------------------------------------------
+// "Up next" on the Village, and guests adding songs while you host.
+
+export interface Track { uri: string; title: string; artist: string; art: string | null }
+
+interface TrackReply {
+  uri?: string; name?: string; artists?: { name: string }[]; show?: { name?: string }
+  album?: { images?: { url: string; width?: number }[] }; images?: { url: string; width?: number }[]
+}
+
+function toTrack(t: TrackReply | null | undefined): Track | null {
+  if (!t?.uri || !t.name) return null
+  const imgs = t.album?.images ?? t.images ?? []
+  // The smallest picture that is still sharp at list size.
+  const art = [...imgs].sort((a, b) => (a.width ?? 0) - (b.width ?? 0)).find(i => (i.width ?? 0) >= 64)?.url ?? imgs[0]?.url ?? null
+  return { uri: t.uri, title: t.name, artist: (t.artists ?? []).map(a => a.name).join(', ') || t.show?.name || '', art }
+}
+
+/** The next few songs in this person's Spotify queue. Empty when nothing plays. */
+export async function upNext(link: Link, max = 8): Promise<Track[]> {
+  const r = await sp<{ queue?: TrackReply[] }>(link, '/me/player/queue')
+  if (!r.ok) return []
+  return (r.data?.queue ?? []).map(toTrack).filter((t): t is Track => !!t).slice(0, max)
+}
+
+/** Song search for the queue. Spotify allows 10 results per search for apps like this one. */
+export async function searchTracks(link: Link, q: string): Promise<Track[]> {
+  const query = q.trim().slice(0, 80)
+  if (!query) return []
+  const r = await sp<{ tracks?: { items?: TrackReply[] } }>(link, `/search?type=track&limit=10&q=${encodeURIComponent(query)}`)
+  if (!r.ok) return []
+  return (r.data?.tracks?.items ?? []).map(toTrack).filter((t): t is Track => !!t)
+}
+
+export const isTrackUri = (u: unknown): u is string => typeof u === 'string' && /^spotify:track:[A-Za-z0-9]{10,40}$/.test(u)
+
+export async function addToQueue(link: Link, uri: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isTrackUri(uri)) return { ok: false, error: 'That is not a song.' }
+  const r = await sp(link, `/me/player/queue?uri=${encodeURIComponent(uri)}`, { method: 'POST' })
+  return r.ok ? { ok: true } : { ok: false, error: r.error }
+}
+
+/** Of a household's linked accounts, the one whose music is on right now. */
+export async function playerOf(links: Link[]): Promise<{ link: Link; now: NowPlaying } | null> {
+  const all = await Promise.all(links.map(async link => ({ link, now: await nowPlaying(link) })))
+  return all.find(x => x.now.playing?.isPlaying) ?? all.find(x => x.now.playing) ?? null
 }

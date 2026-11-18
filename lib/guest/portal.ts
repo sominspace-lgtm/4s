@@ -38,6 +38,8 @@ export interface GuestInfo {
   wifiName?: string
   wifiPassword?: string
   notes?: string
+  /** Guests may add songs to the hosts' Spotify queue while hosting (2026-11-18). On unless false. */
+  songQueue?: boolean
 }
 
 export interface PinnedMessage { name: string | null; body: string }

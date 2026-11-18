@@ -11,7 +11,7 @@ import { weatherMeta, type WeatherCondition } from '@/lib/village/weather'
 // in home mode. Grows and the scene dims around it once the wall goes
 // idle (`ambient`), so the same small habit of glancing at the corner
 // becomes the whole point of the picture from across the room.
-export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null, ambient = false, nextEvent = null }: {
+export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, weather, partOfDay = 'day', binLine = null, ambient = false, nextEvent = null, inline = false }: {
   spaceId: string | null
   userId: string
   timeLabel: string | null
@@ -25,6 +25,8 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
   ambient?: boolean
   /** "Tomorrow · Dentist" (2026-10-27), shown under the line once idle. */
   nextEvent?: string | null
+  /** Placed by its parent (the top-left stack with the music chip, 2026-11-18) instead of pinned to the corner itself. */
+  inline?: boolean
 }) {
   const { chores, meals } = useHousehold(spaceId)
   const { routines } = useRoutines(spaceId)
@@ -81,7 +83,7 @@ export default function AmbientInfo({ spaceId, userId, timeLabel, dateLabel, wea
     <div
       aria-hidden
       style={{
-        position: 'absolute', top: ambient ? '5%' : '3.5%', left: ambient ? '5%' : '3.5%', zIndex: 3,
+        ...(inline ? {} : { position: 'absolute', top: ambient ? '5%' : '3.5%', left: ambient ? '5%' : '3.5%', zIndex: 3 }),
         display: 'flex', flexDirection: 'column', gap: ambient ? 3 : 1,
         maxWidth: ambient ? '12rem' : '9rem',
         pointerEvents: 'none', textAlign: 'left',

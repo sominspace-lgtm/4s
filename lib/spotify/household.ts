@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerFor } from '@/lib/smarthome/auth'
 import { spacesFor } from '@/lib/devices/members'
-import { linksFor } from './server'
+import { linksFor, type Link } from './server'
 
 // Whose Spotify a request may touch (2026-11-18): the linked accounts of the
 // people in one household, decided on the server. A paired wall screen gets
@@ -16,11 +16,17 @@ export async function householdSpotify(spaceId: unknown) {
     spaces = (await spacesFor(caller.userId)).map(s => s.id)
   }
   if (!spaces.length) return { error: 'Music needs a household.', status: 400 } as const
+  return { links: await linksForSpaces(spaces) } as const
+}
+
+/** The linked Spotify accounts of everyone in these households. */
+export async function linksForSpaces(spaces: string[]): Promise<Link[]> {
+  if (!spaces.length) return []
   const admin = createAdminClient()
   const [{ data: owners }, { data: members }] = await Promise.all([
     admin.from('shared_spaces').select('owner_id').in('id', spaces),
     admin.from('shared_space_members').select('member_id').in('space_id', spaces).eq('status', 'accepted'),
   ])
   const people = [...new Set([...(owners ?? []).map(o => o.owner_id), ...(members ?? []).map(m => m.member_id)].filter((x): x is string => !!x))]
-  return { links: await linksFor(people) } as const
+  return linksFor(people)
 }
