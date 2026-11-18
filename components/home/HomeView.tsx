@@ -14,6 +14,7 @@ import { useWakeLock } from '@/lib/hooks/useWakeLock'
 import { GROUND_Y } from '@/components/village/scene/sceneData'
 import type { HomeSnapshot } from '@/lib/home/snapshot'
 import { binLineFor, partOfDayOf, FACES, type Face } from '@/lib/home/faces'
+import MusicBar from './MusicBar'
 
 // HomeView (2026-11-08): the wall iPad's whole screen. The village fills it,
 // with one of three clock faces over the top. Everything comes from
@@ -206,6 +207,9 @@ export default function HomeView({ screenName, preview }: { screenName: string; 
           background: 'rgba(40, 34, 30, 0.82)', color: '#fffaf0', fontSize: '0.9rem', pointerEvents: 'none', whiteSpace: 'nowrap',
         }}>{toast}</div>
       )}
+
+      <MusicBar preview={!!preview} calm={calm} onToast={m => { setToast(m); setTimeout(() => setToast(null), 2600) }} />
+
 
       <button onClick={() => setMenu(m => !m)} aria-label="Screen options" style={{
         position: 'absolute', right: 14, bottom: 14, width: 44, height: 44, borderRadius: 22, border: 'none',

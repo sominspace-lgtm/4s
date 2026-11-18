@@ -8,10 +8,10 @@ replies with speech.
 
 Once set up you can say things like:
 
-- *"Alexa, ask olympus to add a task to call the dentist tomorrow."*
-- *"Alexa, tell olympus to capture: remember to water the plants."*
-- *"Alexa, ask olympus to remind me to buy coffee."* (defaults to a 30-day reminder; adjust the interval in the app)
-- *"Alexa, ask olympus what needs attention."*
+- *"Alexa, ask home panel to add a task to call the dentist tomorrow."*
+- *"Alexa, tell home panel to capture: remember to water the plants."*
+- *"Alexa, ask home panel to remind me to buy coffee."* (defaults to a 30-day reminder; adjust the interval in the app)
+- *"Alexa, ask home panel what needs attention."*
 
 ---
 
@@ -46,7 +46,7 @@ In the Supabase SQL editor, run **`alexa_account_linking.sql`, then
 
 ### 2. Set the invocation name
 
-**Build → Invocation** → set the invocation name to `olympus`. Save.
+**Build → Invocation** → set the invocation name to `home panel`. Save.
 
 
 ### 3. Paste the interaction model
@@ -85,7 +85,7 @@ developer account **unless you invite them as beta testers**:
 
 Each person opens the emailed invite link on the browser or phone they use
 for Alexa, taps **Accept and enable**, which turns the skill on for their
-Amazon account. Only after this step can they say *"Alexa, open olympus"* on
+Amazon account. Only after this step can they say *"Alexa, open home panel"* on
 their own devices. Do this for every household/friend who'll use it — it is
 separate from and required in addition to the SS account linking below.
 
@@ -96,8 +96,8 @@ invite above:
 
 1. Open **SS → Account → Connect Alexa** → tap **Get my code**. A 4-digit
    code appears, tied to their SS login.
-2. Say to their Echo/Alexa app: *"Alexa, ask olympus to link"* then read the
-   4 digits when asked (or in one breath: *"Alexa, ask olympus to link 4 2 9 1"*).
+2. Say to their Echo/Alexa app: *"Alexa, ask home panel to link"* then read the
+   4 digits when asked (or in one breath: *"Alexa, ask home panel to link 4 2 9 1"*).
 3. Alexa confirms *"You're linked."* From then on, that Alexa account always
    resolves to that person's SS data — everyone's tasks, habits, and money
    stay private to them even though they share one skill.
@@ -113,7 +113,7 @@ successful link, so there's no lingering code to guess.
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "olympus",
+      "invocationName": "home panel",
       "intents": [
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
@@ -350,13 +350,13 @@ linking fails, it's almost always one of these, in order of likelihood:
    says "just say the four digits," but that only works after the interaction
    model above (with the `"{Code}"` sample) is pasted in **and Build Model is
    run**. Until then, say the digits *with* a carrier word:
-   *"Alexa, ask olympus to link four two nine one."*
+   *"Alexa, ask home panel to link four two nine one."*
 2. **The interaction model wasn't (re)built.** Any time the model changes,
    **Build → Interaction Model → JSON Editor → Save Model → Build Model**.
    Without a build, new/updated intents don't exist for Alexa's speech matching.
 3. **The skill isn't enabled for that person's Amazon account.** Your own dev
    account has it automatically; everyone else needs a **Beta Test invite**
-   (step 6) accepted first, or Alexa won't recognize "olympus" at all.
+   (step 6) accepted first, or Alexa won't recognize "home panel" at all.
 4. **The endpoint isn't pointed at prod.** Build → Endpoint must be
    `https://4s-coral.vercel.app/api/alexa` (HTTPS, wildcard-cert option).
 5. **No code came back in the app.** If Account → Connect Alexa → "Get my code"

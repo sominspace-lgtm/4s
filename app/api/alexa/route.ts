@@ -134,10 +134,10 @@ export async function POST(request: Request) {
       const { error: linkErr } = await admin.from('alexa_links').upsert({ user_id: match.user_id, alexa_user_id: alexaUserId })
       if (linkErr) return say(`I found your code but could not save the link. ${linkErr.message}`, { end: true })
       await admin.from('alexa_link_codes').delete().eq('user_id', match.user_id)
-      return say("You're linked. Try saying: ask olympus what needs attention.", { end: true })
+      return say("You're linked. Try saying: ask home panel what needs attention.", { end: true })
     }
     // Keep the session open and take the code conversationally — one-shot
-    // "ask olympus to link 1234" is unreliable to parse, but reading four digits
+    // "ask home panel to link 1234" is unreliable to parse, but reading four digits
     // inside an open session is not.
     return say('You are not linked yet. Get a code from the SS app under Account, Connect Alexa, then just say the four digits now.', { reprompt: 'Say your four digit code from the app.' })
   }
@@ -363,7 +363,7 @@ export async function POST(request: Request) {
     }
 
     case 'LinkAccountIntent':
-      return say("You're already linked. Say: ask olympus what needs attention.", { end: true })
+      return say("You're already linked. Say: ask home panel what needs attention.", { end: true })
 
     case 'AMAZON.HelpIntent':
       return say('You can add a task, make a note, or add a refill. Ask what needs attention, read my tasks, or what habits are due. Mark a task or habit done, pause or resume a habit, snooze a refill, or say you bought something. Or ask about your money or what is coming up. What would you like?', {

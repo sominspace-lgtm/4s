@@ -86,7 +86,7 @@ export default function AlexaConnect({ userId }: { userId: string }) {
       ) : (
         <>
           <span style={{ fontSize: '0.73rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask olympus to link&rdquo;</em> and read it out. Links your Echo to this account.
+            Get a code, then say <em style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask home panel to link&rdquo;</em> and read it out. Links your Echo to this account.
           </span>
           {!code ? (
             <Btn onClick={connect} disabled={loading}>{loading ? 'generating…' : 'Get my code'}</Btn>
@@ -99,7 +99,7 @@ export default function AlexaConnect({ userId }: { userId: string }) {
                 border: '1px solid color-mix(in srgb, var(--gold) 25%, transparent)',
               }}>{code}</div>
               <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center' }}>
-                Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask olympus to link {code.split('').join(' ')}&rdquo;</strong>
+                Say: <strong style={{ color: 'var(--text)' }}>&ldquo;Alexa, ask home panel to link {code.split('').join(' ')}&rdquo;</strong>
               </span>
               <Btn onClick={connect} disabled={loading}>New code</Btn>
             </div>

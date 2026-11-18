@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AlexaConnect from '@/components/ui/AlexaConnect'
 import ScreensSettings from '@/components/ui/ScreensSettings'
+import SpotifyConnect from '@/components/ui/SpotifyConnect'
 import HouseholdSetup from '@/components/household/HouseholdSetup'
 
 interface Props {
@@ -243,6 +244,14 @@ export default function AccountClient({ email, userId, displayName, isAnonymous 
         <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Alexa</div>
         <Row label="Connect Alexa">
           <AlexaConnect userId={userId} />
+        </Row>
+      </div>
+
+      {/* Spotify (2026-11-18) — music on the wall screen. */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '0.5rem 1.25rem', marginBottom: '1.2rem' }}>
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', opacity: 0.5, padding: '0.75rem 0 0.25rem' }}>Spotify</div>
+        <Row label="Music on the wall screen">
+          <SpotifyConnect />
         </Row>
       </div>
 

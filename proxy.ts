@@ -88,6 +88,9 @@ export async function proxy(request: NextRequest) {
     // signed-in member or the screen's own key itself.
     || pathname === '/api/smarthome/scene'
     || pathname === '/api/smarthome/all-off'
+    // Music on the wall screen; same rule, checked in the route.
+    || pathname === '/api/home/music'
+    || pathname === '/api/home/music/choices'
 
   if (!user && !isPublic) {
     // Preserve where the request was actually headed, so signing in lands
