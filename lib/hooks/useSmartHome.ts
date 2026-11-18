@@ -19,6 +19,8 @@ export interface SmartHomeDevice {
   kind?: string | null
   provider?: string | null
   state?: DeviceState | null
+  /** Home Assistant details (2026-11-18): `colors` = this light can change colour. */
+  meta?: { colors?: boolean; offline?: boolean } | null
 }
 
 /** A device's kind and full state, with sensible fallbacks for old rows. */

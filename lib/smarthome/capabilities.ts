@@ -63,9 +63,12 @@ export function checkChange(kind: DeviceKind, change: unknown): { ok: true; chan
     else if (key === 'temperature' && can(kind, 'temperature') && num(value) !== null) out.temperature = clamp(num(value)!, TEMP_MIN, TEMP_MAX)
     else if (key === 'position' && can(kind, 'position') && num(value) !== null) out.position = clamp(num(value)!, 0, 100)
     else if (key === 'volume' && can(kind, 'volume') && num(value) !== null) out.volume = clamp(num(value)!, 0, 100)
+    else if (key === 'color' && kind === 'light' && typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) out.color = value.toLowerCase()
     else return { ok: false, error: `A ${KIND_INFO[kind].label.toLowerCase()} can't do that.` }
   }
   if (Object.keys(out).length === 0) return { ok: false, error: 'Nothing to change.' }
+  // Picking a colour turns the light on (2026-11-18).
+  if (out.color && out.on === undefined) out.on = true
   return { ok: true, change: out }
 }
 

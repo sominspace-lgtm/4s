@@ -50,6 +50,12 @@ export function kelvinToHex(k: number): string {
   return hex(r, g, b)
 }
 
+/** Can this light change colour, or only brightness (2026-11-18)? */
+export function canColorHA(a: Record<string, unknown>): boolean {
+  const modes = Array.isArray(a.supported_color_modes) ? a.supported_color_modes : []
+  return modes.some(m => ['hs', 'rgb', 'xy', 'rgbw', 'rgbww'].includes(String(m)))
+}
+
 /** A light's colour (2026-11-18): its RGB when it is in a colour mode, its warmth when white. */
 export function lightColorHA(a: Record<string, unknown>): string | null {
   const mode = typeof a.color_mode === 'string' ? a.color_mode : null
@@ -114,8 +120,11 @@ export function callsForHA(kind: DeviceKind, entityId: string, change: DeviceSta
     if (change.temperature !== undefined) out.push(call('set_temperature', { temperature: fromF(change.temperature, celsius) }))
     return out
   }
-  if (kind === 'light' && change.brightness !== undefined && change.on !== false) {
-    out.push(call('turn_on', { brightness_pct: change.brightness }))
+  if (kind === 'light' && (change.brightness !== undefined || change.color) && change.on !== false) {
+    const data: Record<string, unknown> = {}
+    if (change.brightness !== undefined) data.brightness_pct = change.brightness
+    if (change.color) data.rgb_color = [1, 3, 5].map(i => parseInt(change.color!.slice(i, i + 2), 16))
+    out.push(call('turn_on', data))
   } else if (change.on !== undefined) {
     out.push(call(change.on ? 'turn_on' : 'turn_off'))
   }

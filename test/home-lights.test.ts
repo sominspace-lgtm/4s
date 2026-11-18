@@ -41,3 +41,23 @@ describe('light colour from Home Assistant', () => {
     expect(stateOf('light', { color: 'red' }, true).color).toBeUndefined()
   })
 })
+
+import { checkChange } from '@/lib/smarthome/capabilities'
+import { callsForHA, canColorHA } from '@/lib/smarthome/hassMap'
+
+describe('setting a light colour', () => {
+  it('accepts a hex colour for lights only, and turns the light on', () => {
+    expect(checkChange('light', { color: '#FF8000' })).toEqual({ ok: true, change: { color: '#ff8000', on: true } })
+    expect(checkChange('plug', { color: '#ff8000' }).ok).toBe(false)
+    expect(checkChange('light', { color: 'red' }).ok).toBe(false)
+  })
+  it('sends rgb to Home Assistant with the brightness', () => {
+    expect(callsForHA('light', 'light.lamp', { color: '#ff8000', on: true, brightness: 40 })).toEqual([
+      { domain: 'light', service: 'turn_on', data: { entity_id: 'light.lamp', brightness_pct: 40, rgb_color: [255, 128, 0] } },
+    ])
+  })
+  it('knows which lights can change colour', () => {
+    expect(canColorHA({ supported_color_modes: ['color_temp', 'xy'] })).toBe(true)
+    expect(canColorHA({ supported_color_modes: ['brightness'] })).toBe(false)
+  })
+})

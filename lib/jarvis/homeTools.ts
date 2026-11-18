@@ -55,6 +55,7 @@ function changeFrom(i: Record<string, unknown>): DeviceState {
   if (typeof i.temperature === 'number') c.temperature = i.temperature
   if (typeof i.locked === 'boolean') c.locked = i.locked
   if (typeof i.position === 'number') c.position = i.position
+  if (typeof i.color === 'string' && /^#[0-9a-f]{6}$/i.test(i.color)) { c.color = i.color.toLowerCase(); if (c.on === undefined) c.on = true }
   if (!Object.keys(c).length) throw new ToolInputError('Say what to change: on, brightness, temperature, locked or position.')
   return c
 }
@@ -67,6 +68,7 @@ function changeWords(i: Record<string, unknown>): string {
   if (typeof i.temperature === 'number') parts.push(`to ${Math.round(i.temperature)}°`)
   if (i.locked === true) parts.push('locked')
   if (i.locked === false) parts.push('unlocked')
+  if (typeof i.color === 'string') parts.push(`the colour ${i.color}`)
   if (typeof i.position === 'number') parts.push(i.position >= 100 ? 'open' : i.position <= 0 ? 'closed' : `${Math.round(i.position)}% open`)
   return parts.join(', ') || 'changed'
 }
@@ -106,6 +108,7 @@ const houseTools: JarvisTool[] = [
       temperature: { type: 'number', description: 'Thermostat target in °F, 55 to 85' },
       locked: { type: 'boolean' },
       position: { type: 'number', description: 'Blinds, 0 closed to 100 open' },
+      color: { type: 'string', description: 'Lights that can change colour, as #rrggbb (warm white is #ffb46b)' },
     }, required: ['target'] },
     summarize: i => `Set ${str(i.target) ?? 'that'} ${changeWords(i)}`,
     run: async ({ userId }, i) => {
@@ -116,7 +119,7 @@ const houseTools: JarvisTool[] = [
       const found = match(await devicesOf(spaceId), target)
       // Only the devices the change makes sense for (a room's lamps, not its lock).
       const fits = found.filter(d => Object.keys(change).every(k =>
-        k === 'on' ? can(kindOf(d.kind), 'power') : k === 'locked' ? can(kindOf(d.kind), 'lock') : can(kindOf(d.kind), k as 'brightness' | 'temperature' | 'position')))
+        k === 'on' ? can(kindOf(d.kind), 'power') : k === 'color' ? kindOf(d.kind) === 'light' : k === 'locked' ? can(kindOf(d.kind), 'lock') : can(kindOf(d.kind), k as 'brightness' | 'temperature' | 'position')))
       if (!fits.length) throw new ToolInputError(`No device called "${target}" can do that. Check home_status for the names.`)
       const done = await Promise.all(fits.map(d => setDevice({ spaceId }, d.id, change)))
       const failed = fits.filter((_, n) => !done[n].ok).map(d => d.name)

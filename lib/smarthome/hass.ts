@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isOn, type DeviceKind, type DeviceState } from './capabilities'
-import { HA_DOMAINS, kindForHA, nameOfHA, stateFromHA, callsForHA, checkHAUrl, domainOf, type HAEntity } from './hassMap'
+import { HA_DOMAINS, kindForHA, nameOfHA, stateFromHA, callsForHA, checkHAUrl, domainOf, canColorHA, type HAEntity } from './hassMap'
 
 // Home Assistant (2026-11-10). Server-only. A household connects its own
 // Home Assistant with its address and a long-lived access token made in Home
@@ -106,7 +106,7 @@ export async function syncHA(spaceId: string): Promise<{ ok: true; count: number
     const room = areas.get(e.entity_id) || null
     const fields = {
       name: nameOfHA(e), kind, state, on_state: isOn(kind, state), updated_at: now,
-      meta: { domain: domainOf(e.entity_id), celsius, offline: e.state === 'unavailable' },
+      meta: { domain: domainOf(e.entity_id), celsius, offline: e.state === 'unavailable', ...(kind === 'light' ? { colors: canColorHA(e.attributes ?? {}) } : {}) },
     }
     const had = byExt.get(e.entity_id)
     if (had) {

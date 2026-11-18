@@ -52,6 +52,31 @@ function Slider({ value, min, max, label, onCommit }: { value: number; min: numb
   )
 }
 
+// Light colours (2026-11-18): a few warm and bright ones, plus any colour.
+const SWATCHES = [
+  { hex: '#ffb46b', name: 'Warm' }, { hex: '#fff1dc', name: 'White' }, { hex: '#cfe2ff', name: 'Cool' },
+  { hex: '#ff9500', name: 'Amber' }, { hex: '#ff4d6d', name: 'Rose' }, { hex: '#b06bff', name: 'Violet' },
+  { hex: '#3a7bff', name: 'Blue' }, { hex: '#34c77b', name: 'Green' },
+]
+
+function ColorPicker({ value, name, onPick }: { value: string | null; name: string; onPick: (hex: string) => void }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+      {SWATCHES.map(s => (
+        <button key={s.hex} onClick={() => onPick(s.hex)} aria-label={`${name}: ${s.name}`} title={s.name} className="press" style={{
+          width: 22, height: 22, borderRadius: '50%', cursor: 'pointer', background: s.hex, padding: 0,
+          border: value === s.hex ? '2px solid var(--text)' : '1px solid var(--border)',
+        }} />
+      ))}
+      <label title="Any colour" style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', position: 'relative', cursor: 'pointer', border: '1px solid var(--border)',
+        background: 'conic-gradient(#ff4d4d, #ffd84d, #4dff88, #4dd2ff, #6b4dff, #ff4dd8, #ff4d4d)' }}>
+        <input type="color" value={value ?? '#ffb46b'} aria-label={`${name}: any colour`} onChange={e => onPick(e.target.value)}
+          style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+      </label>
+    </span>
+  )
+}
+
 function DeviceControls({ d, set }: { d: SmartHomeDevice; set: (change: DeviceState) => void }) {
   const { kind, state } = deviceView(d)
   const step = (n: number) => set({ temperature: Math.min(TEMP_MAX, Math.max(TEMP_MIN, (state.temperature ?? 68) + n)) })
@@ -60,6 +85,9 @@ function DeviceControls({ d, set }: { d: SmartHomeDevice; set: (change: DeviceSt
       {can(kind, 'power') && <Toggle on={!!state.on} label={`Turn ${d.name} ${state.on ? 'off' : 'on'}`} onChange={on => set({ on })} />}
       {can(kind, 'brightness') && state.on && (
         <Slider value={state.brightness ?? 80} min={1} max={100} label={`${d.name} brightness`} onCommit={v => set({ brightness: v })} />
+      )}
+      {kind === 'light' && state.on && (d.provider !== 'home_assistant' || d.meta?.colors) && (
+        <ColorPicker value={state.color ?? null} name={d.name} onPick={color => set({ color })} />
       )}
       {can(kind, 'volume') && state.on && (
         <Slider value={state.volume ?? 30} min={0} max={100} label={`${d.name} volume`} onCommit={v => set({ volume: v })} />
