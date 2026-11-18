@@ -6,6 +6,9 @@ import DiscordConnect from '@/components/household/DiscordConnect'
 import AlexaConnect from '@/components/ui/AlexaConnect'
 import GoogleConnect from '@/components/ui/GoogleConnect'
 import ShortcutConnect from '@/components/ui/ShortcutConnect'
+import SpotifyConnect from '@/components/ui/SpotifyConnect'
+import ScreensSettings from '@/components/ui/ScreensSettings'
+import HomeAssistantCard from '@/components/household/HomeAssistantCard'
 import IconButton from '@/components/ui/IconButton'
 
 // One place for every external connection (2026-08-11): Discord and Alexa
@@ -64,7 +67,7 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
         display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Connect</div>
+          <div style={{ fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Connections</div>
           <IconButton label="Close" onClick={onClose} size={16}>✕</IconButton>
         </div>
 
@@ -92,6 +95,26 @@ export default function ConnectPanel({ open, userId, userEmail, onClose }: Props
         <div style={sectionStyle}>
           <div style={sectionLabel}>Alexa</div>
           <AlexaConnect userId={userId} />
+        </div>
+
+        {/* Every connection in one place (2026-11-18). */}
+        <div style={sectionStyle}>
+          <div style={sectionLabel}>Spotify</div>
+          <SpotifyConnect />
+        </div>
+
+        <div style={sectionStyle}>
+          <div style={sectionLabel}>Home Assistant</div>
+          {primarySpace ? (
+            <HomeAssistantCard spaceId={primarySpace.id} onSynced={() => {}} />
+          ) : (
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>Create a household space first.</div>
+          )}
+        </div>
+
+        <div style={sectionStyle}>
+          <div style={sectionLabel}>Paired screens</div>
+          <ScreensSettings />
         </div>
       </div>
     </>

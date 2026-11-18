@@ -1,6 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { callerFor } from '@/lib/smarthome/auth'
-import { currentDevice } from '@/lib/devices/session'
 import { spacesFor } from '@/lib/devices/members'
 import { linksFor } from './server'
 
@@ -10,20 +9,18 @@ import { linksFor } from './server'
 export async function householdSpotify(spaceId: unknown) {
   const caller = await callerFor(spaceId, true)
   if ('error' in caller) return { error: caller.error, status: caller.status } as const
-  let space = caller.spaceId
-  if (!space && caller.as === 'member') {
-    // Signed in on the screen without naming a household: the screen's own
-    // household if you are in it, otherwise your first one.
-    const mine = await spacesFor(caller.userId)
-    const device = await currentDevice()
-    space = mine.find(s => s.id === device?.spaceId)?.id ?? mine[0]?.id ?? null
+  let spaces = caller.spaceId ? [caller.spaceId] : []
+  if (!spaces.length && caller.as === 'member') {
+    // Signed in without naming a household (the iPad in shared mode, or a
+    // phone): every household you belong to.
+    spaces = (await spacesFor(caller.userId)).map(s => s.id)
   }
-  if (!space) return { error: 'Music needs a household.', status: 400 } as const
+  if (!spaces.length) return { error: 'Music needs a household.', status: 400 } as const
   const admin = createAdminClient()
-  const [{ data: owner }, { data: members }] = await Promise.all([
-    admin.from('shared_spaces').select('owner_id').eq('id', space).maybeSingle(),
-    admin.from('shared_space_members').select('member_id').eq('space_id', space).eq('status', 'accepted'),
+  const [{ data: owners }, { data: members }] = await Promise.all([
+    admin.from('shared_spaces').select('owner_id').in('id', spaces),
+    admin.from('shared_space_members').select('member_id').in('space_id', spaces).eq('status', 'accepted'),
   ])
-  const people = [...new Set([owner?.owner_id, ...(members ?? []).map(m => m.member_id)].filter((x): x is string => !!x))]
+  const people = [...new Set([...(owners ?? []).map(o => o.owner_id), ...(members ?? []).map(m => m.member_id)].filter((x): x is string => !!x))]
   return { links: await linksFor(people) } as const
 }

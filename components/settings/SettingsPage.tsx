@@ -50,7 +50,7 @@ export default function SettingsPage({ userId, actions }: { userId: string; acti
         <Row label="Look" hint="Theme, light or dark" onClick={actions.theme} />
       </Group>
       <Group title="Connections">
-        <Row label="Google and apps" hint="Your Google, the shared account, calendar sharing, Alexa" onClick={actions.connect} />
+        <Row label="Connections" hint="Google, Spotify, Alexa, Home Assistant, Discord, screens" onClick={actions.connect} />
         <Row label="Notifications" hint="What SS may tell you, and when" onClick={actions.notifications} />
       </Group>
       <Group title="Layout">
