@@ -13,7 +13,9 @@ import { useVillageWork } from '@/lib/hooks/useVillageWork'
 import { useReflectionDays } from '@/lib/hooks/useReflectionDays'
 import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import { usePartnerPresence } from '@/lib/hooks/usePresence'
-import { useSmartHome } from '@/lib/hooks/useSmartHome'
+import { useSmartHome, deviceView } from '@/lib/hooks/useSmartHome'
+import { useHomeAssistantSync } from '@/lib/hooks/useHomeAssistantSync'
+import { homeLightsOf } from '@/lib/smarthome/homeLights'
 import { useHousehold, choreDue, dinnerFor } from '@/lib/hooks/useHousehold'
 import { useRoutines, routineDue } from '@/lib/hooks/useRoutines'
 import { sceneMood } from '@/lib/smarthome/sceneMood'
@@ -484,6 +486,13 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // that case rather than reading "no data yet" as "definitely away."
   const { devices: smartHomeDevices, loading: smartHomeLoading, activeScene, binDays } = useSmartHome(spaces[0]?.id ?? null)
   const homeOccupied = smartHomeLoading || smartHomeDevices.length === 0 ? null : smartHomeDevices.some(d => d.on_state)
+  // The cottage's windows follow the real lights (2026-11-18): dark when
+  // they are off, lit when on, tinted their colour, dimmer when dimmed.
+  useHomeAssistantSync(spaces[0]?.id ?? null, !compact)
+  const homeLights = useMemo(
+    () => (smartHomeLoading ? null : homeLightsOf(smartHomeDevices.map(deviceView))),
+    [smartHomeDevices, smartHomeLoading],
+  )
   // How the scene should read for the applied smart-home scene (Goodnight →
   // asleep, Movie → still, We're out → gone…). Memoised so the couple's
   // wander state machine doesn't thrash on a fresh object every render.
@@ -1059,7 +1068,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             soonestBirthdayDays={soonestBirthdayDays}
             dateIdeaAreas={dateIdeaAreas} weather={weather}
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
-            homeOccupied={homeOccupied} dateKey={dateKey}
+            homeOccupied={homeOccupied} homeLights={homeLights} dateKey={dateKey}
             somiMood={guestLive ? null : somiMood} dinnerTonight={guestView || guestLive ? null : homeCard.dinner} onDinner={() => setDinnerOpen(true)}
             onWelcome={guestView || guestActive ? () => setGuestPageOpen(true) : undefined} />
         </div>

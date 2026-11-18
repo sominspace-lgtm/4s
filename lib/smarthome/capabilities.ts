@@ -30,6 +30,8 @@ export interface DeviceState {
   position?: number
   /** 0 to 100. */
   volume?: number
+  /** A light's colour as #rrggbb, read from Home Assistant (2026-11-18). Shown on the Village cottage. */
+  color?: string
 }
 
 export const TEMP_MIN = 55
@@ -84,6 +86,7 @@ export function stateOf(kind: DeviceKind, raw: unknown, onState: boolean): Devic
   if (can(kind, 'lock')) out.locked = typeof s.locked === 'boolean' ? s.locked : onState
   if (can(kind, 'position')) out.position = num(s.position) ?? (onState ? 100 : 0)
   if (can(kind, 'volume')) out.volume = num(s.volume) ?? 30
+  if (kind === 'light' && typeof s.color === 'string' && /^#[0-9a-f]{6}$/i.test(s.color)) out.color = s.color.toLowerCase()
   return out
 }
 

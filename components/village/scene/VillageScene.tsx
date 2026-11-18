@@ -58,7 +58,7 @@ export default function VillageScene({
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
   tripCount = 0, avoidLights = [], zoom = 1, finds, grown = 0,
-  homeOccupied = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
+  homeOccupied = null, homeLights = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
   menu = [], somi = null, hostPing = null, partnerPing = null,
@@ -150,6 +150,9 @@ export default function VillageScene({
    *  Home's window glow independent of time-of-day (a lit window means
    *  someone's actually home right now, not "it happens to be night"). */
   homeOccupied?: boolean | null
+  /** The house's real lights (2026-11-18), when it has any: on, their
+   *  colour, and how bright (0..1). Decides the cottage windows. */
+  homeLights?: { on: boolean; color: string | null; level: number } | null
   /** 1 = the full 800×440 scene (default/unchanged). Below 1 shows more of
    *  the world at once; above 1 zooms in. Purely a `viewBox` computation —
    *  every coordinate inside the scene stays exactly as authored, see
@@ -452,9 +455,15 @@ export default function VillageScene({
   const warm = lit || (moodActive && activeMood.lanterns)
   // The cottage window: dark for Goodnight (everyone's asleep, lights off)
   // whatever the clock says, otherwise the usual occupancy/night/warm rule.
+  // With real lights the windows show exactly what the house is doing; a
+  // gathering or Party still lights them up.
   const cottageGlow = (moodActive && activeMood.kind === 'goodnight')
     ? false
-    : ((homeOccupied ?? dark) || warm)
+    : homeLights
+      ? homeLights.on || gathering || (moodActive && activeMood.lanterns)
+      : ((homeOccupied ?? dark) || warm)
+  const lightTint = cottageGlow && homeLights?.on ? homeLights.color : null
+  const lightLevel = cottageGlow && homeLights?.on ? homeLights.level : 1
 
   // A worn path near wherever you actually go (2026-08-24) — the one
   // "attention" cue in the scene, deliberately not a number or a
@@ -627,6 +636,16 @@ export default function VillageScene({
     setOpenPanel(id)
   }
   const openOrToggle = (id: LandmarkId, label: string) => () => activateDistrict(id, label)
+  // Home goes straight to the house controls (2026-11-18). While guests are
+  // over it keeps its card, which carries the house info for them.
+  const tapHome = () => {
+    if (arranging) return
+    if (gathering) { activateDistrict('home', 'Home'); return }
+    recordVisit('home')
+    if (districtLocked('home')) { onLockedNavigate?.('Home'); return }
+    setOpenPanel(null)
+    openSmartHome()
+  }
   // Fuzzy district tap (2026-09-06, "everything should still be tappable on
   // mobile") — the scene is inherently landscape, so on a phone all ten
   // districts render small; a tap that misses a district's own hit-rect
@@ -2164,7 +2183,7 @@ export default function VillageScene({
       const hmy = Math.min(GROUND_Y + 40, Math.max(GROUND_Y - 12, hmp.y))
       return (
       <g transform={`translate(${hmx} ${hmy})`}
-        onClick={arranging ? undefined : openOrToggle('home', 'Home')}
+        onClick={arranging ? undefined : tapHome}
         onPointerDown={arranging ? startDrag('home') : undefined}
         style={{ cursor: arranging ? (draggingId === 'home' ? 'grabbing' : 'grab') : 'pointer' }}>
         <title>Home. Tap for Smart Home.</title>
@@ -2184,14 +2203,32 @@ export default function VillageScene({
         {/* Smaller round 58 ("make house smaller and other buildings a bit
             bigger") — 107 -> 90 wide, so Home anchors the scene without
             dwarfing the districts. */}
+        {/* Dimmed lights (2026-11-18): the dark house under a fainter lit one. */}
+        {cottageGlow && lightLevel < 0.95 && (
+          <image href="/village-assets/cottage-dark.png" x={-45} y={-75.3} width={90} height={75.3} style={{ imageRendering: 'pixelated' }} />
+        )}
         <image href={`/village-assets/cottage-${cottageGlow ? 'lit' : 'dark'}.png`}
           x={-45} y={-75.3} width={90} height={75.3}
+          opacity={cottageGlow ? 0.4 + 0.6 * lightLevel : 1}
           style={{ imageRendering: 'pixelated' }} />
+        {/* Coloured lights (2026-11-18): the window light takes the colour of
+            the lamps, through a mask of just the lit glass and door. */}
+        {lightTint && (
+          <>
+            <mask id="vCottageLight" maskUnits="userSpaceOnUse" x={-45} y={-75.3} width={90} height={75.3}>
+              <image href="/village-assets/cottage-lightmask.png" x={-45} y={-75.3} width={90} height={75.3} style={{ imageRendering: 'pixelated' }} />
+            </mask>
+            <rect x={-45} y={-75.3} width={90} height={75.3} fill={lightTint} mask="url(#vCottageLight)"
+              opacity={0.55 + 0.35 * lightLevel} style={{ mixBlendMode: 'color' }} pointerEvents="none" />
+            <rect x={-45} y={-75.3} width={90} height={75.3} fill={lightTint} mask="url(#vCottageLight)"
+              opacity={0.25 * lightLevel} style={{ mixBlendMode: 'screen' }} pointerEvents="none" />
+          </>
+        )}
         {/* Home breathes too now (round 66, "make sure the house also
             animates") — the window glow pulses on village-glow whenever
             it's lit, and a thin curl of chimney smoke always rises (a house
             with someone in it), drifting on village-smoke. */}
-        {cottageGlow && <circle cx={-3} cy={-52} r={11} fill="var(--amber)" opacity={0.45} filter="url(#vglow)" className="village-glow" />}
+        {cottageGlow && <circle cx={-3} cy={-52} r={11} fill={lightTint ?? 'var(--amber)'} opacity={0.45 * (0.5 + 0.5 * lightLevel)} filter="url(#vglow)" className="village-glow" />}
         {/* Movie night — a cool flickering wash from the downstairs window. */}
         {moodActive && activeMood.screenGlow && (
           <rect x={-14} y={-40} width={13} height={10} rx={1.5} fill="#9fc7ff" style={{ mixBlendMode: 'screen' }}>
@@ -2555,7 +2592,7 @@ export default function VillageScene({
           neighbors rather than merely equal to them, without either extreme
           shrinking to illegible or ballooning back into dominating the
           scene. */}
-      <DistrictLabel quiet={hosting} {...pos('home')} icon="home" label="Home" onClick={openOrToggle('home', 'Home')} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
+      <DistrictLabel quiet={hosting} {...pos('home')} icon="home" label="Home" onClick={tapHome} {...hoverPreview('home')} count="today" dark={dark} scale={0.85}
         draggable={arranging} dragging={draggingId === 'home'} onPointerDown={startDrag('home')} selected={openPanel === 'home'} />
       {/* House info (wifi, notes) lives on the Notice board card now
           (2026-09-10) — one place for a guest to look. */}

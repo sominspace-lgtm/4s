@@ -39,6 +39,29 @@ const n = (v: unknown): number | null => (typeof v === 'number' && Number.isFini
 const toF = (v: number, celsius: boolean) => (celsius ? Math.round(v * 9 / 5 + 32) : Math.round(v))
 const fromF = (f: number, celsius: boolean) => (celsius ? Math.round(((f - 32) * 5 / 9) * 2) / 2 : f)
 
+const hex = (r: number, g: number, b: number) => '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+
+/** White light by its warmth, in kelvin, as a colour (Tanner Helland's approximation). */
+export function kelvinToHex(k: number): string {
+  const t = Math.max(1000, Math.min(40000, k)) / 100
+  const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592)
+  const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492)
+  const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307
+  return hex(r, g, b)
+}
+
+/** A light's colour (2026-11-18): its RGB when it is in a colour mode, its warmth when white. */
+export function lightColorHA(a: Record<string, unknown>): string | null {
+  const mode = typeof a.color_mode === 'string' ? a.color_mode : null
+  const rgb = Array.isArray(a.rgb_color) && a.rgb_color.length >= 3 && a.rgb_color.every(v => typeof v === 'number') ? a.rgb_color as number[] : null
+  if (mode === 'color_temp') {
+    const k = n(a.color_temp_kelvin) ?? (n(a.color_temp) ? 1_000_000 / (a.color_temp as number) : null)
+    return k ? kelvinToHex(k) : null
+  }
+  if (rgb) return hex(rgb[0], rgb[1], rgb[2])
+  return null
+}
+
 /** An entity's state, read as an SS state. `celsius` is the house's unit. */
 export function stateFromHA(kind: DeviceKind, e: HAEntity, celsius = false): DeviceState {
   const a = e.attributes ?? {}
@@ -49,6 +72,8 @@ export function stateFromHA(kind: DeviceKind, e: HAEntity, celsius = false): Dev
       out.on = s === 'on'
       const b = n(a.brightness)
       if (b !== null) out.brightness = Math.max(1, Math.round(b / 2.55))
+      const color = lightColorHA(a)
+      if (color) out.color = color
       break
     }
     case 'plug': case 'switch': case 'fan':
