@@ -8,6 +8,7 @@ import { listTasks, addTask, updateTask } from '@/lib/google/tasks'
 import { searchDrive, readDrive } from '@/lib/google/drive'
 import { resolveOwner } from '@/lib/google/server'
 import { sharedCalendarEvents } from '@/lib/google/shares'
+import { HOME_TOOLS } from './homeTools'
 
 // What Jarvis can do (2026-10-18). Each tool is a small server function with
 // a JSON schema the model sees. A `write` tool never runs straight from the
@@ -329,6 +330,7 @@ export const TOOLS: JarvisTool[] = [
   partnerCalendarTool,
   ...calendarTools.map(withAccount), ...weatherTools, ...taskTools, ...googleTaskTools.map(withAccount),
   ...gmailTools.map(withAccount), ...driveTools.map(withAccount), ...foodTools,
+  ...HOME_TOOLS,
 ]
 
 /** Errors whose words are safe and useful to show the model and the person. */
