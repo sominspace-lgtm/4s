@@ -77,7 +77,7 @@ function ColorPicker({ value, name, onPick }: { value: string | null; name: stri
   )
 }
 
-function DeviceControls({ d, set }: { d: SmartHomeDevice; set: (change: DeviceState) => void }) {
+export function DeviceControls({ d, set }: { d: SmartHomeDevice; set: (change: DeviceState) => void }) {
   const { kind, state } = deviceView(d)
   const step = (n: number) => set({ temperature: Math.min(TEMP_MAX, Math.max(TEMP_MIN, (state.temperature ?? 68) + n)) })
   return (

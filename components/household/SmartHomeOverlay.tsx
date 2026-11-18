@@ -1,7 +1,10 @@
 'use client'
 
 import type { SectionConfig } from '@/components/ui/CustomizePanel'
+import { useEffect, useState } from 'react'
 import HouseholdHub from './HouseholdHub'
+import ControlPanel from './ControlPanel'
+import { useSharedSpaces } from '@/lib/hooks/useSharedSpaces'
 import Icon from '@/components/ui/Icon'
 
 // Smart Home's own transition (2026-08-25) — per the vision doc, tapping
@@ -21,6 +24,10 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, hom
   sharedMode?: boolean
   onLockedNavigate?: (reason: string) => void
 }) {
+  // The control panel first (2026-11-18); setting things up is one tap away.
+  const [setup, setSetup] = useState(false)
+  const { spaces } = useSharedSpaces(userId)
+  useEffect(() => { if (!open) setSetup(false) }, [open])
   return (
     <>
       {/* Scrim — the Village is still there, just backgrounded. Tapping it
@@ -44,8 +51,8 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, hom
         role="dialog"
         aria-label="Smart Home"
         style={{
-          position: 'fixed', left: 0, right: 0, bottom: 0, height: '50vh', minHeight: '20rem', maxHeight: '34rem',
-          maxWidth: '36rem', margin: '0 auto',
+          position: 'fixed', left: 0, right: 0, bottom: 0, height: '86vh', minHeight: '24rem', maxHeight: '56rem',
+          maxWidth: '62rem', margin: '0 auto',
           background: 'color-mix(in srgb, var(--surface) 78%, transparent)',
           borderRadius: '20px 20px 0 0',
           border: '1px solid color-mix(in srgb, var(--border) 90%, transparent)', borderBottom: 'none',
@@ -72,13 +79,17 @@ export default function SmartHomeOverlay({ open, onClose, userId, userEmail, hom
           }}><Icon name="village" size={13} /> Village</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.2rem 2rem' }}>
-          {open && (
+          {open && !setup && <ControlPanel spaceId={spaces[0]?.id ?? null} onSetup={() => setSetup(true)} />}
+          {open && setup && (
+            <>
+            <button onClick={() => setSetup(false)} className="press" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem', fontFamily: 'var(--font-body)', marginBottom: '0.6rem', padding: 0 }}>‹ Back to controls</button>
             <HouseholdHub
               userId={userId} userEmail={userEmail}
               homeBlocks={homeBlocks} onChangeHomeBlocks={onChangeHomeBlocks}
               sharedMode={sharedMode} onLockedNavigate={onLockedNavigate}
               forcedTab="smarthome"
             />
+            </>
           )}
         </div>
       </div>
