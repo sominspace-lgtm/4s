@@ -7,8 +7,11 @@ describe('sharedSectionVisible', () => {
   const GUEST_SAFE = ['reference', 'village', 'places', 'places-nearby']
   // Mail is on the shared screen since 2026-10-25, but only the shared
   // inbox shows there (MailHub sharedMode); never during a gathering.
-  const PLAIN_SHARED_EXTRA = ['home', 'housecal', 'upkeep', 'kitchen', 'places-trips', 'mail']
-  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'smarthome']
+  // Smart Home is a page in Home since 2026-11-19. The shared screen already
+  // reached it as a sheet from the cottage; it is household devices, not
+  // personal data, so it is shared, but not during a gathering.
+  const PLAIN_SHARED_EXTRA = ['home', 'housecal', 'upkeep', 'kitchen', 'smarthome', 'places-trips', 'mail']
+  const NEVER_SHARED = ['brief', 'tasks', 'habits', 'notes', 'money', 'people', 'vault', 'settings']
 
   describe('plain shared view (no gathering)', () => {
     it('shows the household surfaces + village + places + trips', () => {

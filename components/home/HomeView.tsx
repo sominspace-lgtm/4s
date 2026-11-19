@@ -162,7 +162,7 @@ export default function HomeView({ screenName, preview }: { screenName: string; 
         <div style={{ position: 'absolute', inset: 0 }}>
           <VillageScene village={v} live={now !== null} palette={palette}
             celestial={mood.forceNight ? null : celestial} sceneMood={mood}
-            plantSlots={plantSlots} buildingSlots={buildingSlots} layout={layout} grown={snap?.grown ?? 0}
+            plantSlots={plantSlots} buildingSlots={buildingSlots} layout={layout}
             idle={face !== 'village'} frozen={face !== 'village' && partOfDay === 'night'}
             weather={weather} partOfDay={partOfDay} binLine={binLine}
             dateKey={now ? format(now, 'yyyy-MM-dd') : null}

@@ -37,6 +37,7 @@ import { LangContext } from '@/lib/LangContext'
 import { sharedSectionVisible } from '@/lib/utils/sharedAccess'
 import { useWakeLock } from '@/lib/hooks/useWakeLock'
 import { DEVICE_EVENT, DEVICE_KEYS, readDevice, writeDevice } from '@/lib/utils/deviceSettings'
+import CalendarPage, { CALENDAR_VIEW_EVENT } from '@/components/calendar/CalendarPage'
 
 // Faster first load (2026-10-26): Today and the village come with the page;
 // every other tab fetches its code the first time it opens, and all of them
@@ -69,9 +70,9 @@ const NotesHub = dynamic(loadNotesHub, { loading: TabLoading })
 const loadMailHub = () => import('@/components/mail/MailHub')
 const MailHub = dynamic(loadMailHub, { loading: TabLoading })
 const loadVaultHub = () => import('@/components/vault/VaultHub')
-const loadGmailInbox = () => import('@/components/mail/GmailInbox')
 const VaultHub = dynamic(loadVaultHub, { loading: TabLoading })
-const GmailInbox = dynamic(loadGmailInbox, { loading: TabLoading })
+const loadSmartHomePage = () => import('@/components/household/SmartHomePage')
+const SmartHomePage = dynamic(loadSmartHomePage, { loading: TabLoading })
 const loadKitchenHub = () => import('@/components/kitchen/KitchenHub')
 const KitchenHub = dynamic(loadKitchenHub, { loading: TabLoading })
 const loadMoneyHub = () => import('@/components/money/MoneyHub')
@@ -90,7 +91,7 @@ const loadJarvis = () => import('@/components/jarvis/Jarvis')
 const Jarvis = dynamic(loadJarvis, { loading: TabLoading })
 const loadSharedSettings = () => import('@/components/layout/SharedSettings')
 const SharedSettings = dynamic(loadSharedSettings, { loading: TabLoading })
-const PREFETCH = [loadConnectPanel, loadShortcutHelp, loadNotificationsPanel, loadArchivePanel, loadYouTwo, loadMyCalendar, loadSettingsPage, loadMailPanel, loadTasksTab, loadHabitsTab, loadNotesHub, loadMailHub, loadVaultHub, loadGmailInbox, loadKitchenHub, loadMoneyHub, loadWishlistHub, loadHouseholdHub, loadSmartHomeOverlay, loadPlacesHub, loadShareInbox, loadJarvis, loadSharedSettings]
+const PREFETCH = [loadConnectPanel, loadShortcutHelp, loadNotificationsPanel, loadArchivePanel, loadYouTwo, loadMyCalendar, loadSettingsPage, loadMailPanel, loadTasksTab, loadHabitsTab, loadNotesHub, loadMailHub, loadVaultHub, loadSmartHomePage, loadKitchenHub, loadMoneyHub, loadWishlistHub, loadHouseholdHub, loadSmartHomeOverlay, loadPlacesHub, loadShareInbox, loadJarvis, loadSharedSettings]
 
 interface Props {
   email: string
@@ -169,6 +170,10 @@ const DEPRECATED_SECTION_IDS = new Set([
   // docked pin list, so a separate Pins pill is redundant. mergeLayout
   // strips the old id; 'places' and 'places-trips' stay.
   'places-pins',
+  // Home and Me reorganised as ours and mine (2026-11-19): your calendar is
+  // the Mine view of Home's one Calendar, and Gmail is a tab in Inbox. Deep
+  // links to either still land there (see onNav).
+  'mycalendar', 'gmail',
 ])
 
 function mergeLayout(saved: SectionConfig[] | null): SectionConfig[] {
@@ -205,7 +210,6 @@ const SECTION_GROUPS: Record<string, string> = {
   people:    'mine',
   checkins:  'mine',
   vault:     'mine',
-  gmail:     'mine',
   village:   'your world',
   places:    'ours',
   'places-trips': 'ours',
@@ -219,9 +223,9 @@ const SECTION_GROUPS: Record<string, string> = {
   home:      'ours',
   reference: 'ours',
   housecal:  'ours',
-  mycalendar: 'mine',
+  smarthome: 'ours',
   settings:  'mine',
-  mail:      'ours',
+  mail:      'mine',
   kitchen:   'ours',
 }
 
@@ -273,14 +277,19 @@ const ALL_HOME_BAR_GROUPS: HomeBarGroup[] = [
   { id: 'village',  icon: 'village',   label: 'Village',    members: ['village'] },
   // Controls (smarthome) left the pill row 2026-09-03 — reached from the
   // Village Home cottage and a link on the Household Home tab instead.
-  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'tasks', 'mycalendar', 'gmail', 'notes', 'habits', 'money', 'vault', 'checkins', 'settings'] },
+  // Ours and mine (2026-11-19). Home is everything the two of you share,
+  // Smart Home included; Me is only yours. Each thing lives in one place:
+  // one Calendar (Ours / Mine) in Home, one Inbox in Me, Settings in the
+  // header. On the shared screen there is no Me, so the shared inbox shows
+  // under Home there (see homeBarGroups).
+  { id: 'home',     icon: 'household', label: 'Home',       members: ['home', 'housecal', 'upkeep', 'kitchen', 'smarthome', 'reference'] },
+  { id: 'me',       icon: 'personal',  label: 'Me',         members: ['me', 'tasks', 'mail', 'notes', 'habits', 'money', 'vault', 'checkins'] },
   { id: 'places',   icon: 'places',    label: 'Places',     members: ['places', 'places-trips', 'places-nearby'] },
 ]
 
 // The words on the top bar inside a place.
 const SUB_LABELS: Record<string, string> = {
-  home: 'Home', housecal: 'Calendar', upkeep: 'Chores', kitchen: 'Kitchen', reference: 'Collections', mail: 'Mail',
+  home: 'Home', housecal: 'Calendar', upkeep: 'Chores', kitchen: 'Kitchen', smarthome: 'Smart Home', reference: 'Collections', mail: 'Mail',
   places: 'Map', 'places-trips': 'Trips', 'places-nearby': 'Nearby',
 }
 
@@ -488,6 +497,16 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
         return
       }
+      // Old homes of things that moved (2026-11-19): your calendar is the Mine
+      // view of Home's Calendar, Gmail is a tab in Inbox.
+      if (raw === 'mycalendar' || raw === 'gmail') {
+        setActiveTab(raw === 'mycalendar' ? 'housecal' : 'mail')
+        setTimeout(() => window.dispatchEvent(raw === 'mycalendar'
+          ? new CustomEvent(CALENDAR_VIEW_EVENT, { detail: 'mine' })
+          : new CustomEvent('4s:mail-gmail')), 80)
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+        return
+      }
       const id = raw
       const anchor = ANCHORS.has(id) ? id : null
       if (!anchor) {
@@ -587,12 +606,14 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
   // Calendar folded back into a Home block 2026-09-02 — no longer a section,
   // so no shared-mode split-out. Household's group is Home/Reference/Smart
   // Home in both modes now.
-  const groupsForMode = ALL_HOME_BAR_GROUPS.filter(g => !sharedMode || g.id !== 'me')
+  const groupsForMode = ALL_HOME_BAR_GROUPS
+    .filter(g => !sharedMode || g.id !== 'me')
+    .map(g => (sharedMode && g.id === 'home' ? { ...g, members: [...g.members, 'mail'] } : g))
   const homeBarGroups = groupsForMode
     .map(g => ({
       ...g,
       members: g.members.filter(m => {
-        if (m === 'smarthome' || m === 'me') return true
+        if (m === 'me') return true
         return navIds.has(m)
       }),
     }))
@@ -642,7 +663,8 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // Personal areas — top-level sections as of 2026-09-01 (was one
       // "Personal" tab with an internal switcher).
       tasks: t('Tasks', lang), habits: t('Habits', lang),
-      notes: t('Notes', lang), money: t('Money', lang), wishlist: t('Wishlist', lang), people: t('People', lang), checkins: 'Check-ins', vault: t('Passwords', lang), mail: t('Mail', lang), kitchen: t('Kitchen', lang),
+      notes: t('Notes', lang), money: t('Money', lang), wishlist: t('Wishlist', lang), people: t('People', lang), checkins: 'Check-ins', vault: t('Passwords', lang), mail: sharedMode ? t('Mail', lang) : 'Inbox', kitchen: t('Kitchen', lang),
+      smarthome: 'Smart Home',
       // Household's own sub-tabs — real top-level sections now, for both
       // personal and shared use (2026-08-25). Smart Home isn't here: it's
       // overlay-only, never a tab (see SmartHomeOverlay).
@@ -652,7 +674,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
       // shared notes, and the two of you.
       reference: t('Collections', lang),
       // The Google pages (2026-10-24).
-      mycalendar: 'Calendar', housecal: 'Calendar', settings: 'Settings', gmail: 'Gmail',
+      housecal: 'Calendar', settings: 'Settings',
       me: 'Me',
     }
 
@@ -704,11 +726,9 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
           ipad: sharedMode ? () => setSharedSettingsOpen(true) : undefined,
           signOut: async () => { await createClient().auth.signOut(); window.location.href = '/login' },
         }} /></div>
-        case 'mycalendar': return <div key="mycalendar" className="roomy"><MyCalendar userId={userId} /></div>
         case 'checkins': return <YouTwo key="checkins" userId={userId} />
         case 'vault':    return <div key="vault" className="roomy"><VaultHub userId={userId} /></div>
-        // Your own Gmail, its own tile in Me (2026-10-26).
-        case 'gmail':    return <section key="gmail" className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="mine" /></section>
+        case 'smarthome': return <SmartHomePage key="smarthome" userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} onLockedNavigate={setUnlockReason} />
         case 'kitchen':  return <div key="kitchen" className="roomy"><KitchenHub userId={userId} sharedMode={sharedMode} /></div>
         // Places (2026-09-09) — the map carries a docked pin list, so it's
         // one "Places" pill plus "Trips", each a <PlacesHub forcedTab>.
@@ -717,8 +737,11 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         case 'places-nearby': return <PlacesHub key="places-nearby" userId={userId} theme={theme} sharedOnly={sharedMode} forcedTab="nearby" />
         // Home / Upkeep / Reference — one <HouseholdHub forcedTab> per
         // section. Smart Home only renders inside SmartHomeOverlay.
+        // One Calendar (2026-11-19): Ours is the house's, Mine is yours.
         case 'housecal':
-          return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab="calendar" boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />
+          return <CalendarPage key={id} sharedMode={sharedMode}
+            ours={<HouseholdHub userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab="calendar" boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />}
+            mine={<div className="roomy"><MyCalendar userId={userId} /></div>} />
         case 'home': case 'upkeep': case 'reference':
           return <HouseholdHub key={id} userId={userId} userEmail={email} homeBlocks={householdHomeBlocks} onChangeHomeBlocks={changeHouseholdHomeBlocks} sharedMode={sharedMode} guestMode={guestMode} onLockedNavigate={setUnlockReason} forcedTab={id as HouseholdTabId} boardNote={gathering.boardNote} onSetBoardNote={gathering.setBoardNote} boardNoteBy={gathering.boardNoteBy} boardNoteSeenAt={gathering.boardNoteSeenAt} onSeeBoardNote={gathering.seeBoardNote} />
         default: return null
@@ -829,14 +852,7 @@ export default function DashboardClient({ email, userId, isAnonymous, sharedMode
         <HomeBar
           groups={homeBarGroups}
           activeId={currentTab}
-          onSelect={id => {
-            // Controls opens the Smart Home overlay (2026-08-25) rather than
-            // switching tabs — see openSmartHome()/SmartHomeOverlay. Nothing
-            // else about currentTab changes, so whatever was showing (the
-            // Village, most of the time) is still there underneath.
-            if (id === 'smarthome') { setSmartHomeOpen(true); return }
-            go(id)
-          }}
+          onSelect={go}
         />
       )}
       <SmartHomeOverlay

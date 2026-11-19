@@ -623,30 +623,3 @@ export const DECOR_DEFAULTS: Record<string, { x: number; y: number }> = {
   // the user's master-assets folder (replaced by a foliage/path-tile sheet
   // and a festival-props sheet, neither of which covers the same items).
 }
-
-// What grows back as the collection grows (2026-11-05): the decorations taken
-// out for being clutter return one at a time, every few finds, so the village
-// fills in slowly alongside you. Same sprites, sizes and spots as before
-// (DECOR_DEFAULTS), and draggable in Arrange like the rest.
-export const GROWTH: { id: string; title: string; href: string; w: number; h: number }[] = [
-  { id: 'flowerPlanter', title: 'A flower planter', href: 'flower-planter.png', w: 14 * (286 / 172), h: 14 },
-  { id: 'wildflowerScene', title: 'Wildflowers', href: 'wildflower-strip.png', w: 15 * (512 / 341), h: 15 },
-  { id: 'gardenBed', title: 'A raised garden bed', href: 'garden-bed.png', w: 16 * (289 / 171), h: 16 },
-  { id: 'hobbyBookCoffee', title: 'A book and coffee', href: 'hobby-book-coffee.png', w: 11 * (348 / 166), h: 11 },
-  { id: 'floweringBush', title: 'A flowering bush', href: 'flowering-bush.png', w: 17.2, h: 13 },
-  { id: 'hobbyGardenBasket', title: 'A gardening basket', href: 'hobby-garden-basket.png', w: 10 * (293 / 216), h: 10 },
-  { id: 'waterPumpScene', title: 'A water pump', href: 'water-pump.png', w: 15 * (207 / 253), h: 15 },
-  { id: 'hobbyBicycle', title: 'A bicycle', href: 'hobby-bicycle.png', w: 13 * (292 / 253), h: 13 },
-  { id: 'hobbyEasel', title: 'A painting easel', href: 'hobby-easel.png', w: 12 * (146 / 271), h: 12 },
-  { id: 'firewoodScene', title: 'Firewood', href: 'firewood.png', w: 8 * (255 / 160), h: 8 },
-  { id: 'hobbyMusicStand', title: 'A music stand', href: 'hobby-music-stand.png', w: 11 * (152 / 253), h: 11 },
-  { id: 'hobbyTennis', title: 'A tennis racket', href: 'hobby-tennis.png', w: 9 * (235 / 247), h: 9 },
-  { id: 'hobbyInstrumentCase', title: 'An instrument case', href: 'hobby-instrument-case.png', w: 12 * (334 / 182), h: 12 },
-]
-
-// Open ground where a find can turn up (2026-11-05), clear of the buildings
-// and the path. Ten spots, so three finds never pile onto each other.
-export const FIND_SPOTS: { x: number; y: number }[] = [
-  { x: 205, y: 256 }, { x: 345, y: 330 }, { x: 560, y: 256 }, { x: 590, y: 346 }, { x: 250, y: 386 },
-  { x: 470, y: 396 }, { x: 170, y: 322 }, { x: 735, y: 302 }, { x: 385, y: 276 }, { x: 530, y: 318 },
-]

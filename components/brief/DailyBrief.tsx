@@ -19,6 +19,7 @@ import type { Mode } from '@/lib/constants/modes'
 import TodayRoutine from './TodayRoutine'
 import GoodBecause from './GoodBecause'
 import PlanWeek from './PlanWeek'
+import TodaySmartHome from './TodaySmartHome'
 import Breathing from '@/components/focus/Breathing'
 import WeekReview from '@/components/review/WeekReview'
 import { useLang } from '@/lib/LangContext'
@@ -168,6 +169,8 @@ export default function DailyBrief({ userId, mode = 'friend' }: { userId: string
         </button>
       )}
       <PlanWeek open={planOpen} onClose={() => setPlanOpen(false)} userId={userId} />
+
+      <TodaySmartHome spaceId={spaceId} />
 
       <GoodBecause userId={userId} />
       <CheckinCard userId={userId} />

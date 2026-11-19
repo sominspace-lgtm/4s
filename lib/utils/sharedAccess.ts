@@ -16,7 +16,7 @@
 // not for that. It needs the PIN like any personal section.
 export const SHARED_MODE_IDS: ReadonlySet<string> = new Set([
   // Mail on the shared screen shows only the shared inbox (2026-10-25).
-  'home', 'housecal', 'upkeep', 'kitchen', 'reference', 'mail', 'village', 'places', 'places-trips', 'places-nearby',
+  'home', 'housecal', 'upkeep', 'kitchen', 'smarthome', 'reference', 'mail', 'village', 'places', 'places-trips', 'places-nearby',
 ])
 
 // Nearby is in GUEST_MODE_IDS deliberately (2026-09-22, tab renamed from

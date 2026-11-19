@@ -3,7 +3,6 @@ import type { Habit } from '@/lib/hooks/useHabits'
 import type { WorkItem } from '@/lib/hooks/useWorkItems'
 import type { VillageLayout } from '@/lib/village/layout'
 import type { ActiveScene, BinDays } from '@/lib/hooks/useSmartHome'
-import { parseFinds, grownCount } from '@/lib/village/finds'
 
 // What a paired wall screen is allowed to know (2026-11-08). Built on the
 // server for exactly one household, from the screen's own key, never a
@@ -21,7 +20,6 @@ export interface HomeSnapshot {
   workItems: WorkItem[]
   accountCreated: string | null
   layout: VillageLayout
-  grown: number
   activeScene: ActiveScene | null
   /** Saved scenes, just names and icons, for the screen's Scenes menu. */
   scenes: { id: string; name: string; icon: string }[]
@@ -41,14 +39,13 @@ export async function homeSnapshot(spaceId: string, today: string): Promise<Home
   ])
   const people = [...new Set([space?.owner_id, ...(members ?? []).map(m => m.member_id)].filter((x): x is string => !!x))]
 
-  const [habitsRes, workRes, layoutRes, findsRes, mealRes, owner] = await Promise.all([
+  const [habitsRes, workRes, layoutRes, mealRes, owner] = await Promise.all([
     people.length
       ? admin.from('habits').select('id, category, schedule_type, interval_days, days_of_week, paused, kind, created_at').in('user_id', people).order('created_at')
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     admin.from('work_items').select('id, status, energy, due_date, completed_at, created_at, landmark')
       .eq('space_id', spaceId).or('status.neq.done,landmark.eq.true'),
     admin.from('village_layout').select('layout').eq('space_id', spaceId).maybeSingle(),
-    admin.from('village_idle').select('state').eq('space_id', spaceId).maybeSingle(),
     admin.from('household_meals').select('title, slot, meal_date').eq('space_id', spaceId).eq('slot', 'dinner').eq('meal_date', day).limit(1),
     space?.owner_id ? admin.auth.admin.getUserById(space.owner_id) : Promise.resolve(null),
   ])
@@ -74,7 +71,6 @@ export async function homeSnapshot(spaceId: string, today: string): Promise<Home
     workItems,
     accountCreated: owner && 'data' in owner ? owner.data.user?.created_at ?? null : null,
     layout: (layoutRes.data?.layout as VillageLayout | undefined) ?? {},
-    grown: findsRes.data ? grownCount(parseFinds(findsRes.data.state, new Date()).kept.length) : 0,
     activeScene: (space?.active_scene as ActiveScene | null) ?? null,
     scenes: ((space?.scenes ?? []) as { id: string; name: string; icon: string }[])
       .filter(s => s && typeof s.id === 'string' && typeof s.name === 'string')

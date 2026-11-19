@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { playTap } from '@/lib/village/tapSound'
-import { FindIcon } from '../Finds'
-import type { Find } from '@/lib/village/finds'
 import { createPortal } from 'react-dom'
 import type { VillageState } from '@/lib/village/state'
 import type { Slot } from '@/lib/village/layout'
@@ -14,7 +12,7 @@ import { goToSection, goToPersonal, goToHousehold, openSmartHome } from '@/lib/u
 import { somiAgeText, somiBirthdayLabel } from '@/lib/village/somi'
 import { randomFortune } from '@/lib/village/fortunes'
 import { HolidayDecor, holidayOn, type Holiday } from './Holiday'
-import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, FlowerBedShape, FenceShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, TRIM, type Outfit } from './shapes'
+import { PlantShape, DistrictLabel, EntityCallout, FeatureIcon, PondShape, PondLife, BenchShape, LampShape, MemoryMarker, VillagerShape, CatShape, MailboxShape, BuntingShape, ClockTowerShape, WishingWellShape, Draggable, CoupleInteraction, CoupleContext, type ContextActivity, CoupleBenchShape, SleepwearFigure, seasonTree, COUPLE_BENCH_FRAME, COUPLE_PICNIC_FRAME, COUPLE_MOVIE_FRAME, COUPLE_NIGHTCAP_FRAME, WALL, WALL_SHADOW, ROOF, ROOF_LIGHT, type Outfit } from './shapes'
 import { createClient } from '@/lib/supabase/client'
 import { WelcomeTag, PingForm, GlanceSheet } from './SceneSheets'
 import SceneAtmosphere from './SceneAtmosphere'
@@ -34,7 +32,7 @@ import { useWanderer } from './useWanderer'
 import { DEFAULT_SCENE_MOOD, type SceneMood } from '@/lib/smarthome/sceneMood'
 import {
   GRASS_TUFTS, STONES, DISTANT_TREES, POLLEN, FOREGROUND, MIDGROUND_BUSHES, EXTRA_TREES,
-  PATH_D, PATH_PAVERS, GROWTH, FIND_SPOTS, HILL_FAR, HILL_NEAR, GROUND_SHAPE, GROUND_LINE, pixelPine, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
+  PATH_D, PATH_PAVERS, HILL_FAR, HILL_NEAR, GROUND_SHAPE, GROUND_LINE, pixelPine, PROPS, DEFAULT_ITEM_SCALE, POSTCARDS, spellCount,
   DEFAULT_LANDMARK_POS, SPUR_PAVERS, DECOR_DEFAULTS, GROUND_Y,
 } from './sceneData'
 
@@ -57,7 +55,7 @@ export default function VillageScene({
   contributions = [], guestAlbumUrl = null,
   layout = {}, arranging = false, onMoveLandmark, onRemoveItem, onResizeItem,
   placesCount = 0, placeNames = [], soonestBirthdayDays = null, dateIdeaAreas = [], weather = null,
-  tripCount = 0, avoidLights = [], zoom = 1, finds, grown = 0,
+  tripCount = 0, avoidLights = [], zoom = 1,
   homeOccupied = null, homeLights = null, containerAspect = null, sceneMood: mood = DEFAULT_SCENE_MOOD,
   frozen = false, contextActivity = null,
   hosting = false, guestInfo = {}, soloFigure = false, hostNote = null,
@@ -66,9 +64,12 @@ export default function VillageScene({
   scroll = false, pulse = {}, memoryAlbums = [], onOpenPreview, lite = false,
   sparks = [], guestToken = null, onThisDay = null, postcards = [],
   ringNotes = [], foundedYear = null,
-  onWelcome, somiMood = null, idle = false, dinnerTonight = null, onDinner,
+  onWelcome, somiMood = null, idle = false, dinnerTonight = null, onDinner, onHost,
 }: {
   village: VillageState
+  /** Tap the gazebo (2026-11-19): get ready for guests, or manage the
+   *  gathering that is on. Left out where hosting isn't possible. */
+  onHost?: () => void
   /** Opens the guest page (2026-10-27). Set on the guest view and while
    *  hosting; draws the welcome sign and makes it tappable. */
   onWelcome?: () => void
@@ -139,12 +140,6 @@ export default function VillageScene({
   /** Avoid habits (2026-10-29): one lantern each, brighter with every clean
    *  day, dim on a day you slipped. Empty on the shared screen. */
   avoidLights?: { id: string; name: string; days: number; slippedToday: boolean }[]
-  /** Little finds (2026-11-05): what is lying around to pick up, and pick,
-   *  which keeps one and says what it was. Left out for guests, the shared
-   *  screen and while arranging. */
-  finds?: { waiting: Find[]; onPick: (id: string) => string | null }
-  /** How many GROWTH decorations the collection has brought back so far. */
-  grown?: number
   /** Round 16 (2026-08-27) — real Smart Home signal: true if any device in
    *  the household is currently on, null while unknown/no space yet. Drives
    *  Home's window glow independent of time-of-day (a lit window means
@@ -462,6 +457,9 @@ export default function VillageScene({
     : homeLights
       ? homeLights.on || gathering || (moodActive && activeMood.lanterns)
       : ((homeOccupied ?? dark) || warm)
+  // The street lamps tell you about the house lights (2026-11-19): after
+  // dark they are lit only while the lights are actually on.
+  const lampsLit = homeLights ? cottageGlow && (dark || gathering) : warm
   const lightTint = cottageGlow && homeLights?.on ? homeLights.color : null
   const lightLevel = cottageGlow && homeLights?.on ? homeLights.level : 1
 
@@ -869,9 +867,8 @@ export default function VillageScene({
   // the interaction art. Off entirely during arrange and quiet/night.
   // Known spots where the couple do a specific interaction (round 59, "when
   // we put sylvia harry in a known element like bench or picnic they do
-  // their respective interaction") — every bench, plus the picnic mat.
+  // their respective interaction") — the bench, plus the picnic mat.
   const restSpots = useMemo(() => [
-    ...PROPS.benches.map((_, i) => { const p = decorPos(`bench-${i}`); return { x: p.x, y: p.y, frame: COUPLE_BENCH_FRAME } }),
     (() => { const p = decorPos('peopleCorner'); return { x: p.x, y: p.y, frame: COUPLE_BENCH_FRAME } })(),
     (() => { const p = decorPos('picnicMat'); return { x: p.x, y: p.y - 2, frame: COUPLE_PICNIC_FRAME } })(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1199,7 +1196,6 @@ export default function VillageScene({
   // pure "is this happening right now" flag. The sparkles come from juice().
   const [caredId, setCaredId] = useState<string | null>(null)
   const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number; heart?: boolean }[]>([])
-  const [findPop, setFindPop] = useState<{ key: number; x: number; y: number; name: string } | null>(null)
 
   // A guest's contribution just landed — pulse it in (2026-09-04). First
   // population isn't "new"; only ids that appear after the scene already had
@@ -1872,33 +1868,32 @@ export default function VillageScene({
           </g>
         )
       })()}
-      {PROPS.benches.map((_, i) => { const id = `bench-${i}`; const p = decorPos(id); return (
-        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <BenchShape x={0} y={0} scale={1.38} />
-        </Draggable>
-      ) })}
-      {PROPS.flowerBeds.map((f, i) => { if (i % 2 === 1) return null; const id = `flowerBed-${i}`; const p = decorPos(id); return (
-        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={14}>
-          <FlowerBedShape x={0} y={0} scale={1.38} hue={f.hue} onClick={!arranging ? () => life.walkTo(p.x, p.y + 6) : undefined} />
-        </Draggable>
-      ) })}
-      {/* The fence is back (round 39, 2026-08-27, "sync all new elements
-          and animations") — real solid-panel art now (see FenceShape's own
-          comment on why this crop is different from the lattice-gate one
-          removed round 34/35). */}
-      {PROPS.fences.map((f, i) => { const id = `fence-${i}`; const p = decorPos(id); return (
-        <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={16}>
-          <FenceShape x={0} y={0} length={f.length} scale={1.25} />
-        </Draggable>
-      ) })}
+      {/* Every structure does something (2026-11-19, "each structure has a
+          purpose on top of just cosmetics"). The extra benches, flower beds,
+          fences, foot bridge and paper lantern were scenery only and are
+          gone; what stays has a job:
+            street lamps  the house lights: lit when they are on, tap for the controls
+            clock tower   today's calendar
+            bench         the weekly check-in
+            picnic mat    date ideas
+            bus stop      trips
+            gazebo        hosting people over */}
       {PROPS.lamps.map((_, i) => { const id = `lamp-${i}`; const p = decorPos(id); return (
         <Draggable key={id} x={p.x} y={p.y} id={id} arranging={arranging} draggingId={draggingId} onPointerDown={startDrag(id)} r={10}>
-          <LampShape x={0} y={0} dark={warm} scale={1.3} />
+          <g onClick={!arranging ? nav('Lights', openSmartHome, false) : undefined} style={!arranging ? { cursor: 'pointer' } : undefined}>
+            <title>{homeLights ? (homeLights.on ? 'The lights are on. Tap for the controls.' : 'The lights are off. Tap for the controls.') : 'Tap for the lights'}</title>
+            {!arranging && <rect x={-9} y={-30} width={18} height={33} fill="transparent" style={{ pointerEvents: 'all' }} />}
+            <LampShape x={0} y={0} dark={lampsLit} scale={1.3} />
+          </g>
         </Draggable>
       ) })}
-      {(() => { const p = decorPos('clockTower'); return (
+      {(() => { const p = decorPos('clockTower'); const s = itemScale('clockTower'); return (
         <Draggable x={p.x} y={p.y} id="clockTower" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('clockTower')} r={26}>
-          <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={itemScale('clockTower')} />
+          <g onClick={!arranging ? nav('Calendar', () => goToSection('housecal'), false) : undefined} style={!arranging ? { cursor: 'pointer' } : undefined}>
+            <title>{structures?.calendar[0] ? `Next: ${structures.calendar[0]}. Tap for the calendar.` : 'Tap for the calendar'}</title>
+            {!arranging && <rect x={-22 * s} y={-80 * s} width={44 * s} height={82 * s} fill="transparent" style={{ pointerEvents: 'all' }} />}
+            <ClockTowerShape x={0} y={0} timeOfDay={v.timeOfDay} dark={dark} scale={s} />
+          </g>
         </Draggable>
       ) })()}
       {(() => { const p = decorPos('wishingWell'); return (
@@ -1921,8 +1916,9 @@ export default function VillageScene({
       ) })()}
       {(() => { const p = decorPos('picnicMat'); const w = 27, h = w * (280 / 460); return (
         <Draggable x={p.x} y={p.y} id="picnicMat" arranging={arranging} draggingId={draggingId} onPointerDown={startDrag('picnicMat')} r={13}>
-          <g>
-            <title>A picnic spot</title>
+          <g onClick={!arranging ? nav('Date ideas', () => goToHousehold('reference'), false) : undefined} style={!arranging ? { cursor: 'pointer' } : undefined}>
+            <title>Date ideas</title>
+            {!arranging && <rect x={-w / 2 - 2} y={-h} width={w + 4} height={h + 4} fill="transparent" style={{ pointerEvents: 'all' }} />}
             <ellipse cx={0} cy={0} rx={w / 2} ry={2} fill="var(--text)" opacity={0.1} />
             <image href="/village-assets/picnic-mat.png" x={-w / 2} y={-h + 2} width={w} height={h} style={{ imageRendering: 'pixelated' }} />
           </g>
@@ -1956,24 +1952,13 @@ export default function VillageScene({
         // read as a duplicate rather than two different things.
         // Sized up again round 35 (2026-08-27, "things like bus stop still
         // too small") — 18 units tall still read small at full-scene zoom.
-        { id: 'busStop', title: 'A bus stop', href: 'bus-stop.png', w: 41.2, h: 26 },
-        // Curated scenery (round 56, trimmed round 57 to sprites whose
-        // master-folder source still exists).
-        { id: 'gazebo', title: 'A gazebo', href: 'gazebo.png', w: 46 * (346 / 338), h: 46 },
-        { id: 'footBridgeScene', title: 'A little bridge', href: 'foot-bridge.png', w: 15 * (256 / 155), h: 15 },
-        // The garden bed, planters, hobby props, water pump, firewood,
-        // wildflowers and the four ground-cover accents are gone
-        // (2026-11-05, "simple and clean"). They grow back one at a time as
-        // the collection grows (GROWTH, appended below), and each is in the
-        // Inventory too.
-        // Round 27's seven community-props items are gone (round 32,
-        // 2026-08-27, "delete any elements that are not from my folder and
-        // currently not in my folder right now") — see DECOR_DEFAULTS' own
-        // comment above on why (their source sheet is no longer in the
-        // folder).
-        // What the collection has grown back so far (2026-11-05), see GROWTH.
-        ...GROWTH.slice(0, grown),
-      ].map(p => {
+        // Trips (2026-11-19): the next one, or a nudge to plan one.
+        { id: 'busStop', title: tripCount > 0 ? `${spellCount(tripCount)} trip${tripCount === 1 ? '' : 's'} coming up. Tap for Trips.` : 'Plan a trip', href: 'bus-stop.png', w: 41.2, h: 26,
+          tap: nav('Trips', () => goToSection('places-trips'), false) },
+        // Hosting (2026-11-19): get ready for guests, or manage tonight.
+        ...(onHost ? [{ id: 'gazebo', title: gathering ? 'Tonight’s gathering' : 'Have people over', href: 'gazebo.png', w: 46 * (346 / 338), h: 46,
+          tap: nav('Hosting', onHost, false) }] : [{ id: 'gazebo', title: 'The gazebo', href: 'gazebo.png', w: 46 * (346 / 338), h: 46 }]),
+      ].map((p: { id: string; title: string; href: string; w: number; h: number; tap?: () => void }) => {
         const p0 = decorPos(p.id)
         // Resizable in arrange (round 48, 2026-08-28) — itemScale(id)
         // multiplies both dimensions uniformly so nothing stretches.
@@ -1982,8 +1967,10 @@ export default function VillageScene({
         const pw = p.w * s, ph = p.h * s
         return (
           <g key={p.id} transform={`translate(${p0.x} ${p0.y})`} opacity={1}
-            onPointerDown={startDrag(p.id)} style={{ cursor: arranging ? (draggingId === p.id ? 'grabbing' : 'grab') : undefined }}>
+            onPointerDown={startDrag(p.id)} onClick={!arranging && p.tap ? p.tap : undefined}
+            style={{ cursor: arranging ? (draggingId === p.id ? 'grabbing' : 'grab') : p.tap ? 'pointer' : undefined }}>
             <title>{p.title}</title>
+            {!arranging && p.tap && <rect x={-pw / 2 - 2} y={-ph - 2} width={pw + 4} height={ph + 4} fill="transparent" style={{ pointerEvents: 'all' }} />}
             <ellipse cx={0} cy={ph * 0.28} rx={pw * 0.48} ry={2} fill="var(--text)" opacity={0.14} />
             <image href={`/village-assets/${p.href}`} x={-pw / 2} y={-ph} width={pw} height={ph}
               style={{ imageRendering: 'pixelated' }} />
@@ -2040,42 +2027,6 @@ export default function VillageScene({
           </g>
         )
       })}
-
-      {/* The hanging paper lantern that lights up after dark — draggable via
-          the same decorPos/DECOR_DEFAULTS mechanism, rendered separately
-          since it swaps by `dark`. (The swaying flower cluster that used to
-          live here was dropped round 57 — its source sheet,
-          tree-flower-sway-animation, is no longer in the master folder.) */}
-      {(() => {
-        const p0 = decorPos('paperLantern')
-        const w = 5.7, h = 14 // 141×345 source, same aspect ratio
-        // A real post now (round 14 fix, 2026-08-27, "make sure all
-        // elements are on the ground") — the sprite itself is a HANGING
-        // lantern (its own art includes a mounting bracket at top), and
-        // rendering just that, floating at head height with only a ground
-        // shadow under it, read as unsupported. A short post planted at
-        // y=0 (the anchor's own ground level, unlike round 13's
-        // GROUND_Y-20 default) carries the bracket up to where the sprite
-        // takes over — the same "post holds the fixture up" logic
-        // LampShape already uses for the stone lantern.
-        const postH = 10
-        return (
-          <g transform={`translate(${p0.x} ${p0.y})`} opacity={0.95}
-            onPointerDown={startDrag('paperLantern')} style={{ cursor: arranging ? (draggingId === 'paperLantern' ? 'grabbing' : 'grab') : undefined }}>
-            <title>A paper lantern</title>
-            <ellipse cx={0} cy={1.5} rx={4} ry={1.2} fill="var(--text)" opacity={0.12} />
-            <rect x={-0.7} y={-postH} width={1.4} height={postH} fill={TRIM} opacity={0.8} />
-            {warm && <circle cy={-postH - h / 2} r={9} fill="var(--amber)" opacity={0.28} filter="url(#vglow)" />}
-            <image href={`/village-assets/paper-lantern-${warm ? 'lit' : 'unlit'}.png`} x={-w / 2} y={-postH - h} width={w} height={h}
-              style={{ imageRendering: 'pixelated' }} className={warm ? 'village-glow' : undefined} />
-            {arranging && (
-              <rect x={-w / 2 - 2} y={-postH - h - 2} width={w + 4} height={postH + h + 4} rx={4}
-                fill="none" stroke="var(--gold)" strokeWidth={1} strokeDasharray="3 3"
-                opacity={draggingId === 'paperLantern' ? 0.9 : 0.4} />
-            )}
-          </g>
-        )
-      })()}
 
       {/* Memory map (2026-08-24) — one small marker per date-idea area,
           scattered near the path via the same hashPos-by-id determinism
@@ -2401,10 +2352,14 @@ export default function VillageScene({
           tile language as everywhere else. The hand-drawn "letter" prop
           that used to sit beside it is gone (round 14) — real tea-set/
           picnic-blanket sprites already cover this corner's identity. */}
-      <g transform={`translate(${decorPos('peopleCorner').x} ${decorPos('peopleCorner').y})`} opacity={0.75}
-        onPointerDown={startDrag('peopleCorner')} style={{ cursor: arranging ? (draggingId === 'peopleCorner' ? 'grabbing' : 'grab') : undefined }}>
-        <title>A quiet corner to sit and talk</title>
-        <BenchShape x={0} y={0} />
+      {/* The bench is where you two check in (2026-11-19): tap for this
+          week's check-in. Personal, so the shared screen asks for the PIN. */}
+      <g transform={`translate(${decorPos('peopleCorner').x} ${decorPos('peopleCorner').y})`}
+        onPointerDown={startDrag('peopleCorner')} onClick={!arranging ? nav('Check-in', () => goToPersonal('checkins')) : undefined}
+        style={{ cursor: arranging ? (draggingId === 'peopleCorner' ? 'grabbing' : 'grab') : 'pointer' }}>
+        <title>Sit down together: this week’s check-in</title>
+        {!arranging && <rect x={-13} y={-12} width={26} height={15} fill="transparent" style={{ pointerEvents: 'all' }} />}
+        <BenchShape x={0} y={0} scale={1.38} />
       </g>
 
       {/* The year-ring tree — the household's tree (2026-09-08). Round 62 pulled
@@ -2662,37 +2617,6 @@ export default function VillageScene({
       <DistrictLabel quiet={hosting} {...pos('people')} icon="people" label="Memories" onClick={openOrToggle('people', 'Memories')} {...hoverPreview('people')} dark={dark} scale={1.12}
         count={memoryAlbums.length ? `${spellCount(memoryAlbums.length)} album${memoryAlbums.length === 1 ? '' : 's'}` : 'trips, parties, and Somi'}
         draggable={arranging} dragging={draggingId === 'people'} onPointerDown={startDrag('people')} selected={openPanel === 'people'} />
-      {/* Little finds (2026-11-05). Whatever has turned up lies on the ground
-          with a slow glint, so it reads as something to pick up. Tapping keeps
-          it, and its name floats up for a moment. */}
-      {finds?.waiting.map(fd => {
-        const p = FIND_SPOTS[fd.spot]
-        if (!p) return null
-        return (
-          <g key={fd.id} transform={`translate(${p.x} ${p.y})`}>
-            <g className="village-find-bob" style={{ cursor: 'pointer' }}
-              onClick={e => {
-                e.stopPropagation()
-                const name = finds.onPick(fd.id)
-                if (!name) return
-                const key = Date.now()
-                setFindPop({ key, x: p.x, y: p.y - 20, name })
-                setTimeout(() => setFindPop(d => (d?.key === key ? null : d)), 1400)
-              }}>
-              <title>Something little. Tap to keep it.</title>
-              <circle r={13} cy={-7} fill="transparent" style={{ pointerEvents: 'all' }} />
-              <ellipse cx={0} cy={0.5} rx={5} ry={1.4} fill="var(--text)" opacity={0.15} />
-              <g transform="translate(-8 -16)"><FindIcon kind={fd.kind} size={16} inSvg /></g>
-              <rect x={6} y={-18} width={2} height={2} fill="#fff8e6" className="village-find-glint" />
-            </g>
-          </g>
-        )
-      })}
-      {findPop && (
-        <text key={findPop.key} x={findPop.x} y={findPop.y} textAnchor="middle" className="village-find-pop"
-          fontSize={8} fontWeight={600} fill="#7a5a3a" stroke="#fff8e6" strokeWidth={2} paintOrder="stroke" pointerEvents="none">{findPop.name}</text>
-      )}
-
       {/* Birthday bunting (2026-08-24) — only on the actual day, over the
           People district's current position. */}
       {soonestBirthdayDays === 0 && <BuntingShape x={pos('people').x} y={pos('people').y} />}

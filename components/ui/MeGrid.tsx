@@ -11,18 +11,18 @@ import { useCheckins } from '@/lib/hooks/useCheckins'
 // Me (2026-10-21 redesign): your own things as a grid of tiles instead of a
 // row of eight pills. Each tile says one useful thing about what is inside.
 
-// In the order you reach for them (2026-10-26): what to do, when, and mail
-// first; the weekly and the rarely used last.
+// In the order you reach for them (2026-10-26): what to do and mail first;
+// the weekly and the rarely used last. Me is only yours since 2026-11-19:
+// the calendar lives in Home (with a Mine view), every inbox is in Inbox, and
+// Settings is in the header.
 const TILES: { id: string; label: string; icon: IconName; tint: string }[] = [
   { id: 'tasks',    label: 'Tasks',     icon: 'clipboard', tint: 'var(--gold)' },
-  { id: 'mycalendar', label: 'Calendar', icon: 'calendar',  tint: 'var(--gold)' },
-  { id: 'gmail',    label: 'Gmail',     icon: 'mail',      tint: 'var(--rose)' },
-  { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
+  { id: 'mail',     label: 'Inbox',     icon: 'mail',      tint: 'var(--rose)' },
   { id: 'habits',   label: 'Habits',    icon: 'sprout',    tint: 'var(--emerald)' },
+  { id: 'notes',    label: 'Notes',     icon: 'lightbulb', tint: 'var(--amber, var(--gold))' },
   { id: 'money',    label: 'Money',     icon: 'scale',     tint: 'var(--emerald)' },
-  { id: 'vault',    label: 'Passwords', icon: 'lock',      tint: 'var(--slate, var(--muted))' },
   { id: 'checkins', label: 'Check-ins', icon: 'heart',     tint: 'var(--rose)' },
-  { id: 'settings', label: 'Settings',  icon: 'gear',      tint: 'var(--muted)' },
+  { id: 'vault',    label: 'Passwords', icon: 'lock',      tint: 'var(--slate, var(--muted))' },
 ]
 
 export default function MeGrid({ visible, onOpen, userId }: { visible: Set<string>; onOpen: (id: string) => void; userId: string }) {
@@ -41,14 +41,12 @@ export default function MeGrid({ visible, onOpen, userId }: { visible: Set<strin
 
   const hint: Record<string, string> = {
     checkins: thisWeekMine ? (doneThisWeek.length > 1 ? 'Both in this week' : 'Done, waiting on your partner') : 'Not done this week',
-    mycalendar: 'Everything dated',
     tasks: dueNow > 0 ? `${dueNow} due` : open.length > 0 ? `${open.length} open` : 'All clear',
     habits: activeHabits.length > 0 ? `${doneToday} of ${activeHabits.length} today` : 'Start one',
     notes: 'Thoughts and lists',
-    gmail: 'Your inbox',
+    mail: 'Letters, shared mail, Gmail',
     vault: 'Locked, only you',
     money: total > 0 ? `${total.toFixed(0)} a month${wanted ? ` · ${wanted} wished` : ''}` : wanted ? `${wanted} on the wishlist` : 'Bills, renewals, wishlist',
-    settings: 'Look, connections, account',
   }
 
   return (

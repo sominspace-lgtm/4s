@@ -260,6 +260,12 @@ export default function Header({ email, userId, initialName, sharedMode = false,
           padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
           fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
         }}>⌕</button>}
+        {/* Settings lives up here now (2026-11-19), not as a tile in Me. */}
+        {!sharedMode && onSettings && <button onClick={onSettings} title="Settings" aria-label="Settings" style={{
+          background: 'none', border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '0.4rem 0.7rem', color: 'var(--muted)', cursor: 'pointer',
+          fontSize: '0.8rem', lineHeight: 1, fontFamily: 'var(--font-body)',
+        }}>⚙</button>}
         {/* Theme is a personal preference stored on the backing account
             (user_prefs.theme) — changing it from a shared-device session
             would silently change that person's real profile the next time

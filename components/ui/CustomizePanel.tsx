@@ -48,9 +48,8 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: 'notes',    label: 'Notes',    hidden: false },
   { id: 'money',    label: 'Money',    hidden: false },
   { id: 'checkins', label: 'Check-ins', hidden: false },
-  { id: 'mycalendar', label: 'Calendar', hidden: false },
-  // Gmail and Passwords are their own tiles in Me (2026-10-26).
-  { id: 'gmail',    label: 'Gmail',    hidden: false },
+  // Every inbox in one place (2026-11-19): letters, the shared inbox, Gmail.
+  { id: 'mail',     label: 'Inbox',    hidden: false },
   { id: 'vault',    label: 'Passwords', hidden: false },
   { id: 'settings', label: 'Settings', hidden: false },
   // The village — your life as a place, not a dashboard.
@@ -67,14 +66,16 @@ export const DEFAULT_SECTIONS: SectionConfig[] = [
   // block 2026-09-02 (was its own section 2026-08-21); Routines folded into
   // Reference 2026-08-25.
   { id: 'home',     label: 'Home',     hidden: false },
+  // One calendar, Ours and Mine (2026-11-19).
+  { id: 'housecal', label: 'Calendar', hidden: false },
   // Upkeep (2026-09-08) — chores, routines, and care (Somi + house) in one
   // tab between Home and Reference.
-  { id: 'upkeep',   label: 'Upkeep',   hidden: false },
+  { id: 'upkeep',   label: 'Chores',   hidden: false },
   // Kitchen (2026-10-13) — recipes, the meal plan, groceries, calories.
   { id: 'kitchen',  label: 'Kitchen',  hidden: false },
+  // Smart Home is a page now (2026-11-19), not only a sheet over the Village.
+  { id: 'smarthome', label: 'Smart Home', hidden: false },
   { id: 'reference', label: 'Collections', hidden: false },
-  { id: 'housecal', label: 'Home calendar', hidden: false },
-  { id: 'mail',       label: 'Mail',      hidden: false },
   // Places — Map / Pins / Trips are their own sections (2026-09-03), a pill
   // row under the Places icon like Household's own.
   { id: 'places',   label: 'Places',   hidden: false },

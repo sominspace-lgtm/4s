@@ -67,10 +67,6 @@ import { routineFor, partOfDay as partOfRoutineDay } from '@/components/brief/To
 import { countSteps } from '@/lib/routines/items'
 import { DEVICE_EVENT, DEVICE_KEYS, readDevice } from '@/lib/utils/deviceSettings'
 import { tapSoundOn, setTapSound, playTap } from '@/lib/village/tapSound'
-import { useVillageFinds } from '@/lib/hooks/useVillageFinds'
-import { useCheckins } from '@/lib/hooks/useCheckins'
-import { advance, pick, grownCount, FIND_INFO } from '@/lib/village/finds'
-import { CollectionButton, CollectionSheet } from './Finds'
 
 const ARRIVAL_KEY = '4s-village-arrival'
 
@@ -711,38 +707,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
   // unchecked item a guest could see.
   const somiCare = useCareLog('somi')
 
-  // Little finds (2026-11-05): small things turn up around the village every
-  // few hours, you two tap to keep them, and the village slowly grows as the
-  // collection does. Everyday things done in SS today (habits, chores, Somi's
-  // care, this week's check-in) bring the next one sooner. Picking up is for
-  // you two only; what has grown shows for everyone.
-  const villageFinds = useVillageFinds(userId)
-  const { thisWeekMine } = useCheckins(userId)
-  const [collectionOpen, setCollectionOpen] = useState(false)
-  const findsOn = !!villageFinds.state && !locked && !guestView && !guestLive && !compact && !ambient
-  const today = format(villageFinds.now, 'yyyy-MM-dd')
-  const thingsDone =
-    habits.filter(h => (completions[h.id] ?? []).includes(today)).length +
-    household.chores.filter(c => c.last_done_at?.slice(0, 10) === today).length +
-    somiCare.doneToday.size +
-    (thisWeekMine ? 1 : 0)
-  const findsState = villageFinds.state
-  const saveFinds = villageFinds.save
-  useEffect(() => {
-    if (!findsOn || !findsState) return
-    const next = advance(findsState, villageFinds.now, v.season, thingsDone)
-    if (next) saveFinds(next)
-  }, [findsOn, findsState, villageFinds.now, v.season, thingsDone, saveFinds])
-  const findsProp = findsOn && findsState && !arranging ? {
-    waiting: findsState.waiting,
-    onPick: (id: string) => {
-      const r = pick(findsState, id, new Date())
-      if (!r) return null
-      saveFinds(r.next)
-      return FIND_INFO[r.kind].name
-    },
-  } : undefined
-  const grown = findsState ? grownCount(findsState.kept.length) : 0
   const hostSignals = useMemo(() => {
     const outdoorLight = smartHomeDevices.find(d =>
       /porch|patio|entry|entrance|front door|outdoor|exterior|walkway|garden/i.test(d.name) &&
@@ -1040,7 +1004,7 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             soloFigure={!bothHome && !guestActive}
             containerAspect={fullscreen ? viewportAspect : null}
             lite={villageLite.lite}
-            plantSlots={plantSlots} buildingSlots={buildingSlots} avoidLights={avoidLights} finds={findsProp} grown={grown}
+            plantSlots={plantSlots} buildingSlots={buildingSlots} avoidLights={avoidLights}
             horizon={horizon} changes={changes}
             locked={locked} onLockedNavigate={onLockedNavigate} pulse={villagePulse}
             memoryAlbums={memoryLinks.map(l => ({ label: l.label, url: l.url }))}
@@ -1072,7 +1036,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             timeLabel={timeLabel} dateLabel={dateLabel} moonLabel={moonLabel} tripCount={tripCount} zoom={zoom}
             homeOccupied={homeOccupied} homeLights={homeLights} dateKey={dateKey}
             somiMood={guestLive ? null : somiMood} dinnerTonight={guestView || guestLive ? null : homeCard.dinner} onDinner={() => setDinnerOpen(true)}
-            onWelcome={guestView || guestActive ? () => setGuestPageOpen(true) : undefined} />
+            onWelcome={guestView || guestActive ? () => setGuestPageOpen(true) : undefined}
+            onHost={guestView || locked || compact ? undefined
+              : guestActive ? () => setGuestPanelOpen(true)
+              : onStartGathering ? () => setHostingSetupOpen(true) : undefined} />
         </div>
 
         {/* Swipe affordance for the mobile scroll strip (2026-09-07) — a
@@ -1233,9 +1200,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
                 fontSize: '1rem', lineHeight: 1, fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)',
               }}
             >⋯</button>
-            {findsOn && findsState && (
-              <CollectionButton latest={findsState.kept.at(-1)?.kind ?? null} onOpen={() => setCollectionOpen(true)} />
-            )}
             {menuOpen && (
               <>
                 <div aria-hidden onClick={() => setMenuOpen(false)}
@@ -1509,10 +1473,6 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           />
         )}
 
-        {/* Our photos, framed in the corner (2026-10-24). Guests see only theirs. */}
-        {findsState && (
-          <CollectionSheet open={collectionOpen && findsOn} state={findsState} onClose={() => setCollectionOpen(false)} />
-        )}
         <DinnerCard meal={dinnerFor(household.meals)} open={dinnerOpen} onClose={() => setDinnerOpen(false)} onCook={() => setKitchenOpen(true)} />
         {/* The mailbox sheet (2026-10-25). */}
         <Sheet open={mailboxOpen} title="The mailbox" onClose={() => setMailboxOpen(false)}>

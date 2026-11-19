@@ -24,8 +24,8 @@ import DateIdeasList from '@/components/household/DateIdeasList'
 
 const GROUPS: HomeBarGroup[] = [
   { id: 'today',  icon: 'today',     label: 'Today',  members: ['brief'] },
-  { id: 'home',   icon: 'household', label: 'Home',   members: ['home', 'upkeep', 'kitchen', 'reference', 'mail'] },
-  { id: 'me',     icon: 'personal',  label: 'Me',     members: ['me', 'tasks', 'mycalendar', 'gmail', 'notes', 'habits', 'money', 'vault', 'checkins', 'settings', 'village'] },
+  { id: 'home',   icon: 'household', label: 'Home',   members: ['home', 'housecal', 'upkeep', 'kitchen', 'smarthome', 'reference'] },
+  { id: 'me',     icon: 'personal',  label: 'Me',     members: ['me', 'tasks', 'mail', 'notes', 'habits', 'money', 'vault', 'checkins', 'village'] },
   { id: 'places', icon: 'places',    label: 'Places', members: ['places', 'places-trips', 'places-nearby'] },
 ]
 const LABELS: Record<string, string> = {
@@ -66,7 +66,7 @@ export default function UiPreviewClient() {
           {tab === 'notes' && <VoiceRecorder label="Voice note" onText={t => alert('TEXT: ' + t)} />}
           {tab === 'controls' && <div style={{ maxWidth: '62rem', margin: '0 auto', padding: '1rem' }}><ControlPanel spaceId="preview" onSetup={() => {}} /></div>}
           {tab === 'lists' && <div style={{ display: 'grid', gap: '2rem' }}><DateIdeasList spaceId="preview" onTable={() => {}} /><WatchList spaceId="preview" domain="media" onTable={() => {}} /></div>}
-          {tab === 'homeview' && <HomeView screenName="Wall iPad" preview={{ household: 'Our home', habits: [0,1,2,3,4,5].map(i => ({ id: 'h' + i, name: '', category: null, schedule_type: 'daily', interval_days: null, days_of_week: null, paused: false, created_at: '2026-01-01' })), completions: Object.fromEntries([0,1,2,3,4,5].map(i => ['h' + i, Array.from({ length: i * 6 }, (_, d) => `2026-10-${String(d % 28 + 1).padStart(2, '0')}`)])), workItems: [], accountCreated: '2025-06-01T00:00:00Z', layout: {}, grown: 5, activeScene: null, scenes: [{ id: 's1', name: 'Goodnight', icon: 'moon' }, { id: 's2', name: 'Movie', icon: 'tv' }], binDays: { trash: 1 }, dinner: 'Pasta night' }} />}
+          {tab === 'homeview' && <HomeView screenName="Wall iPad" preview={{ household: 'Our home', habits: [0,1,2,3,4,5].map(i => ({ id: 'h' + i, name: '', category: null, schedule_type: 'daily', interval_days: null, days_of_week: null, paused: false, created_at: '2026-01-01' })), completions: Object.fromEntries([0,1,2,3,4,5].map(i => ['h' + i, Array.from({ length: i * 6 }, (_, d) => `2026-10-${String(d % 28 + 1).padStart(2, '0')}`)])), workItems: [], accountCreated: '2025-06-01T00:00:00Z', layout: {}, activeScene: null, scenes: [{ id: 's1', name: 'Goodnight', icon: 'moon' }, { id: 's2', name: 'Movie', icon: 'tv' }], binDays: { trash: 1 }, dinner: 'Pasta night' }} />}
           {tab === 'village' && <Village userId="" guestView={guestV} ambient={idleV} guestInfo={{ welcome: 'Welcome to our home', wifiName: 'SoHome', wifiPassword: 'somi-loves-churu', places: 'Bathroom: down the hall, on the left\nTowels: hall closet', rules: 'Shoes off at the door\nKeep the back door shut for Somi' }} onSetGuestInfo={i => console.log('save', i)} />}
           {tab === 'village' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>

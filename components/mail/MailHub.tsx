@@ -30,23 +30,33 @@ function timeAgo(iso: string): string {
 // accepted member, not spaces[0] (which can be an empty solo space).
 // Two inboxes: the household's own async mailbox, and (once Google is
 // connected) the person's Gmail. Household stays the default.
-// Mail (2026-10-25): your letters to each other, and the shared email's
-// inbox. On the shared screen only the shared inbox shows; letters between
-// the two of you never do. Your own Gmail is in Me, Tasks, Inbox.
+// Inbox (2026-11-19, was Mail in Home and Gmail in Me): every inbox in one
+// place in Me. Letters between the two of you, the shared email's inbox, and
+// your own Gmail. On the shared screen only the shared inbox shows; letters
+// and your Gmail never do.
+type MailTab = 'letters' | 'shared' | 'gmail'
 export default function MailHub({ userId, sharedMode = false }: { userId: string; sharedMode?: boolean }) {
   const { status } = useGoogleStatus()
   const hasShared = !!status.household?.connected
-  const [tab, setTab] = useState<'letters' | 'shared'>(sharedMode ? 'shared' : 'letters')
+  const hasGmail = !sharedMode && !!status.connected
+  const [tab, setTab] = useState<MailTab>(sharedMode ? 'shared' : 'letters')
   const showShared = sharedMode || tab === 'shared'
   useEffect(() => {
-    const on = () => setTab('shared')
-    window.addEventListener('4s:mail-shared', on)
-    return () => window.removeEventListener('4s:mail-shared', on)
+    const shared = () => setTab('shared')
+    const gmail = () => setTab('gmail')
+    window.addEventListener('4s:mail-shared', shared)
+    window.addEventListener('4s:mail-gmail', gmail)
+    return () => { window.removeEventListener('4s:mail-shared', shared); window.removeEventListener('4s:mail-gmail', gmail) }
   }, [])
+  const tabs: [MailTab, string][] = [['letters', 'Letters'], ...(hasShared ? [['shared', 'Shared inbox'] as [MailTab, string]] : []), ...(hasGmail ? [['gmail', 'Gmail'] as [MailTab, string]] : [])]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-      {!sharedMode && hasShared && <Segmented value={tab} onChange={setTab} options={[['letters', 'Letters'], ['shared', 'Shared inbox']]} />}
-      {showShared
+      {!sharedMode && tabs.length > 1 && <Segmented value={tab} onChange={setTab} options={tabs} />}
+      {tab === 'gmail' && !sharedMode
+        ? (hasGmail
+          ? <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="mine" /></section>
+          : <div style={{ fontSize: '0.86rem', color: 'var(--muted)' }}>Connect your Google account in Settings, Connections to read your Gmail here.</div>)
+        : showShared
         ? (hasShared
           ? <section className="organic specimen" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '1rem 1.2rem' }}><GmailInbox only="shared" /></section>
           : <div style={{ fontSize: '0.86rem', color: 'var(--muted)' }}>Connect the shared Google account in Connect to read the shared inbox here.</div>)
