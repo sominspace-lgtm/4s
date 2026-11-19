@@ -22,13 +22,14 @@ const WEATHER_CAST: Record<WeatherCondition, [string, number]> = {
   storm: ['#3E4A5C', 0.16],
 }
 
-export default function SceneAtmosphere({ live, timeOfDay, condition, hosting, lite }: {
+export default function SceneAtmosphere({ live, timeOfDay, condition, hosting }: {
   live: boolean
   timeOfDay: VillageState['timeOfDay']
   condition: WeatherCondition
   /** A gathering is on: a faint golden wash so it feels warmer than a normal day. */
   hosting: boolean
-  lite: boolean
+  /** Older iPads. Unused since the grain went; kept so callers need no change. */
+  lite?: boolean
 }) {
   const [tColor, tOp] = TIME_CAST[timeOfDay]
   const [wColor, wOp] = WEATHER_CAST[condition]
@@ -46,9 +47,9 @@ export default function SceneAtmosphere({ live, timeOfDay, condition, hosting, l
       {/* Vignette: drawn in SVG so it can't catch the taps meant for the districts. */}
       <rect width="800" height="440" fill="url(#vhearth)" pointerEvents="none"
         opacity={timeOfDay === 'night' ? 0.2 : timeOfDay === 'dusk' ? 0.16 : timeOfDay === 'dawn' ? 0.1 : 0.06} />
-      <rect width="800" height="440" fill="url(#vvignette)" pointerEvents="none" />
-      {/* Grain, multiplied so it can only darken. Off on older iPads. */}
-      {!lite && <rect width="800" height="440" filter="url(#vgrain)" opacity={0.05} pointerEvents="none" style={{ mixBlendMode: 'multiply' }} />}
+      <rect width="800" height="440" fill="url(#vvignette)" pointerEvents="none" opacity={0.6} />
+      {/* No grain (2026-11-19, "elegant and clean"): it dulled the colours
+          more than it added texture. */}
     </>
   )
 }

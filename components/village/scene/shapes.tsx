@@ -603,10 +603,10 @@ export function LampShape({ x, y, dark = false, scale = 1 }: { x: number; y: num
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={1.8} rx={7} ry={1.8} fill="var(--text)" opacity={0.12} />
-      {/* A soft warm cast even by day (round 66, "add more glow on items") —
-          brighter and larger after dark. */}
-      <circle cy={-h + 4} r={dark ? 12 : 6} fill="var(--amber)" opacity={dark ? 0.38 : 0.16} filter="url(#vglow)"
-        className={dark ? 'village-glow' : undefined} />
+      {/* Lit after dark only (2026-11-19, "elegant and clean"). */}
+      {dark && (
+        <circle cy={-h + 4} r={12} fill="var(--amber)" opacity={0.38} filter="url(#vglow)" className="village-glow" />
+      )}
       <image href="/village-assets/lamppost.png" x={-w / 2} y={-h + 1.5} width={w} height={h}
         style={{ imageRendering: 'pixelated' }} className={dark ? 'village-glow' : undefined} />
     </g>
@@ -1601,8 +1601,12 @@ export function DistrictLabel({ x, y, icon, label, count = '', onClick, draggabl
           ambience to light sources and ambience"). Radius/opacity flex with
           the life pulse (round 84) — a tended district glows warmer, a
           neglected one barely at all. */}
-      <circle r={glowR} fill="var(--amber)" opacity={glowO} filter="url(#vglow)"
-        style={{ transition: 'opacity 600ms ease' }} />
+      {/* Night only (2026-11-19, "elegant and clean"): by day the amber
+          haze read as smudges on the grass, not light. */}
+      {dark && (
+        <circle r={glowR} fill="var(--amber)" opacity={glowO} filter="url(#vglow)"
+          style={{ transition: 'opacity 600ms ease' }} />
+      )}
       {/* Scaled up ~30% (round two, 2026-08-27) — measured against a real
           screenshot, the art read as a small prop next to its own label at
           the original coordinates below. This is the one knob that fixes

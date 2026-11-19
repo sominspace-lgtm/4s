@@ -1727,7 +1727,7 @@ export default function VillageScene({
 
         {/* Stones, another layer of ground texture (2026-08-24), see STONES
             above. */}
-        <g opacity={0.5}>
+        <g opacity={0.3}>
           {STONES.map(st => (
             <g key={st.id} shapeRendering="crispEdges">
               <rect x={Math.round(st.x - st.r)} y={Math.round(GROUND_Y + 9 + st.r * 1.5)} width={Math.max(2, Math.round(st.r * 2))} height={2} fill="#C9C6B2" />

@@ -70,7 +70,8 @@ export function pixelPine(apexX: number, apexY: number, h: number, widthK: numbe
 // tuft's position and height stable across renders — same "pure function of
 // an id" rule the rest of the village runs under, just with a literal index
 // standing in for a real entity id since these aren't tied to any data.
-export const GRASS_TUFTS = Array.from({ length: 44 }, (_, i) => {
+// 44 → 24 (2026-11-19, "elegant and clean"): a lighter hand along the ground line.
+export const GRASS_TUFTS = Array.from({ length: 24 }, (_, i) => {
   const seed = `grass-${i}`
   const x = 20 + hashPos(seed) * 760
   const h = 4 + hashPos(seed + 'h') * 6
@@ -139,7 +140,9 @@ export const GREENS = ['#A7C08E', '#95B07E', '#87A471', '#789364', '#688055', '#
 // fewer, fuller clumps gather in the two bottom corners like the frame of a
 // painting, and the middle stays open so the eye travels up the path to the
 // cottage. Nearer clumps are bigger and fuller, as before.
-export const FOREGROUND_COUNT = 16
+// 16 → 10 (2026-11-19, "elegant and clean"): the corners frame the scene
+// without a hedge of shrubs along the bottom.
+export const FOREGROUND_COUNT = 10
 export const FOREGROUND = Array.from({ length: FOREGROUND_COUNT }, (_, i) => {
   const seed = `fg-${i}`
   const depth = hashPos(seed + 'd')

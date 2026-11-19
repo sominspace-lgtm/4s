@@ -968,8 +968,10 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
           position: 'relative', overflow: 'hidden',
           // Framed like a small print (2026-10-19, 'elegant but cozy'): a warm
           // hairline, a cream mat, then a soft shadow underneath.
-          border: '1px solid color-mix(in srgb, var(--border) 55%, #c9a97a 45%)',
-          boxShadow: fullscreen ? 'none' : '0 0 0 5px color-mix(in srgb, var(--surface) 82%, #f3e3c8 18%), 0 0 0 6px color-mix(in srgb, var(--border) 60%, #c9a97a 40%), 0 22px 44px -26px rgba(60, 40, 20, 0.5)',
+          // One hairline and a soft shadow (2026-11-19, "elegant and clean"):
+          // the cream mat and second ring made the picture feel boxed in.
+          border: '1px solid color-mix(in srgb, var(--border) 70%, #c9a97a 30%)',
+          boxShadow: fullscreen ? 'none' : '0 18px 40px -24px rgba(60, 40, 20, 0.42)',
           background: 'var(--surface)',
           // aspect-ratio, not a fixed height (2026-08-25 fix) — a fixed px
           // height cropped from the TOP of the 800×440 scene, and the
@@ -1191,15 +1193,8 @@ export default function Village({ userId, accountCreatedAt = null, lastSeen = nu
             whole app, and only because this is the piece meant to be looked
             at rather than used. Skipped while arranging so it can't be
             mistaken for a drag-catching overlay. */}
-        {!compact && !arranging && (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none',
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent) 0%, transparent 12%)',
-            }}
-          />
-        )}
+        {/* The top-edge glass highlight is gone (2026-11-19, "elegant and
+            clean"): it read as a grey band over the sky. */}
 
         {/* Fullscreen needs exactly one control — a close affordance. Escape
             also works (see the keydown handler above). */}
